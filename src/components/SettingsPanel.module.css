@@ -1,0 +1,53 @@
+.container {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 10px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formGroup label {
+  font-size: 13px;
+  color: #ccc;
+}
+
+.formGroup select,
+.formGroup textarea {
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-sm);
+  transition: border-color 0.2s;
+  font-size: 14px;
+}
+
+.formGroup select:focus,
+.formGroup textarea:focus {
+  border-color: var(--accent-color);
+  outline: none;
+}
+
+.formGroup input[type="range"] {
+  accent-color: var(--accent-color);
+  width: 100%;
+}

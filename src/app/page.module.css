@@ -1,0 +1,66 @@
+.appContainer {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  background: radial-gradient(
+    circle at top,
+    var(--bg-secondary) 0%,
+    var(--bg-primary) 100%
+  );
+}
+
+.leftSidebar {
+  width: 300px;
+  height: 100%;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+}
+
+.rightSidebar {
+  width: 250px;
+  height: 100%;
+  border-left: 1px solid var(--border-color);
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+}
+
+.mainChat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+
+.glassHeader {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.chatArea {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inputArea {
+  padding: 20px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-glass);
+}

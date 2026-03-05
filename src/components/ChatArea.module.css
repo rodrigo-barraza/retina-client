@@ -1,0 +1,218 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.messagesList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.welcome {
+  margin: auto;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.welcome h3 {
+  color: var(--text-primary);
+  opacity: 0.8;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.message {
+  display: flex;
+  gap: 16px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.userNode .avatar {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.aiNode .avatar {
+  background: var(--accent-glow);
+  color: var(--accent-color);
+  border: 1px solid var(--accent-color);
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.roleLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.messageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.deleteMsgBtn {
+  opacity: 0;
+  color: var(--text-secondary);
+  padding: 4px;
+  transition: all 0.2s;
+}
+
+.message:hover .deleteMsgBtn {
+  opacity: 1;
+}
+
+.deleteMsgBtn:hover {
+  color: var(--danger);
+  transform: scale(1.1);
+}
+
+.text {
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--text-primary);
+}
+
+.meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+  opacity: 0.7;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.inputWrapper {
+  padding: 20px 30px;
+  border-top: 1px solid var(--border-color);
+  background: rgba(10, 10, 15, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.inputBox {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 8px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.inputBox:focus-within {
+  border-color: var(--accent-color);
+  box-shadow:
+    0 0 0 2px var(--accent-glow),
+    0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.inputBox textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  min-height: 24px;
+  max-height: 200px;
+  padding: 8px;
+  resize: none;
+}
+
+.inputBox textarea:focus {
+  box-shadow: none;
+}
+
+.inputBox button {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius-sm);
+  background: var(--accent-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.inputBox button:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.inputBox button:disabled {
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+}
+
+.hint {
+  max-width: 800px;
+  margin: 8px auto 0;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.hint kbd {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 10px;
+}
