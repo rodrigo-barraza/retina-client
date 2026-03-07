@@ -3,6 +3,7 @@
 import { Settings2, Cpu, Edit3, Type, Image as ImageIcon, Mic, Video, FileText, Globe, Wrench, Code, Monitor, Search } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import SelectDropdown from "./SelectDropdown";
+import ToggleSwitch from "./ToggleSwitch";
 import styles from "./SettingsPanel.module.css";
 
 export default function SettingsPanel({ config, settings, onChange, hasAssistantImages }) {
@@ -34,12 +35,12 @@ export default function SettingsPanel({ config, settings, onChange, hasAssistant
     const handleFreqPenaltyChange = (e) => onChange({ frequencyPenalty: parseFloat(e.target.value) });
     const handlePresPenaltyChange = (e) => onChange({ presencePenalty: parseFloat(e.target.value) });
     const handleStopSeqChange = (e) => onChange({ stopSequences: e.target.value });
-    const handleThinkingEnabledChange = (e) => onChange({ thinkingEnabled: e.target.checked });
-    const handleReasoningEffortChange = (e) => onChange({ reasoningEffort: e.target.value });
-    const handleThinkingLevelChange = (e) => onChange({ thinkingLevel: e.target.value });
+    const handleThinkingEnabledChange = (val) => onChange({ thinkingEnabled: val });
+    const handleReasoningEffortChange = (val) => onChange({ reasoningEffort: val });
+    const handleThinkingLevelChange = (val) => onChange({ thinkingLevel: val });
     const handleThinkingBudgetChange = (e) => onChange({ thinkingBudget: e.target.value });
-    const handleVerbosityChange = (e) => onChange({ verbosity: e.target.value });
-    const handleReasoningSummaryChange = (e) => onChange({ reasoningSummary: e.target.value });
+    const handleVerbosityChange = (val) => onChange({ verbosity: val });
+    const handleReasoningSummaryChange = (val) => onChange({ reasoningSummary: val });
 
     const currentProviderModels = modelsMap[settings.provider] || [];
     const selectedModelDef = currentProviderModels.find(m => m.name === settings.model);
@@ -222,23 +223,31 @@ export default function SettingsPanel({ config, settings, onChange, hasAssistant
                 <>
                     <div className={styles.formGroup}>
                         <label>Reasoning Effort</label>
-                        <select value={settings.reasoningEffort || "high"} onChange={handleReasoningEffortChange}>
-                            <option value="none">None</option>
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                            <option value="xhigh">Extra High</option>
-                        </select>
+                        <SelectDropdown
+                            value={settings.reasoningEffort || "high"}
+                            options={[
+                                { value: "none", label: "None" },
+                                { value: "low", label: "Low" },
+                                { value: "medium", label: "Medium" },
+                                { value: "high", label: "High" },
+                                { value: "xhigh", label: "Extra High" },
+                            ]}
+                            onChange={handleReasoningEffortChange}
+                        />
                     </div>
 
                     {selectedModelDef?.reasoningSummary && (
                         <div className={styles.formGroup}>
                             <label>Reasoning Summary</label>
-                            <select value={settings.reasoningSummary || "auto"} onChange={handleReasoningSummaryChange}>
-                                <option value="auto">Auto</option>
-                                <option value="concise">Concise</option>
-                                <option value="detailed">Detailed</option>
-                            </select>
+                            <SelectDropdown
+                                value={settings.reasoningSummary || "auto"}
+                                options={[
+                                    { value: "auto", label: "Auto" },
+                                    { value: "concise", label: "Concise" },
+                                    { value: "detailed", label: "Detailed" },
+                                ]}
+                                onChange={handleReasoningSummaryChange}
+                            />
                         </div>
                     )}
                 </>
@@ -248,15 +257,11 @@ export default function SettingsPanel({ config, settings, onChange, hasAssistant
                 <>
                     <div className={styles.toolsBox}>
                         <div className={styles.toolItem}>
-                            <label className={styles.toggleSwitch}>
-                                <input
-                                    type="checkbox"
-                                    checked={settings.thinkingEnabled || false}
-                                    onChange={handleThinkingEnabledChange}
-                                />
-                                <span className={styles.toggleSlider} />
-                            </label>
-                            <span className={styles.toolLabel}>Thinking</span>
+                            <ToggleSwitch
+                                checked={settings.thinkingEnabled || false}
+                                onChange={handleThinkingEnabledChange}
+                                label="Thinking"
+                            />
                         </div>
                     </div>
 
@@ -265,23 +270,31 @@ export default function SettingsPanel({ config, settings, onChange, hasAssistant
                             {["openai", "openai-compatible", "anthropic"].includes(settings.provider) && (
                                 <div className={styles.formGroup}>
                                     <label>Reasoning Effort</label>
-                                    <select value={settings.reasoningEffort || "high"} onChange={handleReasoningEffortChange}>
-                                        <option value="low">Low</option>
-                                        <option value="medium">Medium</option>
-                                        <option value="high">High</option>
-                                    </select>
+                                    <SelectDropdown
+                                        value={settings.reasoningEffort || "high"}
+                                        options={[
+                                            { value: "low", label: "Low" },
+                                            { value: "medium", label: "Medium" },
+                                            { value: "high", label: "High" },
+                                        ]}
+                                        onChange={handleReasoningEffortChange}
+                                    />
                                 </div>
                             )}
 
                             {settings.provider === "google" && (
                                 <div className={styles.formGroup}>
                                     <label>Thinking Level</label>
-                                    <select value={settings.thinkingLevel || "high"} onChange={handleThinkingLevelChange}>
-                                        <option value="minimal">Minimal</option>
-                                        <option value="low">Low</option>
-                                        <option value="medium">Medium</option>
-                                        <option value="high">High</option>
-                                    </select>
+                                    <SelectDropdown
+                                        value={settings.thinkingLevel || "high"}
+                                        options={[
+                                            { value: "minimal", label: "Minimal" },
+                                            { value: "low", label: "Low" },
+                                            { value: "medium", label: "Medium" },
+                                            { value: "high", label: "High" },
+                                        ]}
+                                        onChange={handleThinkingLevelChange}
+                                    />
                                 </div>
                             )}
 
@@ -306,52 +319,40 @@ export default function SettingsPanel({ config, settings, onChange, hasAssistant
                 <div className={styles.toolsBox}>
                     {selectedModelDef?.webSearch && (
                         <div className={`${styles.toolItem} ${settings.codeExecutionEnabled ? styles.toolItemDisabled : ""}`}>
-                            <label className={styles.toggleSwitch}>
-                                <input
-                                    type="checkbox"
-                                    checked={settings.webSearchEnabled || false}
-                                    disabled={settings.codeExecutionEnabled}
-                                    onChange={(e) => onChange({ webSearchEnabled: e.target.checked })}
-                                />
-                                <span className={styles.toggleSlider} />
-                            </label>
-                            <span className={styles.toolLabel}>{getToolLabel('Web Search')}</span>
+                            <ToggleSwitch
+                                checked={settings.webSearchEnabled || false}
+                                disabled={settings.codeExecutionEnabled}
+                                onChange={(val) => onChange({ webSearchEnabled: val })}
+                                label={getToolLabel("Web Search")}
+                            />
                         </div>
                     )}
 
                     {selectedModelDef?.codeExecution && (
                         <div className={styles.toolItem}>
-                            <label className={styles.toggleSwitch}>
-                                <input
-                                    type="checkbox"
-                                    checked={settings.codeExecutionEnabled || false}
-                                    onChange={(e) => {
-                                        const updates = { codeExecutionEnabled: e.target.checked };
-                                        if (e.target.checked) {
-                                            updates.webSearchEnabled = false;
-                                            updates.urlContextEnabled = false;
-                                        }
-                                        onChange(updates);
-                                    }}
-                                />
-                                <span className={styles.toggleSlider} />
-                            </label>
-                            <span className={styles.toolLabel}>Code Execution</span>
+                            <ToggleSwitch
+                                checked={settings.codeExecutionEnabled || false}
+                                onChange={(val) => {
+                                    const updates = { codeExecutionEnabled: val };
+                                    if (val) {
+                                        updates.webSearchEnabled = false;
+                                        updates.urlContextEnabled = false;
+                                    }
+                                    onChange(updates);
+                                }}
+                                label="Code Execution"
+                            />
                         </div>
                     )}
 
                     {selectedModelDef?.urlContext && (
                         <div className={`${styles.toolItem} ${settings.codeExecutionEnabled ? styles.toolItemDisabled : ""}`}>
-                            <label className={styles.toggleSwitch}>
-                                <input
-                                    type="checkbox"
-                                    checked={settings.urlContextEnabled || false}
-                                    disabled={settings.codeExecutionEnabled}
-                                    onChange={(e) => onChange({ urlContextEnabled: e.target.checked })}
-                                />
-                                <span className={styles.toggleSlider} />
-                            </label>
-                            <span className={styles.toolLabel}>URL Context</span>
+                            <ToggleSwitch
+                                checked={settings.urlContextEnabled || false}
+                                disabled={settings.codeExecutionEnabled}
+                                onChange={(val) => onChange({ urlContextEnabled: val })}
+                                label="URL Context"
+                            />
                         </div>
                     )}
                 </div>
@@ -360,12 +361,16 @@ export default function SettingsPanel({ config, settings, onChange, hasAssistant
             {selectedModelDef?.verbosity && (
                 <div className={styles.formGroup}>
                     <label>Verbosity</label>
-                    <select value={settings.verbosity || ""} onChange={handleVerbosityChange}>
-                        <option value="">Default</option>
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                    </select>
+                    <SelectDropdown
+                        value={settings.verbosity || ""}
+                        options={[
+                            { value: "", label: "Default" },
+                            { value: "low", label: "Low" },
+                            { value: "medium", label: "Medium" },
+                            { value: "high", label: "High" },
+                        ]}
+                        onChange={handleVerbosityChange}
+                    />
                 </div>
             )}
 
