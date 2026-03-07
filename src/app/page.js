@@ -21,7 +21,7 @@ export default function Home() {
     const [settings, setSettings] = useState({
         provider: "",
         model: "",
-        systemPrompt: "You are a helpful AI assistant.",
+        systemPrompt: "You are a helpful AI assistant",
         temperature: 1.0,
         maxTokens: 2048,
         topP: 1,
