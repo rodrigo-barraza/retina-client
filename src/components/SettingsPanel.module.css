@@ -27,7 +27,7 @@
 
 .formGroup label {
   font-size: 13px;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .formGroup select,
@@ -83,10 +83,10 @@
 
 .modalities {
   margin-top: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-secondary);
 }
 
 .modalitiesHeader {
@@ -96,7 +96,7 @@
   letter-spacing: 0.5px;
   color: var(--text-secondary);
   padding: 6px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modalityRow {
@@ -104,7 +104,7 @@
   align-items: center;
   gap: 8px;
   padding: 5px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modalityRow:last-child {
@@ -132,7 +132,7 @@
 }
 
 .modalityStatus.modalityActive {
-  color: #4ade80;
+  color: var(--success);
   opacity: 1;
 }
 
@@ -146,10 +146,10 @@
 
 .toolsBox {
   margin-top: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-secondary);
 }
 
 .toolLabel {

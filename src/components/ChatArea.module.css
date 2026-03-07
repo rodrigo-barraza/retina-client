@@ -330,7 +330,7 @@
   padding: 4px 12px;
   margin: 8px 0;
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-tertiary);
   border-radius: 0 4px 4px 0;
 }
 
@@ -360,7 +360,7 @@
 }
 
 .text th {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-tertiary);
   font-weight: 600;
 }
 
@@ -371,7 +371,7 @@
 }
 
 .inlineCode {
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.08));
+  background: var(--bg-tertiary);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 13px;
@@ -390,7 +390,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 6px 12px;
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.06));
+  background: var(--bg-tertiary);
   font-size: 12px;
 }
 
@@ -417,7 +417,7 @@
 
 .codeBlockCopy:hover {
   color: var(--accent-color);
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.06));
+  background: var(--bg-tertiary);
 }
 
 .meta {
@@ -460,7 +460,7 @@
 }
 
 .thinkingToggle:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-tertiary);
 }
 
 .thinkingContent {
@@ -585,7 +585,7 @@
 
 .imageUploadBtn:hover {
   color: var(--accent-color);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-tertiary);
 }
 
 .pendingImages {
