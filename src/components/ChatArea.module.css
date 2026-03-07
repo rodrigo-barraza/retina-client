@@ -17,9 +17,9 @@
 
 .welcome {
   margin: auto;
-  text-align: center;
+  text-align: left;
   color: var(--text-secondary);
-  max-width: 520px;
+  max-width: 600px;
   width: 100%;
   padding: 40px 20px;
 }
@@ -47,7 +47,7 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
-  cursor: default;
+  cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
@@ -290,6 +290,77 @@
 .deleteMsgBtn:hover {
   color: var(--danger);
   transform: scale(1.1);
+}
+
+/* Inline edit textarea */
+.editContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.editTextarea {
+  width: 100%;
+  min-height: 60px;
+  max-height: 300px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent-color);
+  border-radius: 8px;
+  resize: vertical;
+  font-family: inherit;
+  box-shadow: 0 0 0 2px var(--accent-glow);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.editTextarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.editActions {
+  display: flex;
+  gap: 6px;
+}
+
+.editSaveBtn,
+.editCancelBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.editSaveBtn {
+  background: var(--accent-color);
+  color: #fff;
+}
+
+.editSaveBtn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.editCancelBtn {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.editCancelBtn:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
 }
 
 .text {
@@ -674,6 +745,81 @@
 
 .messageImage:hover {
   opacity: 0.85;
+}
+
+/* Media preview components */
+.mediaCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  max-width: 320px;
+}
+
+.mediaCardIcon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.mediaCardLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.audioPlayer {
+  height: 32px;
+  min-width: 200px;
+  max-width: 260px;
+  border-radius: 6px;
+}
+
+.audioPlayerCompact {
+  height: 28px;
+  min-width: 140px;
+  max-width: 180px;
+  border-radius: 4px;
+}
+
+.videoPreview {
+  max-width: 280px;
+  max-height: 180px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.videoPreviewCompact {
+  max-width: 120px;
+  max-height: 80px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.pendingAttachmentWrap {
+  position: relative;
+}
+
+.pendingMediaThumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.pendingImg {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
 }
 
 .pendingImageThumb img {

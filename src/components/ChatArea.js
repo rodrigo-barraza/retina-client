@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Loader2, Trash2, ChevronDown, ChevronRight, Brain, Copy, Check, Paperclip, FileAudio, FileVideo, FileText, Image as ImageIcon, Type, ArrowLeft } from "lucide-react";
+import { Send, Loader2, Trash2, ChevronDown, ChevronRight, Brain, Copy, Check, Paperclip, FileAudio, FileVideo, FileText, Image as ImageIcon, Type, ArrowLeft, Pencil, RotateCcw, X as XIcon } from "lucide-react";
 import ImageAnnotator from "./ImageAnnotator";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import styles from "./ChatArea.module.css";
@@ -33,6 +33,68 @@ function CopyButton({ text }) {
             {copied ? <Check size={14} /> : <Copy size={14} />}
         </button>
     );
+}
+
+function EditableUserMessage({ content, index, onEdit, editing, onCancelEdit }) {
+    const [editValue, setEditValue] = useState(content);
+    const textareaRef = useRef(null);
+    const prevEditing = useRef(false);
+
+    useEffect(() => {
+        if (editing && !prevEditing.current) {
+            setTimeout(() => textareaRef.current?.focus(), 0);
+        }
+        prevEditing.current = editing;
+    }, [editing]);
+
+    const cancelEditing = () => {
+        onCancelEdit();
+        setEditValue(content);
+    };
+
+
+    const saveEdit = () => {
+        if (editValue.trim() && editValue !== content) {
+            onEdit(index, editValue);
+        }
+        onCancelEdit();
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Escape") {
+            cancelEditing();
+        } else if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            saveEdit();
+        }
+    };
+
+    if (editing) {
+        return (
+            <div className={styles.editContainer}>
+                <textarea
+                    ref={textareaRef}
+                    className={styles.editTextarea}
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    rows={3}
+                />
+                <div className={styles.editActions}>
+                    <button className={styles.editSaveBtn} onClick={saveEdit} title="Save">
+                        <Check size={14} />
+                        Save
+                    </button>
+                    <button className={styles.editCancelBtn} onClick={cancelEditing} title="Cancel">
+                        <XIcon size={14} />
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return <div className={styles.text}>{content}</div>;
 }
 
 function FencedCodeBlock({ language, children }) {
@@ -146,7 +208,68 @@ function getMimeCategory(dataUrl) {
     if (!match) return "file";
     const type = match[1];
     if (type === "application") return "pdf";
+    if (type === "text") return "text";
     return type; // image, audio, video
+}
+
+function MediaPreview({ dataUrl, onClick, compact = false }) {
+    const category = getMimeCategory(dataUrl);
+
+    if (category === "image") {
+        return (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+                src={dataUrl}
+                alt="Attached"
+                className={compact ? styles.pendingImg : styles.messageImage}
+                onClick={onClick}
+            />
+        );
+    }
+
+    if (category === "audio") {
+        return (
+            <div className={compact ? styles.pendingMediaThumb : styles.mediaCard}>
+                <FileAudio size={compact ? 18 : 20} className={styles.mediaCardIcon} />
+                <audio
+                    controls
+                    src={dataUrl}
+                    className={compact ? styles.audioPlayerCompact : styles.audioPlayer}
+                    preload="metadata"
+                />
+            </div>
+        );
+    }
+
+    if (category === "video") {
+        return (
+            <div className={compact ? styles.pendingMediaThumb : styles.mediaCard}>
+                <video
+                    controls
+                    src={dataUrl}
+                    className={compact ? styles.videoPreviewCompact : styles.videoPreview}
+                    preload="metadata"
+                />
+            </div>
+        );
+    }
+
+    if (category === "pdf") {
+        return (
+            <div className={compact ? styles.pendingFileThumb : styles.mediaCard}>
+                <FileText size={compact ? 24 : 22} className={styles.mediaCardIcon} />
+                <span className={styles.mediaCardLabel}>PDF</span>
+            </div>
+        );
+    }
+
+    // text / other
+    return (
+        <div className={compact ? styles.pendingFileThumb : styles.mediaCard}>
+            <FileText size={compact ? 24 : 22} className={styles.mediaCardIcon} />
+            <span className={styles.mediaCardLabel}>{category.toUpperCase()}</span>
+        </div>
+    );
 }
 
 const CAPABILITY_MAP = {
@@ -175,7 +298,7 @@ function getModelsForCapability(config, capabilityKey) {
     return results;
 }
 
-export default function ChatArea({ messages, isGenerating, onSend, onDelete, config, onSelectModel, supportedInputTypes = [] }) {
+export default function ChatArea({ messages, isGenerating, onSend, onDelete, onEdit, onRerun, config, onSelectModel, supportedInputTypes = [] }) {
     const nonTextTypes = supportedInputTypes.filter((t) => t !== "text");
     const hasFileInput = nonTextTypes.length > 0;
     const imageOnly = nonTextTypes.length === 1 && nonTextTypes[0] === "image";
@@ -185,6 +308,7 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, con
     const [lightboxSrc, setLightboxSrc] = useState(null);
     const [selectedCapability, setSelectedCapability] = useState(null);
     const endRef = useRef(null);
+    const [editingIndex, setEditingIndex] = useState(null);
     const fileInputRef = useRef(null);
 
     useEffect(() => {
@@ -229,7 +353,7 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, con
                     <div className={styles.welcome}>
                         {!selectedCapability ? (
                             <>
-                                <h3>Welcome to Retina</h3>
+                                <h3>Let&apos;s get this show started</h3>
                                 <div className={styles.capabilityGrid}>
                                     <div className={styles.capabilityCard} onClick={() => setSelectedCapability("text")}>
                                         <div className={styles.capabilityIcon}>
@@ -320,6 +444,28 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, con
                                     )}
                                 </div>
                                 <div className={styles.messageActions}>
+                                    {msg.role === "user" && (
+                                        <>
+                                            <button
+                                                className={styles.copyBtn}
+                                                onClick={() => {
+                                                    setEditingIndex(editingIndex === i ? null : i);
+                                                }}
+                                                disabled={isGenerating}
+                                                title="Edit message"
+                                            >
+                                                <Pencil size={14} />
+                                            </button>
+                                            <button
+                                                className={styles.copyBtn}
+                                                onClick={() => onRerun(i)}
+                                                disabled={isGenerating}
+                                                title="Rerun this turn"
+                                            >
+                                                <RotateCcw size={14} />
+                                            </button>
+                                        </>
+                                    )}
                                     {msg.content && <CopyButton text={msg.content} />}
                                     <button
                                         className={styles.deleteMsgBtn}
@@ -335,19 +481,28 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, con
                             )}
                             {msg.images && msg.images.length > 0 && (
                                 <div className={styles.imagePreviewRow}>
-                                    {msg.images.map((img, j) => (
-                                        /* eslint-disable-next-line @next/next/no-img-element */
-                                        <img key={j} src={img} alt="Attached" className={styles.messageImage} onClick={() => setLightboxSrc(img)} />
+                                    {msg.images.map((dataUrl, j) => (
+                                        <MediaPreview
+                                            key={j}
+                                            dataUrl={dataUrl}
+                                            onClick={getMimeCategory(dataUrl) === "image" ? () => setLightboxSrc(dataUrl) : undefined}
+                                        />
                                     ))}
                                 </div>
                             )}
-                            <div className={styles.text}>
-                                {msg.role === "assistant" ? (
+                            {msg.role === "user" ? (
+                                <EditableUserMessage
+                                    content={msg.content}
+                                    index={i}
+                                    onEdit={onEdit}
+                                    editing={editingIndex === i}
+                                    onCancelEdit={() => setEditingIndex(null)}
+                                />
+                            ) : (
+                                <div className={styles.text}>
                                     <MarkdownContent content={msg.content} />
-                                ) : (
-                                    msg.content
-                                )}
-                            </div>
+                                </div>
+                            )}
                             {msg.usage && (
                                 <div className={styles.meta}>
                                     <span className={styles.metaProvider}>
@@ -382,26 +537,12 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, con
             <div className={styles.inputWrapper}>
                 {pendingImages.length > 0 && (
                     <div className={styles.pendingImages}>
-                        {pendingImages.map((dataUrl, i) => {
-                            const category = getMimeCategory(dataUrl);
-                            if (category === "image") {
-                                return (
-                                    <div key={i} className={styles.pendingImageThumb}>
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={dataUrl} alt="Preview" onClick={() => setLightboxSrc(dataUrl)} />
-                                        <button onClick={() => removeImage(i)} className={styles.removeImage}>×</button>
-                                    </div>
-                                );
-                            }
-                            const Icon = category === "audio" ? FileAudio : category === "video" ? FileVideo : FileText;
-                            return (
-                                <div key={i} className={styles.pendingFileThumb}>
-                                    <Icon size={24} />
-                                    <span className={styles.pendingFileLabel}>{category.toUpperCase()}</span>
-                                    <button onClick={() => removeImage(i)} className={styles.removeImage}>×</button>
-                                </div>
-                            );
-                        })}
+                        {pendingImages.map((dataUrl, i) => (
+                            <div key={i} className={styles.pendingAttachmentWrap}>
+                                <MediaPreview dataUrl={dataUrl} compact onClick={getMimeCategory(dataUrl) === "image" ? () => setLightboxSrc(dataUrl) : undefined} />
+                                <button onClick={() => removeImage(i)} className={styles.removeImage}>×</button>
+                            </div>
+                        ))}
                     </div>
                 )}
                 <form onSubmit={handleSubmit} className={styles.inputBox}>

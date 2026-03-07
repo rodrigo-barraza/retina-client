@@ -1,8 +1,9 @@
 "use client";
 
-import { MessageSquare, Plus, Trash2 } from "lucide-react";
+import { MessageSquare, Plus, Trash2, Search, X as XIcon } from "lucide-react";
 import styles from "./HistoryPanel.module.css";
 import { DateTime } from "luxon";
+import { useState } from "react";
 
 export default function HistoryPanel({
     conversations,
@@ -11,14 +12,46 @@ export default function HistoryPanel({
     onNew,
     onDelete,
 }) {
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const filtered = searchQuery.trim()
+        ? conversations.filter((conv) => {
+            const q = searchQuery.trim().toLowerCase();
+            if ((conv.title || "").toLowerCase().includes(q)) return true;
+            return (conv.messages || []).some((m) =>
+                (m.content || "").toLowerCase().includes(q),
+            );
+        })
+        : conversations;
+
     return (
         <div className={styles.container}>
             <button className={styles.newBtn} onClick={onNew}>
                 <Plus size={16} /> New Chat
             </button>
 
+            <div className={styles.searchWrapper}>
+                <Search size={14} className={styles.searchIcon} />
+                <input
+                    type="text"
+                    className={styles.searchInput}
+                    placeholder="Search conversations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                    <button
+                        className={styles.searchClear}
+                        onClick={() => setSearchQuery("")}
+                        title="Clear search"
+                    >
+                        <XIcon size={14} />
+                    </button>
+                )}
+            </div>
+
             <div className={styles.list}>
-                {conversations.map((conv) => {
+                {filtered.map((conv) => {
                     const isActive = conv.id === activeId;
                     const dt = DateTime.fromISO(
                         conv.updatedAt || conv.createdAt,
@@ -56,8 +89,10 @@ export default function HistoryPanel({
                         </div>
                     );
                 })}
-                {conversations.length === 0 && (
-                    <div className={styles.empty}>No recent chats</div>
+                {filtered.length === 0 && (
+                    <div className={styles.empty}>
+                        {searchQuery.trim() ? "No matching chats" : "No recent chats"}
+                    </div>
                 )}
             </div>
         </div>

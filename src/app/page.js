@@ -171,6 +171,259 @@ export default function Home() {
         }
     };
 
+    const handleEditMessage = async (index, newContent) => {
+        if (isGenerating) return;
+        const updatedMessages = [...messages];
+        updatedMessages[index] = { ...updatedMessages[index], content: newContent };
+        setMessages(updatedMessages);
+
+        if (activeId) {
+            try {
+                const { systemPrompt, ...modelSettings } = settings;
+                await PrismService.saveConversation(activeId, title, updatedMessages, systemPrompt, modelSettings);
+            } catch (err) {
+                console.error("Failed to save after edit:", err);
+            }
+        }
+    };
+
+    const handleRerunTurn = async (userMsgIndex) => {
+        if (isGenerating) return;
+
+        const userMsg = messages[userMsgIndex];
+        if (!userMsg || userMsg.role !== "user") return;
+
+        // Collect all messages up to and including this user message
+        const historyUpToUser = messages.slice(0, userMsgIndex + 1);
+
+        // Check if the next message is an assistant response — remove it if so
+        const nextMsg = messages[userMsgIndex + 1];
+        const hadAssistantAfter = nextMsg && nextMsg.role === "assistant";
+
+        // Build newMessages: everything up to user msg, then everything after the assistant (if any)
+        let newMessages;
+        if (hadAssistantAfter) {
+            newMessages = [
+                ...historyUpToUser,
+                ...messages.slice(userMsgIndex + 2),
+            ];
+        } else {
+            newMessages = [...historyUpToUser, ...messages.slice(userMsgIndex + 1)];
+        }
+
+        // We want to re-generate right after the user message, so the new AI message
+        // goes at position userMsgIndex + 1. For the API call, send history up to user msg.
+        setMessages(newMessages);
+        setIsGenerating(true);
+
+        try {
+            let currentId = activeId;
+            let currentTitle = title;
+
+            const systemMsg = settings.systemPrompt
+                ? [{ role: "system", content: settings.systemPrompt }]
+                : [];
+            const payloadMessages = [...systemMsg, ...historyUpToUser].map((m) => ({
+                role: m.role,
+                content: m.content,
+                ...(m.images ? { images: m.images } : {}),
+            }));
+            const stopArray = settings.stopSequences
+                ? settings.stopSequences.split(",").map((s) => s.trim()).filter(Boolean)
+                : undefined;
+
+            const currentModels = config?.textToText?.models?.[settings.provider] || [];
+            const selectedModelDef = currentModels.find((m) => m.name === settings.model);
+
+            const payload = {
+                provider: settings.provider,
+                model: settings.model,
+                messages: payloadMessages,
+                options: {
+                    temperature: settings.temperature,
+                    maxTokens: settings.maxTokens,
+                    topP: settings.topP,
+                    topK: settings.topK,
+                    frequencyPenalty: settings.frequencyPenalty,
+                    presencePenalty: settings.presencePenalty,
+                    stopSequences: stopArray?.length ? stopArray : undefined,
+                    ...(selectedModelDef?.responsesAPI ? {
+                        reasoningEffort: settings.reasoningEffort || "high",
+                        ...(settings.reasoningSummary ? { reasoningSummary: settings.reasoningSummary } : {}),
+                    } : {}),
+                    ...(!selectedModelDef?.responsesAPI && settings.thinkingEnabled ? {
+                        reasoningEffort: settings.reasoningEffort,
+                        thinkingLevel: settings.thinkingLevel,
+                        thinkingBudget: settings.thinkingBudget || undefined,
+                    } : {}),
+                    ...(settings.webSearchEnabled ? { webSearch: true } : {}),
+                    ...(settings.webSearchEnabled && selectedModelDef?.webFetch ? { webFetch: true } : {}),
+                    ...(settings.codeExecutionEnabled ? { codeExecution: true } : {}),
+                    ...(settings.urlContextEnabled ? { urlContext: true } : {}),
+                    ...(settings.verbosity ? { verbosity: settings.verbosity } : {}),
+                },
+            };
+
+            await new Promise((resolve, reject) => {
+                let streamedText = "";
+                let streamedThinking = "";
+                let streamedImages = [];
+                let codeBlocks = [];
+                const insertIndex = userMsgIndex + 1;
+
+                const placeholderMsg = {
+                    role: "assistant",
+                    content: "",
+                    thinking: "",
+                    timestamp: new Date().toISOString(),
+                    provider: settings.provider,
+                    model: settings.model,
+                };
+
+                // Insert placeholder at the correct position
+                setMessages((prev) => {
+                    const updated = [...prev];
+                    updated.splice(insertIndex, 0, placeholderMsg);
+                    return updated;
+                });
+
+                PrismService.streamText(payload, {
+                    onChunk: (content) => {
+                        streamedText += content;
+                        setMessages((prev) => {
+                            const updated = [...prev];
+                            updated[insertIndex] = {
+                                ...updated[insertIndex],
+                                content: streamedText,
+                            };
+                            return updated;
+                        });
+                    },
+                    onThinking: (content) => {
+                        streamedThinking += content;
+                        setMessages((prev) => {
+                            const updated = [...prev];
+                            updated[insertIndex] = {
+                                ...updated[insertIndex],
+                                thinking: streamedThinking,
+                            };
+                            return updated;
+                        });
+                    },
+                    onImage: (data, mimeType) => {
+                        const dataUrl = `data:${mimeType};base64,${data}`;
+                        streamedImages = [...streamedImages, dataUrl];
+                        setMessages((prev) => {
+                            const updated = [...prev];
+                            updated[insertIndex] = {
+                                ...updated[insertIndex],
+                                images: streamedImages,
+                            };
+                            return updated;
+                        });
+                    },
+                    onExecutableCode: (code, language) => {
+                        const lang = language || "python";
+                        streamedText += `\n\n\`\`\`exec-${lang}\n${code}\n\`\`\`\n\n`;
+                        codeBlocks.push({ type: "code", code, language: lang });
+                        setMessages((prev) => {
+                            const updated = [...prev];
+                            updated[insertIndex] = {
+                                ...updated[insertIndex],
+                                content: streamedText,
+                            };
+                            return updated;
+                        });
+                    },
+                    onCodeExecutionResult: (output, outcome) => {
+                        streamedText += `\n\n\`\`\`execresult-python\n${output}\n\`\`\`\n\n`;
+                        codeBlocks.push({ type: "result", output, outcome });
+                        setMessages((prev) => {
+                            const updated = [...prev];
+                            updated[insertIndex] = {
+                                ...updated[insertIndex],
+                                content: streamedText,
+                            };
+                            return updated;
+                        });
+                    },
+                    onWebSearchResult: (results) => {
+                        if (results && results.length > 0) {
+                            const citations = results
+                                .map((r) => `[${r.title}](${r.url})`)
+                                .join(" · ");
+                            streamedText += `\n\n> **Sources:** ${citations}\n\n`;
+                            setMessages((prev) => {
+                                const updated = [...prev];
+                                updated[insertIndex] = {
+                                    ...updated[insertIndex],
+                                    content: streamedText,
+                                };
+                                return updated;
+                            });
+                        }
+                    },
+                    onDone: async (data) => {
+                        const finalMsg = {
+                            role: "assistant",
+                            content: streamedText,
+                            thinking: streamedThinking || undefined,
+                            ...(streamedImages.length > 0 ? { images: streamedImages } : {}),
+                            timestamp: placeholderMsg.timestamp,
+                            provider: settings.provider,
+                            model: settings.model,
+                            usage: data.usage,
+                            totalTime: data.totalTime,
+                            tokensPerSec: data.tokensPerSec,
+                            estimatedCost: data.estimatedCost,
+                        };
+
+                        setMessages((prev) => {
+                            const updated = [...prev];
+                            updated[insertIndex] = finalMsg;
+                            return updated;
+                        });
+
+                        // Save — use a callback to get the latest messages
+                        setMessages((prev) => {
+                            const finalMessages = [...prev];
+                            (async () => {
+                                try {
+                                    const { systemPrompt, ...modelSettings } = settings;
+                                    const saved = await PrismService.saveConversation(
+                                        currentId,
+                                        currentTitle,
+                                        finalMessages,
+                                        systemPrompt,
+                                        modelSettings,
+                                    );
+                                    setActiveId(saved.id);
+                                    loadConversations();
+                                } catch (saveErr) {
+                                    console.error("Save failed:", saveErr);
+                                }
+                            })();
+                            return prev;
+                        });
+
+                        resolve();
+                    },
+                    onError: (err) => {
+                        reject(err);
+                    },
+                });
+            });
+        } catch (error) {
+            console.error(error);
+            setMessages((prev) => [
+                ...prev,
+                { role: "system", content: "Error: " + error.message },
+            ]);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     const handleSend = async (content, images = []) => {
         const userMsg = { role: "user", content, timestamp: new Date().toISOString(), ...(images.length > 0 ? { images } : {}) };
         const newMessages = [...messages, userMsg];
@@ -403,6 +656,8 @@ export default function Home() {
                     isGenerating={isGenerating}
                     onSend={handleSend}
                     onDelete={handleDeleteMessage}
+                    onEdit={handleEditMessage}
+                    onRerun={handleRerunTurn}
                     config={config}
                     onSelectModel={(provider, modelName) => {
                         const modelDef = (config?.textToText?.models?.[provider] || []).find((m) => m.name === modelName)
