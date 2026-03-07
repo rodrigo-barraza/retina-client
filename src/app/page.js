@@ -384,6 +384,14 @@ export default function Home() {
                     isGenerating={isGenerating}
                     onSend={handleSend}
                     onDelete={handleDeleteMessage}
+                    config={config}
+                    onSelectModel={(provider, modelName) => {
+                        const modelDef = (config?.textToText?.models?.[provider] || []).find((m) => m.name === modelName)
+                            || (config?.textToImage?.models?.[provider] || []).find((m) => m.name === modelName);
+                        const temp = modelDef?.defaultTemperature ?? 1.0;
+                        handleNewChat();
+                        setSettings((s) => ({ ...s, provider, model: modelName, temperature: temp }));
+                    }}
                     supportedInputTypes={
                         (config?.textToText?.models?.[settings.provider] || [])
                             .find((m) => m.name === settings.model)?.inputTypes || []

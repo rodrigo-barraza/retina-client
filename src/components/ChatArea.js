@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Loader2, Trash2, ChevronDown, ChevronRight, Brain, Copy, Check, Paperclip, FileAudio, FileVideo, FileText, Image as ImageIcon } from "lucide-react";
+import { Send, Loader2, Trash2, ChevronDown, ChevronRight, Brain, Copy, Check, Paperclip, FileAudio, FileVideo, FileText, Image as ImageIcon, Type, ArrowLeft } from "lucide-react";
 import ImageAnnotator from "./ImageAnnotator";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import styles from "./ChatArea.module.css";
@@ -147,7 +147,33 @@ function getMimeCategory(dataUrl) {
     return type; // image, audio, video
 }
 
-export default function ChatArea({ messages, isGenerating, onSend, onDelete, supportedInputTypes = [] }) {
+const CAPABILITY_MAP = {
+    text: {
+        title: "Text Generation",
+        subtitle: "Chat, code, and reasoning",
+        configKey: "textToText",
+    },
+    image: {
+        title: "Image Generation",
+        subtitle: "Create and edit images",
+        configKey: "textToImage",
+    },
+};
+
+function getModelsForCapability(config, capabilityKey) {
+    const cap = CAPABILITY_MAP[capabilityKey];
+    if (!cap || !config) return [];
+    const modelsMap = config[cap.configKey]?.models || {};
+    const results = [];
+    for (const [provider, models] of Object.entries(modelsMap)) {
+        for (const model of models) {
+            results.push({ ...model, provider });
+        }
+    }
+    return results;
+}
+
+export default function ChatArea({ messages, isGenerating, onSend, onDelete, config, onSelectModel, supportedInputTypes = [] }) {
     const nonTextTypes = supportedInputTypes.filter((t) => t !== "text");
     const hasFileInput = nonTextTypes.length > 0;
     const imageOnly = nonTextTypes.length === 1 && nonTextTypes[0] === "image";
@@ -155,6 +181,7 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, sup
     const [input, setInput] = useState("");
     const [pendingImages, setPendingImages] = useState([]);
     const [lightboxSrc, setLightboxSrc] = useState(null);
+    const [selectedCapability, setSelectedCapability] = useState(null);
     const endRef = useRef(null);
     const fileInputRef = useRef(null);
 
@@ -198,8 +225,77 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, sup
             <div className={styles.messagesList}>
                 {messages.length === 0 && (
                     <div className={styles.welcome}>
-                        <h3>Welcome to Retina</h3>
-                        <p>Select a provider and model, then type a message to start.</p>
+                        {!selectedCapability ? (
+                            <>
+                                <h3>Welcome to Retina</h3>
+                                <div className={styles.capabilityGrid}>
+                                    <div className={styles.capabilityCard} onClick={() => setSelectedCapability("text")}>
+                                        <div className={styles.capabilityIcon}>
+                                            <Type size={20} />
+                                        </div>
+                                        <div className={styles.capabilityInfo}>
+                                            <h4>Text Generation</h4>
+                                            <p>Chat, code, and reasoning</p>
+                                        </div>
+                                    </div>
+                                    <div className={styles.capabilityCard} onClick={() => setSelectedCapability("image")}>
+                                        <div className={styles.capabilityIcon}>
+                                            <ImageIcon size={20} />
+                                        </div>
+                                        <div className={styles.capabilityInfo}>
+                                            <h4>Image Generation</h4>
+                                            <p>Create and edit images</p>
+                                        </div>
+                                    </div>
+                                    <div className={`${styles.capabilityCard} ${styles.capabilityDisabled}`}>
+                                        <div className={styles.capabilityIcon}>
+                                            <FileAudio size={20} />
+                                        </div>
+                                        <div className={styles.capabilityInfo}>
+                                            <h4>Speech Generation</h4>
+                                            <p>Change text into speech</p>
+                                        </div>
+                                    </div>
+                                    <div className={`${styles.capabilityCard} ${styles.capabilityDisabled}`}>
+                                        <div className={styles.capabilityIcon}>
+                                            <FileVideo size={20} />
+                                        </div>
+                                        <div className={styles.capabilityInfo}>
+                                            <h4>Video Generation</h4>
+                                            <p>Generate videos</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className={styles.modelListView}>
+                                <button className={styles.backButton} onClick={() => setSelectedCapability(null)}>
+                                    <ArrowLeft size={18} />
+                                </button>
+                                <h3>{CAPABILITY_MAP[selectedCapability]?.title}</h3>
+                                <p className={styles.modelListSubtitle}>{CAPABILITY_MAP[selectedCapability]?.subtitle}</p>
+                                <div className={styles.modelList}>
+                                    {getModelsForCapability(config, selectedCapability).map((model) => (
+                                        <div
+                                            key={`${model.provider}-${model.name}`}
+                                            className={styles.modelRow}
+                                            onClick={() => {
+                                                onSelectModel(model.provider, model.name);
+                                                setSelectedCapability(null);
+                                            }}
+                                        >
+                                            <div className={styles.modelRowIcon}>
+                                                <ProviderLogo provider={model.provider} size={20} />
+                                            </div>
+                                            <div className={styles.modelRowInfo}>
+                                                <span className={styles.modelRowName}>{model.label || model.name}</span>
+                                                <span className={styles.modelRowProvider}>{PROVIDER_LABELS[model.provider] || model.provider}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

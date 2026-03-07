@@ -17,13 +17,166 @@
   margin: auto;
   text-align: center;
   color: var(--text-secondary);
+  max-width: 520px;
+  width: 100%;
+  padding: 40px 20px;
 }
 
 .welcome h3 {
   color: var(--text-primary);
   opacity: 0.8;
-  margin-bottom: 8px;
+  margin-bottom: 28px;
   font-weight: 500;
+  font-size: 22px;
+}
+
+.capabilityGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  text-align: left;
+}
+
+.capabilityCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  cursor: default;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.capabilityCard:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.capabilityDisabled {
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+.capabilityIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--accent-glow);
+  color: var(--accent-color);
+  flex-shrink: 0;
+}
+
+.capabilityDisabled .capabilityIcon {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.capabilityInfo h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.capabilityInfo p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.modelListView {
+  text-align: left;
+  position: relative;
+}
+
+.modelListView h3 {
+  text-align: left;
+  margin-bottom: 4px;
+}
+
+.backButton {
+  position: absolute;
+  top: 2px;
+  left: -32px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background 0.2s;
+}
+
+.backButton:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.modelListSubtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 18px 0;
+}
+
+.modelList {
+  display: flex;
+  flex-direction: column;
+}
+
+.modelRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.modelRow:first-child {
+  border-top: 1px solid var(--border-color);
+}
+
+.modelRow:hover {
+  background: var(--bg-secondary);
+}
+
+.modelRowIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--accent-glow);
+  flex-shrink: 0;
+}
+
+.modelRowInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.modelRowName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modelRowProvider {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .message {
