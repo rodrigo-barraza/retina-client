@@ -195,6 +195,7 @@ export default function Home() {
 
     const handleRerunTurn = async (userMsgIndex) => {
         if (isGenerating) return;
+        if (isTranscriptionModel) return; // Transcription models don't support rerun
 
         const userMsg = messages[userMsgIndex];
         if (!userMsg || userMsg.role !== "user") return;
@@ -430,7 +431,102 @@ export default function Home() {
         }
     };
 
+    // Check if current model is an audio-to-text (transcription) model
+    const isTranscriptionModel = (() => {
+        const atModels = config?.audioToText?.models?.[settings.provider] || [];
+        return atModels.some((m) => m.name === settings.model);
+    })();
+
     const handleSend = async (content, images = []) => {
+        // --- Audio transcription branch ---
+        if (isTranscriptionModel) {
+            const audioFiles = images.filter((dataUrl) => {
+                const match = dataUrl.match(/^data:([^;]+);/);
+                return match && match[1].startsWith("audio/");
+            });
+
+            if (audioFiles.length === 0) {
+                setMessages((prev) => [
+                    ...prev,
+                    { role: "system", content: "Error: Please attach an audio file to transcribe." },
+                ]);
+                return;
+            }
+
+            setIsGenerating(true);
+
+            try {
+                let currentId = activeId;
+                let currentTitle = title;
+
+                if (!currentId) {
+                    currentTitle = "Audio Transcription";
+                    setTitle(currentTitle);
+                }
+
+                for (const audioDataUrl of audioFiles) {
+                    const userMsg = {
+                        role: "user",
+                        content: content || "Transcribe this audio",
+                        timestamp: new Date().toISOString(),
+                        images: [audioDataUrl],
+                    };
+
+                    setMessages((prev) => [...prev, userMsg]);
+
+                    const result = await PrismService.transcribeAudio({
+                        provider: settings.provider,
+                        audio: audioDataUrl,
+                        model: settings.model,
+                        ...(content ? { prompt: content } : {}),
+                    });
+
+                    const assistantMsg = {
+                        role: "assistant",
+                        content: result.text,
+                        timestamp: new Date().toISOString(),
+                        provider: settings.provider,
+                        model: settings.model,
+                        usage: result.usage || null,
+                        totalTime: result.totalTime || null,
+                        estimatedCost: result.estimatedCost || null,
+                    };
+
+                    setMessages((prev) => {
+                        const updated = [...prev, assistantMsg];
+                        (async () => {
+                            try {
+                                const { systemPrompt, ...modelSettings } = settings;
+                                const saved = await PrismService.saveConversation(
+                                    currentId,
+                                    currentTitle,
+                                    updated,
+                                    systemPrompt,
+                                    modelSettings,
+                                );
+                                currentId = saved.id;
+                                setActiveId(saved.id);
+                                loadConversations();
+                            } catch (saveErr) {
+                                console.error("Save failed:", saveErr);
+                            }
+                        })();
+                        return updated;
+                    });
+                }
+            } catch (error) {
+                console.error(error);
+                setMessages((prev) => [
+                    ...prev,
+                    { role: "system", content: "Error: " + error.message },
+                ]);
+            } finally {
+                setIsGenerating(false);
+            }
+            return;
+        }
+
+        // --- Normal text generation branch ---
         const userMsg = { role: "user", content, timestamp: new Date().toISOString(), ...(images.length > 0 ? { images } : {}) };
         const newMessages = [...messages, userMsg];
         setMessages(newMessages);
@@ -682,6 +778,7 @@ export default function Home() {
                     onEdit={handleEditMessage}
                     onRerun={handleRerunTurn}
                     config={config}
+                    isTranscriptionModel={isTranscriptionModel}
                     onSelectModel={(provider, modelName) => {
                         const modelDef = (config?.textToText?.models?.[provider] || []).find((m) => m.name === modelName)
                             || (config?.textToImage?.models?.[provider] || []).find((m) => m.name === modelName);
@@ -690,8 +787,10 @@ export default function Home() {
                         setSettings((s) => ({ ...s, provider, model: modelName, temperature: temp }));
                     }}
                     supportedInputTypes={
-                        (config?.textToText?.models?.[settings.provider] || [])
-                            .find((m) => m.name === settings.model)?.inputTypes || []
+                        isTranscriptionModel
+                            ? ["audio"]
+                            : (config?.textToText?.models?.[settings.provider] || [])
+                                .find((m) => m.name === settings.model)?.inputTypes || []
                     }
                 />
             </section>

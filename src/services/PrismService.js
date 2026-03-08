@@ -125,4 +125,24 @@ export class PrismService {
             }
         };
     }
+
+    /**
+     * Transcribe an audio file to text.
+     * @param {Object} payload - { provider, audio (base64 or data URL), mimeType?, model?, language?, prompt? }
+     * @returns {Promise<{ text, usage?, estimatedCost?, totalTime? }>}
+     */
+    static async transcribeAudio(payload) {
+        const res = await fetch(`${API_BASE}/audio-to-text`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || "Failed to transcribe audio");
+        }
+
+        return res.json();
+    }
 }

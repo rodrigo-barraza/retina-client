@@ -351,7 +351,7 @@ function getVisibleArenaColumns(models) {
     );
 }
 
-export default function ChatArea({ messages, isGenerating, onSend, onDelete, onEdit, onRerun, config, onSelectModel, supportedInputTypes = [] }) {
+export default function ChatArea({ messages, isGenerating, onSend, onDelete, onEdit, onRerun, config, onSelectModel, supportedInputTypes = [], isTranscriptionModel = false }) {
     const [modelSort, setModelSort] = useState({ key: null, dir: "desc" });
     const nonTextTypes = supportedInputTypes.filter((t) => t !== "text");
     const hasFileInput = nonTextTypes.length > 0;
@@ -379,7 +379,11 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, onE
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if ((!input.trim() && pendingImages.length === 0) || isGenerating) return;
+        if (isTranscriptionModel) {
+            if (pendingImages.length === 0 || isGenerating) return;
+        } else {
+            if ((!input.trim() && pendingImages.length === 0) || isGenerating) return;
+        }
         onSend(input, pendingImages);
         setInput("");
         setPendingImages([]);
@@ -790,14 +794,16 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, onE
                                 <Mic2 size={18} />
                             </button>
                         )}
-                        <textarea
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Type a message..."
-                            rows={1}
-                        />
-                        <button type="submit" disabled={(!input.trim() && pendingImages.length === 0) || isGenerating}>
+                        {!isTranscriptionModel && (
+                            <textarea
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder="Type a message..."
+                                rows={1}
+                            />
+                        )}
+                        <button type="submit" disabled={isTranscriptionModel ? (pendingImages.length === 0 || isGenerating) : ((!input.trim() && pendingImages.length === 0) || isGenerating)}>
                             {isGenerating ? (
                                 <Loader2 size={18} className={styles.spin} />
                             ) : (

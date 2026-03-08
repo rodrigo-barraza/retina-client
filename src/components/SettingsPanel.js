@@ -10,7 +10,34 @@ import styles from "./SettingsPanel.module.css";
 export default function SettingsPanel({ config, settings, onChange, hasAssistantImages, inferenceMode }) {
     const [showSystemPromptModal, setShowSystemPromptModal] = useState(false);
     const { providers = {}, textToText = {} } = config || {};
-    const modelsMap = textToText.models || {};
+    const textModelsMap = textToText.models || {};
+    const audioToTextModelsMap = config?.audioToText?.models || {};
+
+    // Build a merged models map: textToText + audioToText
+    const allProviderKeys = new Set([
+        ...Object.keys(textModelsMap),
+        ...Object.keys(audioToTextModelsMap),
+    ]);
+    const modelsMap = {};
+    for (const p of allProviderKeys) {
+        const textModels = textModelsMap[p] || [];
+        const sttModels = (audioToTextModelsMap[p] || []).map((m) => ({
+            ...m,
+            label: `${m.label} (Transcribe)`,
+            _isTranscription: true,
+        }));
+        // Merge text models first, then transcription models, deduplicated by name
+        const seen = new Set();
+        const merged = [];
+        for (const m of [...textModels, ...sttModels]) {
+            if (!seen.has(m.name)) {
+                seen.add(m.name);
+                merged.push(m);
+            }
+        }
+        modelsMap[p] = merged;
+    }
+
     const providerList = config?.providerList || [];
 
     const handleProviderChange = (pv) => {
@@ -47,6 +74,7 @@ export default function SettingsPanel({ config, settings, onChange, hasAssistant
     const currentProviderModels = modelsMap[settings.provider] || [];
     const selectedModelDef = currentProviderModels.find(m => m.name === settings.model);
     const isReasoning = selectedModelDef?.thinking || (settings.model || "").includes('o1') || (settings.model || "").includes('o3');
+    const isTranscription = selectedModelDef?._isTranscription === true;
 
     // Provider-aware display labels for generic tool names
     const TOOL_LABELS = {
@@ -205,11 +233,18 @@ export default function SettingsPanel({ config, settings, onChange, hasAssistant
                     {selectedModelDef?.pricing && (() => {
                         const PRICING_LABELS = {
                             inputPerMillion: { label: "Input", unit: "/ 1M tokens" },
+                            cachedInputPerMillion: { label: "Cached Input", unit: "/ 1M tokens" },
                             outputPerMillion: { label: "Output", unit: "/ 1M tokens" },
+                            inputOver272kPerMillion: { label: "Input >272K", unit: "/ 1M tokens" },
+                            outputOver272kPerMillion: { label: "Output >272K", unit: "/ 1M tokens" },
                             audioInputPerMillion: { label: "Audio Input", unit: "/ 1M tokens" },
                             audioOutputPerMillion: { label: "Audio Output", unit: "/ 1M tokens" },
+                            imageInputPerMillion: { label: "Image Input", unit: "/ 1M tokens" },
+                            cachedImageInputPerMillion: { label: "Cached Img Input", unit: "/ 1M tokens" },
                             imageOutputPerMillion: { label: "Image Output", unit: "/ 1M tokens" },
                             perCharacter: { label: "Per Character", unit: "" },
+                            perMinute: { label: "Per Minute", unit: "" },
+                            webSearchPer1kCalls: { label: "Web Search", unit: "/ 1K calls" },
                         };
                         const entries = Object.entries(selectedModelDef.pricing)
                             .filter(([key]) => PRICING_LABELS[key])
@@ -289,14 +324,18 @@ export default function SettingsPanel({ config, settings, onChange, hasAssistant
                 </div>
             )}
 
-            <button
-                className={`${styles.systemPromptBtn} ${settings.systemPrompt && settings.systemPrompt !== "You are a helpful AI assistant" && settings.systemPrompt !== "You are a helpful AI assistant." ? styles.systemPromptActive : ""}`}
-                onClick={() => setShowSystemPromptModal(true)}
-            >
-                <Edit3 size={16} />
-                System Prompt
-            </button>
+            {!isTranscription && (
+                <button
+                    className={`${styles.systemPromptBtn} ${settings.systemPrompt && settings.systemPrompt !== "You are a helpful AI assistant" && settings.systemPrompt !== "You are a helpful AI assistant." ? styles.systemPromptActive : ""}`}
+                    onClick={() => setShowSystemPromptModal(true)}
+                >
+                    <Edit3 size={16} />
+                    System Prompt
+                </button>
+            )}
 
+            {!isTranscription && (
+            <>
             <div className={styles.sectionTitle}>
                 <Settings2 size={16} /> Parameters
             </div>
@@ -500,6 +539,8 @@ export default function SettingsPanel({ config, settings, onChange, hasAssistant
                         </>
                     )}
                 </>
+            )}
+            </>
             )}
         </div>
 
