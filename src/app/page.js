@@ -240,7 +240,12 @@ export default function Home() {
                 let estimatedCost = null;
                 if (ttsModelDef?.pricing?.perCharacter) {
                     estimatedCost = charCount * ttsModelDef.pricing.perCharacter;
+                } else if (ttsModelDef?.pricing?.inputPerMillion) {
+                    const estimatedTokens = Math.ceil(charCount / 4);
+                    estimatedCost = (estimatedTokens / 1_000_000) * ttsModelDef.pricing.inputPerMillion;
                 }
+
+                const rerunVoice = settings.voice || defaultVoice || "";
 
                 const assistantMsg = {
                     role: "assistant",
@@ -249,6 +254,7 @@ export default function Home() {
                     timestamp: new Date().toISOString(),
                     provider: settings.provider,
                     model: settings.model,
+                    voice: rerunVoice,
                     totalTime,
                     usage: { characters: charCount },
                     estimatedCost,
@@ -574,7 +580,13 @@ export default function Home() {
                 let estimatedCost = null;
                 if (ttsModelDef?.pricing?.perCharacter) {
                     estimatedCost = charCount * ttsModelDef.pricing.perCharacter;
+                } else if (ttsModelDef?.pricing?.inputPerMillion) {
+                    // Token-based pricing (~4 chars per token)
+                    const estimatedTokens = Math.ceil(charCount / 4);
+                    estimatedCost = (estimatedTokens / 1_000_000) * ttsModelDef.pricing.inputPerMillion;
                 }
+
+                const usedVoice = settings.voice || defaultVoice || "";
 
                 const assistantMsg = {
                     role: "assistant",
@@ -583,6 +595,7 @@ export default function Home() {
                     timestamp: new Date().toISOString(),
                     provider: settings.provider,
                     model: settings.model,
+                    voice: usedVoice,
                     totalTime,
                     usage: { characters: charCount },
                     estimatedCost,

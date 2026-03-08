@@ -732,6 +732,7 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, onE
                                         {PROVIDER_LABELS[msg.provider] || msg.provider}
                                     </span>
                                     {" • "}{msg.model}
+                                    {msg.voice ? ` • 🔊 ${msg.voice}` : ""}
                                     {msg.usage?.inputTokens != null || msg.usage?.outputTokens != null
                                         ? ` • ${(msg.usage.inputTokens || 0) + (msg.usage.outputTokens || 0)} tokens`
                                         : ""}
