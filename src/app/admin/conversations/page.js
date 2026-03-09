@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   AlertCircle,
   MessageSquare,
+  Settings,
+  History,
 } from "lucide-react";
 import { IrisService } from "../../../services/IrisService";
 import { PrismService } from "../../../services/PrismService";
@@ -21,6 +23,12 @@ export default function ConversationsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [config, setConfig] = useState(null);
   const [showModelList, setShowModelList] = useState(false);
+  const [showSettings, setShowSettings] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  );
+  const [showHistory, setShowHistory] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  );
 
   useEffect(() => {
     PrismService.getConfig().then(setConfig).catch(() => {});
@@ -95,7 +103,7 @@ export default function ConversationsPage() {
       {/* Chat-like 3-panel layout */}
       <div className={styles.chatContainer}>
         {/* Settings Sidebar */}
-        <aside className={styles.settingsSidebar}>
+        <aside className={`${styles.settingsSidebar} ${!showSettings ? styles.sidebarHidden : ""}`}>
           <div className={styles.glassHeader}>Settings</div>
           {selectedConv?.settings ? (
             <SettingsPanel
@@ -109,6 +117,18 @@ export default function ConversationsPage() {
             </div>
           )}
         </aside>
+
+        <button
+          className={`${styles.sidebarToggle} ${showHistory && !showSettings ? styles.mobileHidden : ""}`}
+          onClick={() => {
+            const next = !showSettings;
+            setShowSettings(next);
+            if (next && window.innerWidth < 768) setShowHistory(false);
+          }}
+          title={showSettings ? "Hide settings" : "Show settings"}
+        >
+          <Settings size={14} />
+        </button>
 
         {/* Main Chat / Viewer */}
         <section className={styles.mainViewer}>
@@ -170,8 +190,20 @@ export default function ConversationsPage() {
           </div>
         </section>
 
+        <button
+          className={`${styles.sidebarToggle} ${showSettings && !showHistory ? styles.mobileHidden : ""}`}
+          onClick={() => {
+            const next = !showHistory;
+            setShowHistory(next);
+            if (next && window.innerWidth < 768) setShowSettings(false);
+          }}
+          title={showHistory ? "Hide history" : "Show history"}
+        >
+          <History size={14} />
+        </button>
+
         {/* History Sidebar */}
-        <aside className={styles.historySidebar}>
+        <aside className={`${styles.historySidebar} ${!showHistory ? styles.sidebarHidden : ""}`}>
           <div className={styles.glassHeader}>History</div>
           <HistoryPanel
             conversations={conversations}

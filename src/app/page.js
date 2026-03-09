@@ -5,7 +5,7 @@ import styles from "./page.module.css";
 import { PrismService } from "../services/PrismService";
 import StorageService from "../services/StorageService";
 import { useTheme } from "../components/ThemeProvider";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Settings, History } from "lucide-react";
 import SettingsPanel from "../components/SettingsPanel";
 import ChatArea from "../components/ChatArea";
 import HistoryPanel from "../components/HistoryPanel";
@@ -42,6 +42,12 @@ export default function Home() {
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [showModelList, setShowModelList] = useState(false);
+    const [showSettings, setShowSettings] = useState(() =>
+        typeof window !== "undefined" ? window.innerWidth >= 768 : true
+    );
+    const [showHistory, setShowHistory] = useState(() =>
+        typeof window !== "undefined" ? window.innerWidth >= 768 : true
+    );
     const skipSystemPromptSave = useRef(false);
 
     const uniqueModels = useMemo(() => [...new Set(
@@ -976,7 +982,7 @@ export default function Home() {
 
     return (
         <main className={styles.appContainer}>
-            <aside className={styles.leftSidebar}>
+            <aside className={`${styles.leftSidebar} ${!showSettings ? styles.sidebarHidden : ""}`}>
                 <div className={styles.glassHeader}>Settings</div>
                 <SettingsPanel
                     config={config}
@@ -986,6 +992,18 @@ export default function Home() {
                     inferenceMode={inferenceMode}
                 />
             </aside>
+
+            <button
+                className={`${styles.sidebarToggle} ${showHistory && !showSettings ? styles.mobileHidden : ""}`}
+                onClick={() => {
+                    const next = !showSettings;
+                    setShowSettings(next);
+                    if (next && window.innerWidth < 768) setShowHistory(false);
+                }}
+                title={showSettings ? "Hide settings" : "Show settings"}
+            >
+                <Settings size={14} />
+            </button>
 
             <section className={styles.mainChat}>
                 <div className={styles.glassHeader}>
@@ -1062,7 +1080,19 @@ export default function Home() {
                 />
             </section>
 
-            <aside className={styles.rightSidebar}>
+            <button
+                className={`${styles.sidebarToggle} ${showSettings && !showHistory ? styles.mobileHidden : ""}`}
+                onClick={() => {
+                    const next = !showHistory;
+                    setShowHistory(next);
+                    if (next && window.innerWidth < 768) setShowSettings(false);
+                }}
+                title={showHistory ? "Hide history" : "Show history"}
+            >
+                <History size={14} />
+            </button>
+
+            <aside className={`${styles.rightSidebar} ${!showHistory ? styles.sidebarHidden : ""}`}>
                 <div className={styles.glassHeader}>History</div>
                 <HistoryPanel
                     conversations={conversations}

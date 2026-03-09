@@ -940,8 +940,8 @@
 }
 
 .messageImage {
-  max-width: 200px;
-  max-height: 200px;
+  width: 100%;
+  max-width: 1080px;
   border-radius: 2px;
   border: 1px solid var(--border-color);
   object-fit: cover;

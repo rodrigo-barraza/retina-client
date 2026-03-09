@@ -6,6 +6,8 @@ import {
   AlertCircle,
   Loader,
   MessageSquare,
+  Settings,
+  History,
 } from "lucide-react";
 import { IrisService } from "../../../services/IrisService";
 import { PrismService } from "../../../services/PrismService";
@@ -27,6 +29,12 @@ export default function LivePage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [config, setConfig] = useState(null);
   const [showModelList, setShowModelList] = useState(false);
+  const [showSettings, setShowSettings] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  );
+  const [showHistory, setShowHistory] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  );
   const intervalRef = useRef(null);
   const lastFingerprintRef = useRef("");
   const autoSelectedRef = useRef(false);
@@ -214,7 +222,7 @@ export default function LivePage() {
       {/* Chat-like 3-panel layout */}
       <div className={styles.chatContainer}>
         {/* Settings Sidebar */}
-        <aside className={styles.settingsSidebar}>
+        <aside className={`${styles.settingsSidebar} ${!showSettings ? styles.sidebarHidden : ""}`}>
           <div className={styles.glassHeader}>Settings</div>
           {selectedConv?.settings ? (
             <SettingsPanel
@@ -228,6 +236,18 @@ export default function LivePage() {
             </div>
           )}
         </aside>
+
+        <button
+          className={`${styles.sidebarToggle} ${showHistory && !showSettings ? styles.mobileHidden : ""}`}
+          onClick={() => {
+            const next = !showSettings;
+            setShowSettings(next);
+            if (next && window.innerWidth < 768) setShowHistory(false);
+          }}
+          title={showSettings ? "Hide settings" : "Show settings"}
+        >
+          <Settings size={14} />
+        </button>
 
         {/* Main Viewer */}
         <section className={styles.mainViewer}>
@@ -295,8 +315,20 @@ export default function LivePage() {
           </div>
         </section>
 
+        <button
+          className={`${styles.sidebarToggle} ${showSettings && !showHistory ? styles.mobileHidden : ""}`}
+          onClick={() => {
+            const next = !showHistory;
+            setShowHistory(next);
+            if (next && window.innerWidth < 768) setShowSettings(false);
+          }}
+          title={showHistory ? "Hide history" : "Show history"}
+        >
+          <History size={14} />
+        </button>
+
         {/* Live Activity Sidebar */}
-        <aside className={styles.historySidebar}>
+        <aside className={`${styles.historySidebar} ${!showHistory ? styles.sidebarHidden : ""}`}>
           <div className={styles.glassHeader}>Live Activity</div>
           <HistoryPanel
             conversations={historyItems}

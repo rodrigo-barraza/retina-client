@@ -206,3 +206,84 @@
   border-top: 1px solid var(--border-color);
   background: var(--bg-glass);
 }
+
+/* Sidebar toggle buttons — static flex items */
+.sidebarToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  flex-shrink: 0;
+  background: var(--bg-glass);
+  border: none;
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.sidebarToggle:hover {
+  background: var(--accent-glow);
+  color: var(--accent-color);
+  opacity: 1;
+}
+
+/* Sidebar hidden state */
+.sidebarHidden {
+  display: none;
+}
+
+/* Mobile / narrow viewport */
+@media (max-width: 767px) {
+  .leftSidebar,
+  .rightSidebar {
+    display: none;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    min-width: 100%;
+    z-index: 200;
+    border: none;
+  }
+
+  .leftSidebar:not(.sidebarHidden),
+  .rightSidebar:not(.sidebarHidden) {
+    display: flex;
+  }
+
+  .sidebarHidden {
+    display: none;
+  }
+
+  .glassHeader {
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+
+  .sidebarToggle {
+    position: fixed;
+    top: 0;
+    z-index: 250;
+    width: 40px;
+    height: 56px;
+    border-radius: 0;
+    opacity: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+  }
+
+  .sidebarToggle:first-of-type {
+    left: 0;
+    right: auto;
+  }
+
+  .sidebarToggle:last-of-type {
+    right: 0;
+    left: auto;
+  }
+
+  .mobileHidden {
+    display: none !important;
+  }
+}
