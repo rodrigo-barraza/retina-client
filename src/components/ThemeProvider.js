@@ -6,16 +6,16 @@ import StorageService from "../services/StorageService";
 const THEME_KEY = "theme";
 
 const ThemeContext = createContext({
-  theme: "dark",
+  theme: "light",
   toggleTheme: () => {},
 });
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState("light");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const saved = StorageService.get(THEME_KEY, "dark");
+    const saved = StorageService.get(THEME_KEY, "light");
     setTheme(saved);
     document.documentElement.setAttribute("data-theme", saved);
     setMounted(true);
@@ -34,7 +34,7 @@ export function ThemeProvider({ children }) {
   // Prevent hydration mismatch — render children only after client mount
   if (!mounted) {
     return (
-      <ThemeContext.Provider value={{ theme: "dark", toggleTheme }}>
+      <ThemeContext.Provider value={{ theme: "light", toggleTheme }}>
         {children}
       </ThemeContext.Provider>
     );

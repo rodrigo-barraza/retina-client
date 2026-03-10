@@ -330,7 +330,7 @@ export default function MessageList({
                   {msg.role === "user" ? "You" : msg.role === "system" ? "System" : "Model"}
                   {msg.timestamp && (
                     <span className={styles.timestamp}>
-                      {DateTime.fromISO(msg.timestamp).toLocaleString(DateTime.DATETIME_SHORT)}
+                      {DateTime.fromISO(msg.timestamp).toLocaleString(DateTime.DATETIME_SHORT_WITH_SECONDS)}
                     </span>
                   )}
                 </div>

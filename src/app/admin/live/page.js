@@ -154,6 +154,8 @@ export default function LivePage() {
     updatedAt: c.lastActivity,
     messageCount: c.messageCount,
     isGenerating: c.isGenerating,
+    modalities: c.modalities,
+    providers: c.providers,
   })), [conversations]);
 
   const convTitle = selectedConv
