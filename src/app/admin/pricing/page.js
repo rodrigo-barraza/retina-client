@@ -120,6 +120,88 @@ export default function PricingPage() {
         },
     ];
 
+    const projectModalityCols = [
+        {
+            key: "project",
+            label: "Project",
+            align: "left",
+            renderSub: (row) => (
+                <span
+                    style={{
+                        display: "inline-flex",
+                        padding: "2px 6px",
+                        borderRadius: 2,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                        color: "var(--accent-color)",
+                        background: "var(--accent-subtle)",
+                    }}
+                >
+                    {ENDPOINT_LABELS[row.endpoint] || row.endpoint}
+                </span>
+            ),
+        },
+        {
+            key: "totalRequests",
+            label: "Requests",
+            render: requestsRender,
+            renderSub: requestsRender,
+        },
+        {
+            key: "totalInputTokens",
+            label: "Tokens In",
+            render: tokensInRender,
+            renderSub: tokensInRender,
+        },
+        {
+            key: "totalOutputTokens",
+            label: "Tokens Out",
+            render: tokensOutRender,
+            renderSub: tokensOutRender,
+        },
+        {
+            key: "totalCost",
+            label: "Cost",
+            render: costRender,
+            renderSub: costRender,
+        },
+    ];
+
+    const projectModelCols = [
+        {
+            key: "project",
+            label: "Project",
+            align: "left",
+            renderSub: (row) => row.model || "—",
+        },
+        {
+            key: "totalRequests",
+            label: "Requests",
+            render: requestsRender,
+            renderSub: requestsRender,
+        },
+        {
+            key: "totalInputTokens",
+            label: "Tokens In",
+            render: tokensInRender,
+            renderSub: tokensInRender,
+        },
+        {
+            key: "totalOutputTokens",
+            label: "Tokens Out",
+            render: tokensOutRender,
+            renderSub: tokensOutRender,
+        },
+        {
+            key: "totalCost",
+            label: "Cost",
+            render: costRender,
+            renderSub: costRender,
+        },
+    ];
+
     const providerColumns = [
         {
             key: "provider",
@@ -246,14 +328,38 @@ export default function PricingPage() {
                 />
             </div>
 
-            {/* Cost by Project */}
+            {/* Cost by Project Provider */}
             <div className={styles.section}>
                 <SortableTable
-                    title="Cost by Project"
+                    title="Cost by Project Provider"
                     columns={projectCols}
                     data={data?.byProject || []}
                     getRowKey={(row) => row.project}
                     getSubRows={(row) => row.byProvider || []}
+                    emptyText={loading ? "Loading..." : "No data yet"}
+                />
+            </div>
+
+            {/* Cost by Project Modality */}
+            <div className={styles.section}>
+                <SortableTable
+                    title="Cost by Project Modality"
+                    columns={projectModalityCols}
+                    data={data?.byProject || []}
+                    getRowKey={(row) => `${row.project}-mod`}
+                    getSubRows={(row) => row.byEndpoint || []}
+                    emptyText={loading ? "Loading..." : "No data yet"}
+                />
+            </div>
+
+            {/* Cost by Project Model */}
+            <div className={styles.section}>
+                <SortableTable
+                    title="Cost by Project Model"
+                    columns={projectModelCols}
+                    data={data?.byProject || []}
+                    getRowKey={(row) => `${row.project}-model`}
+                    getSubRows={(row) => row.byModel || []}
                     emptyText={loading ? "Loading..." : "No data yet"}
                 />
             </div>

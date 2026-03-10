@@ -79,8 +79,7 @@
 
   &:hover td:first-child {
     background: rgba(99, 102, 241, 0.08);
-    border-left: 2px solid var(--accent-color);
-    padding-left: 12px;
+    box-shadow: inset 2px 0 0 var(--accent-color);
   }
 }
 
