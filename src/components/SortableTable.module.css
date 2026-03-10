@@ -1,0 +1,197 @@
+/* ── SortableTable ─────────────────────────────────── */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Table ─────────────────────────────────────────── */
+
+.tableScroll {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  table-layout: auto;
+}
+
+.th {
+  padding: 10px 14px;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  position: sticky;
+  top: 0;
+  user-select: none;
+
+  &:first-child {
+    text-align: left;
+  }
+}
+
+.thSortable {
+  cursor: pointer;
+  transition: color 0.15s;
+
+  &:hover {
+    color: var(--text-primary);
+  }
+}
+
+.thActive {
+  color: var(--accent-color);
+}
+
+.sortIcon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 2px;
+  opacity: 0.7;
+}
+
+.tr {
+  transition: all 0.12s ease;
+
+  &:not(:last-child) td {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &.clickable {
+    cursor: pointer;
+  }
+
+  &:hover td {
+    background: rgba(99, 102, 241, 0.04);
+  }
+
+  &:hover td:first-child {
+    background: rgba(99, 102, 241, 0.08);
+    border-left: 2px solid var(--accent-color);
+    padding-left: 12px;
+  }
+}
+
+.td {
+  padding: 10px 14px;
+  text-align: right;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  background: var(--bg-secondary);
+}
+
+/* Primary name column */
+.tdName {
+  padding: 10px 14px;
+  text-align: left;
+  white-space: nowrap;
+  background: var(--bg-primary);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Highlight cost column */
+.tdHighlight {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Badge for provider / modality */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.badgeProvider {
+  color: var(--info);
+  background: var(--info-subtle);
+}
+
+.badgeEndpoint {
+  color: var(--accent-color);
+  background: var(--accent-subtle);
+}
+
+/* Expandable row */
+.expandableRow {
+  cursor: pointer;
+  user-select: none;
+}
+
+.expandIcon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.expandIconOpen {
+  transform: rotate(90deg);
+}
+
+/* Sub-rows */
+.subRow td {
+  background: var(--bg-tertiary);
+  font-size: 12px;
+  padding: 8px 14px;
+}
+
+.subRow td:first-child {
+  padding-left: 38px;
+  background: var(--bg-tertiary);
+}
+
+.subRow:hover td {
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.subRow:not(:last-child) td {
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Table title */
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Empty state */
+.empty {
+  padding: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .th,
+  .td,
+  .tdName {
+    padding: 8px 10px;
+  }
+}

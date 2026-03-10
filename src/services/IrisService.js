@@ -4,93 +4,98 @@ const API_BASE = PRISM_URL;
 const SECRET = ADMIN_SECRET;
 
 function getHeaders() {
-  return {
-    "Content-Type": "application/json",
-    "x-admin-secret": SECRET,
-  };
+    return {
+        "Content-Type": "application/json",
+        "x-admin-secret": SECRET,
+    };
 }
 
 async function fetchJSON(path, options = {}) {
-  const res = await fetch(`${API_BASE}/admin${path}`, {
-    headers: getHeaders(),
-    ...options,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Request failed: ${res.status}`);
-  }
-  return res.json();
+    const res = await fetch(`${API_BASE}/admin${path}`, {
+        headers: getHeaders(),
+        ...options,
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `Request failed: ${res.status}`);
+    }
+    return res.json();
 }
 
 export class IrisService {
-  // ── Requests ──────────────────────────────────────────────
-  static async getRequests(params = {}) {
-    const query = new URLSearchParams(params).toString();
-    return fetchJSON(`/requests${query ? `?${query}` : ""}`);
-  }
+    // ── Requests ──────────────────────────────────────────────
+    static async getRequests(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return fetchJSON(`/requests${query ? `?${query}` : ""}`);
+    }
 
-  static async getRequest(id) {
-    return fetchJSON(`/requests/${id}`);
-  }
+    static async getRequest(id) {
+        return fetchJSON(`/requests/${id}`);
+    }
 
-  // ── Stats ─────────────────────────────────────────────────
-  static async getStats(params = {}) {
-    const query = new URLSearchParams(params).toString();
-    return fetchJSON(`/stats${query ? `?${query}` : ""}`);
-  }
+    // ── Stats ─────────────────────────────────────────────────
+    static async getStats(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return fetchJSON(`/stats${query ? `?${query}` : ""}`);
+    }
 
-  static async getProjectStats() {
-    return fetchJSON("/stats/projects");
-  }
+    static async getProjectStats() {
+        return fetchJSON("/stats/projects");
+    }
 
-  static async getModelStats() {
-    return fetchJSON("/stats/models");
-  }
+    static async getModelStats() {
+        return fetchJSON("/stats/models");
+    }
 
-  static async getEndpointStats() {
-    return fetchJSON("/stats/endpoints");
-  }
+    static async getEndpointStats() {
+        return fetchJSON("/stats/endpoints");
+    }
 
-  static async getTimeline(hours = 24) {
-    return fetchJSON(`/stats/timeline?hours=${hours}`);
-  }
+    static async getTimeline(hours = 24) {
+        return fetchJSON(`/stats/timeline?hours=${hours}`);
+    }
 
-  // ── Conversations ─────────────────────────────────────────
-  static async getConversations(params = {}) {
-    const query = new URLSearchParams(params).toString();
-    return fetchJSON(`/conversations${query ? `?${query}` : ""}`);
-  }
+    static async getCostStats(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return fetchJSON(`/stats/costs${query ? `?${query}` : ""}`);
+    }
 
-  static async getConversation(id) {
-    return fetchJSON(`/conversations/${id}`);
-  }
+    // ── Conversations ─────────────────────────────────────────
+    static async getConversations(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return fetchJSON(`/conversations${query ? `?${query}` : ""}`);
+    }
 
-  // ── Live ──────────────────────────────────────────────────
-  static async getLiveActivity(minutes = 5) {
-    return fetchJSON(`/live?minutes=${minutes}`);
-  }
+    static async getConversation(id) {
+        return fetchJSON(`/conversations/${id}`);
+    }
 
-  // ── Health ────────────────────────────────────────────────
-  static async getHealth() {
-    return fetchJSON("/health");
-  }
+    // ── Live ──────────────────────────────────────────────────
+    static async getLiveActivity(minutes = 5) {
+        return fetchJSON(`/live?minutes=${minutes}`);
+    }
 
-  // ── LM Studio Model Management ──────────────────────────
-  static async getLmStudioModels() {
-    return fetchJSON("/lm-studio/models");
-  }
+    // ── Health ────────────────────────────────────────────────
+    static async getHealth() {
+        return fetchJSON("/health");
+    }
 
-  static async loadLmStudioModel(model) {
-    return fetchJSON("/lm-studio/load", {
-      method: "POST",
-      body: JSON.stringify({ model }),
-    });
-  }
+    // ── LM Studio Model Management ──────────────────────────
+    static async getLmStudioModels() {
+        return fetchJSON("/lm-studio/models");
+    }
 
-  static async unloadLmStudioModel(instanceId) {
-    return fetchJSON("/lm-studio/unload", {
-      method: "POST",
-      body: JSON.stringify({ instance_id: instanceId }),
-    });
-  }
+    static async loadLmStudioModel(model) {
+        return fetchJSON("/lm-studio/load", {
+            method: "POST",
+            body: JSON.stringify({ model }),
+        });
+    }
+
+    static async unloadLmStudioModel(instanceId) {
+        return fetchJSON("/lm-studio/unload", {
+            method: "POST",
+            body: JSON.stringify({ instance_id: instanceId }),
+        });
+    }
 }
