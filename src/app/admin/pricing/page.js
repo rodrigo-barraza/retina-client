@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { IrisService } from "../../../services/IrisService";
 import StatsCard from "../../../components/StatsCard";
+import SelectDropdown from "../../../components/SelectDropdown";
 import SortableTable from "../../../components/SortableTable";
 import styles from "./page.module.css";
 
@@ -50,6 +51,7 @@ export default function PricingPage() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [projectBreakdown, setProjectBreakdown] = useState("provider");
 
     useEffect(() => {
         async function loadCosts() {
@@ -328,38 +330,39 @@ export default function PricingPage() {
                 />
             </div>
 
-            {/* Cost by Project Provider */}
+            {/* Cost by Project — with breakdown selector */}
             <div className={styles.section}>
                 <SortableTable
-                    title="Cost by Project Provider"
-                    columns={projectCols}
+                    title={
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
+                            Cost by Project
+                            <SelectDropdown
+                                value={projectBreakdown}
+                                onChange={setProjectBreakdown}
+                                options={[
+                                    { value: "provider", label: "Provider" },
+                                    { value: "modality", label: "Modality" },
+                                    { value: "model", label: "Model" },
+                                ]}
+                            />
+                        </span>
+                    }
+                    columns={
+                        projectBreakdown === "modality"
+                            ? projectModalityCols
+                            : projectBreakdown === "model"
+                                ? projectModelCols
+                                : projectCols
+                    }
                     data={data?.byProject || []}
-                    getRowKey={(row) => row.project}
-                    getSubRows={(row) => row.byProvider || []}
-                    emptyText={loading ? "Loading..." : "No data yet"}
-                />
-            </div>
-
-            {/* Cost by Project Modality */}
-            <div className={styles.section}>
-                <SortableTable
-                    title="Cost by Project Modality"
-                    columns={projectModalityCols}
-                    data={data?.byProject || []}
-                    getRowKey={(row) => `${row.project}-mod`}
-                    getSubRows={(row) => row.byEndpoint || []}
-                    emptyText={loading ? "Loading..." : "No data yet"}
-                />
-            </div>
-
-            {/* Cost by Project Model */}
-            <div className={styles.section}>
-                <SortableTable
-                    title="Cost by Project Model"
-                    columns={projectModelCols}
-                    data={data?.byProject || []}
-                    getRowKey={(row) => `${row.project}-model`}
-                    getSubRows={(row) => row.byModel || []}
+                    getRowKey={(row) => `${row.project}-${projectBreakdown}`}
+                    getSubRows={(row) =>
+                        projectBreakdown === "modality"
+                            ? row.byEndpoint || []
+                            : projectBreakdown === "model"
+                                ? row.byModel || []
+                                : row.byProvider || []
+                    }
                     emptyText={loading ? "Loading..." : "No data yet"}
                 />
             </div>

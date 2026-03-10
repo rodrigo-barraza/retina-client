@@ -53,6 +53,7 @@
 .chevron {
   color: var(--text-secondary);
   flex-shrink: 0;
+  margin-left: 4px;
   transition: transform 0.2s;
 }
 
