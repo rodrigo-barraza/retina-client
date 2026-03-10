@@ -31,8 +31,9 @@ function formatNumber(n) {
 
 function formatCost(n) {
     if (n === null || n === undefined || n === 0) return "$0.00";
-    if (n < 0.0001) return `$${n.toExponential(2)}`;
-    return `$${n.toFixed(4)}`;
+    if (n >= 0.01) return `$${n.toFixed(4)}`;
+    if (n >= 0.0001) return `$${n.toFixed(6)}`;
+    return `$${n.toFixed(8)}`;
 }
 
 // Shared column renderers

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import styles from "./SortableTable.module.css";
 
@@ -120,7 +120,7 @@ export default function SortableTable({
                                 const clickable = !!onRowClick || isExpandable;
 
                                 return (
-                                    <>
+                                    <Fragment key={key}>
                                         <tr
                                             key={key}
                                             className={`${styles.tr} ${clickable ? styles.clickable : ""} ${isExpandable ? styles.expandableRow : ""}`}
@@ -190,7 +190,7 @@ export default function SortableTable({
                                                     })}
                                                 </tr>
                                             ))}
-                                    </>
+                                    </Fragment>
                                 );
                             })}
                         </tbody>
