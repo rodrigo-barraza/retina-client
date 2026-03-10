@@ -42,6 +42,7 @@ export default function Home() {
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [showModelList, setShowModelList] = useState(false);
+    const [showSystemPromptModal, setShowSystemPromptModal] = useState(false);
     const [showSettings, setShowSettings] = useState(() =>
         typeof window !== "undefined" ? window.innerWidth >= 768 : true
     );
@@ -58,7 +59,7 @@ export default function Home() {
 
     const totalCost = useMemo(() =>
         messages.reduce((sum, m) => sum + (m.estimatedCost || 0), 0)
-    , [messages]);
+        , [messages]);
 
     // Auto-save system prompt on edit (debounced)
     useEffect(() => {
@@ -990,6 +991,9 @@ export default function Home() {
                     onChange={(updates) => setSettings((s) => ({ ...s, ...updates }))}
                     hasAssistantImages={messages.some((m) => m.role === "assistant" && m.images?.length > 0)}
                     inferenceMode={inferenceMode}
+                    onSystemPromptClick={() => setShowSystemPromptModal(true)}
+                    showSystemPromptModal={showSystemPromptModal}
+                    onCloseSystemPromptModal={() => setShowSystemPromptModal(false)}
                 />
             </aside>
 
@@ -1077,6 +1081,8 @@ export default function Home() {
                                 : (config?.textToText?.models?.[settings.provider] || [])
                                     .find((m) => m.name === settings.model)?.inputTypes || []
                     }
+                    systemPrompt={settings.systemPrompt}
+                    onSystemPromptClick={() => setShowSystemPromptModal(true)}
                 />
             </section>
 

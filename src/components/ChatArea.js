@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Loader2, ChevronDown, ChevronRight, ChevronUp, Paperclip, FileAudio, FileVideo, FileText, Image as ImageIcon, Type, ArrowLeft, Mic, Mic2 } from "lucide-react";
+import { Send, Loader2, ChevronDown, ChevronRight, ChevronUp, Paperclip, FileAudio, FileVideo, FileText, Image as ImageIcon, Type, ArrowLeft, Mic, Mic2, Edit3, Terminal } from "lucide-react";
 import ImageAnnotator from "./ImageAnnotator";
 import DocumentViewer from "./DocumentViewer";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
@@ -178,7 +178,7 @@ function getVisibleArenaColumns(models) {
     );
 }
 
-export default function ChatArea({ messages, isGenerating, onSend, onDelete, onEdit, onRerun, config, onSelectModel, supportedInputTypes = [], isTranscriptionModel = false, isTTSModel = false }) {
+export default function ChatArea({ messages, isGenerating, onSend, onDelete, onEdit, onRerun, config, onSelectModel, supportedInputTypes = [], isTranscriptionModel = false, isTTSModel = false, systemPrompt, onSystemPromptClick, readOnly = false }) {
     const [modelSort, setModelSort] = useState({ key: null, dir: "desc" });
     const nonTextTypes = supportedInputTypes.filter((t) => t !== "text");
     const hasFileInput = !isTTSModel && nonTextTypes.length > 0;
@@ -199,6 +199,7 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, onE
     const [isRecording, setIsRecording] = useState(false);
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
+    const [systemPromptExpanded, setSystemPromptExpanded] = useState(true);
 
     useEffect(() => {
         endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -272,6 +273,33 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, onE
     return (
         <div className={styles.container}>
             <div className={styles.messagesList}>
+                {systemPrompt && systemPrompt !== "You are a helpful AI assistant" && systemPrompt !== "You are a helpful AI assistant." && (
+                    <div className={styles.systemPromptBanner}>
+                        <button
+                            className={styles.systemPromptToggle}
+                            onClick={() => setSystemPromptExpanded((v) => !v)}
+                        >
+                            {systemPromptExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                            <span className={styles.systemPromptLabel}>
+                                <Terminal size={13} />
+                                System Prompt
+                            </span>
+                            {!readOnly && onSystemPromptClick && (
+                                <span
+                                    className={styles.systemPromptEditBtn}
+                                    onClick={(e) => { e.stopPropagation(); onSystemPromptClick(); }}
+                                    title="Edit system prompt"
+                                >
+                                    <Edit3 size={13} />
+                                </span>
+                            )}
+                        </button>
+                        {systemPromptExpanded && (
+                            <div className={styles.systemPromptBody}>{systemPrompt}</div>
+                        )}
+                    </div>
+                )}
+
                 {messages.length === 0 && !welcomeDone && (
                     <div className={styles.welcome}>
                         {welcomeStep === "pickOutput" && (
