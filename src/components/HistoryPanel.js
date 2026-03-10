@@ -51,6 +51,18 @@ export default function HistoryPanel({
     const [activeModality, setActiveModality] = useState(null);
     const [activeProvider, setActiveProvider] = useState(null);
 
+    // Discover all modalities across conversations
+    const allModalities = useMemo(() => {
+        const set = new Set();
+        for (const conv of conversations) {
+            const mod = conv.modalities || getModalities(conv.messages);
+            for (const { key } of MODALITY_FILTERS) {
+                if (mod[`${key}In`] || mod[`${key}Out`]) set.add(key);
+            }
+        }
+        return MODALITY_FILTERS.filter(({ key }) => set.has(key));
+    }, [conversations]);
+
     // Discover all providers across conversations
     const allProviders = useMemo(() => {
         const set = new Set();
@@ -117,29 +129,44 @@ export default function HistoryPanel({
             </div>
 
             {/* Filter toggles */}
-            <div className={styles.filterBar}>
-                {MODALITY_FILTERS.map(({ key, icon: Icon, title }) => (
-                    <button
-                        key={key}
-                        className={`${styles.filterBtn} ${activeModality === key ? styles.filterBtnActive : ""}`}
-                        onClick={() => setActiveModality(activeModality === key ? null : key)}
-                        title={title}
-                    >
-                        <Icon size={13} />
-                    </button>
-                ))}
-                {allProviders.length > 0 && <span className={styles.filterDivider} />}
-                {allProviders.map((p) => (
-                    <button
-                        key={p}
-                        className={`${styles.filterBtn} ${activeProvider === p ? styles.filterBtnActive : ""}`}
-                        onClick={() => setActiveProvider(activeProvider === p ? null : p)}
-                        title={p}
-                    >
-                        <ProviderLogo provider={p} size={13} />
-                    </button>
-                ))}
-            </div>
+            {(allModalities.length >= 2 || allProviders.length >= 2) && (
+                <div className={styles.filterSection}>
+                    {allModalities.length >= 2 && (
+                        <div className={styles.filterRow}>
+                            <span className={styles.filterLabel}>Modality</span>
+                            <div className={styles.filterBar}>
+                                {allModalities.map(({ key, icon: Icon, title }) => (
+                                    <button
+                                        key={key}
+                                        className={`${styles.filterBtn} ${activeModality === key ? styles.filterBtnActive : ""}`}
+                                        onClick={() => setActiveModality(activeModality === key ? null : key)}
+                                        title={title}
+                                    >
+                                        <Icon size={13} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {allProviders.length >= 2 && (
+                        <div className={styles.filterRow}>
+                            <span className={styles.filterLabel}>Provider</span>
+                            <div className={styles.filterBar}>
+                                {allProviders.map((p) => (
+                                    <button
+                                        key={p}
+                                        className={`${styles.filterBtn} ${activeProvider === p ? styles.filterBtnActive : ""}`}
+                                        onClick={() => setActiveProvider(activeProvider === p ? null : p)}
+                                        title={p}
+                                    >
+                                        <ProviderLogo provider={p} size={13} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className={styles.list}>
                 {filtered.map((conv) => {

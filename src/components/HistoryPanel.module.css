@@ -85,12 +85,35 @@
   background: var(--bg-tertiary);
 }
 
-/* ── Filter Bar ── */
+/* ── Filter Section ── */
+.filterSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 15px 10px;
+}
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 58px;
+  flex-shrink: 0;
+}
+
 .filterBar {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 15px 10px;
   flex-wrap: wrap;
 }
 
@@ -118,13 +141,6 @@
   background: var(--accent-glow);
   border-color: var(--accent-color);
   color: var(--accent-color);
-}
-
-.filterDivider {
-  width: 1px;
-  height: 18px;
-  background: var(--border-color);
-  margin: 0 4px;
 }
 
 .list {
