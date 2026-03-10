@@ -30,7 +30,9 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 2px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   font-family: inherit;
 
   &::placeholder {
@@ -59,7 +61,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 2px;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 
   &:hover {
     color: var(--text-primary);
@@ -267,14 +271,21 @@
 /* ── Animations ────────────────────────────────────── */
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* ── Responsive ────────────────────────────────────── */
 
 @media (max-width: 600px) {
-  .th, .td, .tdName {
+  .th,
+  .td,
+  .tdName {
     padding: 8px 10px;
   }
 }

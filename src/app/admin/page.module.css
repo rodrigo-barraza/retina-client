@@ -155,7 +155,11 @@
 
 .bar {
   flex: 1;
-  background: linear-gradient(180deg, var(--accent-color), rgba(99, 102, 241, 0.3));
+  background: linear-gradient(
+    180deg,
+    var(--accent-color),
+    rgba(99, 102, 241, 0.3)
+  );
   border-radius: 2px 2px 0 0;
   min-height: 4px;
   transition: all var(--transition-fast);
@@ -163,7 +167,11 @@
 }
 
 .bar:hover {
-  background: linear-gradient(180deg, var(--accent-hover), rgba(99, 102, 241, 0.5));
+  background: linear-gradient(
+    180deg,
+    var(--accent-hover),
+    rgba(99, 102, 241, 0.5)
+  );
 }
 
 .bar:hover::after {

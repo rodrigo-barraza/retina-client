@@ -1,6 +1,22 @@
 "use client";
 
-import { Send, Loader2, ChevronDown, ChevronRight, ChevronUp, Paperclip, FileAudio, FileVideo, FileText, Image as ImageIcon, Type, ArrowLeft, Mic, Mic2, Edit3, Terminal } from "lucide-react";
+import {
+    Send,
+    Loader2,
+    ChevronDown,
+    ChevronRight,
+    Paperclip,
+    FileAudio,
+    FileVideo,
+    FileText,
+    Image as ImageIcon,
+    Type,
+    ArrowLeft,
+    Mic,
+    Mic2,
+    Edit3,
+    Terminal,
+} from "lucide-react";
 import ImageAnnotator from "./ImageAnnotator";
 import DocumentViewer from "./DocumentViewer";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
@@ -8,7 +24,6 @@ import MessageList from "./MessageList";
 import ModelGrid from "./ModelGrid";
 import styles from "./ChatArea.module.css";
 import { useEffect, useRef, useState } from "react";
-import { DateTime } from "luxon";
 import { PrismService } from "../services/PrismService";
 
 // Map model input types to file accept strings
@@ -24,7 +39,8 @@ function getMimeCategory(dataUrl) {
     // Handle minio:// refs by extension
     if (dataUrl.startsWith("minio://")) {
         const ext = dataUrl.split(".").pop()?.toLowerCase();
-        if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) return "image";
+        if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext))
+            return "image";
         if (["wav", "mp3", "webm", "ogg"].includes(ext)) return "audio";
         if (["mp4", "mov", "avi", "webm"].includes(ext)) return "video";
         if (ext === "pdf") return "pdf";
@@ -84,7 +100,11 @@ function MediaPreview({ dataUrl: rawDataUrl, onClick, compact = false }) {
 
     if (category === "pdf") {
         return (
-            <div className={compact ? styles.pendingFileThumb : styles.mediaCard} onClick={onClick} style={onClick ? { cursor: "pointer" } : undefined}>
+            <div
+                className={compact ? styles.pendingFileThumb : styles.mediaCard}
+                onClick={onClick}
+                style={onClick ? { cursor: "pointer" } : undefined}
+            >
                 <FileText size={compact ? 24 : 22} className={styles.mediaCardIcon} />
                 <span className={styles.mediaCardLabel}>PDF</span>
             </div>
@@ -93,7 +113,11 @@ function MediaPreview({ dataUrl: rawDataUrl, onClick, compact = false }) {
 
     // text / other
     return (
-        <div className={compact ? styles.pendingFileThumb : styles.mediaCard} onClick={onClick} style={onClick ? { cursor: "pointer" } : undefined}>
+        <div
+            className={compact ? styles.pendingFileThumb : styles.mediaCard}
+            onClick={onClick}
+            style={onClick ? { cursor: "pointer" } : undefined}
+        >
             <FileText size={compact ? 24 : 22} className={styles.mediaCardIcon} />
             <span className={styles.mediaCardLabel}>{category.toUpperCase()}</span>
         </div>
@@ -101,15 +125,35 @@ function MediaPreview({ dataUrl: rawDataUrl, onClick, compact = false }) {
 }
 
 const OUTPUT_MODALITIES = [
-    { key: "text", title: "Text", subtitle: "Chat, code, and reasoning", icon: Type },
-    { key: "image", title: "Image", subtitle: "Create and edit images", icon: ImageIcon },
+    {
+        key: "text",
+        title: "Text",
+        subtitle: "Chat, code, and reasoning",
+        icon: Type,
+    },
+    {
+        key: "image",
+        title: "Image",
+        subtitle: "Create and edit images",
+        icon: ImageIcon,
+    },
     { key: "audio", title: "Speech", subtitle: "Text to speech", icon: Mic },
-    { key: "video", title: "Video", subtitle: "Generate videos", icon: FileVideo, disabled: true },
+    {
+        key: "video",
+        title: "Video",
+        subtitle: "Generate videos",
+        icon: FileVideo,
+        disabled: true,
+    },
 ];
 
 const INPUT_MODALITY_META = {
     text: { title: "Text", subtitle: "Prompts and conversations", icon: Type },
-    image: { title: "Image", subtitle: "Photos and screenshots", icon: ImageIcon },
+    image: {
+        title: "Image",
+        subtitle: "Photos and screenshots",
+        icon: ImageIcon,
+    },
     audio: { title: "Audio", subtitle: "Voice and sound files", icon: FileAudio },
     video: { title: "Video", subtitle: "Video clips", icon: FileVideo },
     pdf: { title: "PDF", subtitle: "Documents and papers", icon: FileText },
@@ -133,15 +177,12 @@ function getAllModelsFromConfig(config) {
     return [...seen.values()];
 }
 
-
-
-
-function getOutputTypesForInput(config, inputType) {
+function _getOutputTypesForInput(config, inputType) {
     const allModels = getAllModelsFromConfig(config);
     const outputSet = new Set();
     for (const m of allModels) {
         if (m.inputTypes?.includes(inputType)) {
-            for (const out of (m.outputTypes || [])) {
+            for (const out of m.outputTypes || []) {
                 outputSet.add(out);
             }
         }
@@ -152,13 +193,16 @@ function getOutputTypesForInput(config, inputType) {
 function getModelsForIO(config, outputType, inputType) {
     const allModels = getAllModelsFromConfig(config);
     return allModels.filter(
-        (m) => m.outputTypes?.includes(outputType) && (inputType == null || m.inputTypes?.includes(inputType)),
+        (m) =>
+            m.outputTypes?.includes(outputType) &&
+            (inputType == null || m.inputTypes?.includes(inputType)),
     );
 }
 
-function formatContextLength(tokens) {
+function _formatContextLength(tokens) {
     if (!tokens) return null;
-    if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(tokens % 1_000_000 === 0 ? 0 : 1)}M`;
+    if (tokens >= 1_000_000)
+        return `${(tokens / 1_000_000).toFixed(tokens % 1_000_000 === 0 ? 0 : 1)}M`;
     return `${Math.round(tokens / 1000)}K`;
 }
 
@@ -172,18 +216,36 @@ const ARENA_COLUMNS = [
     { key: "search", label: "Search" },
 ];
 
-function getVisibleArenaColumns(models) {
+function _getVisibleArenaColumns(models) {
     return ARENA_COLUMNS.filter((col) =>
-        models.some((m) => m.arena && m.arena[col.key] != null)
+        models.some((m) => m.arena && m.arena[col.key] != null),
     );
 }
 
-export default function ChatArea({ messages, isGenerating, onSend, onDelete, onEdit, onRerun, config, onSelectModel, supportedInputTypes = [], isTranscriptionModel = false, isTTSModel = false, systemPrompt, onSystemPromptClick, readOnly = false }) {
-    const [modelSort, setModelSort] = useState({ key: null, dir: "desc" });
+export default function ChatArea({
+    messages,
+    isGenerating,
+    onSend,
+    onDelete,
+    onEdit,
+    onRerun,
+    config,
+    onSelectModel,
+    supportedInputTypes = [],
+    isTranscriptionModel = false,
+    isTTSModel = false,
+    systemPrompt,
+    onSystemPromptClick,
+    readOnly = false,
+}) {
+    const [_modelSort, _setModelSort] = useState({ key: null, dir: "desc" });
     const nonTextTypes = supportedInputTypes.filter((t) => t !== "text");
     const hasFileInput = !isTTSModel && nonTextTypes.length > 0;
     const imageOnly = nonTextTypes.length === 1 && nonTextTypes[0] === "image";
-    const acceptStr = nonTextTypes.map((t) => TYPE_ACCEPT_MAP[t]).filter(Boolean).join(",");
+    const acceptStr = nonTextTypes
+        .map((t) => TYPE_ACCEPT_MAP[t])
+        .filter(Boolean)
+        .join(",");
     const hasAudioInput = !isTTSModel && supportedInputTypes.includes("audio");
     const [input, setInput] = useState("");
     const [pendingImages, setPendingImages] = useState([]);
@@ -273,39 +335,50 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, onE
     return (
         <div className={styles.container}>
             <div className={styles.messagesList}>
-                {systemPrompt && systemPrompt !== "You are a helpful AI assistant" && systemPrompt !== "You are a helpful AI assistant." && (
-                    <div className={styles.systemPromptBanner}>
-                        <button
-                            className={styles.systemPromptToggle}
-                            onClick={() => setSystemPromptExpanded((v) => !v)}
-                        >
-                            {systemPromptExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                            <span className={styles.systemPromptLabel}>
-                                <Terminal size={13} />
-                                System Prompt
-                            </span>
-                            {!readOnly && onSystemPromptClick && (
-                                <span
-                                    className={styles.systemPromptEditBtn}
-                                    onClick={(e) => { e.stopPropagation(); onSystemPromptClick(); }}
-                                    title="Edit system prompt"
-                                >
-                                    <Edit3 size={13} />
+                {systemPrompt &&
+                    systemPrompt !== "You are a helpful AI assistant" &&
+                    systemPrompt !== "You are a helpful AI assistant." && (
+                        <div className={styles.systemPromptBanner}>
+                            <button
+                                className={styles.systemPromptToggle}
+                                onClick={() => setSystemPromptExpanded((v) => !v)}
+                            >
+                                {systemPromptExpanded ? (
+                                    <ChevronDown size={14} />
+                                ) : (
+                                    <ChevronRight size={14} />
+                                )}
+                                <span className={styles.systemPromptLabel}>
+                                    <Terminal size={13} />
+                                    System Prompt
                                 </span>
+                                {!readOnly && onSystemPromptClick && (
+                                    <span
+                                        className={styles.systemPromptEditBtn}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onSystemPromptClick();
+                                        }}
+                                        title="Edit system prompt"
+                                    >
+                                        <Edit3 size={13} />
+                                    </span>
+                                )}
+                            </button>
+                            {systemPromptExpanded && (
+                                <div className={styles.systemPromptBody}>{systemPrompt}</div>
                             )}
-                        </button>
-                        {systemPromptExpanded && (
-                            <div className={styles.systemPromptBody}>{systemPrompt}</div>
-                        )}
-                    </div>
-                )}
+                        </div>
+                    )}
 
                 {messages.length === 0 && !welcomeDone && (
                     <div className={styles.welcome}>
                         {welcomeStep === "pickOutput" && (
                             <>
                                 <h3>What do you wanna make?</h3>
-                                <p className={styles.sectionSubtitle}>Pick an output type to get started</p>
+                                <p className={styles.sectionSubtitle}>
+                                    Pick an output type to get started
+                                </p>
                                 <div className={styles.capabilityGrid}>
                                     {OUTPUT_MODALITIES.map((mod) => {
                                         const Icon = mod.icon;
@@ -334,102 +407,146 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, onE
                             </>
                         )}
 
-                        {welcomeStep === "pickInput" && (() => {
-                            const outputMod = OUTPUT_MODALITIES.find((m) => m.key === selectedOutput);
-                            return (
-                                <div className={styles.modelListView}>
-                                    <button className={styles.backButton} onClick={() => { setWelcomeStep("pickOutput"); setSelectedOutput(null); }}>
-                                        <ArrowLeft size={18} />
-                                    </button>
-                                    <h3>How do you wanna send it?</h3>
-                                    <p className={styles.modelListSubtitle}>Making {outputMod?.title?.toLowerCase()} — now pick your input</p>
-                                    <div className={styles.capabilityGrid}>
-                                        {Object.entries(INPUT_MODALITY_META).map(([key, meta]) => {
-                                            const models = getModelsForIO(config, selectedOutput, key);
-                                            const available = models.length > 0;
-                                            const Icon = meta.icon;
-                                            return (
-                                                <div
-                                                    key={key}
-                                                    className={`${styles.capabilityCard} ${!available ? styles.capabilityDisabled : ""}`}
-                                                    onClick={() => {
-                                                        if (available) {
-                                                            setSelectedInput(key);
-                                                            setWelcomeStep("pickModel");
-                                                        }
-                                                    }}
-                                                >
-                                                    <div className={styles.capabilityIcon}>
-                                                        <Icon size={20} />
-                                                    </div>
-                                                    <div className={styles.capabilityInfo}>
-                                                        <h4>{meta.title}</h4>
-                                                        <p>{meta.subtitle}</p>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        })()}
-
-                        {welcomeStep === "pickModel" && (() => {
-                            const allModels = getModelsForIO(config, selectedOutput, selectedInput);
-                            const uniqueProviders = [...new Set(allModels.map((m) => m.provider))];
-                            const models = providerFilter ? allModels.filter((m) => m.provider === providerFilter) : allModels;
-                            const outputMod = OUTPUT_MODALITIES.find((m) => m.key === selectedOutput);
-                            const inputMeta = INPUT_MODALITY_META[selectedInput];
-
-                            const handleModelSelect = (model) => {
-                                onSelectModel(model.provider || "lm-studio", model.name);
-                                setWelcomeStep("pickOutput");
-                                setSelectedOutput(null);
-                                setSelectedInput(null);
-                                setWelcomeDone(true);
-                                setProviderFilter(null);
-                            };
-
-                            return (
-                                <div className={styles.modelTableView}>
-                                    <div className={styles.modelTableHeader}>
-                                        <button className={styles.backButton} onClick={() => { setWelcomeStep("pickInput"); setSelectedInput(null); setProviderFilter(null); }}>
+                        {welcomeStep === "pickInput" &&
+                            (() => {
+                                const outputMod = OUTPUT_MODALITIES.find(
+                                    (m) => m.key === selectedOutput,
+                                );
+                                return (
+                                    <div className={styles.modelListView}>
+                                        <button
+                                            className={styles.backButton}
+                                            onClick={() => {
+                                                setWelcomeStep("pickOutput");
+                                                setSelectedOutput(null);
+                                            }}
+                                        >
                                             <ArrowLeft size={18} />
                                         </button>
-                                        <div>
-                                            <h3>{inputMeta?.title} to {outputMod?.title}</h3>
-                                            <p className={styles.modelListSubtitle}>Pick a model to get started</p>
+                                        <h3>How do you wanna send it?</h3>
+                                        <p className={styles.modelListSubtitle}>
+                                            Making {outputMod?.title?.toLowerCase()} — now pick your
+                                            input
+                                        </p>
+                                        <div className={styles.capabilityGrid}>
+                                            {Object.entries(INPUT_MODALITY_META).map(
+                                                ([key, meta]) => {
+                                                    const models = getModelsForIO(
+                                                        config,
+                                                        selectedOutput,
+                                                        key,
+                                                    );
+                                                    const available = models.length > 0;
+                                                    const Icon = meta.icon;
+                                                    return (
+                                                        <div
+                                                            key={key}
+                                                            className={`${styles.capabilityCard} ${!available ? styles.capabilityDisabled : ""}`}
+                                                            onClick={() => {
+                                                                if (available) {
+                                                                    setSelectedInput(key);
+                                                                    setWelcomeStep("pickModel");
+                                                                }
+                                                            }}
+                                                        >
+                                                            <div className={styles.capabilityIcon}>
+                                                                <Icon size={20} />
+                                                            </div>
+                                                            <div className={styles.capabilityInfo}>
+                                                                <h4>{meta.title}</h4>
+                                                                <p>{meta.subtitle}</p>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                },
+                                            )}
                                         </div>
-                                        {uniqueProviders.length > 1 && (
-                                            <div className={styles.providerFilters}>
-                                                <button
-                                                    className={`${styles.providerFilterPill} ${!providerFilter ? styles.providerFilterActive : ""}`}
-                                                    onClick={() => setProviderFilter(null)}
-                                                >
-                                                    All
-                                                </button>
-                                                {uniqueProviders.map((p) => (
-                                                    <button
-                                                        key={p}
-                                                        className={`${styles.providerFilterPill} ${providerFilter === p ? styles.providerFilterActive : ""}`}
-                                                        onClick={() => setProviderFilter(providerFilter === p ? null : p)}
-                                                        title={PROVIDER_LABELS[p] || p}
-                                                    >
-                                                        <ProviderLogo provider={p} size={16} />
-                                                        <span>{PROVIDER_LABELS[p] || p}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
                                     </div>
-                                    <ModelGrid
-                                        models={models}
-                                        onSelect={handleModelSelect}
-                                        showSearch={models.length > 6}
-                                    />
-                                </div>
-                            );
-                        })()}
+                                );
+                            })()}
+
+                        {welcomeStep === "pickModel" &&
+                            (() => {
+                                const allModels = getModelsForIO(
+                                    config,
+                                    selectedOutput,
+                                    selectedInput,
+                                );
+                                const uniqueProviders = [
+                                    ...new Set(allModels.map((m) => m.provider)),
+                                ];
+                                const models = providerFilter
+                                    ? allModels.filter((m) => m.provider === providerFilter)
+                                    : allModels;
+                                const outputMod = OUTPUT_MODALITIES.find(
+                                    (m) => m.key === selectedOutput,
+                                );
+                                const inputMeta = INPUT_MODALITY_META[selectedInput];
+
+                                const handleModelSelect = (model) => {
+                                    onSelectModel(model.provider || "lm-studio", model.name);
+                                    setWelcomeStep("pickOutput");
+                                    setSelectedOutput(null);
+                                    setSelectedInput(null);
+                                    setWelcomeDone(true);
+                                    setProviderFilter(null);
+                                };
+
+                                return (
+                                    <div className={styles.modelTableView}>
+                                        <div className={styles.modelTableHeader}>
+                                            <button
+                                                className={styles.backButton}
+                                                onClick={() => {
+                                                    setWelcomeStep("pickInput");
+                                                    setSelectedInput(null);
+                                                    setProviderFilter(null);
+                                                }}
+                                            >
+                                                <ArrowLeft size={18} />
+                                            </button>
+                                            <div>
+                                                <h3>
+                                                    {inputMeta?.title} to {outputMod?.title}
+                                                </h3>
+                                                <p className={styles.modelListSubtitle}>
+                                                    Pick a model to get started
+                                                </p>
+                                            </div>
+                                            {uniqueProviders.length > 1 && (
+                                                <div className={styles.providerFilters}>
+                                                    <button
+                                                        className={`${styles.providerFilterPill} ${!providerFilter ? styles.providerFilterActive : ""}`}
+                                                        onClick={() => setProviderFilter(null)}
+                                                    >
+                                                        All
+                                                    </button>
+                                                    {uniqueProviders.map((p) => (
+                                                        <button
+                                                            key={p}
+                                                            className={`${styles.providerFilterPill} ${providerFilter === p ? styles.providerFilterActive : ""}`}
+                                                            onClick={() =>
+                                                                setProviderFilter(
+                                                                    providerFilter === p ? null : p,
+                                                                )
+                                                            }
+                                                            title={PROVIDER_LABELS[p] || p}
+                                                        >
+                                                            <ProviderLogo provider={p} size={16} />
+                                                            <span>{PROVIDER_LABELS[p] || p}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <ModelGrid
+                                            models={models}
+                                            onSelect={handleModelSelect}
+                                            showSearch={models.length > 6}
+                                        />
+                                    </div>
+                                );
+                            })()}
                     </div>
                 )}
 
@@ -450,14 +567,18 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, onE
                     onDocClick={(url) => setDocViewerSrc(url)}
                 />
 
-                {isGenerating && messages.length > 0 && !messages[messages.length - 1]?.content && (
-                    <div className={`${styles.message} ${styles.aiNode}`}>
-                        <div className={styles.avatar}>
-                            <Loader2 size={16} className={styles.spin} />
+                {isGenerating &&
+                    messages.length > 0 &&
+                    !messages[messages.length - 1]?.content && (
+                        <div className={`${styles.message} ${styles.aiNode}`}>
+                            <div className={styles.avatar}>
+                                <Loader2 size={16} className={styles.spin} />
+                            </div>
+                            <div className={styles.content}>
+                                {messages[messages.length - 1]?.status || "Generating..."}
+                            </div>
                         </div>
-                        <div className={styles.content}>{messages[messages.length - 1]?.status || "Generating..."}</div>
-                    </div>
-                )}
+                    )}
                 <div ref={endRef} />
             </div>
 
@@ -467,8 +588,24 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, onE
                         <div className={styles.pendingImages}>
                             {pendingImages.map((dataUrl, i) => (
                                 <div key={i} className={styles.pendingAttachmentWrap}>
-                                    <MediaPreview dataUrl={dataUrl} compact onClick={(() => { const c = getMimeCategory(dataUrl); if (c === "image") return () => setLightboxSrc(dataUrl); if (c === "pdf" || c === "text") return () => setDocViewerSrc(dataUrl); return undefined; })()} />
-                                    <button type="button" onClick={() => removeImage(i)} className={styles.removeImage}>×</button>
+                                    <MediaPreview
+                                        dataUrl={dataUrl}
+                                        compact
+                                        onClick={(() => {
+                                            const c = getMimeCategory(dataUrl);
+                                            if (c === "image") return () => setLightboxSrc(dataUrl);
+                                            if (c === "pdf" || c === "text")
+                                                return () => setDocViewerSrc(dataUrl);
+                                            return undefined;
+                                        })()}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeImage(i)}
+                                        className={styles.removeImage}
+                                    >
+                                        ×
+                                    </button>
                                 </div>
                             ))}
                         </div>
@@ -490,7 +627,11 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, onE
                                     onClick={() => fileInputRef.current?.click()}
                                     title={imageOnly ? "Attach image" : "Attach file"}
                                 >
-                                    {imageOnly ? <ImageIcon size={18} /> : <Paperclip size={18} />}
+                                    {imageOnly ? (
+                                        <ImageIcon size={18} />
+                                    ) : (
+                                        <Paperclip size={18} />
+                                    )}
                                 </button>
                             </>
                         )}
@@ -509,11 +650,23 @@ export default function ChatArea({ messages, isGenerating, onSend, onDelete, onE
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder={isTTSModel ? "Enter text to convert to speech..." : "Type a message..."}
+                                placeholder={
+                                    isTTSModel
+                                        ? "Enter text to convert to speech..."
+                                        : "Type a message..."
+                                }
                                 rows={1}
                             />
                         )}
-                        <button type="submit" disabled={isTranscriptionModel ? (pendingImages.length === 0 || isGenerating) : ((!input.trim() && pendingImages.length === 0) || isGenerating)}>
+                        <button
+                            type="submit"
+                            disabled={
+                                isTranscriptionModel
+                                    ? pendingImages.length === 0 || isGenerating
+                                    : (!input.trim() && pendingImages.length === 0) ||
+                                    isGenerating
+                            }
+                        >
                             {isGenerating ? (
                                 <Loader2 size={18} className={styles.spin} />
                             ) : (

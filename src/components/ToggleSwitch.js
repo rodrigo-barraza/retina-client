@@ -21,7 +21,9 @@ export default function ToggleSwitch({
   const isSmall = size === "small";
 
   return (
-    <label className={`${styles.toggle} ${disabled ? styles.disabled : ""} ${isSmall ? styles.small : ""}`}>
+    <label
+      className={`${styles.toggle} ${disabled ? styles.disabled : ""} ${isSmall ? styles.small : ""}`}
+    >
       <input
         type="checkbox"
         className={styles.hiddenInput}

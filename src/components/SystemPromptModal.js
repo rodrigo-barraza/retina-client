@@ -58,7 +58,7 @@ export default function SystemPromptModal({ activePrompt, onApply, onClose }) {
       saveTimerRef.current = setTimeout(() => {
         setInstructions((prev) => {
           const updated = prev.map((i) =>
-            i.id === id ? { ...i, title: newTitle, body: newBody } : i
+            i.id === id ? { ...i, title: newTitle, body: newBody } : i,
           );
           saveInstructions(updated);
           return updated;
@@ -158,7 +158,11 @@ export default function SystemPromptModal({ activePrompt, onApply, onClose }) {
   ];
 
   return createPortal(
-    <div className={styles.overlay} ref={overlayRef} onClick={handleOverlayClick}>
+    <div
+      className={styles.overlay}
+      ref={overlayRef}
+      onClick={handleOverlayClick}
+    >
       <div className={styles.modal}>
         <div className={styles.header}>
           <h3>System Instructions</h3>

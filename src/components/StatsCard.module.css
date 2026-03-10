@@ -23,11 +23,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(
-    90deg,
-    var(--accent-color),
-    transparent
-  );
+  background: linear-gradient(90deg, var(--accent-color), transparent);
   opacity: 0;
   transition: opacity var(--transition-fast);
 }

@@ -1,12 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  AlertCircle,
-  MessageSquare,
-  Settings,
-  History,
-} from "lucide-react";
+import { AlertCircle, MessageSquare, Settings, History } from "lucide-react";
 import { IrisService } from "../../../services/IrisService";
 import { PrismService } from "../../../services/PrismService";
 import MessageList from "../../../components/MessageList";
@@ -16,7 +11,7 @@ import styles from "./page.module.css";
 
 export default function ConversationsPage() {
   const [conversations, setConversations] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedConv, setSelectedConv] = useState(null);
@@ -24,21 +19,28 @@ export default function ConversationsPage() {
   const [config, setConfig] = useState(null);
   const [showModelList, setShowModelList] = useState(false);
   const [showSettings, setShowSettings] = useState(() =>
-    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true,
   );
   const [showHistory, setShowHistory] = useState(() =>
-    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true,
   );
 
   useEffect(() => {
-    PrismService.getConfig().then(setConfig).catch(() => {});
+    PrismService.getConfig()
+      .then(setConfig)
+      .catch(() => {});
   }, []);
 
   const loadConversations = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await IrisService.getConversations({ page: 1, limit: 200, sort: "updatedAt", order: "desc" });
+      const data = await IrisService.getConversations({
+        page: 1,
+        limit: 200,
+        sort: "updatedAt",
+        order: "desc",
+      });
       const list = data.data || [];
       setConversations(list);
       // Auto-select the most recent conversation on first load
@@ -71,18 +73,28 @@ export default function ConversationsPage() {
   }
 
   const convTitle = selectedConv
-    ? (selectedConv.title || "Untitled Conversation")
+    ? selectedConv.title || "Untitled Conversation"
     : "Select a conversation";
 
-  const uniqueModels = useMemo(() => [...new Set(
-    (selectedConv?.messages || [])
-      .filter((m) => m.role === "assistant" && m.model)
-      .map((m) => m.model)
-  )], [selectedConv]);
+  const uniqueModels = useMemo(
+    () => [
+      ...new Set(
+        (selectedConv?.messages || [])
+          .filter((m) => m.role === "assistant" && m.model)
+          .map((m) => m.model),
+      ),
+    ],
+    [selectedConv],
+  );
 
-  const totalCost = useMemo(() =>
-    (selectedConv?.messages || []).reduce((sum, m) => sum + (m.estimatedCost || 0), 0)
-  , [selectedConv]);
+  const totalCost = useMemo(
+    () =>
+      (selectedConv?.messages || []).reduce(
+        (sum, m) => sum + (m.estimatedCost || 0),
+        0,
+      ),
+    [selectedConv],
+  );
 
   return (
     <div className={styles.page}>
@@ -103,7 +115,9 @@ export default function ConversationsPage() {
       {/* Chat-like 3-panel layout */}
       <div className={styles.chatContainer}>
         {/* Settings Sidebar */}
-        <aside className={`${styles.settingsSidebar} ${!showSettings ? styles.sidebarHidden : ""}`}>
+        <aside
+          className={`${styles.settingsSidebar} ${!showSettings ? styles.sidebarHidden : ""}`}
+        >
           <div className={styles.glassHeader}>Settings</div>
           {selectedConv?.settings ? (
             <SettingsPanel
@@ -137,13 +151,14 @@ export default function ConversationsPage() {
             {selectedConv && (
               <div className={styles.headerMeta}>
                 <span className={styles.metaBadge}>{selectedConv.project}</span>
-                {selectedConv.username && selectedConv.username !== "unknown" && (
-                  <span className={styles.userBadge}>{selectedConv.username}</span>
-                )}
+                {selectedConv.username &&
+                  selectedConv.username !== "unknown" && (
+                    <span className={styles.userBadge}>
+                      {selectedConv.username}
+                    </span>
+                  )}
                 <span>{selectedConv.messages?.length || 0} messages</span>
-                {uniqueModels.length === 1 && (
-                  <span>{uniqueModels[0]}</span>
-                )}
+                {uniqueModels.length === 1 && <span>{uniqueModels[0]}</span>}
                 {uniqueModels.length > 1 && (
                   <span className={styles.modelDropdownWrapper}>
                     <button
@@ -160,16 +175,16 @@ export default function ConversationsPage() {
                         />
                         <div className={styles.modelDropdown}>
                           {uniqueModels.map((m) => (
-                            <div key={m} className={styles.modelDropdownItem}>{m}</div>
+                            <div key={m} className={styles.modelDropdownItem}>
+                              {m}
+                            </div>
                           ))}
                         </div>
                       </>
                     )}
                   </span>
                 )}
-                {totalCost > 0 && (
-                  <span>${totalCost.toFixed(5)}</span>
-                )}
+                {totalCost > 0 && <span>${totalCost.toFixed(5)}</span>}
               </div>
             )}
           </div>
@@ -185,10 +200,7 @@ export default function ConversationsPage() {
             ) : loadingDetail ? (
               <div className={styles.emptyViewer}>Loading conversation...</div>
             ) : (
-              <MessageList
-                messages={selectedConv.messages || []}
-                readOnly
-              />
+              <MessageList messages={selectedConv.messages || []} readOnly />
             )}
           </div>
         </section>
@@ -206,7 +218,9 @@ export default function ConversationsPage() {
         </button>
 
         {/* History Sidebar */}
-        <aside className={`${styles.historySidebar} ${!showHistory ? styles.sidebarHidden : ""}`}>
+        <aside
+          className={`${styles.historySidebar} ${!showHistory ? styles.sidebarHidden : ""}`}
+        >
           <div className={styles.glassHeader}>History</div>
           <HistoryPanel
             conversations={conversations}

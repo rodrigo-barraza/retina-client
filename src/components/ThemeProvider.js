@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import StorageService from "../services/StorageService";
 
 const THEME_KEY = "theme";
@@ -11,15 +17,19 @@ const ThemeContext = createContext({
 });
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState("light");
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== "undefined") {
+      return StorageService.get(THEME_KEY, "light");
+    }
+    return "light";
+  });
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const saved = StorageService.get(THEME_KEY, "light");
-    setTheme(saved);
-    document.documentElement.setAttribute("data-theme", saved);
+    document.documentElement.setAttribute("data-theme", theme);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Standard SSR mount pattern
     setMounted(true);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!mounted) return;
@@ -50,4 +60,3 @@ export function ThemeProvider({ children }) {
 export function useTheme() {
   return useContext(ThemeContext);
 }
-

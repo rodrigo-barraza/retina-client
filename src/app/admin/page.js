@@ -7,8 +7,6 @@ import {
   Zap,
   DollarSign,
   Clock,
-  MessageSquare,
-  TrendingUp,
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
@@ -66,7 +64,11 @@ export default function DashboardPage() {
             IrisService.getProjectStats(),
             IrisService.getModelStats(),
             IrisService.getTimeline(24),
-            IrisService.getRequests({ limit: 10, sort: "timestamp", order: "desc" }),
+            IrisService.getRequests({
+              limit: 10,
+              sort: "timestamp",
+              order: "desc",
+            }),
           ]);
 
         setStats(statsData);
@@ -86,16 +88,12 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const maxTimelineRequests = Math.max(
-    ...timeline.map((t) => t.requests),
-    1,
-  );
+  const maxTimelineRequests = Math.max(...timeline.map((t) => t.requests), 1);
 
   // Build provider distribution from model stats
   const providerMap = {};
   modelStats.forEach((m) => {
-    providerMap[m.provider] =
-      (providerMap[m.provider] || 0) + m.totalRequests;
+    providerMap[m.provider] = (providerMap[m.provider] || 0) + m.totalRequests;
   });
   const providerEntries = Object.entries(providerMap).sort(
     (a, b) => b[1] - a[1],
@@ -178,11 +176,7 @@ export default function DashboardPage() {
               ? "..."
               : `${stats?.totalRequests ? ((stats.successCount / stats.totalRequests) * 100).toFixed(1) : 0}%`
           }
-          subtitle={
-            loading
-              ? ""
-              : `${stats?.errorCount || 0} errors`
-          }
+          subtitle={loading ? "" : `${stats?.errorCount || 0} errors`}
           icon={stats?.errorCount > 0 ? AlertCircle : CheckCircle}
           variant={stats?.errorCount > 0 ? "danger" : "success"}
           loading={loading}
@@ -359,7 +353,9 @@ export default function DashboardPage() {
               {projectStats.length > 0 ? (
                 projectStats.map((p, i) => (
                   <tr key={p.project || i}>
-                    <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>
+                    <td
+                      style={{ fontWeight: 500, color: "var(--text-primary)" }}
+                    >
                       {p.project}
                     </td>
                     <td>{formatNumber(p.totalRequests)}</td>

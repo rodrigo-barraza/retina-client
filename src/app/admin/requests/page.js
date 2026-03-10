@@ -1,13 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  Download,
-  X,
-  ChevronUp,
-  ChevronDown,
-  AlertCircle,
-} from "lucide-react";
+import { Download, X, ChevronUp, ChevronDown, AlertCircle } from "lucide-react";
 import { IrisService } from "../../../services/IrisService";
 import styles from "./page.module.css";
 
@@ -325,8 +319,8 @@ export default function RequestsPage() {
         {/* Pagination */}
         <div className={styles.pagination}>
           <span className={styles.pageInfo}>
-            Showing {(page - 1) * LIMIT + 1}–
-            {Math.min(page * LIMIT, total)} of {total.toLocaleString()}
+            Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of{" "}
+            {total.toLocaleString()}
           </span>
           <div className={styles.pageButtons}>
             <button

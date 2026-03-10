@@ -54,8 +54,13 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .welcome h3 {
@@ -95,7 +100,10 @@
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .capabilityCard:hover {
@@ -160,7 +168,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    background 0.2s;
   flex-shrink: 0;
 }
 
@@ -500,7 +510,9 @@
   resize: vertical;
   font-family: inherit;
   box-shadow: 0 0 0 2px var(--accent-glow);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .editTextarea:focus {
@@ -564,9 +576,15 @@
   font-weight: 600;
 }
 
-.text h1 { font-size: 1.4em; }
-.text h2 { font-size: 1.2em; }
-.text h3 { font-size: 1.1em; }
+.text h1 {
+  font-size: 1.4em;
+}
+.text h2 {
+  font-size: 1.2em;
+}
+.text h3 {
+  font-size: 1.1em;
+}
 
 .text p {
   margin: 8px 0;

@@ -84,7 +84,10 @@ export default function SelectDropdown({
             {selected ? selected.label : placeholder}
           </span>
         </span>
-        <ChevronDown size={14} className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`} />
+        <ChevronDown
+          size={14}
+          className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`}
+        />
       </button>
 
       {open && (
@@ -97,7 +100,9 @@ export default function SelectDropdown({
               onClick={() => handleSelect(opt)}
               disabled={opt.disabled}
             >
-              {opt.icon && <span className={styles.optionIcon}>{opt.icon}</span>}
+              {opt.icon && (
+                <span className={styles.optionIcon}>{opt.icon}</span>
+              )}
               <span className={styles.optionLabel}>{opt.label}</span>
             </button>
           ))}

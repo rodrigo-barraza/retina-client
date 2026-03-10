@@ -22,7 +22,10 @@
   background: var(--select-bg);
   border: 1px solid var(--border-color);
   border-radius: 2px;
-  transition: background 0.25s, border-color 0.25s, box-shadow 0.2s;
+  transition:
+    background 0.25s,
+    border-color 0.25s,
+    box-shadow 0.2s;
   flex-shrink: 0;
   cursor: pointer;
 }
@@ -45,7 +48,9 @@
   height: 16px;
   background: var(--text-secondary);
   border-radius: 50%;
-  transition: transform 0.25s, background 0.25s;
+  transition:
+    transform 0.25s,
+    background 0.25s;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 

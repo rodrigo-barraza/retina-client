@@ -102,18 +102,28 @@ export default function LmStudioPage() {
     await fetchModels();
   };
 
-  const llmModels = models.filter((m) => m.type === "llm").map((m) => ({ ...m, provider: "lm-studio" }));
-  const loadedCount = llmModels.filter((m) => m.loaded_instances?.length > 0).length;
+  const llmModels = models
+    .filter((m) => m.type === "llm")
+    .map((m) => ({ ...m, provider: "lm-studio" }));
+  const loadedCount = llmModels.filter(
+    (m) => m.loaded_instances?.length > 0,
+  ).length;
 
   const renderActions = (model) => {
     const isLoaded = model.loaded_instances?.length > 0;
     const instance = model.loaded_instances?.[0];
-    const isActioning = actionInProgress && (actionInProgress.id === model.key || actionInProgress.id === instance?.id);
+    const isActioning =
+      actionInProgress &&
+      (actionInProgress.id === model.key ||
+        actionInProgress.id === instance?.id);
     const actionType = isActioning ? actionInProgress.type : null;
 
     if (isActioning) {
       return (
-        <button className={`${styles.actionBtn} ${actionType === "unload" ? styles.unloadBtn : styles.loadingBtn}`} disabled>
+        <button
+          className={`${styles.actionBtn} ${actionType === "unload" ? styles.unloadBtn : styles.loadingBtn}`}
+          disabled
+        >
           <Loader2 size={10} className={styles.spinning} />
           {actionType === "load" ? "Loading…" : "Unloading…"}
         </button>
@@ -124,7 +134,10 @@ export default function LmStudioPage() {
       return (
         <button
           className={`${styles.actionBtn} ${styles.unloadBtn}`}
-          onClick={(e) => { e.stopPropagation(); handleUnload(instance.id); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleUnload(instance.id);
+          }}
           title="Unload model"
           disabled={!!actionInProgress}
         >
@@ -137,7 +150,10 @@ export default function LmStudioPage() {
     return (
       <button
         className={`${styles.actionBtn} ${styles.loadBtn}`}
-        onClick={(e) => { e.stopPropagation(); handleLoad(model.key); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleLoad(model.key);
+        }}
         title="Load model"
         disabled={!!actionInProgress}
       >
@@ -154,13 +170,18 @@ export default function LmStudioPage() {
           <h1 className={styles.pageTitle}>
             <Server size={24} /> LM Studio
           </h1>
-          <button className={styles.refreshBtn} onClick={handleRefresh} disabled={loading}>
+          <button
+            className={styles.refreshBtn}
+            onClick={handleRefresh}
+            disabled={loading}
+          >
             <RefreshCw size={16} className={loading ? styles.spinning : ""} />
             Refresh
           </button>
         </div>
         <p className={styles.pageSubtitle}>
-          Manage local models — {loadedCount} loaded, {llmModels.length} available
+          Manage local models — {loadedCount} loaded, {llmModels.length}{" "}
+          available
         </p>
       </div>
 
@@ -176,7 +197,11 @@ export default function LmStudioPage() {
 
       {toast && (
         <div className={`${styles.toast} ${styles[toast.type]}`}>
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+          {toast.type === "success" ? (
+            <CheckCircle size={16} />
+          ) : (
+            <AlertCircle size={16} />
+          )}
           {toast.message}
         </div>
       )}

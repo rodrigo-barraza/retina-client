@@ -16,8 +16,14 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Avatar ── */
@@ -167,8 +173,8 @@
 }
 
 .messageImage {
-    width: 100%;
-    max-width: 1080px;
+  width: 100%;
+  max-width: 1080px;
   border-radius: 2px;
   border: 1px solid var(--border-color);
   object-fit: cover;
@@ -226,23 +232,37 @@
   color: var(--text-primary);
 }
 
-.text h1, .text h2, .text h3, .text h4 {
+.text h1,
+.text h2,
+.text h3,
+.text h4 {
   margin: 16px 0 8px;
   font-weight: 600;
 }
 
-.text h1 { font-size: 1.4em; }
-.text h2 { font-size: 1.2em; }
-.text h3 { font-size: 1.1em; }
+.text h1 {
+  font-size: 1.4em;
+}
+.text h2 {
+  font-size: 1.2em;
+}
+.text h3 {
+  font-size: 1.1em;
+}
 
-.text p { margin: 8px 0; }
+.text p {
+  margin: 8px 0;
+}
 
-.text ul, .text ol {
+.text ul,
+.text ol {
   padding-left: 20px;
   margin: 8px 0;
 }
 
-.text li { margin: 4px 0; }
+.text li {
+  margin: 4px 0;
+}
 
 .text blockquote {
   border-left: 3px solid var(--accent-color);
@@ -271,7 +291,8 @@
   font-size: 14px;
 }
 
-.text th, .text td {
+.text th,
+.text td {
   border: 1px solid var(--border-color);
   padding: 8px 12px;
   text-align: left;

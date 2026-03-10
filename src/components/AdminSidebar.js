@@ -24,7 +24,10 @@ const NAV_ITEMS = [
   { href: "/admin/live", label: "Live Activity", icon: Activity, live: true },
 ];
 
-export default function AdminSidebar({ liveCount = 0, systemStatus = "connected" }) {
+export default function AdminSidebar({
+  liveCount = 0,
+  systemStatus = "connected",
+}) {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
 
