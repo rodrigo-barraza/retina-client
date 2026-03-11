@@ -266,6 +266,16 @@ export default function ChatArea({
         endRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, isGenerating]);
 
+    // Reset welcome flow when starting a new chat
+    useEffect(() => {
+        if (messages.length === 0) {
+            setWelcomeDone(false);
+            setWelcomeStep("pickOutput");
+            setSelectedOutput(null);
+            setSelectedInput(null);
+        }
+    }, [messages.length]);
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (isTranscriptionModel) {
