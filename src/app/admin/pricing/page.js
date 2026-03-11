@@ -53,6 +53,32 @@ const tpsRender = (row) => {
     return `${Number(v).toFixed(1)}`;
 };
 
+// Merge endpoint rows that map to the same modality label
+function mergeByModality(rows) {
+    const map = {};
+    for (const row of rows) {
+        const label = ENDPOINT_LABELS[row.endpoint] || row.endpoint;
+        if (!map[label]) {
+            map[label] = { ...row, endpoint: row.endpoint, _label: label };
+        } else {
+            const m = map[label];
+            const prevReq = m.totalRequests;
+            const curReq = row.totalRequests;
+            m.totalCost += row.totalCost;
+            m.totalInputTokens += row.totalInputTokens;
+            m.totalOutputTokens += row.totalOutputTokens;
+            // Weighted average for tok/s
+            if (row.avgTokensPerSec && m.avgTokensPerSec) {
+                m.avgTokensPerSec = (m.avgTokensPerSec * prevReq + row.avgTokensPerSec * curReq) / (prevReq + curReq);
+            } else if (row.avgTokensPerSec) {
+                m.avgTokensPerSec = row.avgTokensPerSec;
+            }
+            m.totalRequests += row.totalRequests;
+        }
+    }
+    return Object.values(map);
+}
+
 export default function PricingPage() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -385,7 +411,7 @@ export default function PricingPage() {
                     getRowKey={(row) => `${row.project}-${projectBreakdown}`}
                     getSubRows={(row) =>
                         projectBreakdown === "modality"
-                            ? row.byEndpoint || []
+                            ? mergeByModality(row.byEndpoint || [])
                             : projectBreakdown === "model"
                                 ? row.byModel || []
                                 : row.byProvider || []
@@ -410,7 +436,7 @@ export default function PricingPage() {
                     <SortableTable
                         title="Cost by Modality"
                         columns={modalityColumns}
-                        data={data?.byEndpoint || []}
+                        data={mergeByModality(data?.byEndpoint || [])}
                         getRowKey={(row) => row.endpoint}
                         emptyText={loading ? "Loading..." : "No data yet"}
                     />
