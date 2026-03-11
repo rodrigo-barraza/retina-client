@@ -21,6 +21,12 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  transition:
+    width 0.5s ease,
+    min-width 0.5s ease,
+    opacity 0.5s ease,
+    border-width 0.5s ease;
+  opacity: 1;
 }
 
 .rightSidebar {
@@ -33,6 +39,13 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
+  transition:
+    width 0.5s ease,
+    min-width 0.5s ease,
+    opacity 0.5s ease,
+    border-width 0.5s ease;
+  opacity: 1;
 }
 
 .mainChat {
@@ -59,6 +72,7 @@
   text-transform: uppercase;
   color: var(--text-secondary);
   flex-shrink: 0;
+  gap: 8px;
 }
 
 .headerTitle {
@@ -230,30 +244,30 @@
   opacity: 1;
 }
 
-/* Sidebar hidden state */
+/* Sidebar hidden state — animated collapse */
 .sidebarHidden {
-  display: none;
+  width: 0 !important;
+  min-width: 0 !important;
+  opacity: 0;
+  border-width: 0 !important;
+  pointer-events: none;
 }
 
 /* Mobile / narrow viewport */
 @media (max-width: 767px) {
   .leftSidebar,
   .rightSidebar {
-    display: none;
     position: fixed;
     inset: 0;
     width: 100%;
     min-width: 100%;
     z-index: 200;
     border: none;
-  }
-
-  .leftSidebar:not(.sidebarHidden),
-  .rightSidebar:not(.sidebarHidden) {
-    display: flex;
+    transition: opacity 0.3s ease;
   }
 
   .sidebarHidden {
-    display: none;
+    opacity: 0;
+    pointer-events: none;
   }
 }
