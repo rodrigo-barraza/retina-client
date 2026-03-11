@@ -1,6 +1,7 @@
 .dropdown {
   position: relative;
   width: 100%;
+  min-width: fit-content;
 }
 
 /* Trigger (the visible "selected" area) */
