@@ -534,7 +534,7 @@ export default function SettingsPanel({
                         </div>
                     )}
 
-                {!isSpecialModel && (
+                {!isSpecialModel && settings.provider !== "ollama" && (
                     <>
                         <div className={styles.sectionTitle}>
                             <Settings2 size={16} /> Parameters
