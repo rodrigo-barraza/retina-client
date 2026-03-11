@@ -39,16 +39,23 @@ export default function SettingsPanel({
     const textModelsMap = textToText.models || {};
     const audioToTextModelsMap = config?.audioToText?.models || {};
     const ttsModelsMap = config?.textToSpeech?.models || {};
+    const imageModelsMap = config?.textToImage?.models || {};
 
-    // Build a merged models map: textToText + audioToText + textToSpeech
+    // Build a merged models map: textToText + textToImage + audioToText + textToSpeech
     const allProviderKeys = new Set([
         ...Object.keys(textModelsMap),
+        ...Object.keys(imageModelsMap),
         ...Object.keys(audioToTextModelsMap),
         ...Object.keys(ttsModelsMap),
     ]);
     const modelsMap = {};
     for (const p of allProviderKeys) {
         const textModels = textModelsMap[p] || [];
+        const imgModels = (imageModelsMap[p] || []).map((m) => ({
+            ...m,
+            label: `${m.label} (Image)`,
+            _isImageGen: true,
+        }));
         const sttModels = (audioToTextModelsMap[p] || []).map((m) => ({
             ...m,
             label: `${m.label} (Transcribe)`,
@@ -59,10 +66,10 @@ export default function SettingsPanel({
             label: `${m.label} (TTS)`,
             _isTTS: true,
         }));
-        // Merge text models first, then transcription, then TTS — deduplicated by name
+        // Merge text models first, then image, then transcription, then TTS — deduplicated by name
         const seen = new Set();
         const merged = [];
-        for (const m of [...textModels, ...sttModels, ...ttsModels]) {
+        for (const m of [...textModels, ...imgModels, ...sttModels, ...ttsModels]) {
             if (!seen.has(m.name)) {
                 seen.add(m.name);
                 merged.push(m);

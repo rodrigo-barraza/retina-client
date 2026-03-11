@@ -633,15 +633,26 @@ export default function Home({ initialConversationId = null }) {
     };
 
     // Check if current model is an audio-to-text (transcription) model
+    // Only true if the model is in audioToText but NOT in textToText or textToImage
+    // (some models like Gemini 3 Flash share the same name across sections)
     const isTranscriptionModel = (() => {
         const atModels = config?.audioToText?.models?.[settings.provider] || [];
-        return atModels.some((m) => m.name === settings.model);
+        if (!atModels.some((m) => m.name === settings.model)) return false;
+        const ttModels = config?.textToText?.models?.[settings.provider] || [];
+        const tiModels = config?.textToImage?.models?.[settings.provider] || [];
+        return !ttModels.some((m) => m.name === settings.model) &&
+            !tiModels.some((m) => m.name === settings.model);
     })();
 
     // Check if current model is a text-to-speech (TTS) model
+    // Only true if the model is in textToSpeech but NOT in textToText or textToImage
     const isTTSModel = (() => {
         const ttsModels = config?.textToSpeech?.models?.[settings.provider] || [];
-        return ttsModels.some((m) => m.name === settings.model);
+        if (!ttsModels.some((m) => m.name === settings.model)) return false;
+        const ttModels = config?.textToText?.models?.[settings.provider] || [];
+        const tiModels = config?.textToImage?.models?.[settings.provider] || [];
+        return !ttModels.some((m) => m.name === settings.model) &&
+            !tiModels.some((m) => m.name === settings.model);
     })();
 
     const handleSend = async (content, images = []) => {
@@ -1224,9 +1235,16 @@ export default function Home({ initialConversationId = null }) {
                             ? ["audio"]
                             : isTTSModel
                                 ? ["text"]
-                                : (config?.textToText?.models?.[settings.provider] || []).find(
-                                    (m) => m.name === settings.model,
-                                )?.inputTypes || []
+                                : (() => {
+                                    const sections = ["textToText", "textToImage", "textToSpeech", "audioToText"];
+                                    for (const section of sections) {
+                                        const found = (config?.[section]?.models?.[settings.provider] || []).find(
+                                            (m) => m.name === settings.model,
+                                        );
+                                        if (found?.inputTypes) return found.inputTypes;
+                                    }
+                                    return [];
+                                })()
                     }
                     systemPrompt={settings.systemPrompt}
                     onSystemPromptClick={() => setShowSystemPromptModal(true)}
