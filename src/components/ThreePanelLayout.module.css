@@ -130,22 +130,61 @@
   opacity: 1;
 }
 
-/* ── Mobile ────────────────────────────────────────── */
+/* ── Mobile Slit (backdrop strip) ──────────────────── */
+
+.mobileSlit {
+  display: none;
+}
 
 @media (max-width: 767px) {
   .leftSidebar,
   .rightSidebar {
     position: fixed;
-    inset: 0;
-    width: 100%;
-    min-width: 100%;
+    top: 0;
+    bottom: 0;
+    width: calc(100% - 60px);
+    min-width: calc(100% - 60px);
     z-index: 200;
     border: none;
     transition: opacity 0.3s ease;
   }
 
+  .leftSidebar {
+    left: 0;
+    right: auto;
+  }
+
+  .rightSidebar {
+    right: 0;
+    left: auto;
+  }
+
   .sidebarHidden {
     opacity: 0;
     pointer-events: none;
+  }
+
+  .mobileSlit {
+    display: block;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 60px;
+    z-index: 199;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+  }
+
+  .mobileSlit[data-side="left"] {
+    right: 0;
+    left: auto;
+  }
+
+  .mobileSlit[data-side="right"] {
+    left: 0;
+    right: auto;
   }
 }

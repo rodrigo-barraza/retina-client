@@ -70,6 +70,15 @@ export default function ThreePanelLayout({
     // Suppress the CSS transition on first paint so panels don't animate from open→closed
     const transitionStyle = hydrated ? undefined : { transition: "none" };
 
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener("resize", check);
+        return () => window.removeEventListener("resize", check);
+    }, []);
+
     return (
         <div className={styles.container}>
             {/* Left Sidebar */}
@@ -80,6 +89,15 @@ export default function ThreePanelLayout({
                 <div className={styles.sidebarHeader}>{leftTitle}</div>
                 {leftPanel}
             </aside>
+
+            {/* Mobile slit: visible strip behind left sidebar (settings) — appears on right edge */}
+            {isMobile && showLeft && (
+                <div
+                    className={styles.mobileSlit}
+                    data-side="left"
+                    onClick={toggleLeft}
+                />
+            )}
 
             {/* Main Center */}
             <section className={styles.main}>
@@ -104,6 +122,15 @@ export default function ThreePanelLayout({
                 </div>
                 {children}
             </section>
+
+            {/* Mobile slit: visible strip behind right sidebar (history) — appears on left edge */}
+            {isMobile && showRight && (
+                <div
+                    className={styles.mobileSlit}
+                    data-side="right"
+                    onClick={toggleRight}
+                />
+            )}
 
             {/* Right Sidebar */}
             <aside
