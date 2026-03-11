@@ -1,7 +1,19 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, X, ChevronDown, ChevronUp } from "lucide-react";
+import {
+    Search,
+    X,
+    ChevronDown,
+    ChevronUp,
+    Type,
+    Image,
+    Volume2,
+    Video,
+    FileText,
+    ArrowRight,
+    Hash,
+} from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import styles from "./ModelGrid.module.css";
 
@@ -28,6 +40,38 @@ const ARENA_COLUMNS = [
     { key: "imageEdit", label: "Image Edit" },
     { key: "search", label: "Search" },
 ];
+
+const MODALITY_ICONS = {
+    text: { icon: Type, title: "Text" },
+    image: { icon: Image, title: "Image" },
+    audio: { icon: Volume2, title: "Audio" },
+    video: { icon: Video, title: "Video" },
+    pdf: { icon: FileText, title: "PDF" },
+    embedding: { icon: Hash, title: "Embedding" },
+};
+
+function ModalityCell({ inputTypes, outputTypes }) {
+    if (!inputTypes?.length && !outputTypes?.length) return "—";
+    return (
+        <span className={styles.modalities}>
+            {(inputTypes || []).map((t) => {
+                const m = MODALITY_ICONS[t];
+                if (!m) return null;
+                const Icon = m.icon;
+                return <Icon key={`in-${t}`} size={12} title={m.title} />;
+            })}
+            {inputTypes?.length > 0 && outputTypes?.length > 0 && (
+                <ArrowRight size={10} className={styles.modalityArrow} />
+            )}
+            {(outputTypes || []).map((t) => {
+                const m = MODALITY_ICONS[t];
+                if (!m) return null;
+                const Icon = m.icon;
+                return <Icon key={`out-${t}`} size={12} title={m.title} />;
+            })}
+        </span>
+    );
+}
 
 function normalizeModel(model) {
     return {
@@ -142,6 +186,9 @@ export default function ModelGrid({
     const hasOutputPrice = filtered.some(
         (m) => m.pricing?.outputPerMillion != null,
     );
+    const hasModalities = filtered.some(
+        (m) => m.inputTypes?.length > 0 || m.outputTypes?.length > 0,
+    );
     const hasActions = !!renderActions;
 
     const arenaCols = ARENA_COLUMNS.filter((col) =>
@@ -226,6 +273,7 @@ export default function ModelGrid({
                         <thead>
                             <tr>
                                 <th className={styles.th}>Model</th>
+                                {hasModalities && <th className={styles.th}>Modalities</th>}
                                 {hasContext && sortableTh("Context", "context")}
                                 {hasSize && sortableTh("Size", "size")}
                                 {hasParams && sortableTh("Params", "params")}
@@ -287,6 +335,14 @@ export default function ModelGrid({
                                                 </span>
                                             </div>
                                         </td>
+                                        {hasModalities && (
+                                            <td className={styles.td}>
+                                                <ModalityCell
+                                                    inputTypes={rawModel.inputTypes}
+                                                    outputTypes={rawModel.outputTypes}
+                                                />
+                                            </td>
+                                        )}
                                         {hasContext && (
                                             <td className={styles.td}>
                                                 {model.contextLength

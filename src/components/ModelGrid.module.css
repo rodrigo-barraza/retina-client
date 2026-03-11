@@ -303,6 +303,21 @@
   opacity: 0.3;
 }
 
+/* ── Modalities ────────────────────────────────────── */
+
+.modalities {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.modalityArrow {
+  opacity: 0.4;
+  margin: 0 1px;
+}
+
 /* ── Empty state ───────────────────────────────────── */
 
 .empty {
