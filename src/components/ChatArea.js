@@ -261,6 +261,61 @@ export default function ChatArea({
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const [systemPromptExpanded, setSystemPromptExpanded] = useState(true);
+    const [isDragging, setIsDragging] = useState(false);
+    const dragCounter = useRef(0);
+
+    // Check if a file matches the accepted types
+    const isFileAccepted = (file) => {
+        if (!acceptStr) return false;
+        const accepts = acceptStr.split(",").map((a) => a.trim());
+        return accepts.some((accept) => {
+            if (accept.endsWith("/*")) {
+                const category = accept.replace("/*", "");
+                return file.type.startsWith(category + "/");
+            }
+            return file.type === accept;
+        });
+    };
+
+    const handleDragEnter = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current++;
+        if (hasFileInput && e.dataTransfer?.items?.length > 0) {
+            setIsDragging(true);
+        }
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current--;
+        if (dragCounter.current === 0) {
+            setIsDragging(false);
+        }
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+        dragCounter.current = 0;
+        if (!hasFileInput) return;
+        const files = Array.from(e.dataTransfer?.files || []);
+        const accepted = files.filter(isFileAccepted);
+        for (const file of accepted) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                setPendingImages((prev) => [...prev, ev.target.result]);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     useEffect(() => {
         endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -604,7 +659,20 @@ export default function ChatArea({
             </div>
 
             <div className={styles.inputWrapper}>
-                <form onSubmit={handleSubmit} className={styles.inputBox}>
+                <form
+                    onSubmit={handleSubmit}
+                    className={`${styles.inputBox} ${isDragging ? styles.inputBoxDragActive : ""}`}
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                >
+                    {isDragging && (
+                        <div className={styles.dragOverlay}>
+                            <Paperclip size={20} />
+                            <span>Drop files here</span>
+                        </div>
+                    )}
                     {pendingImages.length > 0 && (
                         <div className={styles.pendingImages}>
                             {pendingImages.map((dataUrl, i) => (
