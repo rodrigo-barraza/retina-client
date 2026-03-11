@@ -5,10 +5,11 @@ import styles from "./page.module.css";
 import { PrismService } from "../services/PrismService";
 import StorageService from "../services/StorageService";
 import { useTheme } from "../components/ThemeProvider";
-import { Sun, Moon, Settings, History } from "lucide-react";
+import { Sun, Moon } from "lucide-react";
 import SettingsPanel from "../components/SettingsPanel";
 import ChatArea from "../components/ChatArea";
 import HistoryPanel from "../components/HistoryPanel";
+import ThreePanelLayout from "../components/ThreePanelLayout";
 
 export default function Home() {
     const { theme, toggleTheme } = useTheme();
@@ -45,12 +46,6 @@ export default function Home() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [showModelList, setShowModelList] = useState(false);
     const [showSystemPromptModal, setShowSystemPromptModal] = useState(false);
-    const [showSettings, setShowSettings] = useState(() =>
-        typeof window !== "undefined" ? window.innerWidth >= 768 : true,
-    );
-    const [showHistory, setShowHistory] = useState(() =>
-        typeof window !== "undefined" ? window.innerWidth >= 768 : true,
-    );
     const skipSystemPromptSave = useRef(false);
 
     const uniqueModels = useMemo(
@@ -1093,38 +1088,32 @@ export default function Home() {
 
     return (
         <main className={styles.appContainer}>
-            <aside
-                className={`${styles.leftSidebar} ${!showSettings ? styles.sidebarHidden : ""}`}
-            >
-                <div className={styles.glassHeader}>Settings</div>
-                <SettingsPanel
-                    config={config}
-                    settings={settings}
-                    onChange={(updates) => setSettings((s) => ({ ...s, ...updates }))}
-                    hasAssistantImages={messages.some(
-                        (m) => m.role === "assistant" && m.images?.length > 0,
-                    )}
-                    inferenceMode={inferenceMode}
-                    onSystemPromptClick={() => setShowSystemPromptModal(true)}
-                    showSystemPromptModal={showSystemPromptModal}
-                    onCloseSystemPromptModal={() => setShowSystemPromptModal(false)}
-                />
-            </aside>
-
-            <section className={styles.mainChat}>
-                <div className={styles.glassHeader}>
-                    <button
-                        className={styles.headerToggle}
-                        onClick={() => {
-                            const next = !showSettings;
-                            setShowSettings(next);
-                            if (next && window.innerWidth < 768) setShowHistory(false);
-                        }}
-                        title={showSettings ? "Hide settings" : "Show settings"}
-                    >
-                        <Settings size={16} />
-                    </button>
-                    <span className={styles.headerTitle}>{title}</span>
+            <ThreePanelLayout
+                leftPanel={
+                    <SettingsPanel
+                        config={config}
+                        settings={settings}
+                        onChange={(updates) => setSettings((s) => ({ ...s, ...updates }))}
+                        hasAssistantImages={messages.some(
+                            (m) => m.role === "assistant" && m.images?.length > 0,
+                        )}
+                        inferenceMode={inferenceMode}
+                        onSystemPromptClick={() => setShowSystemPromptModal(true)}
+                        showSystemPromptModal={showSystemPromptModal}
+                        onCloseSystemPromptModal={() => setShowSystemPromptModal(false)}
+                    />
+                }
+                rightPanel={
+                    <HistoryPanel
+                        conversations={conversations}
+                        activeId={activeId}
+                        onSelect={handleSelectConversation}
+                        onNew={handleNewChat}
+                        onDelete={handleDeleteConversation}
+                    />
+                }
+                headerTitle={title}
+                headerMeta={
                     <div className={styles.headerMeta}>
                         {messages.length > 0 && <span>{messages.length} messages</span>}
                         {uniqueModels.length === 1 && <span>{uniqueModels[0]}</span>}
@@ -1155,6 +1144,8 @@ export default function Home() {
                         )}
                         {totalCost > 0 && <span>${totalCost.toFixed(5)}</span>}
                     </div>
+                }
+                headerControls={
                     <div className={styles.headerControls}>
                         <button
                             className={styles.themeToggle}
@@ -1168,18 +1159,8 @@ export default function Home() {
                             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
                         </button>
                     </div>
-                    <button
-                        className={styles.headerToggle}
-                        onClick={() => {
-                            const next = !showHistory;
-                            setShowHistory(next);
-                            if (next && window.innerWidth < 768) setShowSettings(false);
-                        }}
-                        title={showHistory ? "Hide history" : "Show history"}
-                    >
-                        <History size={16} />
-                    </button>
-                </div>
+                }
+            >
                 <ChatArea
                     messages={messages}
                     isGenerating={isGenerating}
@@ -1219,20 +1200,7 @@ export default function Home() {
                     systemPrompt={settings.systemPrompt}
                     onSystemPromptClick={() => setShowSystemPromptModal(true)}
                 />
-            </section>
-
-            <aside
-                className={`${styles.rightSidebar} ${!showHistory ? styles.sidebarHidden : ""}`}
-            >
-                <div className={styles.glassHeader}>History</div>
-                <HistoryPanel
-                    conversations={conversations}
-                    activeId={activeId}
-                    onSelect={handleSelectConversation}
-                    onNew={handleNewChat}
-                    onDelete={handleDeleteConversation}
-                />
-            </aside>
+            </ThreePanelLayout>
         </main>
     );
 }
