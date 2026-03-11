@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import { PrismService } from "../services/PrismService";
 import StorageService from "../services/StorageService";
@@ -11,8 +12,9 @@ import ChatArea from "../components/ChatArea";
 import HistoryPanel from "../components/HistoryPanel";
 import ThreePanelLayout from "../components/ThreePanelLayout";
 
-export default function Home() {
+export default function Home({ initialConversationId = null }) {
     const { theme, toggleTheme } = useTheme();
+    const router = useRouter();
     const [config, setConfig] = useState(null);
     const [inferenceMode, _setInferenceMode] = useState(() =>
         StorageService.get("inferenceMode", "async"),
@@ -126,6 +128,35 @@ export default function Home() {
         // Load history
         loadConversations();
     }, []);
+
+    // Load conversation from URL path on mount
+    const urlLoadedRef = useRef(false);
+    useEffect(() => {
+        if (initialConversationId && conversations.length > 0 && !urlLoadedRef.current) {
+            urlLoadedRef.current = true;
+            const conv = conversations.find((c) => c.id === initialConversationId);
+            if (conv) {
+                handleSelectConversation(conv);
+            } else {
+                // Conversation not found — redirect to home
+                router.replace("/");
+            }
+        }
+    }, [initialConversationId, conversations]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Sync activeId → URL path (covers all setActiveId call sites)
+    const mountedRef = useRef(false);
+    useEffect(() => {
+        if (!mountedRef.current) {
+            mountedRef.current = true;
+            return;
+        }
+        if (activeId) {
+            window.history.replaceState({}, "", `/conversations/${activeId}`);
+        } else {
+            window.history.replaceState({}, "", "/");
+        }
+    }, [activeId]);
 
     const loadConversations = async () => {
         try {
