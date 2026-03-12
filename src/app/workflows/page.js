@@ -226,6 +226,15 @@ export default function WorkflowsPage() {
         setNodeResults({});
         abortRef.current = false;
 
+        // Clear viewer node content from previous runs
+        setNodes((prev) =>
+            prev.map((n) =>
+                n.nodeType === "viewer"
+                    ? { ...n, content: null, contentType: null, receivedOutputs: {} }
+                    : n,
+            ),
+        );
+
         try {
             await executeWorkflow(nodes, connections, {
                 onNodeStart: (nodeId) => {
@@ -237,16 +246,29 @@ export default function WorkflowsPage() {
                     setNodeStatuses((prev) => ({ ...prev, [nodeId]: "done" }));
                     setNodeResults((prev) => ({ ...prev, [nodeId]: outputs }));
 
-                    // Update viewer nodes with received content
+                    // Update viewer nodes with ALL received content
                     setNodes((prev) =>
                         prev.map((n) => {
                             if (n.id !== nodeId || n.nodeType !== "viewer") return n;
-                            // Pick the first non-empty output as display content
-                            const firstOutput = Object.entries(outputs).find(([, v]) => v);
-                            if (firstOutput) {
-                                return { ...n, content: firstOutput[1], contentType: firstOutput[0] };
+                            // Store all outputs on the viewer node
+                            const receivedOutputs = {};
+                            let firstContent = null;
+                            let firstType = null;
+                            for (const [type, data] of Object.entries(outputs)) {
+                                if (data) {
+                                    receivedOutputs[type] = data;
+                                    if (!firstContent) {
+                                        firstContent = data;
+                                        firstType = type;
+                                    }
+                                }
                             }
-                            return n;
+                            return {
+                                ...n,
+                                content: firstContent,
+                                contentType: firstType,
+                                receivedOutputs,
+                            };
                         }),
                     );
                 },
@@ -254,6 +276,28 @@ export default function WorkflowsPage() {
                     if (abortRef.current) return;
                     setNodeStatuses((prev) => ({ ...prev, [nodeId]: "error" }));
                     setNodeResults((prev) => ({ ...prev, [nodeId]: { error: error.message } }));
+                },
+                onViewerPartial: (viewerNodeId, partialOutputs) => {
+                    if (abortRef.current) return;
+                    // Show viewer as running while it receives partial data
+                    setNodeStatuses((prev) => {
+                        if (prev[viewerNodeId] === "done") return prev;
+                        return { ...prev, [viewerNodeId]: "running" };
+                    });
+                    // Incrementally update the viewer's received outputs
+                    setNodes((prev) =>
+                        prev.map((n) => {
+                            if (n.id !== viewerNodeId || n.nodeType !== "viewer") return n;
+                            const receivedOutputs = { ...(n.receivedOutputs || {}), ...partialOutputs };
+                            const firstEntry = Object.entries(receivedOutputs).find(([, v]) => v);
+                            return {
+                                ...n,
+                                content: firstEntry ? firstEntry[1] : null,
+                                contentType: firstEntry ? firstEntry[0] : null,
+                                receivedOutputs,
+                            };
+                        }),
+                    );
                 },
             });
         } catch (err) {

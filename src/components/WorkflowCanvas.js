@@ -42,7 +42,17 @@ function getPortPosition(node, portType, portIndex, configOffset = 0) {
 }
 
 function getAssetContentHeight(node) {
-    if (node.modality === "image" || node.nodeType === "viewer") return ASSET_CONTENT_HEIGHT;
+    if (node.nodeType === "viewer") {
+        const outputs = node.receivedOutputs;
+        if (!outputs || Object.keys(outputs).length === 0) return ASSET_CONTENT_HEIGHT_COMPACT + 20;
+        let h = 8; // padding
+        if (outputs.image) h += 140;
+        if (outputs.text) h += 50;
+        if (outputs.audio) h += 36;
+        if (outputs.video) h += 140;
+        return Math.max(h, ASSET_CONTENT_HEIGHT_COMPACT + 20);
+    }
+    if (node.modality === "image") return ASSET_CONTENT_HEIGHT;
     return ASSET_CONTENT_HEIGHT_COMPACT;
 }
 
@@ -51,7 +61,8 @@ function getNodeHeight(node, isExpanded = false) {
         const inputCount = (node.inputTypes || []).length;
         const outputCount = (node.outputTypes || []).length;
         const portRows = Math.max(inputCount, outputCount, 1);
-        const contentHeight = isExpanded ? getAssetContentHeight(node) + ASSET_INFO_HEIGHT : 0;
+        const infoHeight = node.nodeType === "viewer" ? 0 : ASSET_INFO_HEIGHT;
+        const contentHeight = isExpanded ? getAssetContentHeight(node) + infoHeight : 0;
         return HEADER_HEIGHT + contentHeight + portRows * PORT_SECTION_HEIGHT + 12;
     }
     const inputCount = (node.inputTypes || []).length;
@@ -570,12 +581,14 @@ export default function WorkflowCanvas({
 
     // Render an asset node (input asset or output viewer)
     const renderAssetNode = (node) => {
-        const isExpanded = expandedInputs.has(node.id);
+        const isViewer = node.nodeType === "viewer";
+        const isExpanded = isViewer
+            ? !expandedInputs.has(node.id) // viewers expanded by default, toggle collapses
+            : expandedInputs.has(node.id);
         const nodeHeight = getNodeHeight(node, isExpanded);
         const width = ASSET_NODE_WIDTH;
         const inputTypes = node.inputTypes || [];
         const outputTypes = node.outputTypes || [];
-        const isViewer = node.nodeType === "viewer";
         const accentColor = isViewer ? "#a78bfa" : (MODALITY_COLORS[node.modality] || "#8b5cf6");
         const AssetIcon = isViewer ? Eye : node.modality
             ? (ASSET_ICONS[node.modality] || MODALITY_ICONS[node.modality]?.icon || Paperclip)
@@ -634,9 +647,9 @@ export default function WorkflowCanvas({
                                 return next;
                             });
                         }}
-                        title="Node info"
+                        title={isViewer ? "View outputs" : "Node info"}
                     >
-                        <Settings size={12} />
+                        {isViewer ? <Eye size={12} /> : <Settings size={12} />}
                     </button>
                 </foreignObject>
 
@@ -655,21 +668,35 @@ export default function WorkflowCanvas({
                             <foreignObject x={4} y={HEADER_HEIGHT + 4} width={width - 8} height={contentH - 8}>
                                 {isViewer ? (
                                     <div className={styles.viewerContent}>
-                                        {node.content ? (
-                                            node.contentType === "image" ? (
-                                                <img
-                                                    src={node.content}
-                                                    alt="Generated output"
-                                                    className={styles.viewerImage}
-                                                />
-                                            ) : node.contentType === "audio" ? (
-                                                <div className={styles.viewerAudioLabel}>
-                                                    <Volume2 size={14} />
-                                                    Audio output
-                                                </div>
-                                            ) : (
-                                                <div className={styles.viewerText}>{node.content}</div>
-                                            )
+                                        {node.receivedOutputs && Object.keys(node.receivedOutputs).length > 0 ? (
+                                            <>
+                                                {node.receivedOutputs.image && (
+                                                    <img
+                                                        src={node.receivedOutputs.image}
+                                                        alt="Received image"
+                                                        className={styles.viewerImage}
+                                                    />
+                                                )}
+                                                {node.receivedOutputs.text && (
+                                                    <div className={styles.viewerText}>{node.receivedOutputs.text}</div>
+                                                )}
+                                                {node.receivedOutputs.audio && (
+                                                    <audio
+                                                        controls
+                                                        src={node.receivedOutputs.audio}
+                                                        style={{ width: "100%", height: 28 }}
+                                                        onMouseDown={(e) => e.stopPropagation()}
+                                                    />
+                                                )}
+                                                {node.receivedOutputs.video && (
+                                                    <video
+                                                        controls
+                                                        src={node.receivedOutputs.video}
+                                                        className={styles.viewerImage}
+                                                        onMouseDown={(e) => e.stopPropagation()}
+                                                    />
+                                                )}
+                                            </>
                                         ) : (
                                             <div className={styles.viewerEmpty}>
                                                 <Eye size={16} style={{ opacity: 0.3 }} />
@@ -747,25 +774,27 @@ export default function WorkflowCanvas({
                                 )}
                             </foreignObject>
 
-                            {/* Expandable info section */}
-                            <foreignObject x={4} y={HEADER_HEIGHT + contentH + 2} width={width - 8} height={ASSET_INFO_HEIGHT - 4}>
-                                <div className={styles.nodeConfig}>
-                                    <label className={styles.nodeConfigLabel}>Node ID</label>
-                                    <div style={{ fontSize: 9, color: "var(--text-muted)", fontFamily: "var(--font-mono)", wordBreak: "break-all" }}>
-                                        {node.id}
+                            {/* Expandable info section — skip for viewers */}
+                            {!isViewer && (
+                                <foreignObject x={4} y={HEADER_HEIGHT + contentH + 2} width={width - 8} height={ASSET_INFO_HEIGHT - 4}>
+                                    <div className={styles.nodeConfig}>
+                                        <label className={styles.nodeConfigLabel}>Node ID</label>
+                                        <div style={{ fontSize: 9, color: "var(--text-muted)", fontFamily: "var(--font-mono)", wordBreak: "break-all" }}>
+                                            {node.id}
+                                        </div>
+                                        <label className={styles.nodeConfigLabel}>Modality</label>
+                                        <div style={{ fontSize: 10, color: "var(--text-secondary)" }}>
+                                            {node.modality || "None (upload a file)"}
+                                        </div>
                                     </div>
-                                    <label className={styles.nodeConfigLabel}>Modality</label>
-                                    <div style={{ fontSize: 10, color: "var(--text-secondary)" }}>
-                                        {node.modality || "None (upload a file)"}
-                                    </div>
-                                </div>
-                            </foreignObject>
+                                </foreignObject>
+                            )}
                         </>
                     );
                 })()}
 
                 {/* Ports below content + info area */}
-                {renderPorts(node, inputTypes, outputTypes, isExpanded ? getAssetContentHeight(node) + ASSET_INFO_HEIGHT : 0)}
+                {renderPorts(node, inputTypes, outputTypes, isExpanded ? getAssetContentHeight(node) + (isViewer ? 0 : ASSET_INFO_HEIGHT) : 0)}
             </g>
         );
     };
@@ -788,15 +817,22 @@ export default function WorkflowCanvas({
         const targetIndex = (targetNode.inputTypes || []).indexOf(conn.targetModality);
         if (sourceIndex === -1 || targetIndex === -1) return null;
 
+        const isSourceAssetExpanded = sourceNode.nodeType
+            ? (sourceNode.nodeType === "viewer" ? !expandedInputs.has(sourceNode.id) : expandedInputs.has(sourceNode.id))
+            : false;
+        const isTargetAssetExpanded = targetNode.nodeType
+            ? (targetNode.nodeType === "viewer" ? !expandedInputs.has(targetNode.id) : expandedInputs.has(targetNode.id))
+            : false;
+
         const sourceOffset = !sourceNode.nodeType && expandedInputs.has(sourceNode.id)
             ? CONFIG_AREA_HEIGHT
-            : sourceNode.nodeType && expandedInputs.has(sourceNode.id)
-                ? getAssetContentHeight(sourceNode) + ASSET_INFO_HEIGHT
+            : isSourceAssetExpanded
+                ? getAssetContentHeight(sourceNode) + (sourceNode.nodeType === "viewer" ? 0 : ASSET_INFO_HEIGHT)
                 : 0;
         const targetOffset = !targetNode.nodeType && expandedInputs.has(targetNode.id)
             ? CONFIG_AREA_HEIGHT
-            : targetNode.nodeType && expandedInputs.has(targetNode.id)
-                ? getAssetContentHeight(targetNode) + ASSET_INFO_HEIGHT
+            : isTargetAssetExpanded
+                ? getAssetContentHeight(targetNode) + (targetNode.nodeType === "viewer" ? 0 : ASSET_INFO_HEIGHT)
                 : 0;
 
         const sourcePos = getPortPosition(sourceNode, "output", sourceIndex, sourceOffset);
@@ -849,10 +885,13 @@ export default function WorkflowCanvas({
         const sourceIndex = (sourceNode.outputTypes || []).indexOf(connecting.sourceModality);
         if (sourceIndex === -1) return null;
 
+        const isSourceAssetExpanded = sourceNode.nodeType
+            ? (sourceNode.nodeType === "viewer" ? !expandedInputs.has(sourceNode.id) : expandedInputs.has(sourceNode.id))
+            : false;
         const srcOffset = !sourceNode.nodeType && expandedInputs.has(sourceNode.id)
             ? CONFIG_AREA_HEIGHT
-            : sourceNode.nodeType && expandedInputs.has(sourceNode.id)
-                ? getAssetContentHeight(sourceNode) + ASSET_INFO_HEIGHT
+            : isSourceAssetExpanded
+                ? getAssetContentHeight(sourceNode) + (sourceNode.nodeType === "viewer" ? 0 : ASSET_INFO_HEIGHT)
                 : 0;
         const sourcePos = getPortPosition(sourceNode, "output", sourceIndex, srcOffset);
         const color = MODALITY_COLORS[connecting.sourceModality] || "#888";

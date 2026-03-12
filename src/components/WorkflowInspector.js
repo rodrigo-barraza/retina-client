@@ -400,8 +400,8 @@ export default function WorkflowInspector({
                     </section>
                 )}
 
-                {/* Generated Results */}
-                {results && !results.error && (
+                {/* Generated Results — model nodes only */}
+                {results && !results.error && !isViewer && (
                     <section className={styles.section}>
                         <label className={styles.sectionLabel}>Generated Output</label>
 
@@ -443,22 +443,45 @@ export default function WorkflowInspector({
                     </section>
                 )}
 
-                {/* Viewer content */}
-                {isViewer && node.content && (
+                {/* Viewer received content — show all types */}
+                {isViewer && node.receivedOutputs && Object.keys(node.receivedOutputs).length > 0 && (
                     <section className={styles.section}>
                         <label className={styles.sectionLabel}>Received Content</label>
-                        {node.contentType === "image" ? (
-                            <div className={styles.resultImageContainer}>
-                                <img /* eslint-disable-line @next/next/no-img-element */
-                                    src={node.content}
-                                    alt="Viewer content"
-                                    className={styles.resultImage}
-                                />
+
+                        {node.receivedOutputs.image && (
+                            <div className={styles.resultBlock}>
+                                <span className={styles.resultType}>Image</span>
+                                <div className={styles.resultImageContainer}>
+                                    <img /* eslint-disable-line @next/next/no-img-element */
+                                        src={node.receivedOutputs.image}
+                                        alt="Received image"
+                                        className={styles.resultImage}
+                                    />
+                                    <a
+                                        href={node.receivedOutputs.image}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={styles.expandBtn}
+                                        title="Open full size"
+                                    >
+                                        <Maximize2 size={12} />
+                                    </a>
+                                </div>
                             </div>
-                        ) : node.contentType === "audio" ? (
-                            <audio controls src={node.content} className={styles.resultAudio} />
-                        ) : (
-                            <div className={styles.resultText}>{node.content}</div>
+                        )}
+
+                        {node.receivedOutputs.text && (
+                            <div className={styles.resultBlock}>
+                                <span className={styles.resultType}>Text</span>
+                                <div className={styles.resultText}>{node.receivedOutputs.text}</div>
+                            </div>
+                        )}
+
+                        {node.receivedOutputs.audio && (
+                            <div className={styles.resultBlock}>
+                                <span className={styles.resultType}>Audio</span>
+                                <audio controls src={node.receivedOutputs.audio} className={styles.resultAudio} />
+                            </div>
                         )}
                     </section>
                 )}

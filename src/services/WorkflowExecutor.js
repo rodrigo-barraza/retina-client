@@ -192,13 +192,26 @@ function topologicalSort(nodes, connections) {
  * @param {Function} onNodeStart - Called when a node begins execution (nodeId)
  * @param {Function} onNodeComplete - Called when a node completes (nodeId, outputs)
  * @param {Function} onNodeError - Called when a node errors (nodeId, error)
+ * @param {Function} onViewerPartial - Called when a viewer receives partial output (viewerNodeId, partialOutputs)
  */
-export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeComplete, onNodeError }) {
+export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeComplete, onNodeError, onViewerPartial }) {
     const sortedIds = topologicalSort(nodes, connections);
     const nodeMap = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
     // Store outputs: nodeId → { [modality]: data }
     const nodeOutputs = {};
+
+    // Pre-compute which viewers each node feeds into
+    const viewerConnsBySource = {};
+    for (const conn of connections) {
+        const targetNode = nodeMap[conn.targetNodeId];
+        if (targetNode?.nodeType === "viewer") {
+            (viewerConnsBySource[conn.sourceNodeId] ??= []).push(conn);
+        }
+    }
+
+    // Track partial viewer outputs (accumulated as upstream nodes complete)
+    const viewerPartials = {};
 
     for (const nodeId of sortedIds) {
         const node = nodeMap[nodeId];
@@ -213,6 +226,18 @@ export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeC
                     ? { [node.modality]: node.content || "" }
                     : {}; // file input with no file loaded
                 onNodeComplete?.(nodeId, nodeOutputs[nodeId]);
+
+                // Push partial updates to any connected viewers
+                if (viewerConnsBySource[nodeId]) {
+                    for (const conn of viewerConnsBySource[nodeId]) {
+                        const data = nodeOutputs[nodeId]?.[conn.sourceModality];
+                        if (data) {
+                            viewerPartials[conn.targetNodeId] ??= {};
+                            viewerPartials[conn.targetNodeId][conn.targetModality] = data;
+                            onViewerPartial?.(conn.targetNodeId, { ...viewerPartials[conn.targetNodeId] });
+                        }
+                    }
+                }
                 continue;
             }
 
@@ -260,6 +285,18 @@ export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeC
             const outputs = await executeModelNode(node, inputData);
             nodeOutputs[nodeId] = outputs;
             onNodeComplete?.(nodeId, outputs);
+
+            // Push partial updates to any connected viewers
+            if (viewerConnsBySource[nodeId]) {
+                for (const conn of viewerConnsBySource[nodeId]) {
+                    const data = outputs[conn.sourceModality];
+                    if (data) {
+                        viewerPartials[conn.targetNodeId] ??= {};
+                        viewerPartials[conn.targetNodeId][conn.targetModality] = data;
+                        onViewerPartial?.(conn.targetNodeId, { ...viewerPartials[conn.targetNodeId] });
+                    }
+                }
+            }
         } catch (error) {
             onNodeError?.(nodeId, error);
             // Put empty outputs so downstream nodes don't hang
