@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { ArrowLeft, Sun, Moon, Play, Square, Loader2 } from "lucide-react";
+import { ArrowLeft, Sun, Moon, Play, Square, Loader2, Download, Upload } from "lucide-react";
 import Link from "next/link";
 import { PrismService } from "../../services/PrismService";
 import WorkflowService from "../../services/WorkflowService";
@@ -84,6 +84,7 @@ export default function WorkflowsPage() {
 
     // Execution state
     const [isRunning, setIsRunning] = useState(false);
+    const importRef = useRef(null);
     const [nodeStatuses, setNodeStatuses] = useState({}); // nodeId → "running" | "done" | "error"
     const [nodeResults, setNodeResults] = useState({}); // nodeId → { text?, image?, audio? }
     const abortRef = useRef(false);
@@ -141,16 +142,20 @@ export default function WorkflowsPage() {
     const handleAddAsset = useCallback(
         (modality, type) => {
             const isViewer = type === "viewer";
+            const isFile = modality === "file";
             const newNode = {
                 id: generateNodeId(),
                 nodeType: type, // "input" or "viewer"
-                modality,
+                modality: isFile ? null : modality,
                 content: "",
                 contentType: isViewer ? modality : undefined,
-                // Input assets have output ports only
-                // Viewers have input ports + pass-through output ports
+                // File input nodes start with no output ports until a file is loaded
                 inputTypes: isViewer ? ["text", "image", "audio"] : [],
-                outputTypes: isViewer ? ["text", "image", "audio"] : [modality],
+                outputTypes: isViewer
+                    ? ["text", "image", "audio"]
+                    : isFile
+                        ? []
+                        : [modality],
                 position: {
                     x: 80 + nodes.length * 60 + Math.random() * 40,
                     y: 80 + nodes.length * 40 + Math.random() * 40,
@@ -165,6 +170,45 @@ export default function WorkflowsPage() {
     const handleUpdateNodeContent = useCallback((nodeId, content) => {
         setNodes((prev) =>
             prev.map((n) => (n.id === nodeId ? { ...n, content } : n)),
+        );
+    }, []);
+
+    /**
+     * Update a file input node's content and dynamically adjust its modality.
+     * If the new modality differs, remove any incompatible outgoing connections.
+     * When content is cleared (removed), reset modality and outputTypes and remove all outgoing connections.
+     */
+    const handleUpdateFileInput = useCallback((nodeId, content, mimeType) => {
+        let newModality = null;
+        if (content && mimeType) {
+            if (mimeType.startsWith("image/")) newModality = "image";
+            else if (mimeType.startsWith("audio/")) newModality = "audio";
+            else if (mimeType.startsWith("video/")) newModality = "video";
+            else if (mimeType === "application/pdf") newModality = "pdf";
+            else newModality = "text";
+        }
+
+        setNodes((prev) =>
+            prev.map((n) => {
+                if (n.id !== nodeId || n.nodeType !== "input") return n;
+                return {
+                    ...n,
+                    content: content || "",
+                    modality: newModality,
+                    outputTypes: newModality ? [newModality] : [],
+                };
+            }),
+        );
+
+        // Remove incompatible outgoing connections
+        setConnections((prev) =>
+            prev.filter((c) => {
+                if (c.sourceNodeId !== nodeId) return true;
+                // If file was removed, drop all outgoing connections
+                if (!newModality) return false;
+                // Keep only if the connection modality matches the new modality
+                return c.sourceModality === newModality;
+            }),
         );
     }, []);
 
@@ -349,6 +393,53 @@ export default function WorkflowsPage() {
                     </span>
                 </div>
                 <div className={styles.headerRight}>
+                    <button
+                        className={styles.headerActionBtn}
+                        onClick={() => {
+                            const data = JSON.stringify({ nodes, connections }, null, 2);
+                            const blob = new Blob([data], { type: "application/json" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `workflow-${Date.now()}.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }}
+                        title="Export workflow"
+                    >
+                        <Download size={14} />
+                    </button>
+                    <button
+                        className={styles.headerActionBtn}
+                        onClick={() => importRef.current?.click()}
+                        title="Import workflow"
+                    >
+                        <Upload size={14} />
+                    </button>
+                    <input
+                        ref={importRef}
+                        type="file"
+                        accept=".json"
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                                try {
+                                    const data = JSON.parse(reader.result);
+                                    if (data.nodes && data.connections) {
+                                        setNodes(data.nodes);
+                                        setConnections(data.connections);
+                                    }
+                                } catch {
+                                    // invalid JSON
+                                }
+                            };
+                            reader.readAsText(file);
+                            e.target.value = "";
+                        }}
+                    />
                     {isRunning ? (
                         <button className={`${styles.runBtn} ${styles.runBtnStop}`} onClick={handleStopWorkflow}>
                             <Square size={14} />
@@ -395,6 +486,7 @@ export default function WorkflowsPage() {
                     onDeleteConnection={handleDeleteConnection}
                     onUpdateNodeContent={handleUpdateNodeContent}
                     onUpdateNodeConfig={handleUpdateNodeConfig}
+                    onUpdateFileInput={handleUpdateFileInput}
                     nodeStatuses={nodeStatuses}
                     nodeResults={nodeResults}
                     selectedNodeId={selectedNodeId}
@@ -410,6 +502,7 @@ export default function WorkflowsPage() {
                         nodeStatuses={nodeStatuses}
                         onUpdateNodeConfig={handleUpdateNodeConfig}
                         onUpdateNodeContent={handleUpdateNodeContent}
+                        onUpdateFileInput={handleUpdateFileInput}
                         onChangeModel={handleChangeModel}
                         onClose={() => setSelectedNodeId(null)}
                     />

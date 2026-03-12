@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Upload, Type, Volume2, Eye, Loader2, Check, AlertTriangle, Settings } from "lucide-react";
+import { X, Upload, Type, Volume2, Eye, Loader2, Check, AlertTriangle, Settings, Paperclip } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
 import { MODALITY_ICONS } from "./WorkflowSidebar";
 import styles from "./WorkflowCanvas.module.css";
@@ -25,26 +25,34 @@ const ASSET_NODE_WIDTH = 200;
 const PORT_RADIUS = 7;
 const HEADER_HEIGHT = 36;
 const PORT_SECTION_HEIGHT = 24;
-const ASSET_CONTENT_HEIGHT = 70;
+const ASSET_CONTENT_HEIGHT = 180;
+const ASSET_CONTENT_HEIGHT_COMPACT = 40;
 const RESULT_AREA_HEIGHT = 60;
 const IMAGE_RESULT_AREA_HEIGHT = 120;
 const CONFIG_AREA_HEIGHT = 160;
+const ASSET_INFO_HEIGHT = 80;
 
 function getPortPosition(node, portType, portIndex, configOffset = 0) {
     const width = node.nodeType ? ASSET_NODE_WIDTH : NODE_WIDTH;
     const x = portType === "input" ? 0 : width;
-    const startY = HEADER_HEIGHT + (node.nodeType ? ASSET_CONTENT_HEIGHT : configOffset) + 8;
+    const startY = HEADER_HEIGHT + configOffset + 8;
     const spacing = PORT_SECTION_HEIGHT;
     const y = startY + portIndex * spacing + spacing / 2;
     return { x: node.position.x + x, y: node.position.y + y };
 }
 
-function getNodeHeight(node) {
+function getAssetContentHeight(node) {
+    if (node.modality === "image" || node.nodeType === "viewer") return ASSET_CONTENT_HEIGHT;
+    return ASSET_CONTENT_HEIGHT_COMPACT;
+}
+
+function getNodeHeight(node, isExpanded = false) {
     if (node.nodeType) {
         const inputCount = (node.inputTypes || []).length;
         const outputCount = (node.outputTypes || []).length;
         const portRows = Math.max(inputCount, outputCount, 1);
-        return HEADER_HEIGHT + ASSET_CONTENT_HEIGHT + portRows * PORT_SECTION_HEIGHT + 12;
+        const contentHeight = isExpanded ? getAssetContentHeight(node) + ASSET_INFO_HEIGHT : 0;
+        return HEADER_HEIGHT + contentHeight + portRows * PORT_SECTION_HEIGHT + 12;
     }
     const inputCount = (node.inputTypes || []).length;
     const outputCount = (node.outputTypes || []).length;
@@ -70,6 +78,7 @@ export default function WorkflowCanvas({
     onDeleteConnection,
     onUpdateNodeContent,
     onUpdateNodeConfig,
+    onUpdateFileInput,
     nodeStatuses = {},
     nodeResults = {},
     selectedNodeId,
@@ -80,11 +89,16 @@ export default function WorkflowCanvas({
     const [dragging, setDragging] = useState(null);
     const [connecting, setConnecting] = useState(null);
     const [connectingMouse, setConnectingMouse] = useState(null);
-    const [expandedNodes, setExpandedNodes] = useState(new Set());
+    const [expandedInputs, setExpandedInputs] = useState(new Set());
+    const [expandedOutputs, setExpandedOutputs] = useState(new Set());
     const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
     const [isPanning, setIsPanning] = useState(false);
     const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
     const [hoveredPort, setHoveredPort] = useState(null);
+
+    const MIN_ZOOM = 0.2;
+    const MAX_ZOOM = 3;
 
     // Convert screen coordinates to SVG coordinates
     const screenToSvg = useCallback(
@@ -92,11 +106,11 @@ export default function WorkflowCanvas({
             const rect = containerRef.current?.getBoundingClientRect();
             if (!rect) return { x: clientX, y: clientY };
             return {
-                x: clientX - rect.left - pan.x,
-                y: clientY - rect.top - pan.y,
+                x: (clientX - rect.left - pan.x) / zoom,
+                y: (clientY - rect.top - pan.y) / zoom,
             };
         },
-        [pan],
+        [pan, zoom],
     );
 
     // Node dragging
@@ -173,14 +187,41 @@ export default function WorkflowCanvas({
         }
     }, [dragging, isPanning, connecting, hoveredPort]);
 
+    // Zoom — scroll wheel zooms toward cursor
+    const handleWheel = useCallback(
+        (e) => {
+            e.preventDefault();
+            const rect = containerRef.current?.getBoundingClientRect();
+            if (!rect) return;
+
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * delta));
+            const ratio = newZoom / zoom;
+
+            // Adjust pan so the point under the cursor stays in place
+            setPan((prev) => ({
+                x: mouseX - ratio * (mouseX - prev.x),
+                y: mouseY - ratio * (mouseY - prev.y),
+            }));
+            setZoom(newZoom);
+        },
+        [zoom],
+    );
+
     useEffect(() => {
         window.addEventListener("mousemove", handleMouseMove);
         window.addEventListener("mouseup", handleMouseUp);
+        const container = containerRef.current;
+        container?.addEventListener("wheel", handleWheel, { passive: false });
         return () => {
             window.removeEventListener("mousemove", handleMouseMove);
             window.removeEventListener("mouseup", handleMouseUp);
+            container?.removeEventListener("wheel", handleWheel);
         };
-    }, [handleMouseMove, handleMouseUp]);
+    }, [handleMouseMove, handleMouseUp, handleWheel]);
 
     // Output port click — start connection
     const handleOutputPortClick = useCallback(
@@ -225,9 +266,9 @@ export default function WorkflowCanvas({
     );
 
     // Render input/output ports
-    const renderPorts = (node, inputTypes, outputTypes) => {
+    const renderPorts = (node, inputTypes, outputTypes, configOffset = 0) => {
         const nodeWidth = node.nodeType ? ASSET_NODE_WIDTH : NODE_WIDTH;
-        const portStartY = HEADER_HEIGHT + (node.nodeType ? ASSET_CONTENT_HEIGHT : 0) + 8;
+        const portStartY = HEADER_HEIGHT + configOffset + 8;
 
         return (
             <>
@@ -314,13 +355,16 @@ export default function WorkflowCanvas({
         const hasResults = results && Object.keys(results).length > 0 && !results.error;
         const isSelected = selectedNodeId === node.id;
 
+        // Toggle states
+        const inputsExpanded = expandedInputs.has(node.id);
+        const outputsExpanded = expandedOutputs.has(node.id);
+
         // Calculate height: header + optional config + ports + optional result area
         const portRows = Math.max(inputTypes.length, outputTypes.length, 1);
         const portsHeight = portRows * PORT_SECTION_HEIGHT + 12;
-        const isExpanded = expandedNodes.has(node.id);
-        const configHeight = isExpanded ? CONFIG_AREA_HEIGHT : 0;
+        const configHeight = inputsExpanded ? CONFIG_AREA_HEIGHT : 0;
         const actualResultHeight = results?.image ? IMAGE_RESULT_AREA_HEIGHT : RESULT_AREA_HEIGHT;
-        const resultHeight = hasResults ? actualResultHeight + 8 : 0;
+        const resultHeight = (hasResults && outputsExpanded) ? actualResultHeight + 8 : 0;
         const errorHeight = results?.error ? 28 : 0;
         const nodeHeight = HEADER_HEIGHT + configHeight + portsHeight + resultHeight + errorHeight;
 
@@ -346,22 +390,20 @@ export default function WorkflowCanvas({
                 <rect x={0} y={HEADER_HEIGHT - 3} width={NODE_WIDTH} height={3} className={styles.nodeHeader} />
 
                 <g className={styles.nodeDragArea} onMouseDown={(e) => handleNodeMouseDown(e, node.id)} style={{ cursor: "grab" }}>
-                    <rect x={0} y={0} width={NODE_WIDTH - 24} height={HEADER_HEIGHT} fill="transparent" />
-                    <foreignObject x={8} y={8} width={18} height={18}>
-                        <div style={{ display: "flex", alignItems: "center" }}>
+                    <rect x={0} y={0} width={NODE_WIDTH - 70} height={HEADER_HEIGHT} fill="transparent" />
+                    <foreignObject x={8} y={0} width={NODE_WIDTH - 78} height={HEADER_HEIGHT}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, height: "100%", paddingTop: 1 }}>
                             <ProviderLogo provider={node.provider} size={16} />
+                            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {node.displayName || node.modelName}
+                            </span>
                         </div>
                     </foreignObject>
-                    <text x={30} y={HEADER_HEIGHT / 2 + 1} dominantBaseline="middle" className={styles.nodeTitle}>
-                        {(node.displayName || node.modelName || "").length > 22
-                            ? (node.displayName || node.modelName || "").slice(0, 22) + "…"
-                            : node.displayName || node.modelName}
-                    </text>
                 </g>
 
                 {/* Status indicator in header */}
                 {status && (
-                    <foreignObject x={NODE_WIDTH - 48} y={8} width={18} height={18}>
+                    <foreignObject x={NODE_WIDTH - 70} y={8} width={18} height={18}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                             {status === "running" && <Loader2 size={12} style={{ color: "#f59e0b", animation: "spin 1s linear infinite" }} />}
                             {status === "done" && <Check size={12} style={{ color: "#10b981" }} />}
@@ -370,21 +412,41 @@ export default function WorkflowCanvas({
                     </foreignObject>
                 )}
 
-                <foreignObject x={NODE_WIDTH - 48} y={6} width={20} height={20}>
+                {/* Inputs toggle (Settings icon) */}
+                <foreignObject x={NODE_WIDTH - 70} y={6} width={20} height={20}>
                     <button
-                        className={`${styles.deleteNodeBtn} ${isExpanded ? styles.configBtnActive : ""}`}
+                        className={`${styles.deleteNodeBtn} ${inputsExpanded ? styles.configBtnActive : ""}`}
                         onClick={(e) => {
                             e.stopPropagation();
-                            setExpandedNodes((prev) => {
+                            setExpandedInputs((prev) => {
                                 const next = new Set(prev);
                                 if (next.has(node.id)) next.delete(node.id);
                                 else next.add(node.id);
                                 return next;
                             });
                         }}
-                        title="Configure node"
+                        title="Toggle inputs"
                     >
                         <Settings size={12} />
+                    </button>
+                </foreignObject>
+
+                {/* Outputs toggle (Eye icon) */}
+                <foreignObject x={NODE_WIDTH - 48} y={6} width={20} height={20}>
+                    <button
+                        className={`${styles.deleteNodeBtn} ${outputsExpanded ? styles.configBtnActive : ""}`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedOutputs((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(node.id)) next.delete(node.id);
+                                else next.add(node.id);
+                                return next;
+                            });
+                        }}
+                        title="Toggle outputs"
+                    >
+                        <Eye size={12} />
                     </button>
                 </foreignObject>
 
@@ -395,7 +457,7 @@ export default function WorkflowCanvas({
                 </foreignObject>
 
                 {/* Expandable config section */}
-                {isExpanded && (
+                {inputsExpanded && (
                     <foreignObject x={4} y={HEADER_HEIGHT + 2} width={NODE_WIDTH - 8} height={CONFIG_AREA_HEIGHT - 4}>
                         <div className={styles.nodeConfig}>
                             {node.supportsSystemPrompt !== false && (
@@ -464,8 +526,8 @@ export default function WorkflowCanvas({
                     {renderPorts(node, inputTypes, outputTypes)}
                 </g>
 
-                {/* Result display area */}
-                {hasResults && (
+                {/* Result display area — only when outputs toggled on */}
+                {hasResults && outputsExpanded && (
                     <foreignObject x={4} y={HEADER_HEIGHT + configHeight + portsHeight} width={NODE_WIDTH - 8} height={actualResultHeight}>
                         <div className={styles.modelResultArea}>
                             {results.image ? (
@@ -496,15 +558,35 @@ export default function WorkflowCanvas({
         );
     };
 
+    // Handle file drop/upload for file input nodes
+    const handleFileInputChange = (nodeId, file) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            onUpdateFileInput?.(nodeId, reader.result, file.type);
+        };
+        reader.readAsDataURL(file);
+    };
+
     // Render an asset node (input asset or output viewer)
     const renderAssetNode = (node) => {
-        const nodeHeight = getNodeHeight(node);
+        const isExpanded = expandedInputs.has(node.id);
+        const nodeHeight = getNodeHeight(node, isExpanded);
         const width = ASSET_NODE_WIDTH;
         const inputTypes = node.inputTypes || [];
         const outputTypes = node.outputTypes || [];
         const isViewer = node.nodeType === "viewer";
-        const accentColor = isViewer ? "#a78bfa" : (MODALITY_COLORS[node.modality] || "#888");
-        const AssetIcon = isViewer ? Eye : (ASSET_ICONS[node.modality] || MODALITY_ICONS[node.modality]?.icon || Type);
+        const accentColor = isViewer ? "#a78bfa" : (MODALITY_COLORS[node.modality] || "#8b5cf6");
+        const AssetIcon = isViewer ? Eye : node.modality
+            ? (ASSET_ICONS[node.modality] || MODALITY_ICONS[node.modality]?.icon || Paperclip)
+            : Paperclip;
+
+        // Label for input nodes
+        const inputLabel = isViewer
+            ? "Output Viewer"
+            : node.modality
+                ? `${MODALITY_ICONS[node.modality]?.label || node.modality} Input`
+                : "File Input";
 
         return (
             <g
@@ -528,16 +610,35 @@ export default function WorkflowCanvas({
 
                 {/* Drag area + icon + title */}
                 <g className={styles.nodeDragArea} onMouseDown={(e) => handleNodeMouseDown(e, node.id)} style={{ cursor: "grab" }}>
-                    <rect x={0} y={0} width={width - 24} height={HEADER_HEIGHT} fill="transparent" />
-                    <foreignObject x={8} y={8} width={18} height={18}>
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                            <AssetIcon size={14} style={{ color: accentColor }} />
+                    <rect x={0} y={0} width={width - 48} height={HEADER_HEIGHT} fill="transparent" />
+                    <foreignObject x={8} y={0} width={width - 56} height={HEADER_HEIGHT}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, height: "100%", paddingTop: 1 }}>
+                            <AssetIcon size={14} style={{ color: accentColor, flexShrink: 0 }} />
+                            <span style={{ fontSize: 12, fontWeight: 600, color: accentColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {inputLabel}
+                            </span>
                         </div>
                     </foreignObject>
-                    <text x={28} y={HEADER_HEIGHT / 2 + 1} dominantBaseline="middle" className={styles.nodeTitle} style={{ fill: accentColor }}>
-                        {isViewer ? "Output Viewer" : `${MODALITY_ICONS[node.modality]?.label || node.modality} Input`}
-                    </text>
                 </g>
+
+                {/* Gear button */}
+                <foreignObject x={width - 48} y={6} width={20} height={20}>
+                    <button
+                        className={`${styles.deleteNodeBtn} ${isExpanded ? styles.configBtnActive : ""}`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedInputs((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(node.id)) next.delete(node.id);
+                                else next.add(node.id);
+                                return next;
+                            });
+                        }}
+                        title="Node info"
+                    >
+                        <Settings size={12} />
+                    </button>
+                </foreignObject>
 
                 {/* Delete button */}
                 <foreignObject x={width - 26} y={6} width={20} height={20}>
@@ -546,82 +647,125 @@ export default function WorkflowCanvas({
                     </button>
                 </foreignObject>
 
-                {/* Content area */}
-                <foreignObject x={4} y={HEADER_HEIGHT + 4} width={width - 8} height={ASSET_CONTENT_HEIGHT - 8}>
-                    {isViewer ? (
-                        <div className={styles.viewerContent}>
-                            {node.content ? (
-                                node.contentType === "image" ? (
-                                    <img
-                                        src={node.content}
-                                        alt="Generated output"
-                                        className={styles.viewerImage}
-                                    />
-                                ) : node.contentType === "audio" ? (
-                                    <div className={styles.viewerAudioLabel}>
-                                        <Volume2 size={14} />
-                                        Audio output
+                {/* Content area — only when expanded */}
+                {isExpanded && (() => {
+                    const contentH = getAssetContentHeight(node);
+                    return (
+                        <>
+                            <foreignObject x={4} y={HEADER_HEIGHT + 4} width={width - 8} height={contentH - 8}>
+                                {isViewer ? (
+                                    <div className={styles.viewerContent}>
+                                        {node.content ? (
+                                            node.contentType === "image" ? (
+                                                <img
+                                                    src={node.content}
+                                                    alt="Generated output"
+                                                    className={styles.viewerImage}
+                                                />
+                                            ) : node.contentType === "audio" ? (
+                                                <div className={styles.viewerAudioLabel}>
+                                                    <Volume2 size={14} />
+                                                    Audio output
+                                                </div>
+                                            ) : (
+                                                <div className={styles.viewerText}>{node.content}</div>
+                                            )
+                                        ) : (
+                                            <div className={styles.viewerEmpty}>
+                                                <Eye size={16} style={{ opacity: 0.3 }} />
+                                                <span>Waiting for input…</span>
+                                            </div>
+                                        )}
                                     </div>
-                                ) : (
-                                    <div className={styles.viewerText}>{node.content}</div>
-                                )
-                            ) : (
-                                <div className={styles.viewerEmpty}>
-                                    <Eye size={16} style={{ opacity: 0.3 }} />
-                                    <span>Waiting for input…</span>
-                                </div>
-                            )}
-                        </div>
-                    ) : node.modality === "text" ? (
-                        <textarea
-                            className={styles.assetTextarea}
-                            value={node.content || ""}
-                            onChange={(e) => onUpdateNodeContent(node.id, e.target.value)}
-                            placeholder="Enter text…"
-                            onMouseDown={(e) => e.stopPropagation()}
-                        />
-                    ) : (
-                        <div className={styles.assetUploadArea}>
-                            {node.content ? (
-                                node.modality === "image" ? (
-                                    <img
-                                        src={node.content}
-                                        alt="Uploaded asset"
-                                        className={styles.assetPreviewImg}
-                                    />
-                                ) : (
-                                    <div className={styles.assetFileLabel}>
-                                        <Volume2 size={14} />
-                                        Audio loaded
-                                    </div>
-                                )
-                            ) : (
-                                <label className={styles.assetUploadLabel}>
-                                    <Upload size={14} />
-                                    <span>Upload {node.modality}</span>
-                                    <input
-                                        type="file"
-                                        accept={node.modality === "image" ? "image/*" : "audio/*"}
-                                        className={styles.assetFileInput}
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (!file) return;
-                                            const reader = new FileReader();
-                                            reader.onload = (ev) => {
-                                                onUpdateNodeContent(node.id, ev.target.result);
-                                            };
-                                            reader.readAsDataURL(file);
-                                        }}
+                                ) : node.modality === "text" && node.content !== undefined && node.modality !== null ? (
+                                    <textarea
+                                        className={styles.assetTextarea}
+                                        value={node.content || ""}
+                                        onChange={(e) => onUpdateNodeContent(node.id, e.target.value)}
+                                        placeholder="Enter text…"
                                         onMouseDown={(e) => e.stopPropagation()}
                                     />
-                                </label>
-                            )}
-                        </div>
-                    )}
-                </foreignObject>
+                                ) : (
+                                    /* File input: upload / drag-drop zone or preview */
+                                    <div
+                                        className={styles.assetUploadArea}
+                                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            const file = e.dataTransfer?.files?.[0];
+                                            if (file) handleFileInputChange(node.id, file);
+                                        }}
+                                    >
+                                        {node.content ? (
+                                            <div className={styles.fileInputPreview}>
+                                                {node.modality === "image" ? (
+                                                    <img
+                                                        src={node.content}
+                                                        alt="Uploaded asset"
+                                                        className={styles.assetPreviewImg}
+                                                    />
+                                                ) : node.modality === "audio" ? (
+                                                    <div className={styles.assetFileLabel}>
+                                                        <Volume2 size={14} />
+                                                        Audio loaded
+                                                    </div>
+                                                ) : (
+                                                    <div className={styles.assetFileLabel}>
+                                                        <Paperclip size={14} />
+                                                        File loaded
+                                                    </div>
+                                                )}
+                                                <button
+                                                    className={styles.fileInputClearBtn}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onUpdateFileInput?.(node.id, null, null);
+                                                    }}
+                                                    title="Remove file"
+                                                >
+                                                    <X size={10} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <label className={styles.assetUploadLabel}>
+                                                <Paperclip size={14} />
+                                                <span>Drop or upload file</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,audio/*,video/*,.pdf,.txt,.md,.json,.csv"
+                                                    className={styles.assetFileInput}
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleFileInputChange(node.id, file);
+                                                    }}
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+                                )}
+                            </foreignObject>
 
-                {/* Ports below content area */}
-                {renderPorts(node, inputTypes, outputTypes)}
+                            {/* Expandable info section */}
+                            <foreignObject x={4} y={HEADER_HEIGHT + contentH + 2} width={width - 8} height={ASSET_INFO_HEIGHT - 4}>
+                                <div className={styles.nodeConfig}>
+                                    <label className={styles.nodeConfigLabel}>Node ID</label>
+                                    <div style={{ fontSize: 9, color: "var(--text-muted)", fontFamily: "var(--font-mono)", wordBreak: "break-all" }}>
+                                        {node.id}
+                                    </div>
+                                    <label className={styles.nodeConfigLabel}>Modality</label>
+                                    <div style={{ fontSize: 10, color: "var(--text-secondary)" }}>
+                                        {node.modality || "None (upload a file)"}
+                                    </div>
+                                </div>
+                            </foreignObject>
+                        </>
+                    );
+                })()}
+
+                {/* Ports below content + info area */}
+                {renderPorts(node, inputTypes, outputTypes, isExpanded ? getAssetContentHeight(node) + ASSET_INFO_HEIGHT : 0)}
             </g>
         );
     };
@@ -644,8 +788,16 @@ export default function WorkflowCanvas({
         const targetIndex = (targetNode.inputTypes || []).indexOf(conn.targetModality);
         if (sourceIndex === -1 || targetIndex === -1) return null;
 
-        const sourceOffset = !sourceNode.nodeType && expandedNodes.has(sourceNode.id) ? CONFIG_AREA_HEIGHT : 0;
-        const targetOffset = !targetNode.nodeType && expandedNodes.has(targetNode.id) ? CONFIG_AREA_HEIGHT : 0;
+        const sourceOffset = !sourceNode.nodeType && expandedInputs.has(sourceNode.id)
+            ? CONFIG_AREA_HEIGHT
+            : sourceNode.nodeType && expandedInputs.has(sourceNode.id)
+                ? getAssetContentHeight(sourceNode) + ASSET_INFO_HEIGHT
+                : 0;
+        const targetOffset = !targetNode.nodeType && expandedInputs.has(targetNode.id)
+            ? CONFIG_AREA_HEIGHT
+            : targetNode.nodeType && expandedInputs.has(targetNode.id)
+                ? getAssetContentHeight(targetNode) + ASSET_INFO_HEIGHT
+                : 0;
 
         const sourcePos = getPortPosition(sourceNode, "output", sourceIndex, sourceOffset);
         const targetPos = getPortPosition(targetNode, "input", targetIndex, targetOffset);
@@ -697,7 +849,11 @@ export default function WorkflowCanvas({
         const sourceIndex = (sourceNode.outputTypes || []).indexOf(connecting.sourceModality);
         if (sourceIndex === -1) return null;
 
-        const srcOffset = !sourceNode.nodeType && expandedNodes.has(sourceNode.id) ? CONFIG_AREA_HEIGHT : 0;
+        const srcOffset = !sourceNode.nodeType && expandedInputs.has(sourceNode.id)
+            ? CONFIG_AREA_HEIGHT
+            : sourceNode.nodeType && expandedInputs.has(sourceNode.id)
+                ? getAssetContentHeight(sourceNode) + ASSET_INFO_HEIGHT
+                : 0;
         const sourcePos = getPortPosition(sourceNode, "output", sourceIndex, srcOffset);
         const color = MODALITY_COLORS[connecting.sourceModality] || "#888";
 
@@ -722,7 +878,10 @@ export default function WorkflowCanvas({
         >
             <div
                 className={styles.gridBackground}
-                style={{ backgroundPosition: `${pan.x}px ${pan.y}px` }}
+                style={{
+                    backgroundPosition: `${pan.x}px ${pan.y}px`,
+                    backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
+                }}
             />
 
             {nodes.length === 0 && (
@@ -740,7 +899,7 @@ export default function WorkflowCanvas({
                 className={styles.svg}
                 style={{ overflow: "visible" }}
             >
-                <g transform={`translate(${pan.x}, ${pan.y})`}>
+                <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
                     {connections.map(renderConnection)}
                     {renderConnectingLine()}
                     {nodes.map(renderNode)}

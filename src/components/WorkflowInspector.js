@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Eye, Type, Volume2, Upload, X, Maximize2, Search, ChevronDown } from "lucide-react";
+import { Eye, Type, Volume2, Upload, X, Maximize2, Search, ChevronDown, Paperclip } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
 import { MODALITY_ICONS } from "./WorkflowSidebar";
 import styles from "./WorkflowInspector.module.css";
@@ -18,6 +18,7 @@ export default function WorkflowInspector({
     nodeStatuses,
     onUpdateNodeConfig,
     onUpdateNodeContent,
+    onUpdateFileInput,
     onChangeModel,
     onClose,
 }) {
@@ -100,7 +101,7 @@ export default function WorkflowInspector({
                     )}
                     <div className={styles.headerInfo}>
                         <span className={styles.headerTitle}>
-                            {isModel ? (node.displayName || node.modelName) : isInput ? `${node.modality.charAt(0).toUpperCase() + node.modality.slice(1)} Input` : "Output Viewer"}
+                            {isModel ? (node.displayName || node.modelName) : isInput ? (node.modality ? `${node.modality.charAt(0).toUpperCase() + node.modality.slice(1)} Input` : "File Input") : "Output Viewer"}
                         </span>
                         <span className={styles.headerSubtitle}>
                             {isModel ? node.provider : isInput ? "Asset Node" : "Viewer Node"}
@@ -239,7 +240,7 @@ export default function WorkflowInspector({
                     </section>
                 )}
 
-                {/* Content — input assets */}
+                {/* Content — text input assets */}
                 {isInput && node.modality === "text" && (
                     <section className={styles.section}>
                         <label className={styles.sectionLabel}>Content</label>
@@ -253,7 +254,8 @@ export default function WorkflowInspector({
                     </section>
                 )}
 
-                {isInput && (node.modality === "image" || node.modality === "audio") && (
+                {/* Content — file input assets (image, audio, or empty) */}
+                {isInput && node.modality !== "text" && (
                     <section className={styles.section}>
                         <label className={styles.sectionLabel}>Content</label>
                         {node.content ? (
@@ -264,32 +266,49 @@ export default function WorkflowInspector({
                                         alt="Input asset"
                                         className={styles.previewImage}
                                     />
-                                ) : (
+                                ) : node.modality === "audio" ? (
                                     <div className={styles.audioIndicator}>
                                         <Volume2 size={16} />
                                         <span>Audio file attached</span>
                                     </div>
+                                ) : (
+                                    <div className={styles.audioIndicator}>
+                                        <Paperclip size={16} />
+                                        <span>File attached</span>
+                                    </div>
                                 )}
                                 <button
                                     className={styles.clearBtn}
-                                    onClick={() => onUpdateNodeContent?.(node.id, "")}
+                                    onClick={() => onUpdateFileInput?.(node.id, null, null)}
                                 >
                                     Remove
                                 </button>
                             </div>
                         ) : (
-                            <label className={styles.uploadArea}>
-                                <Upload size={16} />
-                                <span>Upload {node.modality} file</span>
+                            <label
+                                className={styles.uploadArea}
+                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const file = e.dataTransfer?.files?.[0];
+                                    if (!file) return;
+                                    const reader = new FileReader();
+                                    reader.onload = () => onUpdateFileInput?.(node.id, reader.result, file.type);
+                                    reader.readAsDataURL(file);
+                                }}
+                            >
+                                <Paperclip size={16} />
+                                <span>Drop or upload file</span>
                                 <input
                                     type="file"
-                                    accept={node.modality === "image" ? "image/*" : "audio/*"}
+                                    accept="image/*,audio/*,video/*,.pdf,.txt,.md,.json,.csv"
                                     className={styles.fileInput}
                                     onChange={(e) => {
                                         const file = e.target.files?.[0];
                                         if (!file) return;
                                         const reader = new FileReader();
-                                        reader.onload = () => onUpdateNodeContent?.(node.id, reader.result);
+                                        reader.onload = () => onUpdateFileInput?.(node.id, reader.result, file.type);
                                         reader.readAsDataURL(file);
                                     }}
                                 />

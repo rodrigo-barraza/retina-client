@@ -1,0 +1,98 @@
+{
+  "nodes": [
+    {
+      "id": "node_input_image_001",
+      "nodeType": "input",
+      "modality": "image",
+      "outputTypes": ["image"],
+      "inputTypes": [],
+      "content": null,
+      "position": { "x": 60, "y": 180 }
+    },
+    {
+      "id": "node_gemini_image_002",
+      "modelName": "gemini-3.1-flash-image-preview",
+      "provider": "google",
+      "displayName": "Gemini 3.1 Flash Image",
+      "inputTypes": ["text", "image", "pdf"],
+      "outputTypes": ["text", "image"],
+      "supportsSystemPrompt": true,
+      "position": { "x": 340, "y": 120 },
+      "systemPrompt": "You are an artistic image manipulator. Always output an image.",
+      "userPrompt": "Take this image and reimagine it as a vibrant watercolor painting with dreamy, bleeding colors and soft brush strokes. Keep the main subject recognizable but make it feel hand-painted and ethereal."
+    },
+    {
+      "id": "node_gpt_describe_003",
+      "modelName": "gpt-5-nano",
+      "provider": "openai",
+      "displayName": "GPT 5 Nano",
+      "inputTypes": ["text", "image"],
+      "outputTypes": ["text"],
+      "supportsSystemPrompt": true,
+      "position": { "x": 680, "y": 60 },
+      "systemPrompt": "You are a poetic narrator who describes images in vivid, evocative language. Keep descriptions concise but captivating — 2 to 3 sentences max. Write as if narrating a short art documentary.",
+      "userPrompt": "Describe this watercolor artwork in a way that would sound beautiful when read aloud."
+    },
+    {
+      "id": "node_tts_004",
+      "modelName": "gpt-4o-mini-tts",
+      "provider": "openai",
+      "displayName": "GPT 4o Mini TTS",
+      "inputTypes": ["text"],
+      "outputTypes": ["audio"],
+      "supportsSystemPrompt": false,
+      "position": { "x": 1020, "y": 120 }
+    },
+    {
+      "id": "node_viewer_image_005",
+      "nodeType": "viewer",
+      "inputTypes": ["text", "image", "audio"],
+      "outputTypes": [],
+      "position": { "x": 680, "y": 300 }
+    },
+    {
+      "id": "node_viewer_audio_006",
+      "nodeType": "viewer",
+      "inputTypes": ["text", "image", "audio"],
+      "outputTypes": [],
+      "position": { "x": 1020, "y": 300 }
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_img_to_gemini",
+      "sourceNodeId": "node_input_image_001",
+      "sourceModality": "image",
+      "targetNodeId": "node_gemini_image_002",
+      "targetModality": "image"
+    },
+    {
+      "id": "conn_gemini_img_to_gpt",
+      "sourceNodeId": "node_gemini_image_002",
+      "sourceModality": "image",
+      "targetNodeId": "node_gpt_describe_003",
+      "targetModality": "image"
+    },
+    {
+      "id": "conn_gpt_text_to_tts",
+      "sourceNodeId": "node_gpt_describe_003",
+      "sourceModality": "text",
+      "targetNodeId": "node_tts_004",
+      "targetModality": "text"
+    },
+    {
+      "id": "conn_gemini_img_to_viewer",
+      "sourceNodeId": "node_gemini_image_002",
+      "sourceModality": "image",
+      "targetNodeId": "node_viewer_image_005",
+      "targetModality": "image"
+    },
+    {
+      "id": "conn_tts_audio_to_viewer",
+      "sourceNodeId": "node_tts_004",
+      "sourceModality": "audio",
+      "targetNodeId": "node_viewer_audio_006",
+      "targetModality": "audio"
+    }
+  ]
+}

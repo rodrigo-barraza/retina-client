@@ -18,6 +18,7 @@ import {
     ChevronRight,
     Package,
     Eye,
+    Paperclip,
 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import styles from "./WorkflowSidebar.module.css";
@@ -150,19 +151,11 @@ export default function WorkflowSidebar({
                             </button>
                             <button
                                 className={styles.assetBtn}
-                                onClick={() => onAddAsset("image", "input")}
-                                title="Add Image Input"
+                                onClick={() => onAddAsset("file", "input")}
+                                title="Add File Input"
                             >
-                                <Image size={12} style={{ color: "#10b981" }} />
-                                <span>Image Input</span>
-                            </button>
-                            <button
-                                className={styles.assetBtn}
-                                onClick={() => onAddAsset("audio", "input")}
-                                title="Add Audio Input"
-                            >
-                                <Volume2 size={12} style={{ color: "#f59e0b" }} />
-                                <span>Audio Input</span>
+                                <Paperclip size={12} style={{ color: "#8b5cf6" }} />
+                                <span>File Input</span>
                             </button>
                             <button
                                 className={styles.assetBtn}

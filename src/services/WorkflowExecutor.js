@@ -92,11 +92,23 @@ async function executeModelNode(node, inputData) {
         }
     } else if (endpoint === "textToImage") {
         const pipedPrompt = inputData.find((d) => d.type === "text")?.data || "";
-        const images = inputData.filter((d) => d.type === "image").map((d) => d.data);
+        const rawImages = inputData.filter((d) => d.type === "image").map((d) => d.data);
         // userPrompt takes precedence; piped text is appended
         const prompt = node.userPrompt
             ? (pipedPrompt ? `${node.userPrompt}\n\n${pipedPrompt}` : node.userPrompt)
             : pipedPrompt;
+
+        // Convert data URLs → { imageData, mimeType } objects for Prism/providers
+        const images = rawImages.map((img) => {
+            if (typeof img === "string" && img.startsWith("data:")) {
+                const match = img.match(/^data:([^;]+);base64,(.+)$/);
+                if (match) {
+                    return { imageData: match[2], mimeType: match[1] };
+                }
+            }
+            // Already an object or fallback
+            return typeof img === "object" ? img : { imageData: img, mimeType: "image/jpeg" };
+        });
 
         const result = await PrismService.generateImage({
             provider: node.provider,
@@ -196,8 +208,10 @@ export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeC
             onNodeStart?.(nodeId);
 
             if (node.nodeType === "input") {
-                // Input asset nodes just emit their content
-                nodeOutputs[nodeId] = { [node.modality]: node.content || "" };
+                // Input asset nodes just emit their content under the active modality
+                nodeOutputs[nodeId] = node.modality
+                    ? { [node.modality]: node.content || "" }
+                    : {}; // file input with no file loaded
                 onNodeComplete?.(nodeId, nodeOutputs[nodeId]);
                 continue;
             }
