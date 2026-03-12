@@ -380,7 +380,8 @@ export default function WorkflowCanvas({
         const nodeHeight = HEADER_HEIGHT + configHeight + portsHeight + resultHeight + errorHeight;
 
         // Border color: selection or status
-        const statusBorderColor = isSelected ? "var(--accent-color, #7c6ef6)" : status === "running" ? "#f59e0b" : status === "error" ? "#f43f5e" : status === "done" ? "#10b981" : null;
+        const isRunning = status === "running";
+        const statusBorderColor = isRunning ? "url(#prism-gradient)" : isSelected ? "var(--accent-color, #7c6ef6)" : status === "error" ? "#f43f5e" : status === "done" ? "#10b981" : null;
         const borderWidth = isSelected ? 2 : status ? 2 : 0;
 
         return (
@@ -601,6 +602,9 @@ export default function WorkflowCanvas({
                 ? `${MODALITY_ICONS[node.modality]?.label || node.modality} Input`
                 : "File Input";
 
+        const status = nodeStatuses[node.id];
+        const isRunning = status === "running";
+
         return (
             <g
                 key={node.id}
@@ -613,8 +617,8 @@ export default function WorkflowCanvas({
                     height={nodeHeight}
                     rx="3"
                     ry="3"
-                    className={styles.assetNodeBody}
-                    style={{ stroke: accentColor, strokeOpacity: 0.4 }}
+                    className={`${styles.assetNodeBody}${isRunning ? ` ${styles.prismBorder}` : ""}`}
+                    style={isRunning ? { stroke: "url(#prism-gradient)", strokeWidth: 2, strokeOpacity: 1 } : { stroke: accentColor, strokeOpacity: 0.4 }}
                 />
 
                 {/* Header */}
@@ -839,6 +843,9 @@ export default function WorkflowCanvas({
         const targetPos = getPortPosition(targetNode, "input", targetIndex, targetOffset);
         const color = MODALITY_COLORS[conn.sourceModality] || "#888";
 
+        const sourceStatus = nodeStatuses[conn.sourceNodeId];
+        const isActive = sourceStatus === "running";
+
         return (
             <g key={conn.id} className={styles.connectionGroup}>
                 <path
@@ -851,11 +858,11 @@ export default function WorkflowCanvas({
                 />
                 <path
                     d={connectionPath(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y)}
-                    stroke={color}
-                    strokeWidth={2}
+                    stroke={isActive ? "url(#prism-gradient)" : color}
+                    strokeWidth={isActive ? 3 : 2}
                     fill="none"
-                    strokeOpacity={0.7}
-                    className={styles.connectionLine}
+                    strokeOpacity={isActive ? 1 : 0.7}
+                    className={`${styles.connectionLine}${isActive ? ` ${styles.prismLine}` : ""}`}
                 />
                 <foreignObject
                     x={(sourcePos.x + targetPos.x) / 2 - 8}
@@ -938,6 +945,25 @@ export default function WorkflowCanvas({
                 className={styles.svg}
                 style={{ overflow: "visible" }}
             >
+                <defs>
+                    <linearGradient id="prism-gradient" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="300" y2="300">
+                        <stop offset="0%" stopColor="#ff0000" />
+                        <stop offset="16%" stopColor="#ff8800" />
+                        <stop offset="33%" stopColor="#ffff00" />
+                        <stop offset="50%" stopColor="#00ff88" />
+                        <stop offset="66%" stopColor="#0088ff" />
+                        <stop offset="83%" stopColor="#8800ff" />
+                        <stop offset="100%" stopColor="#ff0088" />
+                        <animateTransform
+                            attributeName="gradientTransform"
+                            type="rotate"
+                            from="0 150 150"
+                            to="360 150 150"
+                            dur="2s"
+                            repeatCount="indefinite"
+                        />
+                    </linearGradient>
+                </defs>
                 <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
                     {connections.map(renderConnection)}
                     {renderConnectingLine()}
