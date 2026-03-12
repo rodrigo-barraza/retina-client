@@ -52,6 +52,30 @@
   border: 1px solid var(--accent-color);
 }
 
+.prismAvatar {
+  position: relative;
+  overflow: hidden;
+  background: transparent !important;
+  border-color: transparent !important;
+  color: white !important;
+  z-index: 0;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -50%;
+    background: conic-gradient(
+      #ff0000, #ff8800, #ffff00, #00ff88, #0088ff, #8800ff, #ff0088, #ff0000
+    );
+    animation: prismSpin 2s linear infinite;
+    z-index: -1;
+  }
+}
+
+@keyframes prismSpin {
+  100% { transform: rotate(360deg); }
+}
+
 .systemNode .avatar {
   background: var(--warning-subtle, rgba(245, 158, 11, 0.08));
   color: var(--warning, #f59e0b);

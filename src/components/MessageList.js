@@ -430,7 +430,7 @@ export default function MessageList({
                             </div>
                         )}
                         <div className={`${styles.message} ${roleClass}`}>
-                            <div className={styles.avatar}>
+                            <div className={`${styles.avatar}${msg.role === "assistant" && isGenerating && i === messages.length - 1 ? ` ${styles.prismAvatar}` : ""}`}>
                                 {msg.role === "user" ? "U" : msg.role === "system" ? "S" : "AI"}
                             </div>
                             <div className={styles.content}>

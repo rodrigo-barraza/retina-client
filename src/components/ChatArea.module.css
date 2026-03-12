@@ -775,6 +775,18 @@
     0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
+.inputBoxGenerating {
+  border-color: transparent;
+  background-image: linear-gradient(var(--bg-secondary), var(--bg-secondary)),
+    linear-gradient(var(--prism-angle, 0deg), var(--prism-colors));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  animation: prismRotate var(--prism-speed) linear infinite;
+  box-shadow:
+    0 0 12px rgba(99, 102, 241, 0.15),
+    0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
 .dragOverlay {
   position: absolute;
   inset: 0;
@@ -836,6 +848,34 @@
 .inputRow button[type="submit"]:disabled {
   background: var(--bg-primary);
   color: var(--text-secondary);
+}
+
+.submitGenerating {
+  position: relative;
+  overflow: hidden;
+  background: transparent !important;
+  color: white !important;
+  border: none;
+  z-index: 0;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -50%;
+    background: conic-gradient(
+      #ff0000, #ff8800, #ffff00, #00ff88, #0088ff, #8800ff, #ff0088, #ff0000
+    );
+    animation: prismSpin 2s linear infinite;
+    z-index: -1;
+  }
+
+  svg {
+    color: white !important;
+  }
+}
+
+@keyframes prismSpin {
+  100% { transform: rotate(360deg); }
 }
 
 .hint {

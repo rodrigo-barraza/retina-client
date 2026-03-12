@@ -734,13 +734,16 @@ export default function ChatArea({
                 {isGenerating &&
                     messages.length > 0 &&
                     !messages[messages.length - 1]?.content && (
-                        <div className={`${styles.message} ${styles.aiNode}`}>
-                            <div className={styles.avatar}>
-                                <Loader2 size={16} className={styles.spin} />
-                            </div>
-                            <div className={styles.content}>
-                                {messages[messages.length - 1]?.status || "Generating..."}
-                            </div>
+                        <div style={{
+                            maxWidth: 800,
+                            margin: "0 auto",
+                            width: "100%",
+                            paddingLeft: 48,
+                            fontSize: 14,
+                            color: "var(--text-muted)",
+                            animation: "pulse 1.5s ease-in-out infinite",
+                        }}>
+                            {messages[messages.length - 1]?.status || "Generating..."}
                         </div>
                     )}
                 <div ref={endRef} />
@@ -834,6 +837,7 @@ export default function ChatArea({
                         )}
                         <button
                             type="submit"
+                            className={isGenerating ? styles.submitGenerating : ""}
                             disabled={
                                 isTranscriptionModel
                                     ? pendingImages.length === 0 || isGenerating
