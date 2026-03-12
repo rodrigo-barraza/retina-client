@@ -389,6 +389,7 @@ export default function MessageList({
                         : msg.role === "system"
                             ? styles.systemNode
                             : styles.aiNode;
+                const isStreaming = isGenerating && msg.role === "assistant" && i === messages.length - 1;
 
                 // Detect model swap: show divider above user message when the next
                 // assistant's model differs from the previous assistant's model
@@ -536,7 +537,7 @@ export default function MessageList({
                                     />
                                 ) : (
                                     msg.content && (
-                                        <div className={styles.text}>
+                                        <div className={`${styles.text}${isStreaming ? ` ${styles.streamingText}` : ""}`}>
                                             <MarkdownContent content={msg.content} />
                                         </div>
                                     )

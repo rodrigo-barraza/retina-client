@@ -436,3 +436,33 @@
   white-space: nowrap;
   opacity: 0.7;
 }
+
+/* ── Streaming Text Effect ── */
+.streamingText {
+  position: relative;
+
+  & > :last-child {
+    display: inline;
+  }
+
+  & > :last-child::after {
+    content: "▎";
+    display: inline;
+    position: relative;
+    overflow: hidden;
+    font-weight: 700;
+    font-size: 1.1em;
+    color: transparent;
+    animation: caretBlink 0.8s step-end infinite;
+    background: conic-gradient(
+      #ff0000, #ff8800, #ffff00, #00ff88, #0088ff, #8800ff, #ff0088, #ff0000
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+}
+
+@keyframes caretBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
