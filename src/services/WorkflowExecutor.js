@@ -26,7 +26,7 @@ function resolveEndpoint(node, inputData) {
     if (hasAudioInput && !outputsAudio) return "audioToText";
     // TTS: → audio output
     if (outputsAudio) return "textToSpeech";
-    // Default: text-to-text (handles multimodal inputs including images)
+    // Default: chat (handles multimodal inputs including images)
     return "textToText";
 }
 

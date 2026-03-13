@@ -15,12 +15,9 @@ import SortableTable from "../../../components/SortableTable";
 import styles from "./page.module.css";
 
 const ENDPOINT_LABELS = {
-    "text-to-text": "Text → Text",
-    "text-to-text/stream": "Text → Text",
-    "text-to-image": "Text → Image",
-    "audio-to-text": "Audio → Text",
-    "image-to-text": "Image → Text",
-    "text-to-speech": "Text → Speech",
+    "chat": "Chat",
+    "voice": "Voice",
+    "embed": "Embed",
 };
 
 function formatNumber(n) {

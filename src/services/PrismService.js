@@ -107,7 +107,7 @@ export class PrismService {
     }
 
     static async generateText(payload) {
-        const res = await fetch(`${API_BASE}/text-to-text`, {
+        const res = await fetch(`${API_BASE}/chat?stream=false`, {
             method: "POST",
             headers: getHeaders(),
             body: JSON.stringify(payload),
@@ -140,7 +140,7 @@ export class PrismService {
             onError,
         } = callbacks;
         const ws = new WebSocket(
-            `${WS_BASE}/text-to-text/stream?secret=${encodeURIComponent(SECRET)}&project=retina&username=default`,
+            `${WS_BASE}/ws/chat?secret=${encodeURIComponent(SECRET)}&project=retina&username=default`,
         );
 
         ws.onopen = () => {
@@ -200,7 +200,7 @@ export class PrismService {
      * @returns {Promise<{ images: string[], text?: string }>}
      */
     static async generateImage(payload) {
-        const res = await fetch(`${API_BASE}/text-to-image`, {
+        const res = await fetch(`${API_BASE}/chat?stream=false`, {
             method: "POST",
             headers: getHeaders(),
             body: JSON.stringify(payload),
@@ -220,7 +220,7 @@ export class PrismService {
      * @returns {Promise<{ text: string }>}
      */
     static async captionImage(payload) {
-        const res = await fetch(`${API_BASE}/image-to-text`, {
+        const res = await fetch(`${API_BASE}/chat?stream=false`, {
             method: "POST",
             headers: getHeaders(),
             body: JSON.stringify(payload),
@@ -240,7 +240,7 @@ export class PrismService {
      * @returns {Promise<{ text, usage?, estimatedCost?, totalTime? }>}
      */
     static async transcribeAudio(payload) {
-        const res = await fetch(`${API_BASE}/audio-to-text`, {
+        const res = await fetch(`${API_BASE}/chat?stream=false`, {
             method: "POST",
             headers: getHeaders(),
             body: JSON.stringify(payload),
@@ -260,7 +260,7 @@ export class PrismService {
      * @returns {Promise<{ audioDataUrl: string }>}
      */
     static async generateSpeech(payload) {
-        const res = await fetch(`${API_BASE}/text-to-speech`, {
+        const res = await fetch(`${API_BASE}/voice`, {
             method: "POST",
             headers: getHeaders(),
             body: JSON.stringify(payload),
@@ -295,7 +295,7 @@ export class PrismService {
      * @returns {Promise<{ embedding: number[], dimensions: number, provider: string, model: string }>}
      */
     static async generateEmbedding(payload) {
-        const res = await fetch(`${API_BASE}/modality-to-embedding`, {
+        const res = await fetch(`${API_BASE}/embed`, {
             method: "POST",
             headers: getHeaders(),
             body: JSON.stringify(payload),

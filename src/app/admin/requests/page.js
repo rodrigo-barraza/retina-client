@@ -238,11 +238,9 @@ export default function RequestsPage() {
                         onChange={(e) => handleFilterChange("endpoint", e.target.value)}
                     >
                         <option value="">All</option>
-                        <option value="/text-to-text">/text-to-text</option>
-                        <option value="/text-to-image">/text-to-image</option>
-                        <option value="/text-to-speech">/text-to-speech</option>
-                        <option value="/audio-to-text">/audio-to-text</option>
-                        <option value="/image-to-text">/image-to-text</option>
+                        <option value="/chat">/chat</option>
+                        <option value="/voice">/voice</option>
+                        <option value="/embed">/embed</option>
                     </select>
                 </div>
                 <div className={styles.filterGroup}>
