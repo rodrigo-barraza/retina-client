@@ -13,13 +13,14 @@ import {
     Type,
     ArrowLeft,
     Mic,
-    Mic2,
     Edit3,
     Terminal,
     AlertCircle,
     LayoutGrid,
     Pencil,
+    X,
 } from "lucide-react";
+import AudioRecorderComponent from "./AudioRecorderComponent";
 import ImageAnnotator from "./ImageAnnotator";
 import DrawingCanvas from "./DrawingCanvas";
 import DocumentViewer from "./DocumentViewer";
@@ -128,15 +129,10 @@ function MediaPreview({ dataUrl: rawDataUrl, onClick, compact = false }) {
 
     if (category === "audio") {
         return (
-            <div className={compact ? styles.pendingMediaThumb : styles.mediaCard}>
-                <Volume2 size={compact ? 18 : 20} className={styles.mediaCardIcon} />
-                <audio
-                    controls
-                    src={dataUrl}
-                    className={compact ? styles.audioPlayerCompact : styles.audioPlayer}
-                    preload="metadata"
-                />
-            </div>
+            <AudioRecorderComponent
+                src={dataUrl}
+                compact={compact}
+            />
         );
     }
 
@@ -314,9 +310,6 @@ export default function ChatArea({
     const endRef = useRef(null);
     const fileInputRef = useRef(null);
     const textareaRef = useRef(null);
-    const [isRecording, setIsRecording] = useState(false);
-    const mediaRecorderRef = useRef(null);
-    const audioChunksRef = useRef([]);
     const [systemPromptExpanded, setSystemPromptExpanded] = useState(true);
     const [isDragging, setIsDragging] = useState(false);
     const [showDrawing, setShowDrawing] = useState(false);
@@ -449,36 +442,6 @@ export default function ChatArea({
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleSubmit(e);
-        }
-    };
-
-    const toggleRecording = async () => {
-        if (isRecording) {
-            mediaRecorderRef.current?.stop();
-            setIsRecording(false);
-            return;
-        }
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream);
-            audioChunksRef.current = [];
-            recorder.ondataavailable = (e) => {
-                if (e.data.size > 0) audioChunksRef.current.push(e.data);
-            };
-            recorder.onstop = () => {
-                const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    setPendingImages((prev) => [...prev, ev.target.result]);
-                };
-                reader.readAsDataURL(blob);
-                stream.getTracks().forEach((t) => t.stop());
-            };
-            mediaRecorderRef.current = recorder;
-            recorder.start();
-            setIsRecording(true);
-        } catch {
-            // Microphone permission denied or unavailable
         }
     };
 
@@ -789,28 +752,42 @@ export default function ChatArea({
                     )}
                     {pendingImages.length > 0 && (
                         <div className={styles.pendingImages}>
-                            {pendingImages.map((dataUrl, i) => (
-                                <div key={i} className={styles.pendingAttachmentWrap}>
-                                    <MediaPreview
-                                        dataUrl={dataUrl}
-                                        compact
-                                        onClick={(() => {
-                                            const c = getMimeCategory(dataUrl);
-                                            if (c === "image") return () => setLightboxSrc(dataUrl);
-                                            if (c === "pdf" || c === "text")
-                                                return () => setDocViewerSrc(dataUrl);
-                                            return undefined;
-                                        })()}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeImage(i)}
-                                        className={styles.removeImage}
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            ))}
+                            {pendingImages.map((dataUrl, i) => {
+                                const cat = getMimeCategory(dataUrl);
+                                const resolvedUrl = PrismService.getFileUrl(dataUrl);
+                                const isAudio = cat === "audio";
+                                return (
+                                    <div key={i} className={styles.pendingAttachmentWrap}>
+                                        {isAudio ? (
+                                            <AudioRecorderComponent
+                                                src={resolvedUrl}
+                                                compact
+                                                onRemove={() => removeImage(i)}
+                                            />
+                                        ) : (
+                                            <>
+                                                <MediaPreview
+                                                    dataUrl={dataUrl}
+                                                    compact
+                                                    onClick={(() => {
+                                                        if (cat === "image") return () => setLightboxSrc(dataUrl);
+                                                        if (cat === "pdf" || cat === "text")
+                                                            return () => setDocViewerSrc(dataUrl);
+                                                        return undefined;
+                                                    })()}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeImage(i)}
+                                                    className={styles.removeAttachment}
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                     <div className={styles.inputRow}>
@@ -845,14 +822,11 @@ export default function ChatArea({
                             </button>
                         )}
                         {hasAudioInput && (
-                            <button
-                                type="button"
-                                className={`${styles.imageUploadBtn} ${isRecording ? styles.recordingActive : ""}`}
-                                onClick={toggleRecording}
-                                title={isRecording ? "Stop recording" : "Record Audio"}
-                            >
-                                <Mic2 size={18} />
-                            </button>
+                            <AudioRecorderComponent
+                                onRecordingComplete={(dataUrl) =>
+                                    setPendingImages((prev) => [...prev, dataUrl])
+                                }
+                            />
                         )}
                         {!isTranscriptionModel && (
                             <textarea
