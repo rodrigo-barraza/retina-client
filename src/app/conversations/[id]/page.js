@@ -1,9 +1,9 @@
 "use client";
 
-import { use } from "react";
-import Home from "../../page";
+import { useParams } from "next/navigation";
+import HomePage from "../../../components/HomePage";
 
-export default function ConversationPage({ params }) {
-    const { id } = use(params);
-    return <Home initialConversationId={id} />;
+export default function ConversationPage() {
+  const { id } = useParams();
+  return <HomePage initialConversationId={id} />;
 }
