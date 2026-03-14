@@ -6,9 +6,7 @@ import Link from "next/link";
 import { PrismService } from "../../services/PrismService";
 import WorkflowService from "../../services/WorkflowService";
 import { executeWorkflow } from "../../services/WorkflowExecutor";
-import WorkflowSidebar from "../../components/WorkflowSidebar";
-import WorkflowCanvas from "../../components/WorkflowCanvas";
-import WorkflowInspector from "../../components/WorkflowInspector";
+import WorkflowComponent from "../../components/WorkflowComponent";
 import { useTheme } from "../../components/ThemeProvider";
 import styles from "./page.module.css";
 
@@ -91,7 +89,6 @@ export default function WorkflowsPage() {
 
     // Selection state
     const [selectedNodeId, setSelectedNodeId] = useState(null);
-    const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
 
     // Load config
     useEffect(() => {
@@ -540,7 +537,20 @@ export default function WorkflowsPage() {
 
             {/* Body */}
             <div className={styles.body}>
-                <WorkflowSidebar
+                <WorkflowComponent
+                    nodes={nodes}
+                    connections={connections}
+                    selectedNodeId={selectedNodeId}
+                    onSelectNode={setSelectedNodeId}
+                    nodeStatuses={nodeStatuses}
+                    nodeResults={nodeResults}
+                    onUpdateNodePosition={handleUpdateNodePosition}
+                    onDeleteNode={handleDeleteNode}
+                    onAddConnection={handleAddConnection}
+                    onDeleteConnection={handleDeleteConnection}
+                    onUpdateNodeContent={handleUpdateNodeContent}
+                    onUpdateNodeConfig={handleUpdateNodeConfig}
+                    onUpdateFileInput={handleUpdateFileInput}
                     models={modelsWithModalities}
                     workflows={savedWorkflows}
                     activeWorkflowId={workflowId}
@@ -552,37 +562,9 @@ export default function WorkflowsPage() {
                     onSaveWorkflow={handleSaveWorkflow}
                     workflowName={workflowName}
                     onWorkflowNameChange={setWorkflowName}
+                    allModels={modelsWithModalities}
+                    onChangeModel={handleChangeModel}
                 />
-                <WorkflowCanvas
-                    nodes={nodes}
-                    connections={connections}
-                    onUpdateNodePosition={handleUpdateNodePosition}
-                    onDeleteNode={handleDeleteNode}
-                    onAddConnection={handleAddConnection}
-                    onDeleteConnection={handleDeleteConnection}
-                    onUpdateNodeContent={handleUpdateNodeContent}
-                    onUpdateNodeConfig={handleUpdateNodeConfig}
-                    onUpdateFileInput={handleUpdateFileInput}
-                    nodeStatuses={nodeStatuses}
-                    nodeResults={nodeResults}
-                    selectedNodeId={selectedNodeId}
-                    onSelectNode={setSelectedNodeId}
-                />
-                {selectedNode && (
-                    <WorkflowInspector
-                        node={selectedNode}
-                        connections={connections}
-                        nodes={nodes}
-                        allModels={modelsWithModalities}
-                        nodeResults={nodeResults}
-                        nodeStatuses={nodeStatuses}
-                        onUpdateNodeConfig={handleUpdateNodeConfig}
-                        onUpdateNodeContent={handleUpdateNodeContent}
-                        onUpdateFileInput={handleUpdateFileInput}
-                        onChangeModel={handleChangeModel}
-                        onClose={() => setSelectedNodeId(null)}
-                    />
-                )}
             </div>
 
             {/* Toast */}

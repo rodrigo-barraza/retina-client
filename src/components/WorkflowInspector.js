@@ -45,6 +45,7 @@ export default function WorkflowInspector({
     onUpdateFileInput,
     onChangeModel,
     onClose,
+    readOnly = false,
 }) {
     // Model change state (hooks must be called before any early return)
     const [modelSearch, setModelSearch] = useState("");
@@ -150,8 +151,8 @@ export default function WorkflowInspector({
 
             {/* Scrollable body */}
             <div className={styles.body}>
-                {/* Model selector — model nodes only */}
-                {isModel && (
+                {/* Model selector — model nodes only, hidden in readOnly */}
+                {isModel && !readOnly && (
                     <section className={styles.section}>
                         <label className={styles.sectionLabel}>Model</label>
                         <div className={styles.modelSelector}>
@@ -241,6 +242,21 @@ export default function WorkflowInspector({
                     </section>
                 )}
 
+                {/* Model info — readOnly mode */}
+                {isModel && readOnly && (
+                    <section className={styles.section}>
+                        <label className={styles.sectionLabel}>Model</label>
+                        <div className={styles.modelSelectorTrigger} style={{ cursor: "default" }}>
+                            <span className={styles.modelSelectorContent}>
+                                <ProviderLogo provider={node.provider} size={14} />
+                                <span className={styles.modelSelectorLabel}>
+                                    {node.displayName || node.modelName}
+                                </span>
+                            </span>
+                        </div>
+                    </section>
+                )}
+
                 {/* Conversation Messages — model nodes */}
                 {isModel && (
                     <section className={styles.section}>
@@ -254,18 +270,18 @@ export default function WorkflowInspector({
                                     <div className={styles.messageHeader}>
                                         <button
                                             className={styles.roleBadge}
-                                            style={{ background: `${ROLE_COLORS[msg.role]}20`, color: ROLE_COLORS[msg.role], borderColor: `${ROLE_COLORS[msg.role]}40` }}
-                                            onClick={() => {
+                                            style={{ background: `${ROLE_COLORS[msg.role]}20`, color: ROLE_COLORS[msg.role], borderColor: `${ROLE_COLORS[msg.role]}40`, ...(readOnly ? { cursor: "default" } : {}) }}
+                                            onClick={readOnly ? undefined : () => {
                                                 const msgs = [...getNodeMessages(node)];
                                                 const nextRole = ROLE_CYCLE[(ROLE_CYCLE.indexOf(msg.role) + 1) % ROLE_CYCLE.length];
                                                 msgs[idx] = { ...msgs[idx], role: nextRole };
                                                 onUpdateNodeConfig?.(node.id, "messages", msgs);
                                             }}
-                                            title="Click to change role"
+                                            title={readOnly ? msg.role : "Click to change role"}
                                         >
                                             {msg.role}
                                         </button>
-                                        {getNodeMessages(node).length > 1 && (
+                                        {!readOnly && getNodeMessages(node).length > 1 && (
                                             <button
                                                 className={styles.messageDeleteBtn}
                                                 onClick={() => {
@@ -281,11 +297,12 @@ export default function WorkflowInspector({
                                     <textarea
                                         className={styles.messageTextarea}
                                         value={msg.content || ""}
-                                        onChange={(e) => {
+                                        onChange={readOnly ? undefined : (e) => {
                                             const msgs = [...getNodeMessages(node)];
                                             msgs[idx] = { ...msgs[idx], content: e.target.value };
                                             onUpdateNodeConfig?.(node.id, "messages", msgs);
                                         }}
+                                        readOnly={readOnly}
                                         placeholder={msg.role === "system" ? "System instructions..." : msg.role === "user" ? "User message..." : "Assistant response..."}
                                         rows={2}
                                     />
@@ -300,30 +317,32 @@ export default function WorkflowInspector({
                                                             src={imgSrc}
                                                             alt={`Attachment ${imgIdx + 1}`}
                                                             className={styles.messageImageThumb}
-                                                            onClick={() => setDrawingState({ msgIdx: idx, imgIdx, src: imgSrc })}
-                                                            title="Click to edit drawing"
+                                                            onClick={readOnly ? undefined : () => setDrawingState({ msgIdx: idx, imgIdx, src: imgSrc })}
+                                                            title={readOnly ? "Attachment" : "Click to edit drawing"}
                                                         />
-                                                        <button
-                                                            className={styles.messageImageRemove}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                const msgs = [...getNodeMessages(node)];
-                                                                const updatedImages = [...(msgs[idx].images || [])];
-                                                                updatedImages.splice(imgIdx, 1);
-                                                                msgs[idx] = { ...msgs[idx], images: updatedImages };
-                                                                onUpdateNodeConfig?.(node.id, "messages", msgs);
-                                                            }}
-                                                            title="Remove image"
-                                                        >
-                                                            <X size={8} />
-                                                        </button>
+                                                        {!readOnly && (
+                                                            <button
+                                                                className={styles.messageImageRemove}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const msgs = [...getNodeMessages(node)];
+                                                                    const updatedImages = [...(msgs[idx].images || [])];
+                                                                    updatedImages.splice(imgIdx, 1);
+                                                                    msgs[idx] = { ...msgs[idx], images: updatedImages };
+                                                                    onUpdateNodeConfig?.(node.id, "messages", msgs);
+                                                                }}
+                                                                title="Remove image"
+                                                            >
+                                                                <X size={8} />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 );
                                             })}
                                         </div>
                                     )}
                                     {/* Upload button: user always, assistant when model accepts image, never system */}
-                                    {(msg.role === "user" || (msg.role === "assistant" && modelAcceptsImage)) && (
+                                    {!readOnly && (msg.role === "user" || (msg.role === "assistant" && modelAcceptsImage)) && (
                                         <div className={styles.messageActions}>
                                             <label className={styles.messageUploadBtn} title="Upload image">
                                                 <ImagePlus size={12} />
@@ -358,20 +377,24 @@ export default function WorkflowInspector({
                                 </div>
                             ))}
                         </div>
-                        <button
-                            className={styles.addMessageBtn}
-                            onClick={() => {
-                                const msgs = [...getNodeMessages(node)];
-                                const lastRole = msgs[msgs.length - 1]?.role;
-                                const nextRole = lastRole === "user" ? "assistant" : "user";
-                                msgs.push({ role: nextRole, content: "" });
-                                onUpdateNodeConfig?.(node.id, "messages", msgs);
-                            }}
-                        >
-                            <Plus size={11} />
-                            Add Message
-                        </button>
-                        <span className={styles.fieldHint}>Piped input is appended to the last user message</span>
+                        {!readOnly && (
+                            <>
+                                <button
+                                    className={styles.addMessageBtn}
+                                    onClick={() => {
+                                        const msgs = [...getNodeMessages(node)];
+                                        const lastRole = msgs[msgs.length - 1]?.role;
+                                        const nextRole = lastRole === "user" ? "assistant" : "user";
+                                        msgs.push({ role: nextRole, content: "" });
+                                        onUpdateNodeConfig?.(node.id, "messages", msgs);
+                                    }}
+                                >
+                                    <Plus size={11} />
+                                    Add Message
+                                </button>
+                                <span className={styles.fieldHint}>Piped input is appended to the last user message</span>
+                            </>
+                        )}
                     </section>
                 )}
 
@@ -382,7 +405,8 @@ export default function WorkflowInspector({
                         <textarea
                             className={styles.textarea}
                             value={node.content || ""}
-                            onChange={(e) => onUpdateNodeContent?.(node.id, e.target.value)}
+                            onChange={readOnly ? undefined : (e) => onUpdateNodeContent?.(node.id, e.target.value)}
+                            readOnly={readOnly}
                             placeholder="Enter text..."
                             rows={4}
                         />
@@ -613,7 +637,7 @@ export default function WorkflowInspector({
             </div>
 
             {/* Drawing Canvas Modal */}
-            {drawingState && (
+            {!readOnly && drawingState && (
                 <DrawingCanvas
                     src={drawingState.src || null}
                     onClose={() => setDrawingState(null)}

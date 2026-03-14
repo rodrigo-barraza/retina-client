@@ -19,6 +19,9 @@ import {
     Package,
     Eye,
     Paperclip,
+    User,
+    Clock,
+    Zap,
 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import styles from "./WorkflowSidebar.module.css";
@@ -52,7 +55,28 @@ function groupModelsByModality(models) {
     return groups;
 }
 
+function formatDuration(ms) {
+    if (!ms) return "—";
+    if (ms < 1000) return `${Math.round(ms)}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
+}
+
+function formatTime(isoString) {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+}
+
 export default function WorkflowSidebar({
+    admin = false,
     models = [],
     workflows = [],
     activeWorkflowId,
@@ -64,6 +88,10 @@ export default function WorkflowSidebar({
     onSaveWorkflow,
     workflowName,
     onWorkflowNameChange,
+    adminWorkflows = [],
+    adminSelectedId,
+    onAdminSelectWorkflow,
+    adminLoading = false,
 }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [collapsedGroups, setCollapsedGroups] = useState({});
@@ -85,6 +113,67 @@ export default function WorkflowSidebar({
         setCollapsedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
     };
 
+    /* ── Admin mode sidebar ── */
+    if (admin) {
+        return (
+            <div className={styles.sidebar}>
+                <div className={styles.adminHeader}>
+                    <span className={styles.adminCount}>{adminWorkflows.length} workflows</span>
+                </div>
+                <div className={styles.adminScroll}>
+                    {adminLoading && adminWorkflows.length === 0 ? (
+                        <div className={styles.emptyState}>Loading…</div>
+                    ) : adminWorkflows.length === 0 ? (
+                        <div className={styles.emptyState}>
+                            <FolderOpen size={24} />
+                            <span>No workflows yet</span>
+                        </div>
+                    ) : (
+                        adminWorkflows.map((wf) => (
+                            <button
+                                key={wf._id}
+                                className={`${styles.adminItem} ${adminSelectedId === wf._id ? styles.adminItemActive : ""}`}
+                                onClick={() => onAdminSelectWorkflow?.(wf._id)}
+                            >
+                                <div className={styles.adminItemTop}>
+                                    <span className={styles.adminItemUser}>
+                                        <User size={11} />
+                                        {wf.userName || "unknown"}
+                                    </span>
+                                    <span className={styles.adminItemTime}>
+                                        {formatTime(wf.createdAt)}
+                                    </span>
+                                </div>
+                                <div className={styles.adminItemContent}>
+                                    {wf.userContent
+                                        ? wf.userContent.substring(0, 80) + (wf.userContent.length > 80 ? "…" : "")
+                                        : "No content"}
+                                </div>
+                                <div className={styles.adminItemMeta}>
+                                    <span className={styles.adminMetaTag}>
+                                        <Zap size={10} />
+                                        {wf.stepCount || 0} steps
+                                    </span>
+                                    <span className={styles.adminMetaTag}>
+                                        <Clock size={10} />
+                                        {formatDuration(wf.totalDuration)}
+                                    </span>
+                                    {wf.channelName && wf.channelName !== "DM" && (
+                                        <span className={styles.adminMetaTag}>
+                                            <Hash size={10} />
+                                            {wf.channelName}
+                                        </span>
+                                    )}
+                                </div>
+                            </button>
+                        ))
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    /* ── Default (user) mode sidebar ── */
     return (
         <div className={styles.sidebar}>
             {/* Workflow name + actions */}
