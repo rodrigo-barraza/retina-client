@@ -26,7 +26,7 @@ function getNodeMessages(node) {
   if (node.messages && node.messages.length > 0) return node.messages;
   const msgs = [];
   if (node.systemPrompt) msgs.push({ role: "system", content: node.systemPrompt });
-  msgs.push({ role: "user", content: node.userPrompt || "" });
+  msgs.push({ role: "user", content: node.userPrompt || node.input || "" });
   return msgs;
 }
 

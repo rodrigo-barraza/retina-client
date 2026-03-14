@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { AlertCircle } from "lucide-react";
 import { IrisService } from "../../../services/IrisService";
+import { PrismService } from "../../../services/PrismService";
 import WorkflowComponent from "../../../components/WorkflowComponent";
 import styles from "./page.module.css";
 
@@ -13,6 +14,7 @@ export default function AdminWorkflowsPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [selectedWorkflow, setSelectedWorkflow] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
 
   const loadWorkflows = useCallback(async () => {
     try {
@@ -43,6 +45,7 @@ export default function AdminWorkflowsPage() {
   async function selectWorkflow(id) {
     if (id === selectedId) return;
     setSelectedId(id);
+    setSelectedNodeId(null);
     setLoadingDetail(true);
     try {
       const wf = await IrisService.getWorkflow(id);
@@ -53,6 +56,36 @@ export default function AdminWorkflowsPage() {
       setLoadingDetail(false);
     }
   }
+
+  // Build nodeResults from persisted node output data
+  const nodeResults = useMemo(() => {
+    const nodes = selectedWorkflow?.nodes || [];
+    const results = {};
+    for (const node of nodes) {
+      const modality = (node.outputTypes || ["text"])[0];
+      const entry = {};
+
+      // For image outputs, use the dedicated imageRef (MinIO ref)
+      if (modality === "image" && node.imageRef) {
+        entry.image = PrismService.getFileUrl(node.imageRef);
+        if (node.output && node.output !== "[image]") entry.text = node.output;
+      } else if (node.output != null) {
+        let value = node.output;
+        // Skip placeholder text for image outputs without a real imageRef
+        if (modality === "image" && value === "[image]") continue;
+        // Resolve MinIO refs for audio
+        if (modality === "audio" && typeof value === "string" && !value.startsWith("data:")) {
+          value = PrismService.getFileUrl(value);
+        }
+        entry[modality] = value;
+      } else {
+        continue;
+      }
+
+      results[node.id] = entry;
+    }
+    return results;
+  }, [selectedWorkflow]);
 
   return (
     <div className={styles.page}>
@@ -79,6 +112,9 @@ export default function AdminWorkflowsPage() {
             admin
             nodes={selectedWorkflow?.nodes || []}
             connections={selectedWorkflow?.connections || []}
+            selectedNodeId={selectedNodeId}
+            onSelectNode={setSelectedNodeId}
+            nodeResults={nodeResults}
             adminWorkflows={workflows}
             adminSelectedId={selectedId}
             onAdminSelectWorkflow={selectWorkflow}
