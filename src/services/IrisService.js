@@ -98,4 +98,14 @@ export class IrisService {
             body: JSON.stringify({ instance_id: instanceId }),
         });
     }
+
+    // ── Workflows ─────────────────────────────────────────────
+    static async getWorkflows(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return fetchJSON(`/workflows${query ? `?${query}` : ""}`);
+    }
+
+    static async getWorkflow(id) {
+        return fetchJSON(`/workflows/${id}`);
+    }
 }
