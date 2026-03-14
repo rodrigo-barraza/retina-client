@@ -86,13 +86,13 @@ export default function HomePage({ initialConversationId = null }) {
         }
         const timer = setTimeout(() => {
             const { systemPrompt, ...modelSettings } = settings;
-            PrismService.saveConversation(
-                activeId,
+            PrismService.saveConversation({
+                id: activeId,
                 title,
                 messages,
                 systemPrompt,
-                modelSettings,
-            ).catch((err) => console.error("Failed to save system prompt:", err));
+                settings: modelSettings,
+            }).catch((err) => console.error("Failed to save system prompt:", err));
         }, 500);
         return () => clearTimeout(timer);
     }, [settings.systemPrompt]);
@@ -274,13 +274,13 @@ export default function HomePage({ initialConversationId = null }) {
         if (activeId) {
             try {
                 const { systemPrompt, ...modelSettings } = settings;
-                await PrismService.saveConversation(
-                    activeId,
+                await PrismService.saveConversation({
+                    id: activeId,
                     title,
-                    updatedMessages,
+                    messages: updatedMessages,
                     systemPrompt,
-                    modelSettings,
-                );
+                    settings: modelSettings,
+                });
             } catch (err) {
                 console.error("Failed to save after deletion:", err);
             }
@@ -296,13 +296,13 @@ export default function HomePage({ initialConversationId = null }) {
         if (activeId) {
             try {
                 const { systemPrompt, ...modelSettings } = settings;
-                await PrismService.saveConversation(
-                    activeId,
+                await PrismService.saveConversation({
+                    id: activeId,
                     title,
-                    updatedMessages,
+                    messages: updatedMessages,
                     systemPrompt,
-                    modelSettings,
-                );
+                    settings: modelSettings,
+                });
             } catch (err) {
                 console.error("Failed to save after edit:", err);
             }
@@ -386,13 +386,13 @@ export default function HomePage({ initialConversationId = null }) {
 
                 try {
                     const { systemPrompt, ...modelSettings } = settings;
-                    const saved = await PrismService.saveConversation(
-                        currentId,
-                        currentTitle,
-                        finalMessages,
+                    const saved = await PrismService.saveConversation({
+                        id: currentId,
+                        title: currentTitle,
+                        messages: finalMessages,
                         systemPrompt,
-                        modelSettings,
-                    );
+                        settings: modelSettings,
+                    });
                     setActiveId(saved.id);
                     updateUrl(saved.id);
                     loadConversations();
@@ -632,13 +632,13 @@ export default function HomePage({ initialConversationId = null }) {
                             const allMessages = [...newMessages];
                             allMessages[insertIndex] = finalMsg;
                             const { systemPrompt, ...modelSettings } = settings;
-                            const saved = await PrismService.saveConversation(
-                                currentId,
-                                currentTitle,
-                                allMessages,
+                            const saved = await PrismService.saveConversation({
+                                id: currentId,
+                                title: currentTitle,
+                                messages: allMessages,
                                 systemPrompt,
-                                modelSettings,
-                            );
+                                settings: modelSettings,
+                            });
                             setActiveId(saved.id);
                             updateUrl(saved.id);
                             loadConversations();
@@ -722,11 +722,11 @@ export default function HomePage({ initialConversationId = null }) {
                 // Start conversation shell (or reuse existing)
                 const { systemPrompt, ...modelSettings } = settings;
                 try {
-                    const conversation = await PrismService.startConversation(
-                        currentTitle,
+                    const conversation = await PrismService.startConversation({
+                        title: currentTitle,
                         systemPrompt,
-                        modelSettings,
-                    );
+                        settings: modelSettings,
+                    });
                     currentId = conversation.id;
                     setActiveId(conversation.id);
                     updateUrl(conversation.id);
@@ -784,12 +784,12 @@ export default function HomePage({ initialConversationId = null }) {
 
                 // Finalize conversation metadata only (messages already saved server-side)
                 try {
-                    await PrismService.finalizeConversation(
-                        currentId,
-                        currentTitle,
+                    await PrismService.finalizeConversation({
+                        id: currentId,
+                        title: currentTitle,
                         systemPrompt,
-                        modelSettings,
-                    );
+                        settings: modelSettings,
+                    });
                     loadConversations();
                 } catch (saveErr) {
                     console.error("Finalize failed:", saveErr);
@@ -838,11 +838,11 @@ export default function HomePage({ initialConversationId = null }) {
                 // Start conversation shell (or reuse existing)
                 const { systemPrompt, ...modelSettings } = settings;
                 try {
-                    const conversation = await PrismService.startConversation(
-                        currentTitle,
+                    const conversation = await PrismService.startConversation({
+                        title: currentTitle,
                         systemPrompt,
-                        modelSettings,
-                    );
+                        settings: modelSettings,
+                    });
                     currentId = conversation.id;
                     setActiveId(conversation.id);
                     updateUrl(conversation.id);
@@ -887,12 +887,12 @@ export default function HomePage({ initialConversationId = null }) {
 
                 // Finalize conversation metadata only
                 try {
-                    await PrismService.finalizeConversation(
-                        currentId,
-                        currentTitle,
+                    await PrismService.finalizeConversation({
+                        id: currentId,
+                        title: currentTitle,
                         systemPrompt,
-                        modelSettings,
-                    );
+                        settings: modelSettings,
+                    });
                     loadConversations();
                 } catch (saveErr) {
                     console.error("Finalize failed:", saveErr);
@@ -934,11 +934,11 @@ export default function HomePage({ initialConversationId = null }) {
             const { systemPrompt, ...modelSettings } = settings;
             if (!currentId) {
                 try {
-                    const conversation = await PrismService.startConversation(
-                        currentTitle,
+                    const conversation = await PrismService.startConversation({
+                        title: currentTitle,
                         systemPrompt,
-                        modelSettings,
-                    );
+                        settings: modelSettings,
+                    });
                     currentId = conversation.id;
                     setActiveId(conversation.id);
                     updateUrl(conversation.id);
@@ -1135,12 +1135,12 @@ export default function HomePage({ initialConversationId = null }) {
 
                         // Finalize conversation — update metadata only (messages already saved server-side)
                         try {
-                            await PrismService.finalizeConversation(
-                                currentId,
-                                currentTitle,
+                            await PrismService.finalizeConversation({
+                                id: currentId,
+                                title: currentTitle,
                                 systemPrompt,
-                                modelSettings,
-                            );
+                                settings: modelSettings,
+                            });
                             loadConversations();
                         } catch (saveErr) {
                             console.error("Finalize failed:", saveErr);
