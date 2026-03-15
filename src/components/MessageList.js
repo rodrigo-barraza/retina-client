@@ -144,15 +144,26 @@ function MediaPreview({ dataUrl: rawUrl, onClick }) {
     }
     if (cat === "audio") {
         return (
-            <div className={styles.mediaCard}>
-                <Volume2 size={20} className={styles.mediaCardIcon} />
-                <audio controls src={src} preload="metadata" />
+            <div className={styles.audioCard}>
+                <div className={styles.audioCardHeader}>
+                    <Volume2 size={16} className={styles.audioCardIcon} />
+                    <span className={styles.audioCardLabel}>Audio</span>
+                    <a
+                        href={src}
+                        download
+                        className={styles.audioCardDownload}
+                        title="Download audio"
+                    >
+                        ↓
+                    </a>
+                </div>
+                <audio controls src={src} preload="metadata" className={styles.audioCardPlayer} />
             </div>
         );
     }
     if (cat === "video") {
         return (
-            <div className={styles.mediaCard}>
+            <div className={styles.videoCard}>
                 <video
                     controls
                     src={src}
@@ -162,7 +173,30 @@ function MediaPreview({ dataUrl: rawUrl, onClick }) {
             </div>
         );
     }
-    if (cat === "pdf" || cat === "text") {
+    if (cat === "pdf") {
+        return (
+            <div className={styles.pdfViewer}>
+                <div className={styles.pdfHeader}>
+                    <FileText size={14} className={styles.pdfHeaderIcon} />
+                    <span className={styles.pdfHeaderLabel}>PDF Document</span>
+                    <a
+                        href={src}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.pdfOpenLink}
+                    >
+                        Open ↗
+                    </a>
+                </div>
+                <iframe
+                    src={src}
+                    className={styles.pdfFrame}
+                    title="PDF preview"
+                />
+            </div>
+        );
+    }
+    if (cat === "text") {
         return (
             <div
                 className={styles.mediaCard}
@@ -448,14 +482,37 @@ export default function MessageList({
                                     </div>
                                 )}
 
-                                {/* Audio (TTS response) */}
+                                {/* Audio */}
                                 {msg.audio && (
-                                    <div className={styles.audioPlayer}>
-                                        <audio
-                                            controls
-                                            autoPlay={!readOnly}
-                                            src={PrismService.getFileUrl(msg.audio)}
-                                        />
+                                    <div className={styles.imagePreviewRow}>
+                                        {(Array.isArray(msg.audio) ? msg.audio : [msg.audio]).map((rawUrl, j) => (
+                                            <MediaPreview key={`aud-${j}`} dataUrl={rawUrl} />
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Video */}
+                                {msg.video && (Array.isArray(msg.video) ? msg.video : [msg.video]).length > 0 && (
+                                    <div className={styles.imagePreviewRow}>
+                                        {(Array.isArray(msg.video) ? msg.video : [msg.video]).map((rawUrl, j) => (
+                                            <MediaPreview key={`vid-${j}`} dataUrl={rawUrl} />
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* PDF */}
+                                {msg.pdf && (Array.isArray(msg.pdf) ? msg.pdf : [msg.pdf]).length > 0 && (
+                                    <div className={styles.imagePreviewRow}>
+                                        {(Array.isArray(msg.pdf) ? msg.pdf : [msg.pdf]).map((rawUrl, j) => {
+                                            const resolvedUrl = PrismService.getFileUrl(rawUrl);
+                                            return (
+                                                <MediaPreview
+                                                    key={`pdf-${j}`}
+                                                    dataUrl={rawUrl}
+                                                    onClick={() => onDocClick?.(resolvedUrl)}
+                                                />
+                                            );
+                                        })}
                                     </div>
                                 )}
 

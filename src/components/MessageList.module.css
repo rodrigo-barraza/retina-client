@@ -230,23 +230,124 @@
   color: var(--text-secondary);
 }
 
-.videoPreview {
-  max-width: 260px;
-  max-height: 180px;
-  border-radius: 2px;
+/* ── Video ── */
+.videoCard {
+  border-radius: 6px;
+  overflow: hidden;
   border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  max-width: 480px;
 }
 
-/* ── Audio ── */
-.audioPlayer {
-  margin: 8px 0 12px;
+.videoPreview {
   width: 100%;
+  max-height: 320px;
+  display: block;
+  border-radius: 0;
+  border: none;
 }
 
-.audioPlayer audio {
+/* ── Audio Card ── */
+.audioCard {
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  overflow: hidden;
+  min-width: 280px;
+  max-width: 420px;
+}
+
+.audioCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.audioCardIcon {
+  color: var(--accent-color);
+  flex-shrink: 0;
+}
+
+.audioCardLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.audioCardDownload {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s;
+
+  &:hover {
+    color: var(--accent-color);
+    background: var(--bg-secondary);
+  }
+}
+
+.audioCardPlayer {
   width: 100%;
-  border-radius: 2px;
+  display: block;
   outline: none;
+  height: 40px;
+}
+
+/* ── PDF Viewer ── */
+.pdfViewer {
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  overflow: hidden;
+  width: 100%;
+  max-width: 700px;
+}
+
+.pdfHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pdfHeaderIcon {
+  color: var(--accent-color);
+  flex-shrink: 0;
+}
+
+.pdfHeaderLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.pdfOpenLink {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent-color);
+  text-decoration: none;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+
+  &:hover {
+    background: var(--accent-glow);
+  }
+}
+
+.pdfFrame {
+  width: 100%;
+  height: 500px;
+  border: none;
+  display: block;
+  background: #fff;
 }
 
 /* ── Text / Markdown ── */
