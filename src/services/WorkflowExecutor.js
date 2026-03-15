@@ -38,30 +38,20 @@ async function resolveToDataUrl(ref) {
     if (!ref) return ref;
     // Object with inline base64 data (chat API image format: { data, mimeType, minioRef })
     if (typeof ref === "object") {
+        // Prefer minioRef if available (lightweight URL instead of base64 blob)
+        if (ref.minioRef) return PrismService.getFileUrl(ref.minioRef);
         const b64 = ref.data || ref.imageData;
         if (b64) {
             const mime = ref.mimeType || "image/png";
             return `data:${mime};base64,${b64}`;
         }
-        if (ref.minioRef) return resolveToDataUrl(ref.minioRef);
         return null;
     }
     if (typeof ref !== "string") return null;
     // Already a data URL — return as-is
     if (ref.startsWith("data:")) return ref;
-    // HTTP URL or minio — resolve to renderable, then fetch and convert
-    const url = PrismService.getFileUrl(ref);
-    try {
-        const res = await fetch(url);
-        const blob = await res.blob();
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(blob);
-        });
-    } catch {
-        return url; // fallback to URL
-    }
+    // HTTP URL or minio:// ref — resolve to HTTP URL (no base64 conversion)
+    return PrismService.getFileUrl(ref);
 }
 
 /**

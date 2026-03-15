@@ -93,9 +93,7 @@ export default function WorkflowsPage() {
     const { theme, toggleTheme } = useTheme();
     const [_config, setConfig] = useState(null);
     const [allModels, setAllModels] = useState([]);
-    const [savedWorkflows, setSavedWorkflows] = useState(() =>
-        WorkflowService.getWorkflows(),
-    );
+    const [savedWorkflows, setSavedWorkflows] = useState([]);
     const [toast, setToast] = useState(null);
 
     // Current workflow state
@@ -114,13 +112,17 @@ export default function WorkflowsPage() {
     // Selection state
     const [selectedNodeId, setSelectedNodeId] = useState(null);
 
-    // Load config
+    // Load config + saved workflows
     useEffect(() => {
         PrismService.getConfig()
             .then((cfg) => {
                 setConfig(cfg);
                 setAllModels(flattenConfigModels(cfg));
             })
+            .catch(console.error);
+
+        WorkflowService.getWorkflows()
+            .then((wfs) => setSavedWorkflows(wfs.map((w) => ({ ...w, id: w._id || w.id }))))
             .catch(console.error);
     }, []);
 
@@ -511,48 +513,63 @@ export default function WorkflowsPage() {
     }, []);
 
     // Save current workflow
-    const handleSaveWorkflow = useCallback(() => {
-        const workflow = {
-            id: workflowId,
-            name: workflowName || "Untitled Workflow",
-            nodes,
-            connections,
-            nodeResults,
-            nodeStatuses,
-        };
-        const saved = WorkflowService.saveWorkflow(workflow);
-        setWorkflowId(saved.id);
-        setSavedWorkflows(WorkflowService.getWorkflows());
-        showToast("Workflow saved");
+    const handleSaveWorkflow = useCallback(async () => {
+        try {
+            const workflow = {
+                id: workflowId,
+                name: workflowName || "Untitled Workflow",
+                nodes,
+                connections,
+                nodeResults,
+                nodeStatuses,
+            };
+            const saved = await WorkflowService.saveWorkflow(workflow);
+            const newId = saved.id || saved._id;
+            setWorkflowId(newId);
+            const wfs = await WorkflowService.getWorkflows();
+            setSavedWorkflows(wfs.map((w) => ({ ...w, id: w._id || w.id })));
+            showToast("Workflow saved");
+        } catch (err) {
+            showToast(`Failed to save: ${err.message}`, "error");
+        }
     }, [workflowId, workflowName, nodes, connections, nodeResults, nodeStatuses]);
 
     // Load a saved workflow
-    const handleLoadWorkflow = useCallback((id) => {
-        const wf = WorkflowService.getWorkflow(id);
-        if (!wf) return;
-        setWorkflowId(wf.id);
-        setWorkflowName(wf.name || "Untitled Workflow");
-        setNodes(wf.nodes || []);
-        setConnections(wf.connections || []);
-        setNodeResults(wf.nodeResults || {});
-        setNodeStatuses(wf.nodeStatuses || {});
-        showToast("Workflow loaded");
+    const handleLoadWorkflow = useCallback(async (id) => {
+        try {
+            const wf = await WorkflowService.getWorkflow(id);
+            if (!wf) return;
+            setWorkflowId(wf._id || wf.id);
+            setWorkflowName(wf.name || "Untitled Workflow");
+            setNodes(wf.nodes || []);
+            setConnections(wf.connections || []);
+            setNodeResults(wf.nodeResults || {});
+            setNodeStatuses(wf.nodeStatuses || {});
+            showToast("Workflow loaded");
+        } catch (err) {
+            showToast(`Failed to load: ${err.message}`, "error");
+        }
     }, []);
 
     // Delete a saved workflow
     const handleDeleteWorkflow = useCallback(
-        (id) => {
-            WorkflowService.deleteWorkflow(id);
-            setSavedWorkflows(WorkflowService.getWorkflows());
-            if (workflowId === id) {
-                setWorkflowId(null);
-                setWorkflowName("Untitled Workflow");
-                setNodes([]);
-                setConnections([]);
-                setNodeResults({});
-                setNodeStatuses({});
+        async (id) => {
+            try {
+                await WorkflowService.deleteWorkflow(id);
+                const wfs = await WorkflowService.getWorkflows();
+                setSavedWorkflows(wfs.map((w) => ({ ...w, id: w._id || w.id })));
+                if (workflowId === id) {
+                    setWorkflowId(null);
+                    setWorkflowName("Untitled Workflow");
+                    setNodes([]);
+                    setConnections([]);
+                    setNodeResults({});
+                    setNodeStatuses({});
+                }
+                showToast("Workflow deleted");
+            } catch (err) {
+                showToast(`Failed to delete: ${err.message}`, "error");
             }
-            showToast("Workflow deleted");
         },
         [workflowId],
     );

@@ -347,4 +347,53 @@ export class PrismService {
   static async generateEmbedding(payload) {
     return PrismService._request("/embed", { body: payload });
   }
+
+  // ---------------------------------------------------------------------------
+  // Workflows
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List all saved workflows (metadata only).
+   * @returns {Promise<Array>}
+   */
+  static async getWorkflows() {
+    return PrismService._request("/workflows?source=retina", { method: "GET" });
+  }
+
+  /**
+   * Get a single workflow by ID (full document).
+   * @param {string} id
+   * @returns {Promise<object>}
+   */
+  static async getWorkflow(id) {
+    return PrismService._request(`/workflows/${id}`, { method: "GET" });
+  }
+
+  /**
+   * Create a new workflow.
+   * @param {object} workflow - { name, nodes, connections, nodeResults?, nodeStatuses? }
+   * @returns {Promise<{ success: boolean, id: string }>}
+   */
+  static async saveWorkflow(workflow) {
+    return PrismService._request("/workflows", { body: { ...workflow, source: "retina" } });
+  }
+
+  /**
+   * Update an existing workflow.
+   * @param {string} id
+   * @param {object} workflow - fields to update
+   * @returns {Promise<{ success: boolean }>}
+   */
+  static async updateWorkflow(id, workflow) {
+    return PrismService._request(`/workflows/${id}`, { method: "PUT", body: workflow });
+  }
+
+  /**
+   * Delete a workflow.
+   * @param {string} id
+   * @returns {Promise<{ success: boolean }>}
+   */
+  static async deleteWorkflow(id) {
+    return PrismService._request(`/workflows/${id}`, { method: "DELETE" });
+  }
 }
