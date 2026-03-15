@@ -463,7 +463,7 @@ function AssetNode(props) {
                     <>
                       {node.receivedOutputs.image && (
                         <img
-                          src={node.receivedOutputs.image}
+                          src={PrismService.getFileUrl(node.receivedOutputs.image)}
                           alt="Received image"
                           className={styles.viewerImage}
                         />
@@ -474,7 +474,7 @@ function AssetNode(props) {
                       {node.receivedOutputs.audio && (
                         <audio
                           controls
-                          src={node.receivedOutputs.audio}
+                          src={PrismService.getFileUrl(node.receivedOutputs.audio)}
                           style={{ width: "100%", height: 28 }}
                           onMouseDown={(e) => e.stopPropagation()}
                         />
@@ -487,7 +487,7 @@ function AssetNode(props) {
                       {node.receivedOutputs.video && (
                         <video
                           controls
-                          src={node.receivedOutputs.video}
+                          src={PrismService.getFileUrl(node.receivedOutputs.video)}
                           className={styles.viewerImage}
                           onMouseDown={(e) => e.stopPropagation()}
                         />

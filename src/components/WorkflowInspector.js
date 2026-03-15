@@ -332,14 +332,19 @@ export default function WorkflowInspector({
                             msg.pdf = [...(msg.pdf || []), "[pdf attached]"];
                         }
                     }
+                    const resolveRef = (ref) => {
+                        if (typeof ref === "string" && ref.startsWith("minio://")) return PrismService.getFileUrl(ref);
+                        if (typeof ref === "string" && ref.startsWith("data:")) return "[attached]";
+                        return ref;
+                    };
                     const messagesJson = JSON.stringify(
                         resolved.map(({ role, content, images, audio, video, pdf }) => ({
                             role,
                             content: content || "",
-                            ...(images?.length > 0 ? { images: images.map(() => "[image attached]") } : {}),
-                            ...(audio?.length > 0 ? { audio: audio.map(() => "[audio attached]") } : {}),
-                            ...(video?.length > 0 ? { video: video.map(() => "[video attached]") } : {}),
-                            ...(pdf?.length > 0 ? { pdf: pdf.map(() => "[pdf attached]") } : {}),
+                            ...(images?.length > 0 ? { images: images.map(resolveRef) } : {}),
+                            ...(audio?.length > 0 ? { audio: audio.map(resolveRef) } : {}),
+                            ...(video?.length > 0 ? { video: video.map(resolveRef) } : {}),
+                            ...(pdf?.length > 0 ? { pdf: pdf.map(resolveRef) } : {}),
                         })),
                         null,
                         2,
@@ -387,12 +392,12 @@ export default function WorkflowInspector({
                                 <span className={styles.resultType}>Image</span>
                                 <div className={styles.resultImageContainer}>
                                     <img /* eslint-disable-line @next/next/no-img-element */
-                                        src={results.image}
+                                        src={PrismService.getFileUrl(results.image)}
                                         alt="Generated image"
                                         className={styles.resultImage}
                                     />
                                     <a
-                                        href={results.image}
+                                        href={PrismService.getFileUrl(results.image)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className={styles.expandBtn}
@@ -414,7 +419,7 @@ export default function WorkflowInspector({
                         {results.audio && (
                             <div className={styles.resultBlock}>
                                 <span className={styles.resultType}>Audio</span>
-                                <audio controls src={results.audio} className={styles.resultAudio} />
+                                <audio controls src={PrismService.getFileUrl(results.audio)} className={styles.resultAudio} />
                             </div>
                         )}
 
@@ -446,12 +451,12 @@ export default function WorkflowInspector({
                                 <span className={styles.resultType}>Image</span>
                                 <div className={styles.resultImageContainer}>
                                     <img /* eslint-disable-line @next/next/no-img-element */
-                                        src={node.receivedOutputs.image}
+                                        src={PrismService.getFileUrl(node.receivedOutputs.image)}
                                         alt="Received image"
                                         className={styles.resultImage}
                                     />
                                     <a
-                                        href={node.receivedOutputs.image}
+                                        href={PrismService.getFileUrl(node.receivedOutputs.image)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className={styles.expandBtn}
@@ -473,7 +478,7 @@ export default function WorkflowInspector({
                         {node.receivedOutputs.audio && (
                             <div className={styles.resultBlock}>
                                 <span className={styles.resultType}>Audio</span>
-                                <audio controls src={node.receivedOutputs.audio} className={styles.resultAudio} />
+                                <audio controls src={PrismService.getFileUrl(node.receivedOutputs.audio)} className={styles.resultAudio} />
                             </div>
                         )}
 
