@@ -1153,6 +1153,13 @@ export default function HomePage({ initialConversationId = null }) {
                             <Workflow size={14} />
                             Workflows
                         </Link>
+                        <Link
+                            href="/admin"
+                            className={styles.modeToggle}
+                            title="Admin Dashboard"
+                        >
+                            Admin
+                        </Link>
                         <button
                             className={styles.themeToggle}
                             onClick={toggleTheme}

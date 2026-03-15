@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useState, useCallback } from "react";
 import WorkflowSidebar from "./WorkflowSidebar";
 import WorkflowCanvas from "./WorkflowCanvas";
 import WorkflowInspector from "./WorkflowInspector";
@@ -72,6 +72,8 @@ export default function WorkflowComponent({
   allModels,
   onChangeModel,
 }) {
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+
   const safePosition = readOnly ? (onUpdateNodePosition || noop) : (onUpdateNodePosition || noop);
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
@@ -80,23 +82,37 @@ export default function WorkflowComponent({
     onSelectNode?.(null);
   }, [onSelectNode]);
 
+  const handleToggleSidebar = useCallback(() => {
+    setSidebarVisible((v) => !v);
+  }, []);
+
+  // When loading a workflow on mobile, auto-hide sidebar
+  const handleLoadWorkflowWithHide = useCallback((...args) => {
+    if (window.innerWidth < 768) {
+      setSidebarVisible(false);
+    }
+    onLoadWorkflow?.(...args);
+  }, [onLoadWorkflow]);
+
   return (
     <div className={styles.body}>
-      <WorkflowSidebar
-        admin={admin}
-        workflows={workflows}
-        activeWorkflowId={activeWorkflowId}
-        onLoadWorkflow={onLoadWorkflow}
-        onDeleteWorkflow={admin ? noop : (onDeleteWorkflow || noop)}
-        onDownloadWorkflow={onDownloadWorkflow}
-        onCopyWorkflow={onCopyWorkflow}
-        onAddAsset={admin ? undefined : onAddAsset}
-        onNewWorkflow={admin ? undefined : onNewWorkflow}
-        onSaveWorkflow={admin ? undefined : onSaveWorkflow}
-        workflowName={workflowName}
-        onWorkflowNameChange={onWorkflowNameChange}
-        loading={loading}
-      />
+      <div className={`${styles.sidebarWrapper} ${sidebarVisible ? "" : styles.sidebarHidden}`}>
+        <WorkflowSidebar
+          admin={admin}
+          workflows={workflows}
+          activeWorkflowId={activeWorkflowId}
+          onLoadWorkflow={handleLoadWorkflowWithHide}
+          onDeleteWorkflow={admin ? noop : (onDeleteWorkflow || noop)}
+          onDownloadWorkflow={onDownloadWorkflow}
+          onCopyWorkflow={onCopyWorkflow}
+          onAddAsset={admin ? undefined : onAddAsset}
+          onNewWorkflow={admin ? undefined : onNewWorkflow}
+          onSaveWorkflow={admin ? undefined : onSaveWorkflow}
+          workflowName={workflowName}
+          onWorkflowNameChange={onWorkflowNameChange}
+          loading={loading}
+        />
+      </div>
       <WorkflowCanvas
         nodes={nodes}
         connections={connections}
@@ -115,6 +131,8 @@ export default function WorkflowComponent({
         activeWorkflowId={activeWorkflowId}
         readOnly={readOnly}
         isLoadingWorkflow={isLoadingWorkflow}
+        sidebarVisible={sidebarVisible}
+        onToggleSidebar={handleToggleSidebar}
       />
       {selectedNode && (
         <WorkflowInspector

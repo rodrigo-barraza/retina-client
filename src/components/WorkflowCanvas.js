@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Eye, EyeOff } from "lucide-react";
+import { X, Eye, EyeOff, PanelLeftClose, PanelLeft } from "lucide-react";
 import WorkflowNode from "./WorkflowNode";
 import {
   MODALITY_COLORS,
@@ -35,6 +35,8 @@ export default function WorkflowCanvas({
   activeWorkflowId,
   readOnly = false,
   isLoadingWorkflow = false,
+  sidebarVisible = true,
+  onToggleSidebar,
 }) {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
@@ -682,13 +684,24 @@ export default function WorkflowCanvas({
       </svg>
 
       {nodes.length > 0 && (
-        <button
-          className={styles.toggleAllBtn}
-          onClick={handleToggleAllExpand}
-          title={allExpanded ? "Collapse all node info" : "Expand all node info"}
-        >
-          {allExpanded ? <EyeOff size={14} /> : <Eye size={14} />}
-        </button>
+        <div className={styles.canvasToolbar}>
+          {onToggleSidebar && (
+            <button
+              className={`${styles.toolbarBtn} ${sidebarVisible ? styles.toolbarBtnActive : ""}`}
+              onClick={onToggleSidebar}
+              title={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
+            >
+              {sidebarVisible ? <PanelLeftClose size={14} /> : <PanelLeft size={14} />}
+            </button>
+          )}
+          <button
+            className={styles.toolbarBtn}
+            onClick={handleToggleAllExpand}
+            title={allExpanded ? "Collapse all node info" : "Expand all node info"}
+          >
+            {allExpanded ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
+        </div>
       )}
 
       {nodes.length > 0 && !readOnly && (

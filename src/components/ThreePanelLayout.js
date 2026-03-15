@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Settings, History } from "lucide-react";
+import { PanelLeftClose, PanelLeft, PanelRightClose, PanelRight } from "lucide-react";
 import styles from "./ThreePanelLayout.module.css";
 
 /**
@@ -124,7 +124,7 @@ export default function ThreePanelLayout({
                         onClick={toggleLeft}
                         title={showLeft ? `Hide ${leftTitle.toLowerCase()}` : `Show ${leftTitle.toLowerCase()}`}
                     >
-                        <Settings size={16} />
+                        {showLeft ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
                     </button>
                     <span className={styles.headerTitle}>{headerTitle}</span>
                     {!isMobile && headerMeta}
@@ -134,7 +134,7 @@ export default function ThreePanelLayout({
                         onClick={toggleRight}
                         title={showRight ? `Hide ${rightTitle.toLowerCase()}` : `Show ${rightTitle.toLowerCase()}`}
                     >
-                        <History size={16} />
+                        {showRight ? <PanelRightClose size={16} /> : <PanelRight size={16} />}
                     </button>
                 </div>
                 {/* Mobile: meta info row below the header */}
