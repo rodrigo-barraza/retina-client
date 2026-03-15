@@ -85,7 +85,6 @@ export default function WorkflowCanvas({
       const isGridBg = el.classList?.contains?.(styles.gridBackground);
       const isInsideInteractive = el.closest?.("[data-workflow-node], [data-workflow-connection]");
       if (isContainerOrSvg || isGridBg || (!isInsideInteractive && containerRef.current?.contains(el))) {
-        onSelectNode?.(null);
         setIsPanning(true);
         panStart.current = {
           x: e.clientX,
@@ -95,7 +94,7 @@ export default function WorkflowCanvas({
         };
       }
     },
-    [pan, onSelectNode],
+    [pan],
   );
 
   const handleMouseMove = useCallback(
@@ -293,7 +292,7 @@ export default function WorkflowCanvas({
           strokeWidth={12}
           fill="none"
           className={styles.connectionHitArea}
-          onClick={() => onDeleteConnection(conn.id)}
+          onClick={() => onSelectNode(conn.sourceNodeId)}
         />
         <path
           d={connectionPath(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y)}

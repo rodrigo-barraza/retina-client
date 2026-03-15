@@ -187,7 +187,7 @@ function ModelNode(props) {
   const isDone = status === "done";
   const isPrism = isRunning || isDone;
   const statusGradient = isRunning ? "url(#prism-gradient)" : isDone ? "url(#done-gradient)" : null;
-  const statusBorderColor = statusGradient || (isSelected ? "var(--accent-color, #7c6ef6)" : status === "error" ? "#f43f5e" : null);
+  const statusBorderColor = statusGradient || (isSelected ? "url(#prism-gradient)" : status === "error" ? "#f43f5e" : null);
   const borderWidth = isSelected ? 2 : isPrism ? 2 : 0;
 
   return (
@@ -392,8 +392,8 @@ function AssetNode(props) {
         height={nodeHeight}
         rx="3"
         ry="3"
-        className={`${styles.assetNodeBody}${isPrism ? ` ${styles.prismBorder}` : ""}`}
-        style={isPrism ? { stroke: statusGradient, strokeWidth: 2, strokeOpacity: 1 } : { stroke: accentColor, strokeOpacity: 0.4 }}
+        className={`${styles.assetNodeBody}${isPrism || isSelected ? ` ${styles.prismBorder}` : ""}`}
+        style={isPrism ? { stroke: statusGradient, strokeWidth: 2, strokeOpacity: 1 } : isSelected ? { stroke: "url(#prism-gradient)", strokeWidth: 2, strokeOpacity: 1 } : { stroke: accentColor, strokeOpacity: 0.4 }}
       />
 
       {/* Header */}

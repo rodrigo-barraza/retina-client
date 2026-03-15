@@ -755,3 +755,68 @@
   margin: 0 1px;
 }
 
+/* ── System Prompt (conversation input node) ── */
+.systemPromptContent {
+  padding: 6px 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-sm);
+  max-height: 300px;
+  overflow-y: auto;
+  word-break: break-word;
+}
+
+/* ── Conversation Messages (inspector) ── */
+.conversationMessages {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.conversationMessage {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.conversationMessageRole {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 4px 8px 2px;
+  color: var(--text-muted);
+}
+
+.convRole_system .conversationMessageRole {
+  color: #f59e0b;
+}
+
+.convRole_user .conversationMessageRole {
+  color: var(--text-secondary);
+}
+
+.convRole_assistant .conversationMessageRole {
+  color: #a78bfa;
+}
+
+.conversationMessageContent {
+  padding: 0 8px 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 200px;
+  overflow-y: auto;
+  word-break: break-word;
+}
+
+.conversationMessageEmpty {
+  padding: 2px 8px 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0.5;
+}
+

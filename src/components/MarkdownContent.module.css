@@ -1,0 +1,138 @@
+/* ── Text / Markdown ── */
+.text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin: 16px 0 8px;
+    font-weight: 600;
+  }
+
+  h1 {
+    font-size: 1.4em;
+  }
+  h2 {
+    font-size: 1.2em;
+  }
+  h3 {
+    font-size: 1.1em;
+  }
+
+  p {
+    margin: 8px 0;
+  }
+
+  ul,
+  ol {
+    padding-left: 20px;
+    margin: 8px 0;
+  }
+
+  li {
+    margin: 4px 0;
+  }
+
+  blockquote {
+    border-left: 3px solid var(--accent-color);
+    padding: 4px 12px;
+    margin: 8px 0;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    border-radius: 0 2px 2px 0;
+  }
+
+  a {
+    color: var(--accent-color);
+    text-decoration: underline;
+    text-decoration-color: rgba(138, 120, 255, 0.3);
+    transition: text-decoration-color 0.2s;
+
+    &:hover {
+      text-decoration-color: var(--accent-color);
+    }
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 14px;
+  }
+
+  th,
+  td {
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    text-align: left;
+  }
+
+  th {
+    background: var(--bg-tertiary);
+    font-weight: 600;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 16px 0;
+  }
+}
+
+.inlineCode {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-size: 13px;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+}
+
+.codeBlockWrapper {
+  margin: 12px 0;
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+
+  pre, code {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+  }
+}
+
+.codeBlockHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  font-size: 12px;
+}
+
+.codeBlockLang {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.codeBlockCopy {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  transition: all 0.15s;
+
+  &:hover {
+    color: var(--accent-color);
+    background: var(--bg-tertiary);
+  }
+}

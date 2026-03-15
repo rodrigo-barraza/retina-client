@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Eye, Type, Volume2, X, Maximize2, Search, ChevronDown, Paperclip } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
 import { MODALITY_ICONS } from "./WorkflowSidebar";
+import MarkdownContent from "./MarkdownContent";
 
 import styles from "./WorkflowInspector.module.css";
 
@@ -109,7 +110,7 @@ export default function WorkflowInspector({
                     )}
                     <div className={styles.headerInfo}>
                         <span className={styles.headerTitle}>
-                            {isModel ? (node.displayName || node.modelName) : isInput ? (node.modality === "conversation" ? "Conversation Input" : node.modality ? `${node.modality.charAt(0).toUpperCase() + node.modality.slice(1)} Input` : "File Input") : "Output Viewer"}
+                            {isModel ? (node.displayName || node.modelName) : isInput ? (node.modality === "conversation" ? "Conversation" : node.modality ? `${node.modality.charAt(0).toUpperCase() + node.modality.slice(1)} Input` : "File Input") : "Output Viewer"}
                         </span>
                         <span className={styles.headerSubtitle}>
                             {isModel ? node.provider : isInput ? "Asset Node" : "Viewer Node"}
@@ -317,6 +318,42 @@ export default function WorkflowInspector({
                 )}
 
 
+                {/* Conversation messages — conversation input nodes */}
+                {isInput && node.modality === "conversation" && (node.messages || []).length > 0 && (() => {
+                    // Build resolved messages by merging static template with connected input content
+                    const resolved = JSON.parse(JSON.stringify(node.messages || []));
+                    for (const conn of incoming) {
+                        const dotIdx = conn.targetModality.indexOf(".");
+                        if (dotIdx === -1) continue;
+                        const msgIdx = parseInt(conn.targetModality.substring(0, dotIdx));
+                        const modality = conn.targetModality.substring(dotIdx + 1);
+                        if (msgIdx < 0 || msgIdx >= resolved.length) continue;
+                        const sourceNode = (nodes || []).find((n) => n.id === conn.sourceNodeId);
+                        if (!sourceNode?.content) continue;
+                        const msg = resolved[msgIdx];
+                        if (modality === "text") {
+                            msg.content = msg.content ? `${msg.content}\n\n${sourceNode.content}` : sourceNode.content;
+                        } else if (modality === "image" || modality === "pdf") {
+                            msg[modality] = `[${modality} attached]`;
+                        }
+                    }
+                    const messagesJson = JSON.stringify(
+                        resolved.map(({ role, content, ...rest }) => ({
+                            role,
+                            content: content || "",
+                            ...(rest.image ? { image: rest.image } : {}),
+                            ...(rest.pdf ? { pdf: rest.pdf } : {}),
+                        })),
+                        null,
+                        2,
+                    );
+                    return (
+                        <section className={styles.section}>
+                            <label className={styles.sectionLabel}>Conversation</label>
+                            <MarkdownContent content={`\`\`\`json\n${messagesJson}\n\`\`\``} />
+                        </section>
+                    );
+                })()}
 
                 {/* Connections */}
                 {(incoming.length > 0 || outgoing.length > 0) && (
@@ -344,7 +381,7 @@ export default function WorkflowInspector({
                 )}
 
                 {/* Generated Results — model nodes only (hide for text input assets) */}
-                {results && !results.error && !isViewer && !(isInput && node.modality === "text") && (
+                {results && !results.error && !isViewer && !(isInput && node.modality === "text") && !(isInput && node.modality === "conversation") && (
                     <section className={styles.section}>
                         <label className={styles.sectionLabel}>Generated Output</label>
 
