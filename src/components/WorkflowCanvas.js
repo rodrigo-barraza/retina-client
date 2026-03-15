@@ -261,6 +261,9 @@ export default function WorkflowCanvas({
   }, [dragging, isPanning, connecting, hoveredPort]);
 
   // Zoom — scroll wheel zooms toward cursor
+  // Use a ref so rapid wheel events always read the latest zoom (avoids stale closures)
+  const zoomRef = useRef(zoom);
+
   const handleWheel = useCallback(
     (e) => {
       e.preventDefault();
@@ -270,9 +273,13 @@ export default function WorkflowCanvas({
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
 
+      const currentZoom = zoomRef.current;
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * delta));
-      const ratio = newZoom / zoom;
+      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, currentZoom * delta));
+      const ratio = newZoom / currentZoom;
+
+      // Update ref synchronously so next wheel event sees the latest value
+      zoomRef.current = newZoom;
 
       setPan((prev) => ({
         x: mouseX - ratio * (mouseX - prev.x),
@@ -280,7 +287,7 @@ export default function WorkflowCanvas({
       }));
       setZoom(newZoom);
     },
-    [zoom],
+    [],
   );
 
   useEffect(() => {
