@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { ArrowLeft, Sun, Moon, Play, Square, Loader2, Download, Upload } from "lucide-react";
+import { ArrowLeft, Sun, Moon, Play, Square, Loader2, Download, Upload, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { PrismService } from "../../services/PrismService";
 import WorkflowService from "../../services/WorkflowService";
@@ -68,9 +68,9 @@ function buildConversationPorts(messages, supportedModalities = ["text"]) {
     for (let i = 0; i < messages.length; i++) {
         const msg = messages[i];
         ports.push(`${i}.text`);
-        // User and assistant messages get extra modality ports (image, audio, etc.)
-        // System messages are text-only
-        if (msg.role !== "system") {
+        // Only user messages get extra modality ports (image, audio, etc.)
+        // System and assistant messages are text-only
+        if (msg.role === "user") {
             for (const mod of supportedModalities) {
                 if (mod !== "text") {
                     ports.push(`${i}.${mod}`);
@@ -108,6 +108,11 @@ export default function WorkflowsPage() {
     const [nodeStatuses, setNodeStatuses] = useState({}); // nodeId → "running" | "done" | "error"
     const [nodeResults, setNodeResults] = useState({}); // nodeId → { text?, image?, audio? }
     const abortRef = useRef(false);
+
+    // Undo history (100 states max)
+    const undoStackRef = useRef([]);
+    const [undoCount, setUndoCount] = useState(0); // trigger re-render when stack changes
+    const skipNextSnapshotRef = useRef(false); // skip snapshot after undo restore
 
     // Selection state
     const [selectedNodeId, setSelectedNodeId] = useState(null);
@@ -159,6 +164,45 @@ export default function WorkflowsPage() {
         setTimeout(() => setToast(null), 3000);
     };
 
+    // Push current state to undo stack
+    const pushUndo = useCallback(() => {
+        const snapshot = {
+            workflowId,
+            workflowName,
+            nodes: JSON.parse(JSON.stringify(nodes)),
+            connections: JSON.parse(JSON.stringify(connections)),
+        };
+        undoStackRef.current.push(snapshot);
+        if (undoStackRef.current.length > 100) {
+            undoStackRef.current.shift();
+        }
+        setUndoCount(undoStackRef.current.length);
+    }, [workflowId, workflowName, nodes, connections]);
+
+    // Undo last action
+    const handleUndo = useCallback(() => {
+        if (undoStackRef.current.length === 0) return;
+        const snapshot = undoStackRef.current.pop();
+        setUndoCount(undoStackRef.current.length);
+        skipNextSnapshotRef.current = true;
+        setWorkflowId(snapshot.workflowId);
+        setWorkflowName(snapshot.workflowName);
+        setNodes(snapshot.nodes);
+        setConnections(snapshot.connections);
+    }, []);
+
+    // Ctrl+Z keyboard shortcut
+    useEffect(() => {
+        const handler = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+                e.preventDefault();
+                handleUndo();
+            }
+        };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+    }, [handleUndo]);
+
     // Filter models to only those with clear modalities
     const modelsWithModalities = useMemo(() => {
         return allModels.filter(
@@ -171,6 +215,7 @@ export default function WorkflowsPage() {
     // Add a new node from the sidebar
     const handleAddNode = useCallback(
         (model) => {
+            pushUndo();
             const isConversation = model.modelType === "conversation";
             const newNode = {
                 id: generateNodeId(),
@@ -206,7 +251,6 @@ export default function WorkflowsPage() {
             const isConversation = modality === "conversation";
             const defaultMessages = isConversation ? [
                 { role: "system", content: "" },
-                { role: "assistant", content: "" },
                 { role: "user", content: "" },
             ] : undefined;
             const defaultModalities = ["text"];
@@ -407,6 +451,7 @@ export default function WorkflowsPage() {
 
     // Delete a node and its connections
     const handleDeleteNode = useCallback((nodeId) => {
+        pushUndo();
         setNodes((prev) => prev.filter((n) => n.id !== nodeId));
         setConnections((prev) =>
             prev.filter(
@@ -417,6 +462,7 @@ export default function WorkflowsPage() {
 
     // Add a connection
     const handleAddConnection = useCallback((conn) => {
+        pushUndo();
         setConnections((prev) => [
             ...prev,
             { ...conn, id: generateConnectionId() },
@@ -447,7 +493,7 @@ export default function WorkflowsPage() {
 
             if (sourceNode?.nodeType === "input" && sourceNode?.modality === "conversation" && targetNode && !targetNode.nodeType) {
                 const rawInputs = (targetNode.rawInputTypes || targetNode.inputTypes || []).filter((t) => t !== "conversation");
-                const messages = sourceNode.messages || [{ role: "system", content: "" }, { role: "assistant", content: "" }, { role: "user", content: "" }];
+                const messages = sourceNode.messages || [{ role: "system", content: "" }, { role: "user", content: "" }];
                 const newPorts = new Set(buildConversationPorts(messages, rawInputs));
                 // Remove connections to conversation input ports that no longer exist
                 setConnections((prevConns) =>
@@ -468,6 +514,7 @@ export default function WorkflowsPage() {
 
     // Delete a connection
     const handleDeleteConnection = useCallback((connId) => {
+        pushUndo();
         setConnections((prev) => {
             const deleted = prev.find((c) => c.id === connId);
             const remaining = prev.filter((c) => c.id !== connId);
@@ -536,6 +583,7 @@ export default function WorkflowsPage() {
 
     // Load a saved workflow
     const handleLoadWorkflow = useCallback(async (id) => {
+        pushUndo();
         try {
             const wf = await WorkflowService.getWorkflow(id);
             if (!wf) return;
@@ -613,16 +661,19 @@ export default function WorkflowsPage() {
 
     // New workflow
     const handleNewWorkflow = useCallback(() => {
+        pushUndo();
         setWorkflowId(null);
         setWorkflowName("Untitled Workflow");
         setNodes([]);
         setConnections([]);
         setNodeResults({});
         setNodeStatuses({});
-    }, []);
+        setSelectedNodeId(null);
+    }, [pushUndo]);
 
     // Duplicate a node (copy-paste)
     const handleDuplicateNode = useCallback((nodeData) => {
+        pushUndo();
         const newNode = {
             ...JSON.parse(JSON.stringify(nodeData)),
             id: generateNodeId(),
@@ -673,6 +724,14 @@ export default function WorkflowsPage() {
                         title="Import workflow"
                     >
                         <Upload size={14} />
+                    </button>
+                    <button
+                        className={styles.headerActionBtn}
+                        onClick={handleUndo}
+                        disabled={undoCount === 0}
+                        title={`Undo (Ctrl+Z) · ${undoCount} states`}
+                    >
+                        <Undo2 size={14} />
                     </button>
                     <input
                         ref={importRef}

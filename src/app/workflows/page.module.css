@@ -167,6 +167,27 @@
   box-shadow: var(--shadow-lg);
   z-index: 100;
   animation: toastIn 0.25s ease-out;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toastUndo {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-color);
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent-color);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--accent-color);
+    color: #fff;
+  }
 }
 
 .success {
