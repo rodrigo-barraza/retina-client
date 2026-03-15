@@ -103,6 +103,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
     const [workflowName, setWorkflowName] = useState("Untitled Workflow");
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
+    const [isLoadingWorkflow, setIsLoadingWorkflow] = useState(!!initialWorkflowId);
 
     // Execution state
     const [isRunning, setIsRunning] = useState(false);
@@ -136,6 +137,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
     // Auto-load workflow from URL param
     useEffect(() => {
         if (!initialWorkflowId) return;
+        setIsLoadingWorkflow(true);
         WorkflowService.getWorkflow(initialWorkflowId)
             .then((wf) => {
                 if (!wf) return;
@@ -146,7 +148,8 @@ export default function WorkflowsPage({ initialWorkflowId }) {
                 setNodeResults(wf.nodeResults || {});
                 setNodeStatuses(wf.nodeStatuses || {});
             })
-            .catch(console.error);
+            .catch(console.error)
+            .finally(() => setIsLoadingWorkflow(false));
     }, [initialWorkflowId]);
 
     // Import conversation from homepage (sessionStorage handoff)
@@ -650,10 +653,12 @@ export default function WorkflowsPage({ initialWorkflowId }) {
     // Load a saved workflow
     const handleLoadWorkflow = useCallback(async (id) => {
         pushUndo();
+        setSelectedNodeId(null); // close inspector immediately
         try {
             const wf = await WorkflowService.getWorkflow(id);
             if (!wf) return;
             const loadedId = wf._id || wf.id;
+            // React 18 batches all these into a single render — no flash
             setWorkflowId(loadedId);
             setWorkflowName(wf.name || "Untitled Workflow");
             setNodes(wf.nodes || []);
@@ -858,6 +863,11 @@ export default function WorkflowsPage({ initialWorkflowId }) {
 
             {/* Body */}
             <div className={styles.body}>
+                {isLoadingWorkflow && (
+                    <div className={styles.loadingOverlay}>
+                        <Loader2 size={24} className={styles.loadingSpinner} />
+                    </div>
+                )}
                 <WorkflowComponent
                     nodes={nodes}
                     connections={edges}
@@ -865,6 +875,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
                     onSelectNode={setSelectedNodeId}
                     nodeStatuses={nodeStatuses}
                     nodeResults={nodeResults}
+                    isLoadingWorkflow={isLoadingWorkflow}
                     onUpdateNodePosition={handleUpdateNodePosition}
                     onDeleteNode={handleDeleteNode}
                     onAddConnection={handleAddEdge}

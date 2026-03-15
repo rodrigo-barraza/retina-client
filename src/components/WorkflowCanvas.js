@@ -34,6 +34,7 @@ export default function WorkflowCanvas({
   onSelectNode,
   activeWorkflowId,
   readOnly = false,
+  isLoadingWorkflow = false,
 }) {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
@@ -50,11 +51,45 @@ export default function WorkflowCanvas({
       return new Set();
     }
   });
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
+  // ── View persistence helpers ──
+  const VIEWS_KEY = "workflow-views";
+  const getStoredViews = () => {
+    try { return JSON.parse(localStorage.getItem(VIEWS_KEY) || "{}"); } catch { return {}; }
+  };
+
+  const [pan, setPan] = useState(() => {
+    if (!activeWorkflowId || typeof window === "undefined") return { x: 0, y: 0 };
+    const saved = getStoredViews()[activeWorkflowId];
+    return saved ? { x: saved.x, y: saved.y } : { x: 0, y: 0 };
+  });
+  const [zoom, setZoom] = useState(() => {
+    if (!activeWorkflowId || typeof window === "undefined") return 1;
+    const saved = getStoredViews()[activeWorkflowId];
+    return saved ? saved.zoom : 1;
+  });
   const [isPanning, setIsPanning] = useState(false);
   const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const [hoveredPort, setHoveredPort] = useState(null);
+  const prevWorkflowIdRef = useRef(activeWorkflowId);
+
+  // Save current view whenever pan/zoom changes
+  useEffect(() => {
+    if (!activeWorkflowId) return;
+    const views = getStoredViews();
+    views[activeWorkflowId] = { x: pan.x, y: pan.y, zoom };
+    try { localStorage.setItem(VIEWS_KEY, JSON.stringify(views)); } catch { /* ignore */ }
+  }, [pan, zoom, activeWorkflowId]);
+
+  // Restore view when switching workflows
+
+  useEffect(() => {
+    if (activeWorkflowId !== prevWorkflowIdRef.current) {
+      const saved = getStoredViews()[activeWorkflowId];
+      setPan(saved ? { x: saved.x, y: saved.y } : { x: 0, y: 0 }); // sync from localStorage
+      setZoom(saved ? saved.zoom : 1); // sync from localStorage
+      prevWorkflowIdRef.current = activeWorkflowId;
+    }
+  }, [activeWorkflowId]);
 
   const MIN_ZOOM = 0.2;
   const MAX_ZOOM = 3;
@@ -567,7 +602,7 @@ export default function WorkflowCanvas({
         }}
       />
 
-      {nodes.length === 0 && (
+      {nodes.length === 0 && !isLoadingWorkflow && (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>⟡</div>
           <div className={styles.emptyTitle}>Start Building Your Workflow</div>

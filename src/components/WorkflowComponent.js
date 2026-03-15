@@ -67,6 +67,7 @@ export default function WorkflowComponent({
   workflowName,
   onWorkflowNameChange,
   loading = false,
+  isLoadingWorkflow = false,
 
   allModels,
   onChangeModel,
@@ -113,6 +114,7 @@ export default function WorkflowComponent({
         onSelectNode={onSelectNode}
         activeWorkflowId={activeWorkflowId}
         readOnly={readOnly}
+        isLoadingWorkflow={isLoadingWorkflow}
       />
       {selectedNode && (
         <WorkflowInspector
