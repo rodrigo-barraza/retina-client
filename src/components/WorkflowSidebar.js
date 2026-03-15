@@ -217,9 +217,10 @@ export default function WorkflowSidebar({
                 <button
                     className={`${styles.tab} ${activeTab === "saved" ? styles.tabActive : ""}`}
                     onClick={() => setActiveTab("saved")}
+                    suppressHydrationWarning
                 >
                     <FolderOpen size={12} />
-                    Saved ({workflows.length})
+                    Saved{workflows.length > 0 ? ` (${workflows.length})` : ""}
                 </button>
             </div>
 

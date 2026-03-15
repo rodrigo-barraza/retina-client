@@ -340,6 +340,7 @@ function AssetNode(props) {
   const {
     node,
     status,
+    isSelected,
     isExpanded,
     onMouseDown,
     onDelete,
