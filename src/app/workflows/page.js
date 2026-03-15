@@ -85,8 +85,8 @@ function generateNodeId() {
     return `node_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 }
 
-function generateConnectionId() {
-    return `conn_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+function generateEdgeId() {
+    return `edge_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 }
 
 export default function WorkflowsPage() {
@@ -100,7 +100,7 @@ export default function WorkflowsPage() {
     const [workflowId, setWorkflowId] = useState(null);
     const [workflowName, setWorkflowName] = useState("Untitled Workflow");
     const [nodes, setNodes] = useState([]);
-    const [connections, setConnections] = useState([]);
+    const [edges, setEdges] = useState([]);
 
     // Execution state
     const [isRunning, setIsRunning] = useState(false);
@@ -165,19 +165,19 @@ export default function WorkflowsPage() {
     };
 
     // Keep a ref with the latest state so pushUndo never goes stale
-    const currentStateRef = useRef({ workflowId: null, workflowName: "Untitled Workflow", nodes: [], connections: [] });
+    const currentStateRef = useRef({ workflowId: null, workflowName: "Untitled Workflow", nodes: [], edges: [] });
     useEffect(() => {
-        currentStateRef.current = { workflowId, workflowName, nodes, connections };
-    }, [workflowId, workflowName, nodes, connections]);
+        currentStateRef.current = { workflowId, workflowName, nodes, edges };
+    }, [workflowId, workflowName, nodes, edges]);
 
     // Push current state to undo stack (stable ref — no dependency issues)
     const pushUndo = useCallback(() => {
-        const { workflowId: wId, workflowName: wName, nodes: n, connections: c } = currentStateRef.current;
+        const { workflowId: wId, workflowName: wName, nodes: n, edges: e } = currentStateRef.current;
         const snapshot = {
             workflowId: wId,
             workflowName: wName,
             nodes: JSON.parse(JSON.stringify(n)),
-            connections: JSON.parse(JSON.stringify(c)),
+            edges: JSON.parse(JSON.stringify(e)),
         };
         undoStackRef.current.push(snapshot);
         if (undoStackRef.current.length > 100) {
@@ -195,7 +195,7 @@ export default function WorkflowsPage() {
         setWorkflowId(snapshot.workflowId);
         setWorkflowName(snapshot.workflowName);
         setNodes(snapshot.nodes);
-        setConnections(snapshot.connections);
+        setEdges(snapshot.edges);
     }, []);
 
     // Ctrl+Z keyboard shortcut
@@ -328,13 +328,13 @@ export default function WorkflowsPage() {
             }),
         );
 
-        // Remove incompatible outgoing connections
-        setConnections((prev) =>
+        // Remove incompatible outgoing edges
+        setEdges((prev) =>
             prev.filter((c) => {
                 if (c.sourceNodeId !== nodeId) return true;
-                // If file was removed, drop all outgoing connections
+                // If file was removed, drop all outgoing edges
                 if (!newModality) return false;
-                // Keep only if the connection modality matches the new modality
+                // Keep only if the edge modality matches the new modality
                 return c.sourceModality === newModality;
             }),
         );
@@ -376,7 +376,7 @@ export default function WorkflowsPage() {
         );
 
         try {
-            const { conversationIds } = await executeWorkflow(nodes, connections, {
+            const { conversationIds } = await executeWorkflow(nodes, edges, {
                 onNodeStart: (nodeId) => {
                     if (abortRef.current) return;
                     setNodeStatuses((prev) => ({ ...prev, [nodeId]: "running" }));
@@ -460,7 +460,7 @@ export default function WorkflowsPage() {
         } finally {
             setIsRunning(false);
         }
-    }, [nodes, connections, workflowId]);
+    }, [nodes, edges, workflowId]);
 
     const handleStopWorkflow = useCallback(() => {
         abortRef.current = true;
@@ -474,23 +474,23 @@ export default function WorkflowsPage() {
         );
     }, []);
 
-    // Delete a node and its connections
+    // Delete a node and its edges
     const handleDeleteNode = useCallback((nodeId) => {
         pushUndo();
         setNodes((prev) => prev.filter((n) => n.id !== nodeId));
-        setConnections((prev) =>
+        setEdges((prev) =>
             prev.filter(
                 (c) => c.sourceNodeId !== nodeId && c.targetNodeId !== nodeId,
             ),
         );
     }, []);
 
-    // Add a connection
-    const handleAddConnection = useCallback((conn) => {
+    // Add an edge
+    const handleAddEdge = useCallback((conn) => {
         pushUndo();
-        setConnections((prev) => [
+        setEdges((prev) => [
             ...prev,
-            { ...conn, id: generateConnectionId() },
+            { ...conn, id: generateEdgeId() },
         ]);
 
         // If source is a conversation input, sync its modalities with the downstream model
@@ -520,9 +520,9 @@ export default function WorkflowsPage() {
                 const rawInputs = (targetNode.rawInputTypes || targetNode.inputTypes || []).filter((t) => t !== "conversation");
                 const messages = sourceNode.messages || [{ role: "system", content: "" }, { role: "user", content: "" }];
                 const newPorts = new Set(buildConversationPorts(messages, rawInputs));
-                // Remove connections to conversation input ports that no longer exist
-                setConnections((prevConns) =>
-                    prevConns.filter((c) => {
+                // Remove edges to conversation input ports that no longer exist
+                setEdges((prevEdges) =>
+                    prevEdges.filter((c) => {
                         if (c.targetNodeId !== conn.sourceNodeId) return true;
                         return newPorts.has(c.targetModality);
                     })
@@ -537,14 +537,14 @@ export default function WorkflowsPage() {
         });
     }, [nodeResults]);
 
-    // Delete a connection
-    const handleDeleteConnection = useCallback((connId) => {
+    // Delete an edge
+    const handleDeleteEdge = useCallback((edgeId) => {
         pushUndo();
 
-        // Find the connection before removing it
-        setConnections((prev) => {
-            const deleted = prev.find((c) => c.id === connId);
-            const remaining = prev.filter((c) => c.id !== connId);
+        // Find the edge before removing it
+        setEdges((prev) => {
+            const deleted = prev.find((c) => c.id === edgeId);
+            const remaining = prev.filter((c) => c.id !== edgeId);
 
             if (deleted) {
                 // Handle viewer disconnection
@@ -599,7 +599,7 @@ export default function WorkflowsPage() {
                 id: workflowId,
                 name: workflowName || "Untitled Workflow",
                 nodes,
-                connections,
+                edges,
                 nodeResults,
                 nodeStatuses,
             };
@@ -612,7 +612,7 @@ export default function WorkflowsPage() {
         } catch (err) {
             showToast(`Failed to save: ${err.message}`, "error");
         }
-    }, [workflowId, workflowName, nodes, connections, nodeResults, nodeStatuses]);
+    }, [workflowId, workflowName, nodes, edges, nodeResults, nodeStatuses]);
 
     // Load a saved workflow
     const handleLoadWorkflow = useCallback(async (id) => {
@@ -623,7 +623,7 @@ export default function WorkflowsPage() {
             setWorkflowId(wf._id || wf.id);
             setWorkflowName(wf.name || "Untitled Workflow");
             setNodes(wf.nodes || []);
-            setConnections(wf.connections || []);
+            setEdges(wf.edges || wf.connections || []);
             setNodeResults(wf.nodeResults || {});
             setNodeStatuses(wf.nodeStatuses || {});
             showToast("Workflow loaded");
@@ -643,7 +643,7 @@ export default function WorkflowsPage() {
                     setWorkflowId(null);
                     setWorkflowName("Untitled Workflow");
                     setNodes([]);
-                    setConnections([]);
+                    setEdges([]);
                     setNodeResults({});
                     setNodeStatuses({});
                 }
@@ -676,12 +676,12 @@ export default function WorkflowsPage() {
                 }),
             );
 
-            // Remove connections whose modalities are no longer valid
+            // Remove edges whose modalities are no longer valid
             const newInputTypes = isConversation
                 ? new Set(["conversation"])
                 : new Set(newModel.inputTypes || []);
             const newOutputTypes = new Set(newModel.outputTypes || []);
-            setConnections((prev) =>
+            setEdges((prev) =>
                 prev.filter((c) => {
                     if (c.targetNodeId === nodeId && !newInputTypes.has(c.targetModality)) return false;
                     if (c.sourceNodeId === nodeId && !newOutputTypes.has(c.sourceModality)) return false;
@@ -698,7 +698,7 @@ export default function WorkflowsPage() {
         setWorkflowId(null);
         setWorkflowName("Untitled Workflow");
         setNodes([]);
-        setConnections([]);
+        setEdges([]);
         setNodeResults({});
         setNodeStatuses({});
         setSelectedNodeId(null);
@@ -731,14 +731,14 @@ export default function WorkflowsPage() {
                     </Link>
                     <h1 className={styles.headerTitle}>Workflows</h1>
                     <span className={styles.headerBadge}>
-                        {nodes.length} nodes · {connections.length} connections
+                        {nodes.length} nodes · {edges.length} edges
                     </span>
                 </div>
                 <div className={styles.headerRight}>
                     <button
                         className={styles.headerActionBtn}
                         onClick={() => {
-                            const data = JSON.stringify({ nodes, connections }, null, 2);
+                            const data = JSON.stringify({ nodes, edges }, null, 2);
                             const blob = new Blob([data], { type: "application/json" });
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement("a");
@@ -778,9 +778,9 @@ export default function WorkflowsPage() {
                             reader.onload = () => {
                                 try {
                                     const data = JSON.parse(reader.result);
-                                    if (data.nodes && data.connections) {
+                                    if (data.nodes && (data.edges || data.connections)) {
                                         setNodes(data.nodes);
-                                        setConnections(data.connections);
+                                        setEdges(data.edges || data.connections);
                                     }
                                 } catch {
                                     // invalid JSON
@@ -816,15 +816,15 @@ export default function WorkflowsPage() {
             <div className={styles.body}>
                 <WorkflowComponent
                     nodes={nodes}
-                    connections={connections}
+                    connections={edges}
                     selectedNodeId={selectedNodeId}
                     onSelectNode={setSelectedNodeId}
                     nodeStatuses={nodeStatuses}
                     nodeResults={nodeResults}
                     onUpdateNodePosition={handleUpdateNodePosition}
                     onDeleteNode={handleDeleteNode}
-                    onAddConnection={handleAddConnection}
-                    onDeleteConnection={handleDeleteConnection}
+                    onAddConnection={handleAddEdge}
+                    onDeleteConnection={handleDeleteEdge}
                     onUpdateNodeContent={handleUpdateNodeContent}
                     onUpdateNodeConfig={handleUpdateNodeConfig}
                     onUpdateFileInput={handleUpdateFileInput}

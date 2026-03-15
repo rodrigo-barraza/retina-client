@@ -1,6 +1,6 @@
 /**
  * WorkflowExecutor — executes a workflow graph by topologically sorting nodes
- * and calling PrismService for each model, passing outputs forward via connections.
+ * and calling PrismService for each model, passing outputs forward via edges.
  */
 import { PrismService } from "./PrismService";
 
@@ -57,7 +57,7 @@ async function resolveToDataUrl(ref) {
 /**
  * Execute a single model node.
  * @param {Object} node - The workflow node
- * @param {Array<{type: string, data: string}>} inputData - Collected inputs from connections
+ * @param {Array<{type: string, data: string}>} inputData - Collected inputs from edges
  * @returns {Promise<Object>} - { [modality]: data }
  */
 async function executeModelNode(node, inputData, { onNodeContentUpdate, workflowId } = {}) {
@@ -75,7 +75,7 @@ async function executeModelNode(node, inputData, { onNodeContentUpdate, workflow
     };
 
     if (endpoint === "textToText") {
-        // Collect piped inputs from connections
+        // Collect piped inputs from edges
         const textParts = inputData.filter((d) => d.type === "text").map((d) => d.data);
         const imageParts = inputData.filter((d) => d.type === "image").map((d) => d.data);
         const audioParts = inputData.filter((d) => d.type === "audio").map((d) => d.data);
@@ -366,16 +366,16 @@ async function executeModelNode(node, inputData, { onNodeContentUpdate, workflow
 }
 
 /**
- * Topological sort of nodes based on connection graph.
+ * Topological sort of nodes based on edge graph.
  */
-function topologicalSort(nodes, connections) {
+function topologicalSort(nodes, edges) {
     const inDegree = {};
     const adjacency = {};
     for (const node of nodes) {
         inDegree[node.id] = 0;
         adjacency[node.id] = [];
     }
-    for (const conn of connections) {
+    for (const conn of edges) {
         inDegree[conn.targetNodeId] = (inDegree[conn.targetNodeId] || 0) + 1;
         adjacency[conn.sourceNodeId] = adjacency[conn.sourceNodeId] || [];
         adjacency[conn.sourceNodeId].push(conn.targetNodeId);
@@ -401,14 +401,14 @@ function topologicalSort(nodes, connections) {
 /**
  * Execute the entire workflow.
  * @param {Array} nodes - Workflow nodes
- * @param {Array} connections - Workflow connections
+ * @param {Array} edges - Workflow edges
  * @param {Function} onNodeStart - Called when a node begins execution (nodeId)
  * @param {Function} onNodeComplete - Called when a node completes (nodeId, outputs)
  * @param {Function} onNodeError - Called when a node errors (nodeId, error)
  * @param {Function} onViewerPartial - Called when a viewer receives partial output (viewerNodeId, partialOutputs)
  */
-export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeComplete, onNodeError, onViewerPartial, onNodeContentUpdate, workflowId }) {
-    const sortedIds = topologicalSort(nodes, connections);
+export async function executeWorkflow(nodes, edges, { onNodeStart, onNodeComplete, onNodeError, onViewerPartial, onNodeContentUpdate, workflowId }) {
+    const sortedIds = topologicalSort(nodes, edges);
     const nodeMap = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
     // Store outputs: nodeId → { [modality]: data }
@@ -419,7 +419,7 @@ export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeC
 
     // Pre-compute which viewers each node feeds into
     const viewerConnsBySource = {};
-    for (const conn of connections) {
+    for (const conn of edges) {
         const targetNode = nodeMap[conn.targetNodeId];
         if (targetNode?.nodeType === "viewer") {
             (viewerConnsBySource[conn.sourceNodeId] ??= []).push(conn);
@@ -437,7 +437,7 @@ export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeC
         if (!node) continue;
 
         // Check if any upstream source has errored — if so, skip this node
-        const incomingForCheck = connections.filter((c) => c.targetNodeId === nodeId);
+        const incomingForCheck = edges.filter((c) => c.targetNodeId === nodeId);
         const hasErroredUpstream = incomingForCheck.some((c) => erroredNodeIds.has(c.sourceNodeId));
         if (hasErroredUpstream) {
             // Propagate as errored so further downstream nodes are also skipped
@@ -454,9 +454,9 @@ export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeC
                 if (node.modality === "conversation") {
                     const messages = JSON.parse(JSON.stringify(node.messages || []));
 
-                    // Collect piped data from upstream connections using compound port IDs
+                    // Collect piped data from upstream edges using compound port IDs
                     // Port format: "{msgIndex}.{modality}" e.g. "0.text", "1.image"
-                    const incomingConns = connections.filter((c) => c.targetNodeId === nodeId);
+                    const incomingConns = edges.filter((c) => c.targetNodeId === nodeId);
 
                     for (const conn of incomingConns) {
                         const sourceOut = nodeOutputs[conn.sourceNodeId];
@@ -513,7 +513,7 @@ export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeC
 
             if (node.nodeType === "viewer") {
                 // Viewer nodes collect connected input data and display it
-                const incomingConns = connections.filter((c) => c.targetNodeId === nodeId);
+                const incomingConns = edges.filter((c) => c.targetNodeId === nodeId);
                 const collectedOutputs = {};
 
                 for (const conn of incomingConns) {
@@ -528,8 +528,8 @@ export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeC
                 continue;
             }
 
-            // Model node — gather inputs from connections
-            const incomingConns = connections.filter((c) => c.targetNodeId === nodeId);
+            // Model node — gather inputs from edges
+            const incomingConns = edges.filter((c) => c.targetNodeId === nodeId);
             const inputData = [];
 
             for (const conn of incomingConns) {

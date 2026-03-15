@@ -237,9 +237,9 @@ export default function WorkflowSidebar({
                         {formatDuration(wf.totalDuration)}
                       </span>
                     )}
-                    {wf.connectionCount != null && (
+                    {(wf.edgeCount ?? wf.connectionCount) != null && (
                       <span className={styles.metaTag}>
-                        {wf.connectionCount ?? wf.connections?.length ?? 0} conn
+                        {wf.edgeCount ?? wf.connectionCount ?? wf.edges?.length ?? wf.connections?.length ?? 0} edges
                       </span>
                     )}
                     {wf.channelName && wf.channelName !== "DM" && (

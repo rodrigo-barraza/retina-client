@@ -11,7 +11,7 @@ import {
   getNodeWidth,
   getNodeHeight,
   getPortPosition,
-  connectionPath,
+  edgePath,
 } from "./WorkflowNodeConstants";
 import styles from "./WorkflowCanvas.module.css";
 
@@ -342,7 +342,7 @@ export default function WorkflowCanvas({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedNodeId, nodes, onDuplicateNode, readOnly]);
 
-  // Output port click — start connection (blocked in readOnly)
+  // Output port click — start edge (blocked in readOnly)
   const handleOutputPortClick = useCallback(
     (e, nodeId, modality, index) => {
       e.stopPropagation();
@@ -359,7 +359,7 @@ export default function WorkflowCanvas({
     [connecting, screenToSvg, readOnly],
   );
 
-  // Input port click — complete connection (blocked in readOnly)
+  // Input port click — complete edge (blocked in readOnly)
   const handleInputPortClick = useCallback(
     (e, nodeId, modality) => {
       e.stopPropagation();
@@ -442,7 +442,7 @@ export default function WorkflowCanvas({
 
   const allExpanded = nodes.length > 0 && nodes.filter((n) => isNodeExpanded(n)).length > nodes.length / 2;
 
-  // Compute the vertical offset for a node's ports (used by connection routing)
+  // Compute the vertical offset for a node's ports (used by edge routing)
   const getExpandedOffset = useCallback((node) => {
     const expanded = isNodeExpanded(node);
     if (!node.nodeType && expandedInputs.has(node.id)) {
@@ -454,7 +454,7 @@ export default function WorkflowCanvas({
     return 0;
   }, [expandedInputs, isNodeExpanded]);
 
-  // Render connections
+  // Render edges
   const renderConnection = (conn) => {
     const sourceNode = nodes.find((n) => n.id === conn.sourceNodeId);
     const targetNode = nodes.find((n) => n.id === conn.targetNodeId);
@@ -482,7 +482,7 @@ export default function WorkflowCanvas({
     return (
       <g key={conn.id} className={`${styles.connectionGroup}${isEdgeFlowing ? ` ${styles.connectionSelected}` : ""}`} data-workflow-connection>
         <path
-          d={connectionPath(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y)}
+          d={edgePath(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y)}
           stroke="transparent"
           strokeWidth={12}
           fill="none"
@@ -490,7 +490,7 @@ export default function WorkflowCanvas({
           onClick={() => onSelectNode(conn.sourceNodeId)}
         />
         <path
-          d={connectionPath(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y)}
+          d={edgePath(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y)}
           stroke={isRunning ? "url(#prism-gradient)" : isDone ? "url(#done-gradient)" : color}
           strokeWidth={isActive ? 3 : 2}
           fill="none"
@@ -508,7 +508,7 @@ export default function WorkflowCanvas({
             <button
               className={styles.connectionDeleteBtn}
               onClick={(e) => { e.stopPropagation(); onDeleteConnection(conn.id); }}
-              title="Delete connection"
+              title="Delete edge"
             >
               <X size={10} />
             </button>
@@ -518,7 +518,7 @@ export default function WorkflowCanvas({
     );
   };
 
-  // Render the "in-progress" connection line
+  // Render the "in-progress" edge line
   const renderConnectingLine = () => {
     if (!connecting || !connectingMouse) return null;
     const sourceNode = nodes.find((n) => n.id === connecting.sourceNodeId);
@@ -533,7 +533,7 @@ export default function WorkflowCanvas({
 
     return (
       <path
-        d={connectionPath(sourcePos.x, sourcePos.y, connectingMouse.x, connectingMouse.y)}
+        d={edgePath(sourcePos.x, sourcePos.y, connectingMouse.x, connectingMouse.y)}
         stroke={color}
         strokeWidth={2}
         strokeDasharray="6 3"

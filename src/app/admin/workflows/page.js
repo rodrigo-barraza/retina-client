@@ -119,7 +119,7 @@ export default function AdminWorkflowsPage() {
   }, []);
 
   const nodeCount = localNodes.length;
-  const connectionCount = selectedWorkflow?.connections?.length || 0;
+  const edgeCount = (selectedWorkflow?.edges || selectedWorkflow?.connections || []).length;
 
   return (
     <div className={styles.page}>
@@ -131,7 +131,7 @@ export default function AdminWorkflowsPage() {
           </Link>
           <h1 className={styles.headerTitle}>Workflows</h1>
           <span className={styles.headerBadge}>
-            {nodeCount} nodes · {connectionCount} connections
+            {nodeCount} nodes · {edgeCount} edges
           </span>
         </div>
         <div className={styles.headerRight}>
@@ -153,7 +153,7 @@ export default function AdminWorkflowsPage() {
             readOnly
             admin
             nodes={localNodes}
-            connections={selectedWorkflow?.connections || []}
+            connections={selectedWorkflow?.edges || selectedWorkflow?.connections || []}
             selectedNodeId={selectedNodeId}
             onSelectNode={setSelectedNodeId}
             onUpdateNodePosition={handleUpdateNodePosition}

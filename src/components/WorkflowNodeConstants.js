@@ -131,7 +131,7 @@ export function getPortPosition(node, portType, portIndex, configOffset = 0) {
 /**
  * Generate a smooth bezier curve path between two points.
  */
-export function connectionPath(x1, y1, x2, y2) {
+export function edgePath(x1, y1, x2, y2) {
   const dx = Math.abs(x2 - x1);
   const cp = Math.max(dx * 0.5, 60);
   return `M ${x1} ${y1} C ${x1 + cp} ${y1}, ${x2 - cp} ${y2}, ${x2} ${y2}`;
