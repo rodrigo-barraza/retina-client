@@ -95,58 +95,22 @@ export class PrismService {
   }
 
   /**
-   * Save or update a conversation.
-   * @param {object} payload
-   * @param {string} payload.id
-   * @param {string} payload.title
-   * @param {Array}  payload.messages
-   * @param {string} [payload.systemPrompt]
-   * @param {object} [payload.settings]
-   * @param {boolean} [payload.isGenerating]
-   * @returns {Promise<object>}
-   */
-  static async saveConversation({ id, title, messages, systemPrompt, settings, isGenerating }) {
-    const body = { id, title, messages, systemPrompt, settings };
-    if (isGenerating !== undefined) body.isGenerating = isGenerating;
-    return PrismService._request("/conversations", { body });
-  }
-
-  /**
-   * Start a new conversation shell.
-   * @param {object} payload
-   * @param {string} payload.title
-   * @param {string} [payload.systemPrompt]
-   * @param {object} [payload.settings]
-   * @returns {Promise<{ id: string }>}
-   */
-  static async startConversation({ title, systemPrompt, settings }) {
-    return PrismService._request("/conversations/start", {
-      body: { title, systemPrompt, settings },
-    });
-  }
-
-  /**
-   * Finalize a conversation — update metadata only (messages already saved server-side).
-   * @param {object} payload
-   * @param {string} payload.id
-   * @param {string} payload.title
-   * @param {string} [payload.systemPrompt]
-   * @param {object} [payload.settings]
-   * @returns {Promise<object>}
-   */
-  static async finalizeConversation({ id, title, systemPrompt, settings }) {
-    return PrismService._request(`/conversations/${id}/finalize`, {
-      body: { title, systemPrompt, settings },
-    });
-  }
-
-  /**
    * Delete a conversation.
    * @param {string} id
    * @returns {Promise<object>}
    */
   static async deleteConversation(id) {
     return PrismService._request(`/conversations/${id}`, { method: "DELETE" });
+  }
+
+  /**
+   * Patch a conversation — update fields without generation (edit/delete messages, rename, etc.).
+   * @param {string} id
+   * @param {object} fields - { title?, messages?, systemPrompt?, settings? }
+   * @returns {Promise<object>}
+   */
+  static async patchConversation(id, fields) {
+    return PrismService._request(`/conversations/${id}`, { method: "PATCH", body: fields });
   }
 
   // ---------------------------------------------------------------------------

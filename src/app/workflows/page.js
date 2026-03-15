@@ -347,6 +347,7 @@ export default function WorkflowsPage() {
 
     // Update config of a model node (systemPrompt, staticInputs, etc.)
     const handleUpdateNodeConfig = useCallback((nodeId, key, value) => {
+        console.log("[DEBUG handleUpdateNodeConfig]", { nodeId, key, valueLength: Array.isArray(value) ? value.length : typeof value });
         setNodes((prev) =>
             prev.map((n) => {
                 if (n.id !== nodeId) return n;
@@ -354,7 +355,9 @@ export default function WorkflowsPage() {
                 // Regenerate compound ports when messages change on conversation input nodes
                 if (key === "messages" && n.nodeType === "input" && n.modality === "conversation") {
                     updated.inputTypes = buildConversationPorts(value, n.supportedModalities || ["text"]);
+                    console.log("[DEBUG] Rebuilt inputTypes:", updated.inputTypes, "supportedModalities:", n.supportedModalities);
                 }
+                console.log("[DEBUG] Updated node:", { id: updated.id, messages: updated.messages?.length, inputTypes: updated.inputTypes?.length });
                 return updated;
             }),
         );

@@ -86,10 +86,7 @@ export default function HomePage({ initialConversationId = null }) {
         }
         const timer = setTimeout(() => {
             const { systemPrompt, ...modelSettings } = settings;
-            PrismService.saveConversation({
-                id: activeId,
-                title,
-                messages,
+            PrismService.patchConversation(activeId, {
                 systemPrompt,
                 settings: modelSettings,
             }).catch((err) => console.error("Failed to save system prompt:", err));
@@ -273,13 +270,8 @@ export default function HomePage({ initialConversationId = null }) {
 
         if (activeId) {
             try {
-                const { systemPrompt, ...modelSettings } = settings;
-                await PrismService.saveConversation({
-                    id: activeId,
-                    title,
+                await PrismService.patchConversation(activeId, {
                     messages: updatedMessages,
-                    systemPrompt,
-                    settings: modelSettings,
                 });
             } catch (err) {
                 console.error("Failed to save after deletion:", err);
@@ -287,27 +279,7 @@ export default function HomePage({ initialConversationId = null }) {
         }
     };
 
-    const handleEditMessage = async (index, newContent) => {
-        if (isGenerating) return;
-        const updatedMessages = [...messages];
-        updatedMessages[index] = { ...updatedMessages[index], content: newContent };
-        setMessages(updatedMessages);
 
-        if (activeId) {
-            try {
-                const { systemPrompt, ...modelSettings } = settings;
-                await PrismService.saveConversation({
-                    id: activeId,
-                    title,
-                    messages: updatedMessages,
-                    systemPrompt,
-                    settings: modelSettings,
-                });
-            } catch (err) {
-                console.error("Failed to save after edit:", err);
-            }
-        }
-    };
 
     const handleRerunTurn = async (userMsgIndex) => {
         if (isGenerating) return;
@@ -386,15 +358,12 @@ export default function HomePage({ initialConversationId = null }) {
 
                 try {
                     const { systemPrompt, ...modelSettings } = settings;
-                    const saved = await PrismService.saveConversation({
-                        id: currentId,
+                    await PrismService.patchConversation(currentId, {
                         title: currentTitle,
                         messages: finalMessages,
                         systemPrompt,
                         settings: modelSettings,
                     });
-                    setActiveId(saved.id);
-                    updateUrl(saved.id);
                     loadConversations();
                 } catch (saveErr) {
                     console.error("Save failed:", saveErr);
@@ -627,25 +596,7 @@ export default function HomePage({ initialConversationId = null }) {
                             return updated;
                         });
 
-                        // Save after updating messages — NOT inside setMessages to avoid double-fires
-                        try {
-                            const allMessages = [...newMessages];
-                            allMessages[insertIndex] = finalMsg;
-                            const { systemPrompt, ...modelSettings } = settings;
-                            const saved = await PrismService.saveConversation({
-                                id: currentId,
-                                title: currentTitle,
-                                messages: allMessages,
-                                systemPrompt,
-                                settings: modelSettings,
-                            });
-                            setActiveId(saved.id);
-                            updateUrl(saved.id);
-                            loadConversations();
-                        } catch (saveErr) {
-                            console.error("Save failed:", saveErr);
-                        }
-
+                        loadConversations();
                         resolve();
                     },
                     onError: (err) => {
@@ -710,6 +661,9 @@ export default function HomePage({ initialConversationId = null }) {
                 if (!currentId) {
                     currentTitle = content.slice(0, 40) || "Speech Generation";
                     setTitle(currentTitle);
+                    currentId = crypto.randomUUID();
+                    setActiveId(currentId);
+                    updateUrl(currentId);
                 }
 
                 const userMsg = {
@@ -719,21 +673,7 @@ export default function HomePage({ initialConversationId = null }) {
                 };
                 setMessages((prev) => [...prev, userMsg]);
 
-                // Start conversation shell (or reuse existing)
                 const { systemPrompt, ...modelSettings } = settings;
-                try {
-                    const conversation = await PrismService.startConversation({
-                        title: currentTitle,
-                        systemPrompt,
-                        settings: modelSettings,
-                    });
-                    currentId = conversation.id;
-                    setActiveId(conversation.id);
-                    updateUrl(conversation.id);
-                    loadConversations();
-                } catch (startErr) {
-                    console.error("Start conversation failed:", startErr);
-                }
 
                 const defaultVoice =
                     config?.textToSpeech?.defaultVoices?.[settings.provider] || undefined;
@@ -747,6 +687,7 @@ export default function HomePage({ initialConversationId = null }) {
                     // Server-side conversation accumulation
                     conversationId: currentId,
                     userMessage: userMsg,
+                    conversationMeta: { title: currentTitle, systemPrompt, settings: modelSettings },
                 });
 
                 const totalTime = (performance.now() - requestStart) / 1000;
@@ -781,19 +722,7 @@ export default function HomePage({ initialConversationId = null }) {
                 };
 
                 setMessages((prev) => [...prev, assistantMsg]);
-
-                // Finalize conversation metadata only (messages already saved server-side)
-                try {
-                    await PrismService.finalizeConversation({
-                        id: currentId,
-                        title: currentTitle,
-                        systemPrompt,
-                        settings: modelSettings,
-                    });
-                    loadConversations();
-                } catch (saveErr) {
-                    console.error("Finalize failed:", saveErr);
-                }
+                loadConversations();
             } catch (error) {
                 console.error(error);
                 setMessages((prev) => [
@@ -833,23 +762,13 @@ export default function HomePage({ initialConversationId = null }) {
                 if (!currentId) {
                     currentTitle = "Audio Transcription";
                     setTitle(currentTitle);
+                    currentId = crypto.randomUUID();
+                    setActiveId(currentId);
+                    updateUrl(currentId);
                 }
 
-                // Start conversation shell (or reuse existing)
                 const { systemPrompt, ...modelSettings } = settings;
-                try {
-                    const conversation = await PrismService.startConversation({
-                        title: currentTitle,
-                        systemPrompt,
-                        settings: modelSettings,
-                    });
-                    currentId = conversation.id;
-                    setActiveId(conversation.id);
-                    updateUrl(conversation.id);
-                    loadConversations();
-                } catch (startErr) {
-                    console.error("Start conversation failed:", startErr);
-                }
+                const conversationMeta = { title: currentTitle, systemPrompt, settings: modelSettings };
 
                 for (const audioDataUrl of audioFiles) {
                     const userMsg = {
@@ -869,6 +788,7 @@ export default function HomePage({ initialConversationId = null }) {
                         // Server-side conversation accumulation
                         conversationId: currentId,
                         userMessage: userMsg,
+                        conversationMeta,
                     });
 
                     const assistantMsg = {
@@ -885,18 +805,7 @@ export default function HomePage({ initialConversationId = null }) {
                     setMessages((prev) => [...prev, assistantMsg]);
                 }
 
-                // Finalize conversation metadata only
-                try {
-                    await PrismService.finalizeConversation({
-                        id: currentId,
-                        title: currentTitle,
-                        systemPrompt,
-                        settings: modelSettings,
-                    });
-                    loadConversations();
-                } catch (saveErr) {
-                    console.error("Finalize failed:", saveErr);
-                }
+                loadConversations();
             } catch (error) {
                 console.error(error);
                 setMessages((prev) => [
@@ -928,25 +837,12 @@ export default function HomePage({ initialConversationId = null }) {
                 currentTitle =
                     content.substring(0, 30) + (content.length > 30 ? "..." : "");
                 setTitle(currentTitle);
+                currentId = crypto.randomUUID();
+                setActiveId(currentId);
+                updateUrl(currentId);
             }
 
-            // Start conversation shell for new chats (existing ones already have an ID)
             const { systemPrompt, ...modelSettings } = settings;
-            if (!currentId) {
-                try {
-                    const conversation = await PrismService.startConversation({
-                        title: currentTitle,
-                        systemPrompt,
-                        settings: modelSettings,
-                    });
-                    currentId = conversation.id;
-                    setActiveId(conversation.id);
-                    updateUrl(conversation.id);
-                    loadConversations();
-                } catch (startErr) {
-                    console.error("Start conversation failed:", startErr);
-                }
-            }
 
             const systemMsg = settings.systemPrompt
                 ? [{ role: "system", content: settings.systemPrompt }]
@@ -1008,6 +904,7 @@ export default function HomePage({ initialConversationId = null }) {
                 // Server-side conversation accumulation
                 conversationId: currentId,
                 userMessage: userMsg,
+                conversationMeta: { title: currentTitle, systemPrompt, settings: modelSettings },
             };
 
             // Use WebSocket streaming for real-time text generation
@@ -1133,18 +1030,7 @@ export default function HomePage({ initialConversationId = null }) {
                         const updatedMessages = [...newMessages, finalMsg];
                         setMessages(updatedMessages);
 
-                        // Finalize conversation — update metadata only (messages already saved server-side)
-                        try {
-                            await PrismService.finalizeConversation({
-                                id: currentId,
-                                title: currentTitle,
-                                systemPrompt,
-                                settings: modelSettings,
-                            });
-                            loadConversations();
-                        } catch (saveErr) {
-                            console.error("Finalize failed:", saveErr);
-                        }
+                        loadConversations();
                         resolve();
                     },
                     onError: (err) => {
@@ -1287,7 +1173,7 @@ export default function HomePage({ initialConversationId = null }) {
                     newChatKey={newChatKey}
                     onSend={handleSend}
                     onDelete={handleDeleteMessage}
-                    onEdit={handleEditMessage}
+
                     onRerun={handleRerunTurn}
                     config={config}
                     isTranscriptionModel={isTranscriptionModel}
