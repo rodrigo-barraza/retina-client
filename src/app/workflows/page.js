@@ -68,8 +68,9 @@ function buildConversationPorts(messages, supportedModalities = ["text"]) {
     for (let i = 0; i < messages.length; i++) {
         const msg = messages[i];
         ports.push(`${i}.text`);
-        // System and user messages get extra modality ports (not assistant)
-        if (msg.role !== "assistant") {
+        // User and assistant messages get extra modality ports (image, audio, etc.)
+        // System messages are text-only
+        if (msg.role !== "system") {
             for (const mod of supportedModalities) {
                 if (mod !== "text") {
                     ports.push(`${i}.${mod}`);
@@ -203,6 +204,7 @@ export default function WorkflowsPage() {
             const isConversation = modality === "conversation";
             const defaultMessages = isConversation ? [
                 { role: "system", content: "" },
+                { role: "assistant", content: "" },
                 { role: "user", content: "" },
             ] : undefined;
             const defaultModalities = ["text"];
@@ -221,7 +223,7 @@ export default function WorkflowsPage() {
                 inputTypes: isViewer
                     ? ["text", "image", "audio"]
                     : isConversation
-                        ? buildConversationPorts(defaultMessages, defaultModalities)
+                        ? []
                         : [],
                 outputTypes: isViewer
                     ? ["text", "image", "audio"]
@@ -443,10 +445,18 @@ export default function WorkflowsPage() {
 
             if (sourceNode?.nodeType === "input" && sourceNode?.modality === "conversation" && targetNode && !targetNode.nodeType) {
                 const rawInputs = (targetNode.rawInputTypes || targetNode.inputTypes || []).filter((t) => t !== "conversation");
-                const messages = sourceNode.messages || [{ role: "system", content: "" }, { role: "user", content: "" }];
+                const messages = sourceNode.messages || [{ role: "system", content: "" }, { role: "assistant", content: "" }, { role: "user", content: "" }];
+                const newPorts = new Set(buildConversationPorts(messages, rawInputs));
+                // Remove connections to conversation input ports that no longer exist
+                setConnections((prevConns) =>
+                    prevConns.filter((c) => {
+                        if (c.targetNodeId !== conn.sourceNodeId) return true;
+                        return newPorts.has(c.targetModality);
+                    })
+                );
                 return prev.map((n) =>
                     n.id === conn.sourceNodeId
-                        ? { ...n, supportedModalities: rawInputs, inputTypes: buildConversationPorts(messages, rawInputs) }
+                        ? { ...n, supportedModalities: rawInputs, inputTypes: [...newPorts] }
                         : n
                 );
             }
@@ -486,11 +496,9 @@ export default function WorkflowsPage() {
                     const sourceNode = prevNodes.find((n) => n.id === deleted.sourceNodeId);
                     const stillConnected = remaining.some((c) => c.sourceNodeId === deleted.sourceNodeId);
                     if (!stillConnected && sourceNode?.nodeType === "input" && sourceNode?.modality === "conversation") {
-                        const messages = sourceNode.messages || [{ role: "system", content: "" }, { role: "user", content: "" }];
-                        const defaultMods = ["text"];
                         return prevNodes.map((n) =>
                             n.id === deleted.sourceNodeId
-                                ? { ...n, supportedModalities: defaultMods, inputTypes: buildConversationPorts(messages, defaultMods) }
+                                ? { ...n, supportedModalities: ["text"], inputTypes: [] }
                                 : n
                         );
                     }
