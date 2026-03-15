@@ -429,9 +429,22 @@ export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeC
     // Track partial viewer outputs (accumulated as upstream nodes complete)
     const viewerPartials = {};
 
+    // Track nodes that errored so downstream nodes can be skipped
+    const erroredNodeIds = new Set();
+
     for (const nodeId of sortedIds) {
         const node = nodeMap[nodeId];
         if (!node) continue;
+
+        // Check if any upstream source has errored — if so, skip this node
+        const incomingForCheck = connections.filter((c) => c.targetNodeId === nodeId);
+        const hasErroredUpstream = incomingForCheck.some((c) => erroredNodeIds.has(c.sourceNodeId));
+        if (hasErroredUpstream) {
+            // Propagate as errored so further downstream nodes are also skipped
+            erroredNodeIds.add(nodeId);
+            nodeOutputs[nodeId] = {};
+            continue;
+        }
 
         try {
             onNodeStart?.(nodeId);
@@ -557,6 +570,7 @@ export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeC
                 }
             }
         } catch (error) {
+            erroredNodeIds.add(nodeId);
             onNodeError?.(nodeId, error);
             // Put empty outputs so downstream nodes don't hang
             nodeOutputs[nodeId] = {};

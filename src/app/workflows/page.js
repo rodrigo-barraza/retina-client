@@ -363,6 +363,7 @@ export default function WorkflowsPage() {
         setIsRunning(true);
         setNodeStatuses({});
         setNodeResults({});
+        setSelectedNodeId(null);
         abortRef.current = false;
 
         // Clear viewer node content from previous runs
@@ -600,6 +601,7 @@ export default function WorkflowsPage() {
                 nodes,
                 connections,
                 nodeResults,
+                nodeStatuses,
             };
             const saved = await WorkflowService.saveWorkflow(workflow);
             const newId = saved.id || saved._id;
@@ -610,7 +612,7 @@ export default function WorkflowsPage() {
         } catch (err) {
             showToast(`Failed to save: ${err.message}`, "error");
         }
-    }, [workflowId, workflowName, nodes, connections, nodeResults]);
+    }, [workflowId, workflowName, nodes, connections, nodeResults, nodeStatuses]);
 
     // Load a saved workflow
     const handleLoadWorkflow = useCallback(async (id) => {
@@ -623,7 +625,7 @@ export default function WorkflowsPage() {
             setNodes(wf.nodes || []);
             setConnections(wf.connections || []);
             setNodeResults(wf.nodeResults || {});
-            setNodeStatuses({});
+            setNodeStatuses(wf.nodeStatuses || {});
             showToast("Workflow loaded");
         } catch (err) {
             showToast(`Failed to load: ${err.message}`, "error");

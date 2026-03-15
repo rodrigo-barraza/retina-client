@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Upload, Eye, Loader2, Check, AlertTriangle, Paperclip, MessageSquare, Plus, Minus } from "lucide-react";
+import { X, Upload, Eye, Loader2, Check, Paperclip, MessageSquare, Plus, Minus } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
 import AudioRecorderComponent from "./AudioRecorderComponent";
 import AssetInputOptions from "./AssetInputOptions";
@@ -207,8 +207,8 @@ function ModelNode(props) {
   const isDone = status === "done";
   const isPrism = isRunning || isDone;
   const statusGradient = isRunning ? "url(#prism-gradient)" : isDone ? "url(#done-gradient)" : null;
-  const statusBorderColor = statusGradient || (isSelected ? "rgba(255,255,255,0.7)" : status === "error" ? "#f43f5e" : null);
-  const borderWidth = isSelected ? 2 : isPrism ? 2 : 0;
+  const statusBorderColor = isSelected ? "rgba(255,255,255,0.7)" : statusGradient || (status === "error" ? "#f43f5e" : null);
+  const borderWidth = isSelected ? 2 : isPrism ? 2 : status === "error" ? 2 : 0;
 
   return (
     <g
@@ -238,17 +238,17 @@ function ModelNode(props) {
             <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {node.displayName || node.modelName}
             </span>
+            {status === "done" && <Check size={12} style={{ color: "#10b981", flexShrink: 0 }} />}
+            {status === "error" && <X size={12} style={{ color: "#f43f5e", flexShrink: 0 }} />}
           </div>
         </foreignObject>
       </g>
 
-      {/* Status indicator in header */}
-      {status && (
+      {/* Node status icon */}
+      {status === "running" && (
         <foreignObject x={width - 26 - modalityAreaWidth - 22} y={8} width={18} height={18}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {status === "running" && <Loader2 size={12} style={{ color: "#f59e0b", animation: "spin 1s linear infinite" }} />}
-            {status === "done" && <Check size={12} style={{ color: "#10b981" }} />}
-            {status === "error" && <AlertTriangle size={12} style={{ color: "#f43f5e" }} />}
+            <Loader2 size={12} style={{ color: "#f59e0b", animation: "spin 1s linear infinite" }} />
           </div>
         </foreignObject>
       )}
@@ -429,7 +429,7 @@ function AssetNode(props) {
         rx="3"
         ry="3"
         className={`${styles.assetNodeBody}${isPrism || isSelected ? ` ${styles.prismBorder}` : ""}`}
-        style={isPrism ? { stroke: statusGradient, strokeWidth: 2, strokeOpacity: 1 } : isSelected ? { stroke: "rgba(255,255,255,0.7)", strokeWidth: 2, strokeOpacity: 1 } : { stroke: accentColor, strokeOpacity: 0.4 }}
+        style={isSelected ? { stroke: "rgba(255,255,255,0.7)", strokeWidth: 2, strokeOpacity: 1 } : isPrism ? { stroke: statusGradient, strokeWidth: 2, strokeOpacity: 1 } : { stroke: accentColor, strokeOpacity: 0.4 }}
       />
 
       {/* Header */}
@@ -445,6 +445,8 @@ function AssetNode(props) {
             <span style={{ fontSize: 12, fontWeight: 600, color: accentColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {inputLabel}
             </span>
+            {status === "done" && <Check size={12} style={{ color: "#10b981", flexShrink: 0 }} />}
+            {status === "error" && <X size={12} style={{ color: "#f43f5e", flexShrink: 0 }} />}
           </div>
         </foreignObject>
       </g>
