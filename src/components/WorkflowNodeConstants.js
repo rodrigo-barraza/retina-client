@@ -1,6 +1,17 @@
 "use client";
 
-import { Type, Volume2, MessageSquare } from "lucide-react";
+import { Type, Image, Volume2, Video, FileText, Hash, MessageSquare } from "lucide-react";
+
+// ── Modality Icons (icon, label, color) ──
+export const MODALITY_ICONS = {
+  text: { icon: Type, label: "Text", color: "#6366f1" },
+  image: { icon: Image, label: "Image", color: "#10b981" },
+  audio: { icon: Volume2, label: "Audio", color: "#f59e0b" },
+  video: { icon: Video, label: "Video", color: "#f43f5e" },
+  pdf: { icon: FileText, label: "PDF", color: "#64748b" },
+  embedding: { icon: Hash, label: "Embedding", color: "#06b6d4" },
+  conversation: { icon: MessageSquare, label: "Conversation", color: "#8b5cf6" },
+};
 
 // ── Modality Colors ──
 export const MODALITY_COLORS = {

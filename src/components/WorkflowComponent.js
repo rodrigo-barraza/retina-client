@@ -14,7 +14,7 @@ const noop = () => {};
  *
  * Props:
  *   readOnly    — disable all mutations (admin view)
- *   admin       — admin mode for the sidebar (workflow history list vs builder)
+ *   admin       — admin mode for the sidebar (no delete, shows user info)
  *
  *   -- Data --
  *   nodes, connections
@@ -26,13 +26,11 @@ const noop = () => {};
  *   onDeleteConnection, onUpdateNodeContent, onUpdateNodeConfig,
  *   onUpdateFileInput
  *
- *   -- Sidebar props (user mode) --
- *   models, workflows, activeWorkflowId,
- *   onAddNode, onAddAsset, onLoadWorkflow, onDeleteWorkflow,
- *   onNewWorkflow, onSaveWorkflow, workflowName, onWorkflowNameChange
- *
- *   -- Sidebar props (admin mode) --
- *   adminWorkflows, adminSelectedId, onAdminSelectWorkflow, adminLoading
+ *   -- Sidebar props --
+ *   workflows, activeWorkflowId,
+ *   onLoadWorkflow, onDeleteWorkflow,
+ *   onDownloadWorkflow, onCopyWorkflow
+ *   loading
  *
  *   -- Inspector props --
  *   allModels, onChangeModel
@@ -57,22 +55,18 @@ export default function WorkflowComponent({
   onUpdateFileInput,
   onDuplicateNode,
 
-  models,
-  workflows,
+  workflows = [],
   activeWorkflowId,
-  onAddNode,
-  onAddAsset,
   onLoadWorkflow,
   onDeleteWorkflow,
+  onDownloadWorkflow,
+  onCopyWorkflow,
+  onAddAsset,
   onNewWorkflow,
   onSaveWorkflow,
   workflowName,
   onWorkflowNameChange,
-
-  adminWorkflows,
-  adminSelectedId,
-  onAdminSelectWorkflow,
-  adminLoading,
+  loading = false,
 
   allModels,
   onChangeModel,
@@ -89,21 +83,18 @@ export default function WorkflowComponent({
     <div className={styles.body}>
       <WorkflowSidebar
         admin={admin}
-        models={admin ? [] : (models || [])}
-        workflows={admin ? [] : (workflows || [])}
-        activeWorkflowId={admin ? undefined : activeWorkflowId}
-        onAddNode={admin ? noop : (onAddNode || noop)}
-        onAddAsset={admin ? noop : (onAddAsset || noop)}
-        onLoadWorkflow={admin ? noop : (onLoadWorkflow || noop)}
+        workflows={workflows}
+        activeWorkflowId={activeWorkflowId}
+        onLoadWorkflow={onLoadWorkflow}
         onDeleteWorkflow={admin ? noop : (onDeleteWorkflow || noop)}
-        onNewWorkflow={admin ? noop : (onNewWorkflow || noop)}
-        onSaveWorkflow={admin ? noop : (onSaveWorkflow || noop)}
-        workflowName={admin ? "" : (workflowName || "")}
-        onWorkflowNameChange={admin ? noop : (onWorkflowNameChange || noop)}
-        adminWorkflows={adminWorkflows}
-        adminSelectedId={adminSelectedId}
-        onAdminSelectWorkflow={onAdminSelectWorkflow}
-        adminLoading={adminLoading}
+        onDownloadWorkflow={onDownloadWorkflow}
+        onCopyWorkflow={onCopyWorkflow}
+        onAddAsset={admin ? undefined : onAddAsset}
+        onNewWorkflow={admin ? undefined : onNewWorkflow}
+        onSaveWorkflow={admin ? undefined : onSaveWorkflow}
+        workflowName={workflowName}
+        onWorkflowNameChange={onWorkflowNameChange}
+        loading={loading}
       />
       <WorkflowCanvas
         nodes={nodes}

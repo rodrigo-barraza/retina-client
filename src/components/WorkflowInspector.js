@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Eye, Type, Volume2, X, Maximize2, Search, ChevronDown, Paperclip } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
-import { MODALITY_ICONS } from "./WorkflowSidebar";
+import { MODALITY_ICONS } from "./WorkflowNodeConstants";
 import MarkdownContent from "./MarkdownContent";
 import AudioRecorderComponent from "./AudioRecorderComponent";
 import AssetInputOptions from "./AssetInputOptions";

@@ -219,40 +219,38 @@ export default function WorkflowsPage() {
         );
     }, [allModels]);
 
-    // Add a new node from the sidebar
-    const handleAddNode = useCallback(
-        (model) => {
-            pushUndo();
-            const isConversation = model.modelType === "conversation";
-            const newNode = {
-                id: generateNodeId(),
-                modelName: model.name,
-                provider: model.provider,
-                displayName: model.display_name || model.label || model.name,
-                modelType: model.modelType,
-                // Conversational models get a single "conversation" input port
-                inputTypes: isConversation ? ["conversation"] : (model.inputTypes || []),
-                // Store the original modality-based input types for reference
-                rawInputTypes: model.inputTypes || [],
-                outputTypes: model.outputTypes || [],
-                supportsSystemPrompt: model.supportsSystemPrompt !== false,
-                messages: [
-                    { role: "system", content: "" },
-                    { role: "user", content: "" },
-                ],
-                position: {
-                    x: 80 + nodes.length * 60 + Math.random() * 40,
-                    y: 80 + nodes.length * 40 + Math.random() * 40,
-                },
-            };
-            setNodes((prev) => [...prev, newNode]);
-        },
-        [nodes.length],
-    );
-
-    // Add a new asset node (input asset or output viewer)
+    // Add a new asset node (input asset, output viewer, or model)
     const handleAddAsset = useCallback(
         (modality, type) => {
+            pushUndo();
+
+            // Model node
+            if (modality === "model") {
+                const defaultModel = modelsWithModalities[0];
+                const isConversation = defaultModel?.modelType === "conversation";
+                const newNode = {
+                    id: generateNodeId(),
+                    modelName: defaultModel?.name || "select-model",
+                    provider: defaultModel?.provider || "",
+                    displayName: defaultModel?.display_name || defaultModel?.label || defaultModel?.name || "Select a Model",
+                    modelType: defaultModel?.modelType || "conversation",
+                    inputTypes: isConversation ? ["conversation"] : (defaultModel?.inputTypes || []),
+                    rawInputTypes: defaultModel?.inputTypes || [],
+                    outputTypes: defaultModel?.outputTypes || [],
+                    supportsSystemPrompt: defaultModel?.supportsSystemPrompt !== false,
+                    messages: [
+                        { role: "system", content: "" },
+                        { role: "user", content: "" },
+                    ],
+                    position: {
+                        x: 80 + nodes.length * 60 + Math.random() * 40,
+                        y: 80 + nodes.length * 40 + Math.random() * 40,
+                    },
+                };
+                setNodes((prev) => [...prev, newNode]);
+                return;
+            }
+
             const isViewer = type === "viewer";
             const isFile = modality === "file";
             const isConversation = modality === "conversation";
@@ -292,7 +290,7 @@ export default function WorkflowsPage() {
             };
             setNodes((prev) => [...prev, newNode]);
         },
-        [nodes.length],
+        [nodes.length, modelsWithModalities],
     );
 
     // Update content of an asset node
@@ -829,17 +827,42 @@ export default function WorkflowsPage() {
                     onUpdateNodeContent={handleUpdateNodeContent}
                     onUpdateNodeConfig={handleUpdateNodeConfig}
                     onUpdateFileInput={handleUpdateFileInput}
-                    models={modelsWithModalities}
                     workflows={savedWorkflows}
                     activeWorkflowId={workflowId}
-                    onAddNode={handleAddNode}
-                    onAddAsset={handleAddAsset}
                     onLoadWorkflow={handleLoadWorkflow}
                     onDeleteWorkflow={handleDeleteWorkflow}
+                    onAddAsset={handleAddAsset}
                     onNewWorkflow={handleNewWorkflow}
                     onSaveWorkflow={handleSaveWorkflow}
                     workflowName={workflowName}
                     onWorkflowNameChange={setWorkflowName}
+                    onDownloadWorkflow={async (id) => {
+                        try {
+                            const wf = await WorkflowService.getWorkflow(id);
+                            if (!wf) return;
+                            const data = JSON.stringify(wf, null, 2);
+                            const blob = new Blob([data], { type: "application/json" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `workflow-${id}.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            showToast("Workflow downloaded");
+                        } catch (err) {
+                            showToast(`Download failed: ${err.message}`, "error");
+                        }
+                    }}
+                    onCopyWorkflow={async (id) => {
+                        try {
+                            const wf = await WorkflowService.getWorkflow(id);
+                            if (!wf) return;
+                            await navigator.clipboard.writeText(JSON.stringify(wf, null, 2));
+                            showToast("Workflow copied to clipboard");
+                        } catch (err) {
+                            showToast(`Copy failed: ${err.message}`, "error");
+                        }
+                    }}
                     allModels={modelsWithModalities}
                     onChangeModel={handleChangeModel}
                     onDuplicateNode={handleDuplicateNode}

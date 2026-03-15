@@ -5,7 +5,7 @@ import ProviderLogo from "./ProviderLogos";
 import AudioRecorderComponent from "./AudioRecorderComponent";
 import AssetInputOptions from "./AssetInputOptions";
 import { PrismService } from "../services/PrismService";
-import { MODALITY_ICONS } from "./WorkflowSidebar";
+import { MODALITY_ICONS } from "./WorkflowNodeConstants";
 import {
   MODALITY_COLORS,
   ASSET_ICONS,
@@ -216,6 +216,7 @@ function ModelNode(props) {
       transform={`translate(${node.position.x}, ${node.position.y})`}
       className={styles.nodeGroup}
       data-workflow-node
+      data-node-id={node.id}
     >
       <rect
         width={width}
@@ -263,11 +264,13 @@ function ModelNode(props) {
         </div>
       </foreignObject>
 
-      <foreignObject x={width - 26} y={6} width={20} height={20}>
-        <button className={styles.deleteNodeBtn} onClick={(e) => { e.stopPropagation(); onDelete(node.id); }} title="Remove node">
-          <X size={12} />
-        </button>
-      </foreignObject>
+      {onDelete && (
+        <foreignObject x={width - 26} y={6} width={20} height={20}>
+          <button className={styles.deleteNodeBtn} onClick={(e) => { e.stopPropagation(); onDelete(node.id); }} title="Remove node">
+            <X size={12} />
+          </button>
+        </foreignObject>
+      )}
 
       {/* Expandable config section */}
       {isExpanded && (
@@ -407,6 +410,7 @@ function AssetNode(props) {
       transform={`translate(${node.position.x}, ${node.position.y})`}
       className={styles.nodeGroup}
       data-workflow-node
+      data-node-id={node.id}
     >
       {/* Body with accent border */}
       <rect
@@ -464,11 +468,13 @@ function AssetNode(props) {
       </foreignObject>
 
       {/* Delete button */}
-      <foreignObject x={width - 26} y={6} width={20} height={20}>
-        <button className={styles.deleteNodeBtn} onClick={(e) => { e.stopPropagation(); onDelete(node.id); }} title="Remove node">
-          <X size={12} />
-        </button>
-      </foreignObject>
+      {onDelete && (
+        <foreignObject x={width - 26} y={6} width={20} height={20}>
+          <button className={styles.deleteNodeBtn} onClick={(e) => { e.stopPropagation(); onDelete(node.id); }} title="Remove node">
+            <X size={12} />
+          </button>
+        </foreignObject>
+      )}
 
       {/* Content area — only when expanded */}
       {isExpanded && (() => {

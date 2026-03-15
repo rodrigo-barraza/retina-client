@@ -8,10 +8,14 @@ import {
   CONFIG_AREA_HEIGHT,
   getBaseModality,
   getAssetContentHeight,
+  getNodeWidth,
+  getNodeHeight,
   getPortPosition,
   connectionPath,
 } from "./WorkflowNodeConstants";
 import styles from "./WorkflowCanvas.module.css";
+
+const COLLISION_PADDING = 20; // min gap between nodes
 
 export default function WorkflowCanvas({
   nodes,
@@ -129,6 +133,110 @@ export default function WorkflowCanvas({
     [dragging, connecting, isPanning, screenToSvg, onUpdateNodePosition],
   );
 
+  // ── Continuous collision repulsion via requestAnimationFrame ──
+  // Keep refs to the latest values so the RAF loop always sees fresh state.
+  const nodesRef = useRef(nodes);
+  const onUpdatePosRef = useRef(onUpdateNodePosition);
+  const draggingRef = useRef(dragging);
+  const rafRef = useRef(null);
+
+  useEffect(() => { nodesRef.current = nodes; }, [nodes]);
+  useEffect(() => { onUpdatePosRef.current = onUpdateNodePosition; }, [onUpdateNodePosition]);
+  useEffect(() => { draggingRef.current = dragging; }, [dragging]);
+
+  useEffect(() => {
+    const PUSH_FACTOR = 0.35; // fraction of overlap to resolve per frame (smooth)
+    const MIN_PUSH = 0.5;    // stop pushing below this threshold
+
+    // Read actual rendered size from DOM
+    const getNodeBox = (node) => {
+      const svg = svgRef.current;
+      if (!svg) return { w: getNodeWidth(node), h: getNodeHeight(node) };
+      const el = svg.querySelector(`[data-node-id="${node.id}"]`);
+      if (!el) return { w: getNodeWidth(node), h: getNodeHeight(node) };
+      const bbox = el.getBBox();
+      return { w: bbox.width, h: bbox.height };
+    };
+
+    const tick = () => {
+      const currentNodes = nodesRef.current;
+      const dragId = draggingRef.current?.nodeId || null;
+      const updates = {}; // { nodeId: { x, y } }
+
+      for (let a = 0; a < currentNodes.length; a++) {
+        for (let b = a + 1; b < currentNodes.length; b++) {
+          const nA = currentNodes[a];
+          const nB = currentNodes[b];
+          const boxA = getNodeBox(nA);
+          const boxB = getNodeBox(nB);
+
+          const aCx = nA.position.x + boxA.w / 2;
+          const aCy = nA.position.y + boxA.h / 2;
+          const bCx = nB.position.x + boxB.w / 2;
+          const bCy = nB.position.y + boxB.h / 2;
+
+          const overlapX = (boxA.w / 2 + boxB.w / 2 + COLLISION_PADDING) - Math.abs(aCx - bCx);
+          const overlapY = (boxA.h / 2 + boxB.h / 2 + COLLISION_PADDING) - Math.abs(aCy - bCy);
+
+          if (overlapX > MIN_PUSH && overlapY > MIN_PUSH) {
+            // Determine which node(s) to push
+            const aIsDragged = nA.id === dragId;
+            const bIsDragged = nB.id === dragId;
+
+            if (overlapX < overlapY) {
+              const push = overlapX * PUSH_FACTOR;
+              const dir = bCx >= aCx ? 1 : -1;
+              if (aIsDragged) {
+                // Only push B
+                if (!updates[nB.id]) updates[nB.id] = { ...nB.position };
+                updates[nB.id].x += dir * push;
+              } else if (bIsDragged) {
+                // Only push A
+                if (!updates[nA.id]) updates[nA.id] = { ...nA.position };
+                updates[nA.id].x -= dir * push;
+              } else {
+                // Neither dragged — push both equally
+                const half = push / 2;
+                if (!updates[nA.id]) updates[nA.id] = { ...nA.position };
+                if (!updates[nB.id]) updates[nB.id] = { ...nB.position };
+                updates[nA.id].x -= dir * half;
+                updates[nB.id].x += dir * half;
+              }
+            } else {
+              const push = overlapY * PUSH_FACTOR;
+              const dir = bCy >= aCy ? 1 : -1;
+              if (aIsDragged) {
+                if (!updates[nB.id]) updates[nB.id] = { ...nB.position };
+                updates[nB.id].y += dir * push;
+              } else if (bIsDragged) {
+                if (!updates[nA.id]) updates[nA.id] = { ...nA.position };
+                updates[nA.id].y -= dir * push;
+              } else {
+                const half = push / 2;
+                if (!updates[nA.id]) updates[nA.id] = { ...nA.position };
+                if (!updates[nB.id]) updates[nB.id] = { ...nB.position };
+                updates[nA.id].y -= dir * half;
+                updates[nB.id].y += dir * half;
+              }
+            }
+          }
+        }
+      }
+
+      // Apply all position updates
+      for (const [id, pos] of Object.entries(updates)) {
+        onUpdatePosRef.current(id, pos);
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []); // runs once, reads current state via refs
+
   const handleMouseUp = useCallback(() => {
     if (dragging) setDragging(null);
     if (isPanning) setIsPanning(false);
@@ -188,7 +296,7 @@ export default function WorkflowCanvas({
       }
 
       if ((e.ctrlKey || e.metaKey) && e.key === "v") {
-        if (!clipboardRef.current) return;
+        if (readOnly || !clipboardRef.current) return;
         e.preventDefault();
         onDuplicateNode?.(clipboardRef.current);
       }
@@ -196,12 +304,13 @@ export default function WorkflowCanvas({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedNodeId, nodes, onDuplicateNode]);
+  }, [selectedNodeId, nodes, onDuplicateNode, readOnly]);
 
-  // Output port click — start connection
+  // Output port click — start connection (blocked in readOnly)
   const handleOutputPortClick = useCallback(
     (e, nodeId, modality, index) => {
       e.stopPropagation();
+      if (readOnly) return;
       if (connecting) {
         setConnecting(null);
         setConnectingMouse(null);
@@ -211,13 +320,14 @@ export default function WorkflowCanvas({
       const svgPos = screenToSvg(e.clientX, e.clientY);
       setConnectingMouse(svgPos);
     },
-    [connecting, screenToSvg],
+    [connecting, screenToSvg, readOnly],
   );
 
-  // Input port click — complete connection
+  // Input port click — complete connection (blocked in readOnly)
   const handleInputPortClick = useCallback(
     (e, nodeId, modality) => {
       e.stopPropagation();
+      if (readOnly) return;
       if (!connecting) return;
 
       if (getBaseModality(connecting.sourceModality) !== getBaseModality(modality)) return;
@@ -238,7 +348,7 @@ export default function WorkflowCanvas({
       setConnecting(null);
       setConnectingMouse(null);
     },
-    [connecting, connections, onAddConnection],
+    [connecting, connections, onAddConnection, readOnly],
   );
 
   // Toggle expanded state for a node
@@ -314,21 +424,23 @@ export default function WorkflowCanvas({
           strokeOpacity={isActive ? 1 : 0.7}
           className={`${styles.connectionLine}${isActive ? ` ${styles.prismLine}` : ""}`}
         />
-        <foreignObject
-          x={(sourcePos.x + targetPos.x) / 2 - 8}
-          y={(sourcePos.y + targetPos.y) / 2 - 8}
-          width={16}
-          height={16}
-          className={styles.connectionDeleteWrapper}
-        >
-          <button
-            className={styles.connectionDeleteBtn}
-            onClick={(e) => { e.stopPropagation(); onDeleteConnection(conn.id); }}
-            title="Delete connection"
+        {!readOnly && (
+          <foreignObject
+            x={(sourcePos.x + targetPos.x) / 2 - 8}
+            y={(sourcePos.y + targetPos.y) / 2 - 8}
+            width={16}
+            height={16}
+            className={styles.connectionDeleteWrapper}
           >
-            <X size={10} />
-          </button>
-        </foreignObject>
+            <button
+              className={styles.connectionDeleteBtn}
+              onClick={(e) => { e.stopPropagation(); onDeleteConnection(conn.id); }}
+              title="Delete connection"
+            >
+              <X size={10} />
+            </button>
+          </foreignObject>
+        )}
       </g>
     );
   };
@@ -440,7 +552,7 @@ export default function WorkflowCanvas({
               onOutputPortClick={handleOutputPortClick}
               onPortHover={setHoveredPort}
               onPortLeave={() => setHoveredPort(null)}
-              onDelete={onDeleteNode}
+              onDelete={readOnly ? undefined : onDeleteNode}
               onUpdateContent={onUpdateNodeContent}
               onUpdateConfig={onUpdateNodeConfig}
               onUpdateFileInput={onUpdateFileInput}
@@ -451,7 +563,7 @@ export default function WorkflowCanvas({
         </g>
       </svg>
 
-      {nodes.length > 0 && (
+      {nodes.length > 0 && !readOnly && (
         <div className={styles.instructions}>
           Click an <strong>output port</strong> then an <strong>input port</strong> of the same type to connect
         </div>
