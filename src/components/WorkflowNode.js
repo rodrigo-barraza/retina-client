@@ -228,16 +228,6 @@ function ModelNode(props) {
         className={styles.nodeBody}
         style={statusBorderColor ? { stroke: statusBorderColor, strokeWidth: borderWidth } : undefined}
       />
-      {isSelected && (
-        <rect
-          width={width}
-          height={nodeHeight}
-          rx="3"
-          ry="3"
-          className={styles.selectedFlash}
-          strokeWidth={2}
-        />
-      )}
       <rect width={width} height={HEADER_HEIGHT} rx="3" ry="3" className={styles.nodeHeader} />
       <rect x={0} y={HEADER_HEIGHT - 3} width={width} height={3} className={styles.nodeHeader} />
 
@@ -351,6 +341,16 @@ function ModelNode(props) {
         <foreignObject x={4} y={HEADER_HEIGHT + configHeight + portsHeight} width={width - 8} height={24}>
           <div className={styles.modelResultError}>{results.error}</div>
         </foreignObject>
+      )}
+      {isSelected && (
+        <rect
+          width={width}
+          height={nodeHeight}
+          rx="3"
+          ry="3"
+          className={styles.selectedFlash}
+          strokeWidth={2}
+        />
       )}
     </g>
   );
@@ -472,16 +472,6 @@ function AssetNode(props) {
         className={`${styles.assetNodeBody}${isPrism ? ` ${styles.prismBorder}` : ""}`}
         style={isPrism ? { stroke: statusGradient, strokeWidth: 2, strokeOpacity: 1 } : { stroke: accentColor, strokeOpacity: 0.4 }}
       />
-      {isSelected && (
-        <rect
-          width={width}
-          height={nodeHeight}
-          rx="3"
-          ry="3"
-          className={styles.selectedFlash}
-          strokeWidth={2}
-        />
-      )}
 
       {/* Header */}
       <rect width={width} height={HEADER_HEIGHT} rx="3" ry="3" className={styles.assetNodeHeader} style={{ fill: accentColor, fillOpacity: 0.1 }} />
@@ -757,6 +747,16 @@ function AssetNode(props) {
             </button>
           </div>
         </foreignObject>
+      )}
+      {isSelected && (
+        <rect
+          width={width}
+          height={nodeHeight}
+          rx="3"
+          ry="3"
+          className={styles.selectedFlash}
+          strokeWidth={2}
+        />
       )}
     </g>
   );

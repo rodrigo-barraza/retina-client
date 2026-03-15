@@ -5,10 +5,11 @@
 
 .nodeBody {
   fill: var(--bg-card);
-  stroke: var(--border-color);
-  stroke-width: 1;
+  stroke: var(--accent-color);
+  stroke-width: 1.5;
+  stroke-opacity: 0.4;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.25));
-  transition: stroke var(--transition-fast);
+  transition: stroke var(--transition-fast), stroke-opacity var(--transition-fast);
 }
 
 .nodeGroup:hover .nodeBody {

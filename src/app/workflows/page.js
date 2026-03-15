@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { ArrowLeft, Sun, Moon, Play, Square, Loader2, Download, Upload, Undo2 } from "lucide-react";
+import { ArrowLeft, Sun, Moon, Play, Square, Loader2, Download, Upload, Undo2, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { PrismService } from "../../services/PrismService";
 import WorkflowService from "../../services/WorkflowService";
@@ -467,6 +467,20 @@ export default function WorkflowsPage() {
         setIsRunning(false);
     }, []);
 
+    // Reset workflow execution state (statuses, results, viewer outputs)
+    const handleResetWorkflow = useCallback(() => {
+        setNodeStatuses({});
+        setNodeResults({});
+        setSelectedNodeId(null);
+        setNodes((prev) =>
+            prev.map((n) =>
+                n.nodeType === "viewer"
+                    ? { ...n, content: null, contentType: null, receivedOutputs: {} }
+                    : n,
+            ),
+        );
+    }, []);
+
     // Update node position (drag)
     const handleUpdateNodePosition = useCallback((nodeId, position) => {
         setNodes((prev) =>
@@ -765,6 +779,14 @@ export default function WorkflowsPage() {
                         title={`Undo (Ctrl+Z) · ${undoCount} states`}
                     >
                         <Undo2 size={14} />
+                    </button>
+                    <button
+                        className={styles.headerActionBtn}
+                        onClick={handleResetWorkflow}
+                        disabled={isRunning || Object.keys(nodeStatuses).length === 0}
+                        title="Reset execution state"
+                    >
+                        <RotateCcw size={14} />
                     </button>
                     <input
                         ref={importRef}
