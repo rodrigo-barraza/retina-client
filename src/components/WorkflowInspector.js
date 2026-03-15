@@ -5,6 +5,7 @@ import { Eye, Type, Volume2, X, Maximize2, Search, ChevronDown, Paperclip, Code,
 import ProviderLogo from "./ProviderLogos";
 import { MODALITY_ICONS } from "./WorkflowNodeConstants";
 import MarkdownContent from "./MarkdownContent";
+import MessageList from "./MessageList";
 import AudioRecorderComponent from "./AudioRecorderComponent";
 import AssetInputOptions from "./AssetInputOptions";
 import { PrismService } from "../services/PrismService";
@@ -51,6 +52,9 @@ export default function WorkflowInspector({
     const [modelSearch, setModelSearch] = useState("");
     const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
     const [contentPreview, setContentPreview] = useState(false);
+    const [modelTextPreview, setModelTextPreview] = useState(false);
+    const [viewerTextPreview, setViewerTextPreview] = useState(false);
+    const [conversationView, setConversationView] = useState("json");
     const textareaRef = useRef(null);
 
     // ── Resize logic ──
@@ -153,6 +157,21 @@ export default function WorkflowInspector({
         return n.displayName || n.modelName || id;
     };
 
+    const NODE_TYPE_LABELS = {
+        text: "Text Node",
+        image: "Image Node",
+        audio: "Audio Node",
+        video: "Video Node",
+        pdf: "PDF Node",
+        conversation: "Chat History Node",
+    };
+
+    const nodeSubtitle = isModel
+        ? node.provider
+        : isInput
+            ? (NODE_TYPE_LABELS[node.modality] || "Media Node")
+            : "Output Node";
+
     return (
         <div className={styles.inspector} style={{ width: inspectorWidth, minWidth: MIN_WIDTH }}>
             <div className={styles.resizeHandle} onMouseDown={handleResizeStart} />
@@ -179,7 +198,7 @@ export default function WorkflowInspector({
                             {isModel ? (node.displayName || node.modelName) : isInput ? (node.customName || { text: "Text", image: "Image", audio: "Audio", video: "Video", pdf: "PDF", conversation: "Chat History" }[node.modality] || "Media") : (node.customName || "Output")}
                         </span>
                         <span className={styles.headerSubtitle}>
-                            {isModel ? node.provider : isInput ? "Asset Node" : "Viewer Node"}
+                            {nodeSubtitle}
                             {status && (
                                 <span className={`${styles.statusBadge} ${styles[`status_${status}`]}`}>
                                     {status}
@@ -353,7 +372,7 @@ export default function WorkflowInspector({
                 {isInput && node.modality === "text" && (
                     <section className={`${styles.section} ${styles.scrollableSection}`}>
                         <div className={styles.sectionHeaderRow}>
-                            <label className={styles.sectionLabel}>Content</label>
+                            <label className={styles.sectionLabel}>Text Content</label>
                             <div className={styles.contentTabs}>
                                 <button
                                     className={`${styles.contentTab} ${!contentPreview ? styles.contentTabActive : ""}`}
@@ -398,7 +417,7 @@ export default function WorkflowInspector({
                 {/* Content — file input assets (image, audio, or empty) */}
                 {isInput && node.modality !== "text" && node.modality !== "conversation" && (
                     <section className={`${styles.section} ${styles.scrollableSection}`}>
-                        <label className={styles.sectionLabel}>Content</label>
+                        <label className={styles.sectionLabel}>Media Content</label>
                         {node.content ? (
                             <div className={styles.previewContainer}>
                                 {node.modality === "image" ? (
@@ -491,8 +510,34 @@ export default function WorkflowInspector({
                     );
                     return (
                         <section className={`${styles.section} ${styles.scrollableSection}`}>
-                            <label className={styles.sectionLabel}>Conversation</label>
-                            <MarkdownContent content={`\`\`\`json\n${messagesJson}\n\`\`\``} />
+                            <div className={styles.sectionHeaderRow}>
+                                <label className={styles.sectionLabel}>
+                                    {conversationView === "json" ? "Conversation JSON" : "Conversation Preview"}
+                                </label>
+                                <div className={styles.contentTabs}>
+                                    <button
+                                        className={`${styles.contentTab} ${conversationView === "json" ? styles.contentTabActive : ""}`}
+                                        onClick={() => setConversationView("json")}
+                                    >
+                                        <Code size={10} />
+                                        JSON
+                                    </button>
+                                    <button
+                                        className={`${styles.contentTab} ${conversationView === "preview" ? styles.contentTabActive : ""}`}
+                                        onClick={() => setConversationView("preview")}
+                                    >
+                                        <BookOpen size={10} />
+                                        Preview
+                                    </button>
+                                </div>
+                            </div>
+                            {conversationView === "preview" ? (
+                                <div className={styles.conversationPreview}>
+                                    <MessageList messages={resolved} readOnly />
+                                </div>
+                            ) : (
+                                <MarkdownContent content={`\`\`\`json\n${messagesJson}\n\`\`\``} />
+                            )}
                         </section>
                     );
                 })()}
@@ -500,7 +545,7 @@ export default function WorkflowInspector({
                 {/* Generated Results — model nodes only */}
                 {results && !results.error && !isViewer && !isInput && (
                     <section className={`${styles.section} ${styles.scrollableSection}`}>
-                        <label className={styles.sectionLabel}>Generated Text Output</label>
+                        <label className={styles.sectionLabel}>Generated Output</label>
 
                         {results.image && (
                             <div className={styles.resultBlock}>
@@ -526,7 +571,32 @@ export default function WorkflowInspector({
 
                         {results.text && (
                             <div className={styles.resultBlock}>
-                                <div className={styles.resultText}>{results.text}</div>
+                                <div className={styles.sectionHeaderRow}>
+                                    <span className={styles.resultType}>Text</span>
+                                    <div className={styles.contentTabs}>
+                                        <button
+                                            className={`${styles.contentTab} ${!modelTextPreview ? styles.contentTabActive : ""}`}
+                                            onClick={() => setModelTextPreview(false)}
+                                        >
+                                            <Code size={10} />
+                                            Raw
+                                        </button>
+                                        <button
+                                            className={`${styles.contentTab} ${modelTextPreview ? styles.contentTabActive : ""}`}
+                                            onClick={() => setModelTextPreview(true)}
+                                        >
+                                            <BookOpen size={10} />
+                                            Preview
+                                        </button>
+                                    </div>
+                                </div>
+                                {modelTextPreview ? (
+                                    <div className={styles.markdownPreview}>
+                                        <MarkdownContent content={results.text} />
+                                    </div>
+                                ) : (
+                                    <div className={styles.resultText}>{results.text}</div>
+                                )}
                             </div>
                         )}
 
@@ -558,7 +628,7 @@ export default function WorkflowInspector({
                 {/* Viewer received content — show all types */}
                 {isViewer && node.receivedOutputs && Object.keys(node.receivedOutputs).length > 0 && (
                     <section className={`${styles.section} ${styles.scrollableSection}`}>
-                        <label className={styles.sectionLabel}>Received Content</label>
+                        <label className={styles.sectionLabel}>Received Output</label>
 
                         {node.receivedOutputs.image && (
                             <div className={styles.resultBlock}>
@@ -584,7 +654,32 @@ export default function WorkflowInspector({
 
                         {node.receivedOutputs.text && (
                             <div className={styles.resultBlock}>
-                                <div className={styles.resultText}>{node.receivedOutputs.text}</div>
+                                <div className={styles.sectionHeaderRow}>
+                                    <span className={styles.resultType}>Text</span>
+                                    <div className={styles.contentTabs}>
+                                        <button
+                                            className={`${styles.contentTab} ${!viewerTextPreview ? styles.contentTabActive : ""}`}
+                                            onClick={() => setViewerTextPreview(false)}
+                                        >
+                                            <Code size={10} />
+                                            Raw
+                                        </button>
+                                        <button
+                                            className={`${styles.contentTab} ${viewerTextPreview ? styles.contentTabActive : ""}`}
+                                            onClick={() => setViewerTextPreview(true)}
+                                        >
+                                            <BookOpen size={10} />
+                                            Preview
+                                        </button>
+                                    </div>
+                                </div>
+                                {viewerTextPreview ? (
+                                    <div className={styles.markdownPreview}>
+                                        <MarkdownContent content={node.receivedOutputs.text} />
+                                    </div>
+                                ) : (
+                                    <div className={styles.resultText}>{node.receivedOutputs.text}</div>
+                                )}
                             </div>
                         )}
 

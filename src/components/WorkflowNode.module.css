@@ -37,6 +37,33 @@
   font-family: var(--font-sans);
 }
 
+/* ── Header right-side actions ── */
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  height: 100%;
+  padding-right: 6px;
+}
+
+.headerSeparator {
+  width: 1px;
+  height: 12px;
+  background: var(--border-color);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.headerTypeBadge {
+  font-size: 9px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  opacity: 0.6;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .deleteNodeBtn {
   display: flex;
   align-items: center;
@@ -81,16 +108,7 @@
   font-family: var(--font-sans);
 }
 
-/* ── Asset nodes ── */
-.assetNodeBody {
-  fill: var(--bg-card);
-  stroke-width: 1.5;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.25));
-}
-
-.assetNodeHeader {
-  stroke: none;
-}
+/* ── Asset nodes (accent-color overrides come via inline style) ── */
 
 .nodeRenameInput {
   font-size: 12px;
@@ -103,14 +121,6 @@
   padding: 0;
   width: 100%;
   min-width: 0;
-}
-
-.nodeTypeBadge {
-  font-size: 9px;
-  font-weight: 500;
-  font-family: var(--font-sans);
-  opacity: 0.5;
-  pointer-events: none;
 }
 
 .assetTextarea {

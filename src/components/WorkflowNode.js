@@ -73,11 +73,9 @@ function NodePorts({
           const roleLabel = ROLE_LABELS[msg?.role] || msg?.role || `#${compound.index}`;
           const roleCount = nodeMessages.slice(0, compound.index).filter((m) => m.role === msg?.role).length;
           const numberedRole = roleCount > 0 ? `${roleLabel} ${roleCount + 1}` : roleLabel;
-          // System prompt: show just the role label, no modality suffix
           if (msg?.role === "system") {
             label = numberedRole;
           } else {
-            // Pluralize non-text modalities (arrays accept multiple sources)
             const modLabel = baseMod !== "text" ? `${label}s` : label;
             label = `${numberedRole} ${modLabel}`;
           }
@@ -176,6 +174,140 @@ function usePortProps(props) {
 }
 
 /**
+ * NodeShell — shared structural wrapper for ALL node types.
+ *
+ * Provides: body rect, header rects, drag area, delete button, ports,
+ * selection flash, hover effects. Node-type-specific content is passed
+ * via props (headerContent, headerActions, typeBadge, children).
+ */
+function NodeShell({
+  node,
+  width,
+  height,
+  status,
+  isSelected,
+  accentColor,
+  headerFillStyle,
+  headerContent,
+  headerActions,
+  headerActionsWidth = 26,
+  typeBadge,
+  onMouseDown,
+  onDelete,
+  // Port props
+  inputTypes,
+  outputTypes,
+  configOffset = 0,
+  isPrism = false,
+  statusGradient,
+  portProps,
+  children,
+}) {
+  const isRunning = status === "running";
+  const isDone = status === "done";
+  const statusBorder = isRunning
+    ? "url(#prism-gradient)"
+    : isDone
+      ? "url(#done-gradient)"
+      : status === "error"
+        ? "#f43f5e"
+        : null;
+  const borderWidth = statusBorder ? 2 : 0;
+
+  // Body style: status border overrides resting accent
+  const bodyStyle = statusBorder
+    ? { stroke: statusBorder, strokeWidth: borderWidth, strokeOpacity: 1 }
+    : { stroke: accentColor, strokeOpacity: 0.4 };
+
+  // Header fill — default to bg-tertiary if not provided
+  const headerStyle = headerFillStyle || { fill: "var(--bg-tertiary)" };
+
+  return (
+    <g
+      key={node.id}
+      transform={`translate(${node.position.x}, ${node.position.y})`}
+      className={styles.nodeGroup}
+      data-workflow-node
+      data-node-id={node.id}
+      onMouseDown={(e) => onMouseDown(e, node.id)}
+    >
+      {/* Body */}
+      <rect
+        width={width}
+        height={height}
+        rx="3"
+        ry="3"
+        className={styles.nodeBody}
+        style={bodyStyle}
+      />
+
+      {/* Header background */}
+      <rect width={width} height={HEADER_HEIGHT} rx="3" ry="3" className={styles.nodeHeader} style={headerStyle} />
+      <rect x={0} y={HEADER_HEIGHT - 3} width={width} height={3} className={styles.nodeHeader} style={headerStyle} />
+
+      {/* Drag area with header content */}
+      <g className={styles.nodeDragArea} onMouseDown={(e) => onMouseDown(e, node.id)} style={{ cursor: "grab" }}>
+        <rect x={0} y={0} width={width - headerActionsWidth - 8} height={HEADER_HEIGHT} fill="transparent" />
+        <foreignObject x={8} y={0} width={width - headerActionsWidth - 16} height={HEADER_HEIGHT}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, height: "100%", paddingTop: 1 }}>
+            {headerContent}
+            {status === "done" && <Check size={12} style={{ color: "#10b981", flexShrink: 0 }} />}
+            {status === "error" && <X size={12} style={{ color: "#f43f5e", flexShrink: 0 }} />}
+          </div>
+        </foreignObject>
+      </g>
+
+      {/* Header right-side actions (modality icons, type badge, info, delete) */}
+      <foreignObject x={width - headerActionsWidth} y={0} width={headerActionsWidth} height={HEADER_HEIGHT}>
+        <div className={styles.headerActions}>
+          {headerActions}
+          {typeBadge && (
+            <>
+              <span className={styles.headerSeparator} />
+              <span className={styles.headerTypeBadge} style={{ color: accentColor }}>{typeBadge}</span>
+            </>
+          )}
+          {headerActions && onDelete && <span className={styles.headerSeparator} />}
+          {!headerActions && typeBadge && onDelete && <span className={styles.headerSeparator} />}
+          {onDelete && (
+            <button className={styles.deleteNodeBtn} onClick={(e) => { e.stopPropagation(); onDelete(node.id); }} title="Remove node">
+              <X size={12} />
+            </button>
+          )}
+        </div>
+      </foreignObject>
+
+      {/* Type-specific content (config, asset content, error, etc.) */}
+      {children}
+
+      {/* Ports */}
+      <g transform={`translate(0, ${configOffset})`}>
+        <NodePorts
+          node={node}
+          inputTypes={inputTypes}
+          outputTypes={outputTypes}
+          isNodeRunning={isPrism}
+          nodeStatusGradient={statusGradient || "url(#prism-gradient)"}
+          {...portProps}
+        />
+      </g>
+
+      {/* Selection flash — rendered LAST so it's on top */}
+      {isSelected && (
+        <rect
+          width={width}
+          height={height}
+          rx="3"
+          ry="3"
+          className={styles.selectedFlash}
+          strokeWidth={2}
+        />
+      )}
+    </g>
+  );
+}
+
+/**
  * Renders a model node (AI model step).
  */
 function ModelNode(props) {
@@ -208,72 +340,56 @@ function ModelNode(props) {
   const isDone = status === "done";
   const isPrism = isRunning || isDone;
   const statusGradient = isRunning ? "url(#prism-gradient)" : isDone ? "url(#done-gradient)" : null;
-  const statusBorderColor = statusGradient || (status === "error" ? "#f43f5e" : null);
-  const borderWidth = isPrism ? 2 : status === "error" ? 2 : 0;
+
+  const headerContent = (
+    <>
+      <ProviderLogo provider={node.provider} size={16} />
+      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {node.displayName || node.modelName}
+      </span>
+    </>
+  );
+
+  const headerActions = (
+    <>
+      {/* Running spinner */}
+      {status === "running" && (
+        <Loader2 size={12} style={{ color: "#f59e0b", animation: "spin 1s linear infinite", flexShrink: 0 }} />
+      )}
+      {/* Modality icons from model's input types */}
+      {modalityIcons.map((modality) => {
+        const mod = MODALITY_ICONS[modality];
+        if (!mod) return null;
+        const Icon = mod.icon;
+        return <Icon key={modality} size={11} style={{ color: mod.color, opacity: 0.7, flexShrink: 0 }} title={mod.label} />;
+      })}
+    </>
+  );
+
+  // Width for: modality icons + type badge + separators + delete button
+  const actionsWidth = modalityAreaWidth + 70 + (status === "running" ? 18 : 0);
 
   return (
-    <g
-      key={node.id}
-      transform={`translate(${node.position.x}, ${node.position.y})`}
-      className={styles.nodeGroup}
-      data-workflow-node
-      data-node-id={node.id}
-      onMouseDown={(e) => onMouseDown(e, node.id)}
+    <NodeShell
+      node={node}
+      width={width}
+      height={nodeHeight}
+      status={status}
+      isSelected={isSelected}
+      accentColor="var(--accent-color)"
+      headerContent={headerContent}
+      headerActions={headerActions}
+      headerActionsWidth={actionsWidth}
+      typeBadge="AI Model"
+      onMouseDown={onMouseDown}
+      onDelete={onDelete}
+      inputTypes={inputTypes}
+      outputTypes={outputTypes}
+      configOffset={configHeight}
+      isPrism={isPrism}
+      statusGradient={statusGradient}
+      portProps={portProps}
     >
-      <rect
-        width={width}
-        height={nodeHeight}
-        rx="3"
-        ry="3"
-        className={styles.nodeBody}
-        style={statusBorderColor ? { stroke: statusBorderColor, strokeWidth: borderWidth } : undefined}
-      />
-      <rect width={width} height={HEADER_HEIGHT} rx="3" ry="3" className={styles.nodeHeader} />
-      <rect x={0} y={HEADER_HEIGHT - 3} width={width} height={3} className={styles.nodeHeader} />
-
-      <g className={styles.nodeDragArea} onMouseDown={(e) => onMouseDown(e, node.id)} style={{ cursor: "grab" }}>
-        <rect x={0} y={0} width={width - 26 - modalityAreaWidth - 8} height={HEADER_HEIGHT} fill="transparent" />
-        <foreignObject x={8} y={0} width={width - 34 - modalityAreaWidth - 8} height={HEADER_HEIGHT}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, height: "100%", paddingTop: 1 }}>
-            <ProviderLogo provider={node.provider} size={16} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {node.displayName || node.modelName}
-            </span>
-            {status === "done" && <Check size={12} style={{ color: "#10b981", flexShrink: 0 }} />}
-            {status === "error" && <X size={12} style={{ color: "#f43f5e", flexShrink: 0 }} />}
-          </div>
-        </foreignObject>
-      </g>
-
-      {/* Node status icon */}
-      {status === "running" && (
-        <foreignObject x={width - 26 - modalityAreaWidth - 22} y={8} width={18} height={18}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Loader2 size={12} style={{ color: "#f59e0b", animation: "spin 1s linear infinite" }} />
-          </div>
-        </foreignObject>
-      )}
-
-      {/* Modality icons from model's input types (top-right) */}
-      <foreignObject x={width - 26 - modalityAreaWidth} y={6} width={modalityAreaWidth} height={20}>
-        <div style={{ display: "flex", alignItems: "center", gap: 3, height: "100%", justifyContent: "flex-end" }}>
-          {modalityIcons.map((modality) => {
-            const mod = MODALITY_ICONS[modality];
-            if (!mod) return null;
-            const Icon = mod.icon;
-            return <Icon key={modality} size={11} style={{ color: mod.color, opacity: 0.7 }} title={mod.label} />;
-          })}
-        </div>
-      </foreignObject>
-
-      {onDelete && (
-        <foreignObject x={width - 26} y={6} width={20} height={20}>
-          <button className={styles.deleteNodeBtn} onClick={(e) => { e.stopPropagation(); onDelete(node.id); }} title="Remove node">
-            <X size={12} />
-          </button>
-        </foreignObject>
-      )}
-
       {/* Expandable config section */}
       {isExpanded && (
         <foreignObject x={4} y={HEADER_HEIGHT + 2} width={width - 8} height={CONFIG_AREA_HEIGHT - 4}>
@@ -324,35 +440,13 @@ function ModelNode(props) {
         </foreignObject>
       )}
 
-      {/* Ports — offset by config height when expanded */}
-      <g transform={`translate(0, ${configHeight})`}>
-        <NodePorts
-          node={node}
-          inputTypes={inputTypes}
-          outputTypes={outputTypes}
-          isNodeRunning={isPrism}
-          nodeStatusGradient={statusGradient || "url(#prism-gradient)"}
-          {...portProps}
-        />
-      </g>
-
       {/* Error display */}
       {results?.error && (
         <foreignObject x={4} y={HEADER_HEIGHT + configHeight + portsHeight} width={width - 8} height={24}>
           <div className={styles.modelResultError}>{results.error}</div>
         </foreignObject>
       )}
-      {isSelected && (
-        <rect
-          width={width}
-          height={nodeHeight}
-          rx="3"
-          ry="3"
-          className={styles.selectedFlash}
-          strokeWidth={2}
-        />
-      )}
-    </g>
+    </NodeShell>
   );
 }
 
@@ -454,112 +548,83 @@ function AssetNode(props) {
   const conversationBtnHeight = isConversation && inputTypes.length > 0 && !readOnly ? 24 : 0;
   const nodeHeight = HEADER_HEIGHT + (isExpanded ? contentH : 0) + portsHeight + conversationBtnHeight;
 
-  return (
-    <g
-      key={node.id}
-      transform={`translate(${node.position.x}, ${node.position.y})`}
-      className={styles.nodeGroup}
-      data-workflow-node
-      data-node-id={node.id}
-      onMouseDown={(e) => onMouseDown(e, node.id)}
-    >
-      {/* Body with accent border */}
-      <rect
-        width={width}
-        height={nodeHeight}
-        rx="3"
-        ry="3"
-        className={`${styles.assetNodeBody}${isPrism ? ` ${styles.prismBorder}` : ""}`}
-        style={isPrism ? { stroke: statusGradient, strokeWidth: 2, strokeOpacity: 1 } : { stroke: accentColor, strokeOpacity: 0.4 }}
-      />
-
-      {/* Header */}
-      <rect width={width} height={HEADER_HEIGHT} rx="3" ry="3" className={styles.assetNodeHeader} style={{ fill: accentColor, fillOpacity: 0.1 }} />
-      <rect x={0} y={HEADER_HEIGHT - 3} width={width} height={3} className={styles.assetNodeHeader} style={{ fill: accentColor, fillOpacity: 0.1 }} />
-
-      {/* Drag area + icon + title */}
-      <g className={styles.nodeDragArea} onMouseDown={(e) => onMouseDown(e, node.id)} style={{ cursor: "grab" }}>
-        <rect x={0} y={0} width={width - 48 - (isConversation ? modalityAreaWidth : 0)} height={HEADER_HEIGHT} fill="transparent" />
-        <foreignObject x={8} y={0} width={width - 56 - (isConversation ? modalityAreaWidth : 0)} height={HEADER_HEIGHT}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, height: "100%", paddingTop: 1 }}>
-            <AssetIcon size={14} style={{ color: accentColor, flexShrink: 0 }} />
-            {isRenaming ? (
-              <input
-                ref={renameInputRef}
-                className={styles.nodeRenameInput}
-                style={{ color: accentColor }}
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onBlur={handleFinishRename}
-                onKeyDown={handleRenameKeyDown}
-                onMouseDown={(e) => e.stopPropagation()}
-                placeholder={typeLabel}
-                maxLength={40}
-              />
-            ) : (
-              <span
-                style={{ fontSize: 12, fontWeight: 600, color: accentColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: readOnly ? "grab" : "text" }}
-                onDoubleClick={handleStartRename}
-              >
-                {displayTitle}
-              </span>
-            )}
-            {status === "done" && <Check size={12} style={{ color: "#10b981", flexShrink: 0 }} />}
-            {status === "error" && <X size={12} style={{ color: "#f43f5e", flexShrink: 0 }} />}
-          </div>
-        </foreignObject>
-      </g>
-
-      {/* Type badge above top-right corner */}
-      {node.customName && (
-        <text
-          x={width}
-          y={-4}
-          textAnchor="end"
-          className={styles.nodeTypeBadge}
-          style={{ fill: accentColor }}
+  const headerContent = (
+    <>
+      <AssetIcon size={14} style={{ color: accentColor, flexShrink: 0 }} />
+      {isRenaming ? (
+        <input
+          ref={renameInputRef}
+          className={styles.nodeRenameInput}
+          style={{ color: accentColor }}
+          value={renameValue}
+          onChange={(e) => setRenameValue(e.target.value)}
+          onBlur={handleFinishRename}
+          onKeyDown={handleRenameKeyDown}
+          onMouseDown={(e) => e.stopPropagation()}
+          placeholder={typeLabel}
+          maxLength={40}
+        />
+      ) : (
+        <span
+          style={{ fontSize: 12, fontWeight: 600, color: accentColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: readOnly ? "grab" : "text" }}
+          onDoubleClick={handleStartRename}
         >
-          {typeLabel}
-        </text>
+          {displayTitle}
+        </span>
       )}
+    </>
+  );
 
-      {/* Modality icons for conversation input (show accepted modalities) */}
+  const headerActions = (
+    <>
+      {/* Modality icons for conversation input */}
       {isConversation && conversationModalities.length > 0 && (
-        <foreignObject x={width - 48 - modalityAreaWidth} y={6} width={modalityAreaWidth} height={20}>
-          <div style={{ display: "flex", alignItems: "center", gap: 3, height: "100%", justifyContent: "flex-end" }}>
-            {conversationModalities.map((modality) => {
-              const mod = MODALITY_ICONS[modality];
-              if (!mod) return null;
-              const Icon = mod.icon;
-              return <Icon key={modality} size={11} style={{ color: mod.color, opacity: 0.7 }} title={mod.label} />;
-            })}
-          </div>
-        </foreignObject>
+        conversationModalities.map((modality) => {
+          const mod = MODALITY_ICONS[modality];
+          if (!mod) return null;
+          const Icon = mod.icon;
+          return <Icon key={modality} size={11} style={{ color: mod.color, opacity: 0.7, flexShrink: 0 }} title={mod.label} />;
+        })
       )}
+      {/* Gear / eye button */}
+      <button
+        className={`${styles.deleteNodeBtn} ${isExpanded ? styles.configBtnActive : ""}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleExpand(node.id);
+        }}
+        title={isViewer ? "View outputs" : "Node info"}
+      >
+        <Eye size={12} />
+      </button>
+    </>
+  );
 
-      {/* Gear button */}
-      <foreignObject x={width - 48} y={6} width={20} height={20}>
-        <button
-          className={`${styles.deleteNodeBtn} ${isExpanded ? styles.configBtnActive : ""}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleExpand(node.id);
-          }}
-          title={isViewer ? "View outputs" : "Node info"}
-        >
-          {isViewer ? <Eye size={12} /> : <Eye size={12} />}
-        </button>
-      </foreignObject>
+  // Width for: conversation icons + gear + type badge + separators + delete button
+  const actionsWidth = (isConversation ? modalityAreaWidth : 0) + 80;
 
-      {/* Delete button */}
-      {onDelete && (
-        <foreignObject x={width - 26} y={6} width={20} height={20}>
-          <button className={styles.deleteNodeBtn} onClick={(e) => { e.stopPropagation(); onDelete(node.id); }} title="Remove node">
-            <X size={12} />
-          </button>
-        </foreignObject>
-      )}
-
+  return (
+    <NodeShell
+      node={node}
+      width={width}
+      height={nodeHeight}
+      status={status}
+      isSelected={isSelected}
+      accentColor={accentColor}
+      headerFillStyle={{ fill: accentColor, fillOpacity: 0.1 }}
+      headerContent={headerContent}
+      headerActions={headerActions}
+      headerActionsWidth={actionsWidth}
+      typeBadge={node.customName ? typeLabel : null}
+      onMouseDown={onMouseDown}
+      onDelete={onDelete}
+      inputTypes={inputTypes}
+      outputTypes={outputTypes}
+      configOffset={isExpanded ? contentH : 0}
+      isPrism={isPrism}
+      statusGradient={statusGradient}
+      portProps={portProps}
+    >
       {/* Content area — only when expanded */}
       {isExpanded && (() => {
         return (
@@ -689,17 +754,6 @@ function AssetNode(props) {
         );
       })()}
 
-      {/* Ports below content + info area */}
-      <NodePorts
-        node={node}
-        inputTypes={inputTypes}
-        outputTypes={outputTypes}
-        configOffset={isExpanded ? contentH : 0}
-        isNodeRunning={isPrism}
-        nodeStatusGradient={statusGradient || "url(#prism-gradient)"}
-        {...portProps}
-      />
-
       {/* Add/Remove message pair buttons for conversation nodes (only when connected and editable) */}
       {isConversation && inputTypes.length > 0 && !readOnly && (
         <foreignObject
@@ -715,10 +769,8 @@ function AssetNode(props) {
                 onClick={(e) => {
                   e.stopPropagation();
                   const msgs = [...(node.messages || [])];
-                  // Remove last two (assistant + user pair), keep at least system + user
                   if (msgs.length > 2) {
                     msgs.splice(msgs.length - 2, 2);
-                    // Ensure it still ends with user
                     if (msgs[msgs.length - 1]?.role !== "user") {
                       msgs.push({ role: "user", content: "" });
                     }
@@ -748,17 +800,7 @@ function AssetNode(props) {
           </div>
         </foreignObject>
       )}
-      {isSelected && (
-        <rect
-          width={width}
-          height={nodeHeight}
-          rx="3"
-          ry="3"
-          className={styles.selectedFlash}
-          strokeWidth={2}
-        />
-      )}
-    </g>
+    </NodeShell>
   );
 }
 

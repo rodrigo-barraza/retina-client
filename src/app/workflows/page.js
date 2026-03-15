@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { ArrowLeft, Sun, Moon, Play, Square, Loader2, Download, Upload, Undo2, RotateCcw } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PrismService } from "../../services/PrismService";
 import WorkflowService from "../../services/WorkflowService";
 import { executeWorkflow } from "../../services/WorkflowExecutor";
@@ -89,8 +90,9 @@ function generateEdgeId() {
     return `edge_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export default function WorkflowsPage() {
+export default function WorkflowsPage({ initialWorkflowId }) {
     const { theme, toggleTheme } = useTheme();
+    const router = useRouter();
     const [_config, setConfig] = useState(null);
     const [allModels, setAllModels] = useState([]);
     const [savedWorkflows, setSavedWorkflows] = useState([]);
@@ -130,6 +132,22 @@ export default function WorkflowsPage() {
             .then((wfs) => setSavedWorkflows(wfs.map((w) => ({ ...w, id: w._id || w.id }))))
             .catch(console.error);
     }, []);
+
+    // Auto-load workflow from URL param
+    useEffect(() => {
+        if (!initialWorkflowId) return;
+        WorkflowService.getWorkflow(initialWorkflowId)
+            .then((wf) => {
+                if (!wf) return;
+                setWorkflowId(wf._id || wf.id);
+                setWorkflowName(wf.name || "Untitled Workflow");
+                setNodes(wf.nodes || []);
+                setEdges(wf.edges || wf.connections || []);
+                setNodeResults(wf.nodeResults || {});
+                setNodeStatuses(wf.nodeStatuses || {});
+            })
+            .catch(console.error);
+    }, [initialWorkflowId]);
 
     // Import conversation from homepage (sessionStorage handoff)
     useEffect(() => {
@@ -620,13 +638,14 @@ export default function WorkflowsPage() {
             const saved = await WorkflowService.saveWorkflow(workflow);
             const newId = saved.id || saved._id;
             setWorkflowId(newId);
+            router.replace(`/workflows/${newId}`, { scroll: false });
             const wfs = await WorkflowService.getWorkflows();
             setSavedWorkflows(wfs.map((w) => ({ ...w, id: w._id || w.id })));
             showToast("Workflow saved");
         } catch (err) {
             showToast(`Failed to save: ${err.message}`, "error");
         }
-    }, [workflowId, workflowName, nodes, edges, nodeResults, nodeStatuses]);
+    }, [workflowId, workflowName, nodes, edges, nodeResults, nodeStatuses, router]);
 
     // Load a saved workflow
     const handleLoadWorkflow = useCallback(async (id) => {
@@ -634,17 +653,19 @@ export default function WorkflowsPage() {
         try {
             const wf = await WorkflowService.getWorkflow(id);
             if (!wf) return;
-            setWorkflowId(wf._id || wf.id);
+            const loadedId = wf._id || wf.id;
+            setWorkflowId(loadedId);
             setWorkflowName(wf.name || "Untitled Workflow");
             setNodes(wf.nodes || []);
             setEdges(wf.edges || wf.connections || []);
             setNodeResults(wf.nodeResults || {});
             setNodeStatuses(wf.nodeStatuses || {});
+            router.replace(`/workflows/${loadedId}`, { scroll: false });
             showToast("Workflow loaded");
         } catch (err) {
             showToast(`Failed to load: ${err.message}`, "error");
         }
-    }, []);
+    }, [router]);
 
     // Delete a saved workflow
     const handleDeleteWorkflow = useCallback(
@@ -660,13 +681,14 @@ export default function WorkflowsPage() {
                     setEdges([]);
                     setNodeResults({});
                     setNodeStatuses({});
+                    router.replace("/workflows", { scroll: false });
                 }
                 showToast("Workflow deleted");
             } catch (err) {
                 showToast(`Failed to delete: ${err.message}`, "error");
             }
         },
-        [workflowId],
+        [workflowId, router],
     );
 
     // Change the model on an existing node
