@@ -3,129 +3,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { AlertCircle } from "lucide-react";
 import { IrisService } from "../../../services/IrisService";
-import { PrismService } from "../../../services/PrismService";
 import WorkflowComponent from "../../../components/WorkflowComponent";
 import styles from "./page.module.css";
-
-const MODEL_SECTIONS = [
-  "textToText",
-  "textToImage",
-  "textToSpeech",
-  "imageToText",
-  "audioToText",
-  "embedding",
-];
-
-/**
- * Build a lookup map from "provider:modelName" → merged model definition.
- * Used to enrich workflow model nodes with config-defined modalities.
- */
-function buildModelLookup(config) {
-  if (!config) return {};
-  const lookup = {};
-
-  for (const section of MODEL_SECTIONS) {
-    const providers = config[section]?.models || {};
-    for (const [provider, models] of Object.entries(providers)) {
-      for (const m of models) {
-        const key = `${provider}:${m.name}`;
-        if (!lookup[key]) {
-          lookup[key] = { ...m, provider };
-        } else {
-          // Merge modalities from multiple sections
-          const existing = lookup[key];
-          lookup[key] = {
-            ...existing,
-            inputTypes: [
-              ...new Set([...(existing.inputTypes || []), ...(m.inputTypes || [])]),
-            ],
-            outputTypes: [
-              ...new Set([...(existing.outputTypes || []), ...(m.outputTypes || [])]),
-            ],
-            modelType: existing.modelType || m.modelType,
-          };
-        }
-      }
-    }
-  }
-
-  return lookup;
-}
-
-/**
- * Build compound port IDs for a conversation input node.
- * Mirrors the function in retina/src/app/workflows/page.js.
- */
-function buildConversationPorts(messages, supportedModalities = ["text"]) {
-  const ports = [];
-  for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i];
-    ports.push(`${i}.text`);
-    if (msg.role === "user" || msg.role === "assistant") {
-      for (const mod of supportedModalities) {
-        if (mod !== "text") {
-          ports.push(`${i}.${mod}`);
-        }
-      }
-    }
-  }
-  return ports;
-}
-
-/**
- * Enrich workflow nodes with modalities from the Prism config.
- * - Model nodes get inputTypes/outputTypes from config lookup
- * - Conversation nodes connected to a model get supportedModalities from that model's config
- */
-function enrichNodesWithConfig(nodes, connections, modelLookup) {
-  if (!nodes?.length || !Object.keys(modelLookup).length) return nodes;
-
-  // First pass: enrich model nodes with config modalities
-  const enrichedNodes = nodes.map((node) => {
-    // Skip asset/input/viewer nodes
-    if (node.nodeType) return node;
-
-    // Look up model in config
-    const key = `${node.provider}:${node.modelName}`;
-    const configModel = modelLookup[key];
-    if (!configModel) return node;
-
-    const isConversation = configModel.modelType === "conversation";
-    return {
-      ...node,
-      inputTypes: isConversation ? ["conversation"] : (configModel.inputTypes || node.inputTypes || []),
-      rawInputTypes: configModel.inputTypes || node.rawInputTypes || [],
-      outputTypes: configModel.outputTypes || node.outputTypes || [],
-      modelType: configModel.modelType || node.modelType,
-    };
-  });
-
-  // Second pass: update conversation nodes' supportedModalities from connected models
-  return enrichedNodes.map((node) => {
-    if (node.nodeType !== "input" || node.modality !== "conversation") return node;
-
-    // Find the model node this conversation connects to
-    const outConn = connections.find(
-      (c) => c.sourceNodeId === node.id && c.sourceModality === "conversation",
-    );
-    if (!outConn) return node;
-
-    const targetModel = enrichedNodes.find((n) => n.id === outConn.targetNodeId);
-    if (!targetModel || targetModel.nodeType) return node;
-
-    // Derive supported modalities from the model's raw input types
-    const rawInputs = (targetModel.rawInputTypes || targetModel.inputTypes || [])
-      .filter((t) => t !== "conversation");
-    const messages = node.messages || [{ role: "system", content: "" }, { role: "user", content: "" }];
-    const newPorts = buildConversationPorts(messages, rawInputs);
-
-    return {
-      ...node,
-      supportedModalities: rawInputs,
-      inputTypes: newPorts,
-    };
-  });
-}
 
 export default function AdminWorkflowsPage() {
   const [workflows, setWorkflows] = useState([]);
@@ -135,14 +14,6 @@ export default function AdminWorkflowsPage() {
   const [selectedWorkflow, setSelectedWorkflow] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
-  const [modelLookup, setModelLookup] = useState({});
-
-  // Fetch Prism config once on mount
-  useEffect(() => {
-    PrismService.getConfig()
-      .then((cfg) => setModelLookup(buildModelLookup(cfg)))
-      .catch(console.error);
-  }, []);
 
   const loadWorkflows = useCallback(async () => {
     try {
@@ -186,16 +57,8 @@ export default function AdminWorkflowsPage() {
     }
   }
 
-  // Enrich nodes with config-driven modalities
-  const enrichedNodes = useMemo(() => {
-    return enrichNodesWithConfig(
-      selectedWorkflow?.nodes || [],
-      selectedWorkflow?.connections || [],
-      modelLookup,
-    );
-  }, [selectedWorkflow, modelLookup]);
-
   // Use persisted nodeResults and nodeStatuses from the workflow document
+  // (Prism builds these server-side with correct model modalities from config)
   const nodeResults = useMemo(() => {
     return selectedWorkflow?.nodeResults || {};
   }, [selectedWorkflow]);
@@ -227,7 +90,7 @@ export default function AdminWorkflowsPage() {
           <WorkflowComponent
             readOnly
             admin
-            nodes={enrichedNodes}
+            nodes={selectedWorkflow?.nodes || []}
             connections={selectedWorkflow?.connections || []}
             selectedNodeId={selectedNodeId}
             onSelectNode={setSelectedNodeId}
