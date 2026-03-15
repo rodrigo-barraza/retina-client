@@ -28,6 +28,7 @@ function NodePorts({
   outputTypes,
   configOffset = 0,
   isNodeRunning = false,
+  nodeStatusGradient = "url(#prism-gradient)",
   connecting,
   hoveredPort,
   connections,
@@ -53,8 +54,13 @@ function NodePorts({
         const isCompatible = connecting && getBaseModality(connecting.sourceModality) === baseMod && connecting.sourceNodeId !== node.id;
         const isHovered = hoveredPort?.nodeId === node.id && hoveredPort?.type === "input" && hoveredPort?.modality === portId;
         const Icon = MODALITY_ICONS[baseMod]?.icon;
-        const hasRunningSource = connections.some(
+        const hasPrismSource = connections.some(
           (c) => c.targetNodeId === node.id && c.targetModality === portId && (nodeStatuses[c.sourceNodeId] === "running" || nodeStatuses[c.sourceNodeId] === "done")
+        );
+        const hasDoneSource = hasPrismSource && connections.some(
+          (c) => c.targetNodeId === node.id && c.targetModality === portId && nodeStatuses[c.sourceNodeId] === "done"
+        ) && !connections.some(
+          (c) => c.targetNodeId === node.id && c.targetModality === portId && nodeStatuses[c.sourceNodeId] === "running"
         );
 
         let label = MODALITY_ICONS[baseMod]?.label || baseMod;
@@ -71,9 +77,9 @@ function NodePorts({
             <circle
               cx={0}
               cy={portY}
-              r={isHovered && isCompatible ? PORT_RADIUS + 2 : hasRunningSource ? PORT_RADIUS + 2 : PORT_RADIUS}
-              fill={hasRunningSource ? "url(#prism-gradient)" : isCompatible ? color : "var(--bg-tertiary)"}
-              stroke={hasRunningSource ? "url(#prism-gradient)" : color}
+              r={isHovered && isCompatible ? PORT_RADIUS + 2 : hasPrismSource ? PORT_RADIUS + 2 : PORT_RADIUS}
+              fill={hasPrismSource ? (hasDoneSource ? "url(#done-gradient)" : "url(#prism-gradient)") : isCompatible ? color : "var(--bg-tertiary)"}
+              stroke={hasPrismSource ? (hasDoneSource ? "url(#done-gradient)" : "url(#prism-gradient)") : color}
               strokeWidth={2}
               className={`${styles.port} ${isCompatible ? styles.portCompatible : ""}`}
               onClick={(e) => onInputPortClick(e, node.id, portId)}
@@ -107,8 +113,8 @@ function NodePorts({
               cx={nodeWidth}
               cy={portY}
               r={isActive || isNodeRunning ? PORT_RADIUS + 2 : PORT_RADIUS}
-              fill={isNodeRunning ? "url(#prism-gradient)" : isActive ? color : "var(--bg-tertiary)"}
-              stroke={isNodeRunning ? "url(#prism-gradient)" : color}
+              fill={isNodeRunning ? nodeStatusGradient : isActive ? color : "var(--bg-tertiary)"}
+              stroke={isNodeRunning ? nodeStatusGradient : color}
               strokeWidth={2}
               className={`${styles.port} ${styles.portOutput}`}
               onClick={(e) => onOutputPortClick(e, node.id, modality, i)}
@@ -177,8 +183,11 @@ function ModelNode(props) {
   const errorHeight = results?.error ? 28 : 0;
   const nodeHeight = HEADER_HEIGHT + configHeight + portsHeight + errorHeight;
 
-  const isPrism = status === "running" || status === "done";
-  const statusBorderColor = isPrism ? "url(#prism-gradient)" : isSelected ? "var(--accent-color, #7c6ef6)" : status === "error" ? "#f43f5e" : null;
+  const isRunning = status === "running";
+  const isDone = status === "done";
+  const isPrism = isRunning || isDone;
+  const statusGradient = isRunning ? "url(#prism-gradient)" : isDone ? "url(#done-gradient)" : null;
+  const statusBorderColor = statusGradient || (isSelected ? "var(--accent-color, #7c6ef6)" : status === "error" ? "#f43f5e" : null);
   const borderWidth = isSelected ? 2 : isPrism ? 2 : 0;
 
   return (
@@ -297,6 +306,7 @@ function ModelNode(props) {
           inputTypes={inputTypes}
           outputTypes={outputTypes}
           isNodeRunning={isPrism}
+          nodeStatusGradient={statusGradient || "url(#prism-gradient)"}
           {...portProps}
         />
       </g>
@@ -359,7 +369,10 @@ function AssetNode(props) {
       ? `${MODALITY_ICONS[node.modality]?.label || node.modality} Input`
       : "File Input";
 
-  const isPrism = status === "running" || status === "done";
+  const isRunning = status === "running";
+  const isDone = status === "done";
+  const isPrism = isRunning || isDone;
+  const statusGradient = isRunning ? "url(#prism-gradient)" : isDone ? "url(#done-gradient)" : null;
   const contentH = getAssetContentHeight(node);
   const portRows = Math.max(inputTypes.length, outputTypes.length, 1);
   const portsHeight = portRows * PORT_SECTION_HEIGHT + 12;
@@ -380,7 +393,7 @@ function AssetNode(props) {
         rx="3"
         ry="3"
         className={`${styles.assetNodeBody}${isPrism ? ` ${styles.prismBorder}` : ""}`}
-        style={isPrism ? { stroke: "url(#prism-gradient)", strokeWidth: 2, strokeOpacity: 1 } : { stroke: accentColor, strokeOpacity: 0.4 }}
+        style={isPrism ? { stroke: statusGradient, strokeWidth: 2, strokeOpacity: 1 } : { stroke: accentColor, strokeOpacity: 0.4 }}
       />
 
       {/* Header */}
@@ -567,6 +580,7 @@ function AssetNode(props) {
         outputTypes={outputTypes}
         configOffset={isExpanded ? contentH : 0}
         isNodeRunning={isPrism}
+        nodeStatusGradient={statusGradient || "url(#prism-gradient)"}
         {...portProps}
       />
 

@@ -281,7 +281,9 @@ export default function WorkflowCanvas({
     const color = MODALITY_COLORS[conn.sourceModality] || "#888";
 
     const sourceStatus = nodeStatuses[conn.sourceNodeId];
-    const isActive = sourceStatus === "running" || sourceStatus === "done";
+    const isRunning = sourceStatus === "running";
+    const isDone = sourceStatus === "done";
+    const isActive = isRunning || isDone;
 
     return (
       <g key={conn.id} className={styles.connectionGroup} data-workflow-connection>
@@ -295,7 +297,7 @@ export default function WorkflowCanvas({
         />
         <path
           d={connectionPath(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y)}
-          stroke={isActive ? "url(#prism-gradient)" : color}
+          stroke={isRunning ? "url(#prism-gradient)" : isDone ? "url(#done-gradient)" : color}
           strokeWidth={isActive ? 3 : 2}
           fill="none"
           strokeOpacity={isActive ? 1 : 0.7}
@@ -390,6 +392,19 @@ export default function WorkflowCanvas({
               from="0 150 150"
               to="360 150 150"
               dur="2s"
+              repeatCount="indefinite"
+            />
+          </linearGradient>
+          <linearGradient id="done-gradient" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="300" y2="300">
+            <stop offset="0%" stopColor="#f0b429" />
+            <stop offset="50%" stopColor="#d4a017" />
+            <stop offset="100%" stopColor="#10b981" />
+            <animateTransform
+              attributeName="gradientTransform"
+              type="rotate"
+              from="0 150 150"
+              to="360 150 150"
+              dur="4s"
               repeatCount="indefinite"
             />
           </linearGradient>
