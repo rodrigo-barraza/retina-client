@@ -115,7 +115,8 @@ export function getNodeHeight(node, isExpanded = false) {
   const inputCount = (node.inputTypes || []).length;
   const outputCount = (node.outputTypes || []).length;
   const portRows = Math.max(inputCount, outputCount, 1);
-  return HEADER_HEIGHT + portRows * PORT_SECTION_HEIGHT + 12;
+  const configHeight = isExpanded ? CONFIG_AREA_HEIGHT : 0;
+  return HEADER_HEIGHT + configHeight + portRows * PORT_SECTION_HEIGHT + 12;
 }
 
 export function getPortPosition(node, portType, portIndex, configOffset = 0) {

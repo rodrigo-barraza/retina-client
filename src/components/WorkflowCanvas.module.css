@@ -100,6 +100,15 @@
   transition: stroke-opacity var(--transition-fast);
 }
 
+@keyframes edgeFlow {
+  to { stroke-dashoffset: -24; }
+}
+
+.connectionSelected .connectionLine {
+  stroke-dasharray: 8 6;
+  animation: edgeFlow 0.6s linear infinite;
+}
+
 .connectionGroup:hover .connectionLine {
   stroke-opacity: 1;
   stroke-width: 3;
@@ -130,4 +139,30 @@
 
 .connectingLine {
   pointer-events: none;
+}
+
+/* ── Toggle all node info button ── */
+.toggleAllBtn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-glass);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  z-index: 3;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--accent-color);
+  }
 }

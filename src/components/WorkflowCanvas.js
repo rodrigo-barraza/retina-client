@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Eye, EyeOff } from "lucide-react";
 import WorkflowNode from "./WorkflowNode";
 import {
   MODALITY_COLORS,
@@ -138,6 +138,7 @@ export default function WorkflowCanvas({
   const nodesRef = useRef(nodes);
   const onUpdatePosRef = useRef(onUpdateNodePosition);
   const draggingRef = useRef(dragging);
+  const expandedInputsRef = useRef(expandedInputs);
   const rafRef = useRef(null);
   const settleCountRef = useRef(0);
   const collisionTickRef = useRef(null);
@@ -145,19 +146,23 @@ export default function WorkflowCanvas({
   useEffect(() => { nodesRef.current = nodes; }, [nodes]);
   useEffect(() => { onUpdatePosRef.current = onUpdateNodePosition; }, [onUpdateNodePosition]);
   useEffect(() => { draggingRef.current = dragging; }, [dragging]);
+  useEffect(() => { expandedInputsRef.current = expandedInputs; }, [expandedInputs]);
 
   // Define the tick function once via ref so it can self-schedule
   useEffect(() => {
     const PUSH_FACTOR = 0.35;
     const MIN_PUSH = 0.5;
 
+    // Use calculated dimensions instead of getBBox (foreignObject content isn't measured reliably)
     const getNodeBox = (node) => {
-      const svg = svgRef.current;
-      if (!svg) return { w: getNodeWidth(node), h: getNodeHeight(node) };
-      const el = svg.querySelector(`[data-node-id="${node.id}"]`);
-      if (!el) return { w: getNodeWidth(node), h: getNodeHeight(node) };
-      const bbox = el.getBBox();
-      return { w: bbox.width, h: bbox.height };
+      const expanded = expandedInputsRef.current;
+      const isExpanded = node.nodeType === "viewer"
+        ? !expanded.has(node.id)
+        : expanded.has(node.id);
+      return {
+        w: getNodeWidth(node),
+        h: getNodeHeight(node, isExpanded),
+      };
     };
 
     collisionTickRef.current = () => {
@@ -226,11 +231,16 @@ export default function WorkflowCanvas({
         onUpdatePosRef.current(id, pos);
       }
 
-      // Keep running while dragging, or settle for a few frames after release
+      // Keep running while dragging, or until nodes fully settle
       if (draggingRef.current) {
-        settleCountRef.current = 30;
+        settleCountRef.current = 10; // buffer frames after drag ends
         rafRef.current = requestAnimationFrame(collisionTickRef.current);
-      } else if (settleCountRef.current > 0 && hasUpdates) {
+      } else if (hasUpdates) {
+        // Still have overlaps — keep going, reset buffer
+        settleCountRef.current = 10;
+        rafRef.current = requestAnimationFrame(collisionTickRef.current);
+      } else if (settleCountRef.current > 0) {
+        // No overlaps this frame, but run a few more to catch settling
         settleCountRef.current--;
         rafRef.current = requestAnimationFrame(collisionTickRef.current);
       } else {
@@ -243,13 +253,18 @@ export default function WorkflowCanvas({
     };
   }, []);
 
-  // Start collision loop when dragging begins
-  useEffect(() => {
-    if (dragging && !rafRef.current && collisionTickRef.current) {
-      settleCountRef.current = 30;
+  // Helper: kick off the collision loop (used by drag and toggle-all)
+  const startCollisionLoop = useCallback((frames = 30) => {
+    if (!rafRef.current && collisionTickRef.current) {
+      settleCountRef.current = frames;
       rafRef.current = requestAnimationFrame(collisionTickRef.current);
     }
-  }, [dragging]);
+  }, []);
+
+  // Start collision loop when dragging begins
+  useEffect(() => {
+    if (dragging) startCollisionLoop(30);
+  }, [dragging, startCollisionLoop]);
 
   const handleMouseUp = useCallback(() => {
     if (dragging) setDragging(null);
@@ -393,6 +408,40 @@ export default function WorkflowCanvas({
     return expandedInputs.has(node.id);
   }, [expandedInputs]);
 
+  // Toggle ALL nodes expanded/collapsed at once
+  const handleToggleAllExpand = useCallback(() => {
+    setExpandedInputs((prev) => {
+      // Count how many nodes are currently expanded
+      const expandedCount = nodes.filter((n) => {
+        if (n.nodeType === "viewer") return !prev.has(n.id);
+        return prev.has(n.id);
+      }).length;
+      const mostExpanded = expandedCount > nodes.length / 2;
+
+      // If most are expanded → collapse all; otherwise expand all
+      const next = new Set();
+      if (!mostExpanded) {
+        // Expand all: add non-viewers, remove viewers (inverted logic)
+        for (const n of nodes) {
+          if (n.nodeType !== "viewer") next.add(n.id);
+        }
+      } else {
+        // Collapse all: add viewers (inverted), remove non-viewers
+        for (const n of nodes) {
+          if (n.nodeType === "viewer") next.add(n.id);
+        }
+      }
+      try {
+        localStorage.setItem("workflow-expanded-nodes", JSON.stringify([...next]));
+      } catch { /* ignore */ }
+      return next;
+    });
+    // Resolve overlaps after React renders the new node sizes
+    setTimeout(() => startCollisionLoop(60), 50);
+  }, [nodes, startCollisionLoop]);
+
+  const allExpanded = nodes.length > 0 && nodes.filter((n) => isNodeExpanded(n)).length > nodes.length / 2;
+
   // Compute the vertical offset for a node's ports (used by connection routing)
   const getExpandedOffset = useCallback((node) => {
     const expanded = isNodeExpanded(node);
@@ -426,9 +475,10 @@ export default function WorkflowCanvas({
     const isRunning = sourceStatus === "running";
     const isDone = sourceStatus === "done";
     const isActive = isRunning || isDone;
+    const isSelected = conn.sourceNodeId === selectedNodeId || conn.targetNodeId === selectedNodeId;
 
     return (
-      <g key={conn.id} className={styles.connectionGroup} data-workflow-connection>
+      <g key={conn.id} className={`${styles.connectionGroup}${isSelected ? ` ${styles.connectionSelected}` : ""}`} data-workflow-connection>
         <path
           d={connectionPath(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y)}
           stroke="transparent"
@@ -583,6 +633,16 @@ export default function WorkflowCanvas({
           ))}
         </g>
       </svg>
+
+      {nodes.length > 0 && (
+        <button
+          className={styles.toggleAllBtn}
+          onClick={handleToggleAllExpand}
+          title={allExpanded ? "Collapse all node info" : "Expand all node info"}
+        >
+          {allExpanded ? <EyeOff size={14} /> : <Eye size={14} />}
+        </button>
+      )}
 
       {nodes.length > 0 && !readOnly && (
         <div className={styles.instructions}>
