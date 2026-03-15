@@ -130,6 +130,69 @@
   margin-bottom: 6px;
 }
 
+.sectionHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+
+  & .sectionLabel {
+    margin-bottom: 0;
+  }
+}
+
+.contentTabs {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  padding: 2px;
+  border: 1px solid var(--border-subtle);
+}
+
+.contentTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    color: var(--text-secondary);
+  }
+}
+
+.contentTabActive {
+  background: var(--accent-subtle);
+  color: var(--accent-color);
+}
+
+.markdownPreview {
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-sm);
+  max-height: 400px;
+  overflow-y: auto;
+  word-break: break-word;
+}
+
+.previewEmpty {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 .textarea {
   width: 100%;
   padding: 6px 8px;
@@ -270,6 +333,16 @@
   padding: 3px 6px;
   background: var(--bg-primary);
   border-radius: 2px;
+}
+
+.connectionItemClickable {
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+
+  &:hover {
+    background: var(--accent-subtle);
+    color: var(--text-primary);
+  }
 }
 
 .connectionDot {

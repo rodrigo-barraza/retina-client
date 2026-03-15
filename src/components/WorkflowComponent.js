@@ -125,6 +125,7 @@ export default function WorkflowComponent({
           onUpdateNodeContent={readOnly ? noop : (onUpdateNodeContent || noop)}
           onUpdateFileInput={readOnly ? noop : (onUpdateFileInput || noop)}
           onChangeModel={readOnly ? noop : (onChangeModel || noop)}
+          onSelectNode={onSelectNode}
           onClose={handleClose}
           readOnly={readOnly}
         />

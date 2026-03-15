@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef } from "react";
-import { Eye, Type, Volume2, X, Maximize2, Search, ChevronDown, Paperclip } from "lucide-react";
+import { Eye, Type, Volume2, X, Maximize2, Search, ChevronDown, Paperclip, Code, BookOpen } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
 import { MODALITY_ICONS } from "./WorkflowNodeConstants";
 import MarkdownContent from "./MarkdownContent";
@@ -27,12 +27,14 @@ export default function WorkflowInspector({
     onUpdateNodeContent,
     onUpdateFileInput,
     onChangeModel,
+    onSelectNode,
     onClose,
     readOnly = false,
 }) {
     // Model change state (hooks must be called before any early return)
     const [modelSearch, setModelSearch] = useState("");
     const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+    const [contentPreview, setContentPreview] = useState(false);
     const textareaRef = useRef(null);
 
     const autoResizeTextarea = useCallback((el) => {
@@ -255,7 +257,14 @@ export default function WorkflowInspector({
                         <label className={styles.sectionLabel}>Input Ports</label>
                         <div className={styles.connectionList}>
                             {incoming.map((c) => (
-                                <div key={c.id} className={styles.connectionItem}>
+                                <div
+                                    key={c.id}
+                                    className={`${styles.connectionItem} ${styles.connectionItemClickable}`}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => onSelectNode?.(c.sourceNodeId)}
+                                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelectNode?.(c.sourceNodeId); }}
+                                >
                                     <span className={styles.connectionDot} style={{ background: MODALITY_ICONS[c.targetModality]?.color || "#888" }} />
                                     <span className={styles.connectionFrom}>{getNodeLabel(c.sourceNodeId)}</span>
                                     <span className={styles.connectionArrow}>→</span>
@@ -272,7 +281,14 @@ export default function WorkflowInspector({
                         <label className={styles.sectionLabel}>Output Ports</label>
                         <div className={styles.connectionList}>
                             {outgoing.map((c) => (
-                                <div key={c.id} className={styles.connectionItem}>
+                                <div
+                                    key={c.id}
+                                    className={`${styles.connectionItem} ${styles.connectionItemClickable}`}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => onSelectNode?.(c.targetNodeId)}
+                                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelectNode?.(c.targetNodeId); }}
+                                >
                                     <span className={styles.connectionModality}>{c.sourceModality}</span>
                                     <span className={styles.connectionArrow}>→</span>
                                     <span className={styles.connectionTo}>{getNodeLabel(c.targetNodeId)}</span>
@@ -286,18 +302,46 @@ export default function WorkflowInspector({
                 {/* Content — text input assets */}
                 {isInput && node.modality === "text" && (
                     <section className={`${styles.section} ${styles.scrollableSection}`}>
-                        <label className={styles.sectionLabel}>Content</label>
-                        <textarea
-                            ref={autoResizeTextarea}
-                            className={styles.textarea}
-                            value={node.content || ""}
-                            onChange={readOnly ? undefined : (e) => {
-                                onUpdateNodeContent?.(node.id, e.target.value);
-                                autoResizeTextarea(e.target);
-                            }}
-                            readOnly={readOnly}
-                            placeholder="Enter text..."
-                        />
+                        <div className={styles.sectionHeaderRow}>
+                            <label className={styles.sectionLabel}>Content</label>
+                            <div className={styles.contentTabs}>
+                                <button
+                                    className={`${styles.contentTab} ${!contentPreview ? styles.contentTabActive : ""}`}
+                                    onClick={() => setContentPreview(false)}
+                                >
+                                    <Code size={10} />
+                                    Raw
+                                </button>
+                                <button
+                                    className={`${styles.contentTab} ${contentPreview ? styles.contentTabActive : ""}`}
+                                    onClick={() => setContentPreview(true)}
+                                >
+                                    <BookOpen size={10} />
+                                    Preview
+                                </button>
+                            </div>
+                        </div>
+                        {contentPreview ? (
+                            <div className={styles.markdownPreview}>
+                                {node.content ? (
+                                    <MarkdownContent content={node.content} />
+                                ) : (
+                                    <span className={styles.previewEmpty}>Nothing to preview</span>
+                                )}
+                            </div>
+                        ) : (
+                            <textarea
+                                ref={autoResizeTextarea}
+                                className={styles.textarea}
+                                value={node.content || ""}
+                                onChange={readOnly ? undefined : (e) => {
+                                    onUpdateNodeContent?.(node.id, e.target.value);
+                                    autoResizeTextarea(e.target);
+                                }}
+                                readOnly={readOnly}
+                                placeholder="Enter text..."
+                            />
+                        )}
                     </section>
                 )}
 
