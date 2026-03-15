@@ -383,6 +383,7 @@ function AssetNode(props) {
     onUpdateFileInput,
     onUpdateConfig,
     onToggleExpand,
+    onSelectNode,
     readOnly = false,
   } = props;
 
@@ -623,7 +624,10 @@ function AssetNode(props) {
                   value={node.content || ""}
                   onChange={(e) => onUpdateContent(node.id, e.target.value)}
                   placeholder="Enter text…"
-                  onMouseDown={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    onSelectNode?.(node.id);
+                  }}
                 />
               ) : node.modality === "conversation" ? (
                 null

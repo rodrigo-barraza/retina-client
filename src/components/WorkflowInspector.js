@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { Eye, Type, Volume2, X, Maximize2, Search, ChevronDown, Paperclip, Code, BookOpen } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
 import { MODALITY_ICONS } from "./WorkflowNodeConstants";
@@ -10,6 +10,22 @@ import AssetInputOptions from "./AssetInputOptions";
 import { PrismService } from "../services/PrismService";
 
 import styles from "./WorkflowInspector.module.css";
+
+const STORAGE_KEY = "workflow-inspector-width";
+const MIN_WIDTH = 300;
+const MAX_WIDTH = 800;
+const DEFAULT_WIDTH = 400;
+
+function getStoredWidth() {
+    try {
+        const v = localStorage.getItem(STORAGE_KEY);
+        if (v) {
+            const n = parseInt(v, 10);
+            if (!isNaN(n) && n >= MIN_WIDTH && n <= MAX_WIDTH) return n;
+        }
+    } catch { /* ignore */ }
+    return DEFAULT_WIDTH;
+}
 
 
 
@@ -36,6 +52,39 @@ export default function WorkflowInspector({
     const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
     const [contentPreview, setContentPreview] = useState(false);
     const textareaRef = useRef(null);
+
+    // ── Resize logic ──
+    const [inspectorWidth, setInspectorWidth] = useState(getStoredWidth);
+    const isDragging = useRef(false);
+
+    const handleResizeStart = useCallback((e) => {
+        e.preventDefault();
+        isDragging.current = true;
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+
+        const onMove = (ev) => {
+            if (!isDragging.current) return;
+            const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, window.innerWidth - ev.clientX));
+            setInspectorWidth(newWidth);
+        };
+
+        const onUp = () => {
+            isDragging.current = false;
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+        };
+
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+    }, []);
+
+    // Persist width to localStorage whenever it changes
+    useEffect(() => {
+        try { localStorage.setItem(STORAGE_KEY, String(inspectorWidth)); } catch { /* ignore */ }
+    }, [inspectorWidth]);
 
     const autoResizeTextarea = useCallback((el) => {
         if (!el) return;
@@ -105,7 +154,8 @@ export default function WorkflowInspector({
     };
 
     return (
-        <div className={styles.inspector}>
+        <div className={styles.inspector} style={{ width: inspectorWidth, minWidth: MIN_WIDTH }}>
+            <div className={styles.resizeHandle} onMouseDown={handleResizeStart} />
             {/* Header */}
             <div className={styles.header}>
                 <div className={styles.headerLeft}>

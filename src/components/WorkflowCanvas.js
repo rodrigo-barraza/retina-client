@@ -630,6 +630,7 @@ export default function WorkflowCanvas({
               onUpdateConfig={onUpdateNodeConfig}
               onUpdateFileInput={onUpdateFileInput}
               onToggleExpand={handleToggleExpand}
+              onSelectNode={onSelectNode}
               readOnly={readOnly}
             />
           ))}
