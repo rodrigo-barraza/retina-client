@@ -404,6 +404,10 @@ export async function executeWorkflow(nodes, connections, { onNodeStart, onNodeC
                             msg.images = [...(msg.images || []), data];
                         } else if (modality === "audio") {
                             msg.audio = data;
+                        } else if (modality === "video") {
+                            msg.video = data;
+                        } else if (modality === "pdf") {
+                            msg.pdf = data;
                         }
                     }
 

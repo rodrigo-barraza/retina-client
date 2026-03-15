@@ -379,7 +379,7 @@ export default function WorkflowSidebar({
                                             {wf.name || "Untitled Workflow"}
                                         </span>
                                         <span className={styles.workflowItemMeta}>
-                                            {wf.nodes?.length || 0} nodes · {wf.connections?.length || 0} connections
+                                            {wf.nodeCount ?? wf.nodes?.length ?? 0} nodes · {wf.connectionCount ?? wf.connections?.length ?? 0} connections
                                         </span>
                                     </button>
                                     <button

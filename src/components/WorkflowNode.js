@@ -4,6 +4,7 @@ import { X, Upload, Eye, Loader2, Check, AlertTriangle, Paperclip, MessageSquare
 import ProviderLogo from "./ProviderLogos";
 import AudioRecorderComponent from "./AudioRecorderComponent";
 import AssetInputOptions from "./AssetInputOptions";
+import { PrismService } from "../services/PrismService";
 import { MODALITY_ICONS } from "./WorkflowSidebar";
 import {
   MODALITY_COLORS,
@@ -525,22 +526,22 @@ function AssetNode(props) {
                     <div className={styles.fileInputPreview}>
                       {node.modality === "image" ? (
                         <img
-                          src={node.content}
+                          src={PrismService.getFileUrl(node.content)}
                           alt="Uploaded asset"
                           className={styles.assetPreviewImg}
                         />
                       ) : node.modality === "audio" ? (
-                        <AudioRecorderComponent src={node.content} square />
+                        <AudioRecorderComponent src={PrismService.getFileUrl(node.content)} square />
                       ) : node.modality === "video" ? (
                         <video
                           controls
-                          src={node.content}
+                          src={PrismService.getFileUrl(node.content)}
                           className={styles.assetVideoPlayer}
                           onMouseDown={(e) => e.stopPropagation()}
                         />
                       ) : node.modality === "pdf" ? (
                         <iframe
-                          src={node.content}
+                          src={PrismService.getFileUrl(node.content)}
                           className={styles.assetPdfViewer}
                           title="PDF preview"
                           onMouseDown={(e) => e.stopPropagation()}

@@ -7,6 +7,7 @@ import { MODALITY_ICONS } from "./WorkflowSidebar";
 import MarkdownContent from "./MarkdownContent";
 import AudioRecorderComponent from "./AudioRecorderComponent";
 import AssetInputOptions from "./AssetInputOptions";
+import { PrismService } from "../services/PrismService";
 
 import styles from "./WorkflowInspector.module.css";
 
@@ -264,22 +265,22 @@ export default function WorkflowInspector({
                             <div className={styles.previewContainer}>
                                 {node.modality === "image" ? (
                                     <img /* eslint-disable-line @next/next/no-img-element */
-                                        src={node.content}
+                                        src={PrismService.getFileUrl(node.content)}
                                         alt="Input asset"
                                         className={styles.previewImage}
                                     />
                                 ) : node.modality === "audio" ? (
-                                    <AudioRecorderComponent src={node.content} compact />
+                                    <AudioRecorderComponent src={PrismService.getFileUrl(node.content)} compact />
                                 ) : node.modality === "video" ? (
                                     <video
                                         controls
-                                        src={node.content}
+                                        src={PrismService.getFileUrl(node.content)}
                                         className={styles.previewVideo}
                                     />
                                 ) : node.modality === "pdf" ? (
                                     <div className={styles.previewPdfWrap}>
                                         <iframe
-                                            src={node.content}
+                                            src={PrismService.getFileUrl(node.content)}
                                             className={styles.previewPdf}
                                             title="PDF preview"
                                         />
