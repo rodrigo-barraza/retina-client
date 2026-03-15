@@ -53,6 +53,7 @@ export default function HistoryPanel({
   readOnly = false,
   showProject = false,
   showUsername = false,
+  newIds,
 }) {
   // Normalize conversations into HistoryList items
   const items = useMemo(() => {
@@ -101,6 +102,7 @@ export default function HistoryPanel({
         emptyLabel="No recent chats"
         searchPlaceholder="Search conversations..."
         admin={showUsername}
+        newIds={newIds}
       />
     </div>
   );

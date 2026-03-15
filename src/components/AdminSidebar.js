@@ -6,7 +6,6 @@ import {
     LayoutDashboard,
     ScrollText,
     MessageSquare,
-    Activity,
     Sun,
     Moon,
     Eye,
@@ -21,16 +20,16 @@ import styles from "./AdminSidebar.module.css";
 const NAV_ITEMS = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/requests", label: "Requests", icon: ScrollText },
-    { href: "/admin/conversations", label: "Conversations", icon: MessageSquare },
-    { href: "/admin/workflows", label: "Workflows", icon: GitBranch },
+    { href: "/admin/conversations", label: "View Conversations", icon: MessageSquare, showBadge: true },
+    { href: "/admin/workflows", label: "View Workflows", icon: GitBranch },
     { href: "/admin/pricing", label: "Usage", icon: DollarSign },
     { href: "/admin/models", label: "Models", icon: Server },
-    { href: "/admin/live", label: "Live Activity", icon: Activity, live: true },
 ];
 
 export default function AdminSidebar({
     liveCount = 0,
     systemStatus = "connected",
+    onNavClick,
 }) {
     const pathname = usePathname();
     const { theme, toggleTheme } = useTheme();
@@ -60,10 +59,11 @@ export default function AdminSidebar({
                             key={item.href}
                             href={item.href}
                             className={`${styles.navLink} ${isActive ? styles.active : ""}`}
+                            onClick={() => onNavClick?.(item.href)}
                         >
                             <Icon className={styles.navIcon} />
                             <span>{item.label}</span>
-                            {item.live && liveCount > 0 && (
+                            {item.showBadge && liveCount > 0 && (
                                 <span className={`${styles.badge} ${styles.live}`}>
                                     {liveCount}
                                 </span>

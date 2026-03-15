@@ -56,6 +56,7 @@ export default function HistoryList({
   showProviderFilters = true,
   showModalityFilters = true,
   admin = false,
+  newIds,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeModality, setActiveModality] = useState(null);
@@ -194,6 +195,9 @@ export default function HistoryList({
               <div className={styles.content}>
                 <div className={styles.title}>
                   {item.title || "Untitled"}
+                  {newIds?.has?.(item.id) && (
+                    <span className={styles.newBadge}>NEW</span>
+                  )}
                 </div>
                 <div className={styles.meta}>
                   {admin && item.username && item.username !== "unknown" && (
