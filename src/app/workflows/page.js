@@ -341,24 +341,8 @@ export default function WorkflowsPage() {
             }),
         );
 
-        // Upload to MinIO and replace data URL with minio:// ref
-        if (content && content.startsWith("data:")) {
-            try {
-                const { ref } = await PrismService.uploadFile(content);
-                if (ref) {
-                    setNodes((prev) =>
-                        prev.map((n) => {
-                            if (n.id !== nodeId) return n;
-                            // Only replace if content still matches (user didn't swap it)
-                            if (n.content === content) return { ...n, content: ref };
-                            return n;
-                        }),
-                    );
-                }
-            } catch {
-                // Upload failed — keep the data URL as fallback
-            }
-        }
+        // Base64 data URLs are kept in-memory until save — Prism backend
+        // handles the upload to MinIO when the workflow is persisted.
     }, []);
 
     // Update config of a model node (systemPrompt, staticInputs, etc.)
