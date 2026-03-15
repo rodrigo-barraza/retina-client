@@ -322,16 +322,24 @@ export default function WorkflowInspector({
                         const msg = resolved[msgIdx];
                         if (modality === "text") {
                             msg.content = msg.content ? `${msg.content}\n\n${sourceNode.content}` : sourceNode.content;
-                        } else if (modality === "image" || modality === "pdf") {
-                            msg[modality] = `[${modality} attached]`;
+                        } else if (modality === "image") {
+                            msg.images = [...(msg.images || []), `[image attached]`];
+                        } else if (modality === "audio") {
+                            msg.audio = "[audio attached]";
+                        } else if (modality === "video") {
+                            msg.video = "[video attached]";
+                        } else if (modality === "pdf") {
+                            msg.pdf = "[pdf attached]";
                         }
                     }
                     const messagesJson = JSON.stringify(
-                        resolved.map(({ role, content, ...rest }) => ({
+                        resolved.map(({ role, content, images, audio, video, pdf }) => ({
                             role,
                             content: content || "",
-                            ...(rest.image ? { image: rest.image } : {}),
-                            ...(rest.pdf ? { pdf: rest.pdf } : {}),
+                            ...(images?.length > 0 ? { images: images.map(() => "[image attached]") } : {}),
+                            ...(audio ? { audio: typeof audio === "string" && audio.startsWith("[") ? audio : "[audio attached]" } : {}),
+                            ...(video ? { video: typeof video === "string" && video.startsWith("[") ? video : "[video attached]" } : {}),
+                            ...(pdf ? { pdf: typeof pdf === "string" && pdf.startsWith("[") ? pdf : "[pdf attached]" } : {}),
                         })),
                         null,
                         2,
