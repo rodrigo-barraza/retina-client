@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import { X, Upload, Eye, Loader2, Check, Paperclip, MessageSquare, Plus, Minus } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
 import AudioRecorderComponent from "./AudioRecorderComponent";
@@ -207,8 +208,8 @@ function ModelNode(props) {
   const isDone = status === "done";
   const isPrism = isRunning || isDone;
   const statusGradient = isRunning ? "url(#prism-gradient)" : isDone ? "url(#done-gradient)" : null;
-  const statusBorderColor = isSelected ? "rgba(255,255,255,0.7)" : statusGradient || (status === "error" ? "#f43f5e" : null);
-  const borderWidth = isSelected ? 2 : isPrism ? 2 : status === "error" ? 2 : 0;
+  const statusBorderColor = statusGradient || (status === "error" ? "#f43f5e" : null);
+  const borderWidth = isPrism ? 2 : status === "error" ? 2 : 0;
 
   return (
     <g
@@ -227,6 +228,16 @@ function ModelNode(props) {
         className={styles.nodeBody}
         style={statusBorderColor ? { stroke: statusBorderColor, strokeWidth: borderWidth } : undefined}
       />
+      {isSelected && (
+        <rect
+          width={width}
+          height={nodeHeight}
+          rx="3"
+          ry="3"
+          className={styles.selectedFlash}
+          strokeWidth={2}
+        />
+      )}
       <rect width={width} height={HEADER_HEIGHT} rx="3" ry="3" className={styles.nodeHeader} />
       <rect x={0} y={HEADER_HEIGHT - 3} width={width} height={3} className={styles.nodeHeader} />
 
@@ -375,6 +386,17 @@ function AssetNode(props) {
     readOnly = false,
   } = props;
 
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef(null);
+
+  useEffect(() => {
+    if (isRenaming && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [isRenaming]);
+
   const portProps = usePortProps(props);
   const isViewer = node.nodeType === "viewer";
   const width = getNodeWidth(node);
@@ -399,9 +421,27 @@ function AssetNode(props) {
     conversation: "Chat History",
   };
 
-  const inputLabel = isViewer
+  const typeLabel = isViewer
     ? NODE_LABELS.viewer
     : NODE_LABELS[node.modality] || "Media";
+  const displayTitle = node.customName || typeLabel;
+
+  const handleStartRename = () => {
+    if (readOnly) return;
+    setRenameValue(node.customName || "");
+    setIsRenaming(true);
+  };
+
+  const handleFinishRename = () => {
+    const trimmed = renameValue.trim();
+    onUpdateConfig?.(node.id, "customName", trimmed || undefined);
+    setIsRenaming(false);
+  };
+
+  const handleRenameKeyDown = (e) => {
+    if (e.key === "Enter") handleFinishRename();
+    if (e.key === "Escape") setIsRenaming(false);
+  };
 
   const isRunning = status === "running";
   const isDone = status === "done";
@@ -428,9 +468,19 @@ function AssetNode(props) {
         height={nodeHeight}
         rx="3"
         ry="3"
-        className={`${styles.assetNodeBody}${isPrism || isSelected ? ` ${styles.prismBorder}` : ""}`}
-        style={isSelected ? { stroke: "rgba(255,255,255,0.7)", strokeWidth: 2, strokeOpacity: 1 } : isPrism ? { stroke: statusGradient, strokeWidth: 2, strokeOpacity: 1 } : { stroke: accentColor, strokeOpacity: 0.4 }}
+        className={`${styles.assetNodeBody}${isPrism ? ` ${styles.prismBorder}` : ""}`}
+        style={isPrism ? { stroke: statusGradient, strokeWidth: 2, strokeOpacity: 1 } : { stroke: accentColor, strokeOpacity: 0.4 }}
       />
+      {isSelected && (
+        <rect
+          width={width}
+          height={nodeHeight}
+          rx="3"
+          ry="3"
+          className={styles.selectedFlash}
+          strokeWidth={2}
+        />
+      )}
 
       {/* Header */}
       <rect width={width} height={HEADER_HEIGHT} rx="3" ry="3" className={styles.assetNodeHeader} style={{ fill: accentColor, fillOpacity: 0.1 }} />
@@ -442,14 +492,41 @@ function AssetNode(props) {
         <foreignObject x={8} y={0} width={width - 56 - (isConversation ? modalityAreaWidth : 0)} height={HEADER_HEIGHT}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, height: "100%", paddingTop: 1 }}>
             <AssetIcon size={14} style={{ color: accentColor, flexShrink: 0 }} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: accentColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {inputLabel}
-            </span>
+            {isRenaming ? (
+              <input
+                ref={renameInputRef}
+                className={styles.nodeRenameInput}
+                style={{ color: accentColor }}
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={handleFinishRename}
+                onKeyDown={handleRenameKeyDown}
+                onMouseDown={(e) => e.stopPropagation()}
+                placeholder={typeLabel}
+                maxLength={40}
+              />
+            ) : (
+              <span
+                style={{ fontSize: 12, fontWeight: 600, color: accentColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: readOnly ? "grab" : "text" }}
+                onDoubleClick={handleStartRename}
+              >
+                {displayTitle}
+              </span>
+            )}
             {status === "done" && <Check size={12} style={{ color: "#10b981", flexShrink: 0 }} />}
             {status === "error" && <X size={12} style={{ color: "#f43f5e", flexShrink: 0 }} />}
           </div>
         </foreignObject>
       </g>
+
+      {/* Type badge (top-right, before gear/delete) */}
+      {node.customName && (
+        <foreignObject x={8} y={6} width={width - 56 - (isConversation ? modalityAreaWidth : 0)} height={20} style={{ pointerEvents: "none", overflow: "visible" }}>
+          <div className={styles.nodeTypeBadge} style={{ color: accentColor, borderColor: accentColor }}>
+            {typeLabel}
+          </div>
+        </foreignObject>
+      )}
 
       {/* Modality icons for conversation input (show accepted modalities) */}
       {isConversation && conversationModalities.length > 0 && (

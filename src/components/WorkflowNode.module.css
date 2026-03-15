@@ -91,6 +91,30 @@
   stroke: none;
 }
 
+.nodeRenameInput {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid currentColor;
+  outline: none;
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.nodeTypeBadge {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: 9px;
+  font-weight: 500;
+  opacity: 0.6;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
 .assetTextarea {
   width: 100%;
   height: 100%;
@@ -447,7 +471,24 @@
   }
 }
 
+/* ── Selected node flash overlay ── */
+.selectedFlash {
+  fill: none;
+  stroke: white;
+  pointer-events: none;
+  animation: flashSelect 1.2s ease-in-out infinite;
+}
+
 /* ── Animations ── */
+@keyframes flashSelect {
+  0%, 100% {
+    stroke-opacity: 0;
+  }
+  50% {
+    stroke-opacity: 1;
+  }
+}
+
 @keyframes pulsePort {
   0%, 100% {
     opacity: 1;
