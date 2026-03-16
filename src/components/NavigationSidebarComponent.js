@@ -146,6 +146,7 @@ const USER_NAV_ITEMS = [
   { href: "/workflows", label: "Workflows", icon: Workflow },
   { href: "/models", label: "Models", icon: Server },
   { href: "/media", label: "Media", icon: ImageIcon },
+  { href: "/text", label: "Text", icon: Type },
 ];
 
 const ADMIN_NAV_ITEMS = [

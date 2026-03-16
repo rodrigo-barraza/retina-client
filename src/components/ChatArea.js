@@ -21,7 +21,7 @@ import {
     X,
 } from "lucide-react";
 import AudioRecorderComponent from "./AudioRecorderComponent";
-import ImageAnnotator from "./ImageAnnotator";
+import ImagePreviewComponent from "./ImagePreviewComponent";
 import DrawingCanvas from "./DrawingCanvas";
 import DocumentViewer from "./DocumentViewer";
 import MessageList from "./MessageList";
@@ -867,7 +867,7 @@ export default function ChatArea({
             </div>
 
             {lightboxSrc && (
-                <ImageAnnotator
+                <ImagePreviewComponent
                     src={lightboxSrc}
                     onClose={() => setLightboxSrc(null)}
                     onUseAnnotated={(dataUrl) => {

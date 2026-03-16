@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { X, Undo2, Eraser, Send, Pen } from "lucide-react";
-import styles from "./ImageAnnotator.module.css";
+import styles from "./ImagePreviewComponent.module.css";
 
 const COLORS = [
   { value: "#000000", label: "Black" },
@@ -20,7 +20,7 @@ const SIZES = [
   { label: "L", width: 12, dot: 12 },
 ];
 
-export default function ImageAnnotator({ src, onClose, onUseAnnotated }) {
+export default function ImagePreviewComponent({ src, onClose, onUseAnnotated, readOnly = false }) {
   const imgRef = useRef(null);
   const canvasRef = useRef(null);
   const [color, setColor] = useState(COLORS[0].value);
@@ -222,104 +222,110 @@ export default function ImageAnnotator({ src, onClose, onUseAnnotated }) {
       </button>
 
       {/* Toolbar */}
-      <div className={styles.toolbar}>
-        {/* Mode toggle */}
-        <div className={styles.toolGroup}>
-          <button
-            className={`${styles.actionBtn} ${!isEraser ? styles.sizeBtnActive : ""}`}
-            onClick={() => setIsEraser(false)}
-            title="Draw"
-          >
-            <Pen size={14} />
-          </button>
-          <button
-            className={`${styles.actionBtn} ${isEraser ? styles.sizeBtnActive : ""}`}
-            onClick={() => setIsEraser(true)}
-            title="Eraser"
-          >
-            <Eraser size={14} />
-          </button>
-        </div>
-
-        {/* Colors */}
-        <div className={styles.toolGroup}>
-          <span className={styles.toolLabel}>Color</span>
-          {COLORS.map((c) => (
+      {!readOnly && (
+        <div className={styles.toolbar}>
+          {/* Mode toggle */}
+          <div className={styles.toolGroup}>
             <button
-              key={c.value}
-              className={`${styles.swatch} ${color === c.value && !isEraser ? styles.swatchActive : ""}`}
-              style={{ background: c.value }}
-              onClick={() => {
-                setColor(c.value);
-                setIsEraser(false);
-              }}
-              title={c.label}
-            />
-          ))}
-        </div>
-
-        {/* Sizes */}
-        <div className={styles.toolGroup}>
-          <span className={styles.toolLabel}>Size</span>
-          {SIZES.map((s, i) => (
-            <button
-              key={s.label}
-              className={`${styles.sizeBtn} ${sizeIdx === i ? styles.sizeBtnActive : ""}`}
-              onClick={() => setSizeIdx(i)}
-              title={s.label}
+              className={`${styles.actionBtn} ${!isEraser ? styles.sizeBtnActive : ""}`}
+              onClick={() => setIsEraser(false)}
+              title="Draw"
             >
-              <span
-                className={styles.sizeDot}
-                style={{ width: s.dot, height: s.dot }}
-              />
+              <Pen size={14} />
             </button>
-          ))}
-        </div>
+            <button
+              className={`${styles.actionBtn} ${isEraser ? styles.sizeBtnActive : ""}`}
+              onClick={() => setIsEraser(true)}
+              title="Eraser"
+            >
+              <Eraser size={14} />
+            </button>
+          </div>
 
-        {/* Actions */}
-        <div className={styles.toolGroup}>
-          <button
-            className={styles.actionBtn}
-            onClick={handleUndo}
-            disabled={strokes.length === 0}
-            title="Undo last stroke"
-          >
-            <Undo2 size={14} /> Undo
-          </button>
-          <button
-            className={styles.actionBtn}
-            onClick={handleClear}
-            disabled={strokes.length === 0}
-            title="Clear all annotations"
-          >
-            <Eraser size={14} /> Clear
-          </button>
+          {/* Colors */}
+          <div className={styles.toolGroup}>
+            <span className={styles.toolLabel}>Color</span>
+            {COLORS.map((c) => (
+              <button
+                key={c.value}
+                className={`${styles.swatch} ${color === c.value && !isEraser ? styles.swatchActive : ""}`}
+                style={{ background: c.value }}
+                onClick={() => {
+                  setColor(c.value);
+                  setIsEraser(false);
+                }}
+                title={c.label}
+              />
+            ))}
+          </div>
+
+          {/* Sizes */}
+          <div className={styles.toolGroup}>
+            <span className={styles.toolLabel}>Size</span>
+            {SIZES.map((s, i) => (
+              <button
+                key={s.label}
+                className={`${styles.sizeBtn} ${sizeIdx === i ? styles.sizeBtnActive : ""}`}
+                onClick={() => setSizeIdx(i)}
+                title={s.label}
+              >
+                <span
+                  className={styles.sizeDot}
+                  style={{ width: s.dot, height: s.dot }}
+                />
+              </button>
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div className={styles.toolGroup}>
+            <button
+              className={styles.actionBtn}
+              onClick={handleUndo}
+              disabled={strokes.length === 0}
+              title="Undo last stroke"
+            >
+              <Undo2 size={14} /> Undo
+            </button>
+            <button
+              className={styles.actionBtn}
+              onClick={handleClear}
+              disabled={strokes.length === 0}
+              title="Clear all annotations"
+            >
+              <Eraser size={14} /> Clear
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Canvas */}
       <div className={styles.canvasArea}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img ref={imgRef} src={src} alt="Annotate" crossOrigin="anonymous" />
-        <canvas
-          ref={canvasRef}
-          className={`${styles.drawCanvas} ${isEraser ? styles.eraserCursor : ""}`}
-          onMouseDown={handlePointerDown}
-          onMouseMove={handlePointerMove}
-          onMouseUp={handlePointerUp}
-          onMouseLeave={handlePointerUp}
-          onTouchStart={handlePointerDown}
-          onTouchMove={handlePointerMove}
-          onTouchEnd={handlePointerUp}
-        />
+        {!readOnly && (
+          <canvas
+            ref={canvasRef}
+            className={`${styles.drawCanvas} ${isEraser ? styles.eraserCursor : ""}`}
+            onMouseDown={handlePointerDown}
+            onMouseMove={handlePointerMove}
+            onMouseUp={handlePointerUp}
+            onMouseLeave={handlePointerUp}
+            onTouchStart={handlePointerDown}
+            onTouchMove={handlePointerMove}
+            onTouchEnd={handlePointerUp}
+          />
+        )}
       </div>
 
       {/* Bottom bar */}
-      <div className={styles.bottomBar}>
-        <button className={styles.useBtn} onClick={handleUse}>
-          <Send size={16} /> Use in chat
-        </button>
-      </div>
+      {!readOnly && (
+        <div className={styles.bottomBar}>
+          <button className={styles.useBtn} onClick={handleUse}>
+            <Send size={16} /> Use in chat
+          </button>
+        </div>
+      )}
     </div>
   );
 }

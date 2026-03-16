@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Image as ImageIcon, Music, Film, User, Sparkles, ExternalLink, Grid, List, Search } from "lucide-react";
+import { Image as ImageIcon, Music, Film, FileText, User, Sparkles, ExternalLink, Grid, List, Search } from "lucide-react";
 import Link from "next/link";
 import { IrisService } from "../services/IrisService";
 import { PrismService } from "../services/PrismService";
 import ComboboxFilter from "./ComboboxFilter";
+import ImagePreviewComponent from "./ImagePreviewComponent";
+import AudioRecorderComponent from "./AudioRecorderComponent"; // Added this import
 import styles from "./MediaPageComponent.module.css";
 
 const ORIGIN_FILTERS = [
@@ -19,6 +21,7 @@ const TYPE_FILTERS = [
   { key: "image", label: "Images", icon: ImageIcon },
   { key: "audio", label: "Audio", icon: Music },
   { key: "video", label: "Video", icon: Film },
+  { key: "pdf", label: "PDF", icon: FileText },
 ];
 
 function resolveUrl(url) {
@@ -32,6 +35,7 @@ function resolveUrl(url) {
 function MediaTypeIcon({ type, size = 32 }) {
   if (type === "audio") return <Music size={size} />;
   if (type === "video") return <Film size={size} />;
+  if (type === "pdf") return <FileText size={size} />;
   return <ImageIcon size={size} />;
 }
 
@@ -60,6 +64,7 @@ export default function MediaPageComponent({ mode = "user" }) {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
   const PAGE_SIZE = 60;
 
   const loadMedia = useCallback(async () => {
@@ -68,7 +73,11 @@ export default function MediaPageComponent({ mode = "user" }) {
       const params = { page, limit: PAGE_SIZE };
       if (origin !== "all") params.origin = origin;
       if (type !== "all") params.type = type;
-      if (project) params.project = project;
+      if (isAdmin) {
+        if (project) params.project = project;
+      } else {
+        params.project = "retina";
+      }
       if (username) params.username = username;
       if (search) params.search = search;
 
@@ -82,7 +91,7 @@ export default function MediaPageComponent({ mode = "user" }) {
     } finally {
       setLoading(false);
     }
-  }, [page, origin, type, project, username, search]);
+  }, [page, origin, type, project, username, search, isAdmin]);
 
   useEffect(() => {
     loadMedia();
@@ -97,6 +106,7 @@ export default function MediaPageComponent({ mode = "user" }) {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
+    <>
     <div className={styles.content}>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Media</h1>
@@ -145,16 +155,18 @@ export default function MediaPageComponent({ mode = "user" }) {
           </div>
         </div>
 
-        <div className={styles.filterGroup}>
-          <span className={styles.filterLabel}>Project</span>
-          <ComboboxFilter
-            options={projects}
-            value={project}
-            onChange={(v) => { setProject(v); setPage(1); }}
-            placeholder="All Projects"
-            allLabel="All Projects"
-          />
-        </div>
+        {isAdmin && (
+          <div className={styles.filterGroup}>
+            <span className={styles.filterLabel}>Project</span>
+            <ComboboxFilter
+              options={projects}
+              value={project}
+              onChange={(v) => { setProject(v); setPage(1); }}
+              placeholder="All Projects"
+              allLabel="All Projects"
+            />
+          </div>
+        )}
 
         {isAdmin && (
           <div className={styles.filterGroup}>
@@ -216,7 +228,28 @@ export default function MediaPageComponent({ mode = "user" }) {
                       src={resolvedUrl}
                       alt={`${m.origin === "ai" ? "Generated" : "Uploaded"} image`}
                       className={styles.mediaImage}
+                      style={{ cursor: "pointer" }}
                       loading="lazy"
+                      onClick={() => setLightboxSrc(resolvedUrl)}
+                    />
+                  ) : m.mediaType === "video" && resolvedUrl ? (
+                    <video
+                      src={resolvedUrl}
+                      className={styles.mediaVideo}
+                      muted
+                      preload="metadata"
+                      onMouseEnter={(e) => e.target.play().catch(() => {})}
+                      onMouseLeave={(e) => { e.target.pause(); e.target.currentTime = 0; }}
+                    />
+                  ) : m.mediaType === "audio" && resolvedUrl ? (
+                    <div className={styles.mediaAudioPreview} onClick={(e) => e.stopPropagation()}>
+                      <AudioRecorderComponent src={resolvedUrl} square />
+                    </div>
+                  ) : m.mediaType === "pdf" && resolvedUrl ? (
+                    <iframe
+                      src={resolvedUrl}
+                      className={styles.mediaPdfPreview}
+                      title="PDF preview"
                     />
                   ) : (
                     <div className={styles.mediaPlaceholder}>
@@ -256,7 +289,7 @@ export default function MediaPageComponent({ mode = "user" }) {
                 <th>Type</th>
                 <th>Source</th>
                 <th>Conversation</th>
-                <th>Project</th>
+                {isAdmin && <th>Project</th>}
                 <th>Model</th>
                 <th>Date</th>
               </tr>
@@ -273,7 +306,26 @@ export default function MediaPageComponent({ mode = "user" }) {
                             src={resolvedUrl}
                             alt={`${m.origin === "ai" ? "Generated" : "Uploaded"} image`}
                             className={styles.listThumbImg}
+                            style={{ cursor: "pointer" }}
                             loading="lazy"
+                            onClick={() => setLightboxSrc(resolvedUrl)}
+                          />
+                        ) : m.mediaType === "video" && resolvedUrl ? (
+                          <video
+                            src={resolvedUrl}
+                            className={styles.listThumbImg}
+                            muted
+                            preload="metadata"
+                          />
+                        ) : m.mediaType === "audio" && resolvedUrl ? (
+                          <div className={styles.listThumbAudio} onClick={(e) => e.stopPropagation()}>
+                            <AudioRecorderComponent src={resolvedUrl} compact />
+                          </div>
+                        ) : m.mediaType === "pdf" && resolvedUrl ? (
+                          <iframe
+                            src={resolvedUrl}
+                            className={styles.listThumbPdf}
+                            title="PDF"
                           />
                         ) : (
                           <div className={styles.listThumbPlaceholder}>
@@ -294,13 +346,15 @@ export default function MediaPageComponent({ mode = "user" }) {
                         <span>{m.convTitle}</span>
                       </Link>
                     </td>
-                    <td>
-                      {m.project ? (
-                        <span className={styles.projectTag}>{m.project}</span>
-                      ) : (
-                        <span className={styles.time}>—</span>
-                      )}
-                    </td>
+                    {isAdmin && (
+                      <td>
+                        {m.project ? (
+                          <span className={styles.projectTag}>{m.project}</span>
+                        ) : (
+                          <span className={styles.time}>—</span>
+                        )}
+                      </td>
+                    )}
                     <td>
                       {m.model ? (
                         <span className={styles.modelTag}>{m.model.split("/").pop()}</span>
@@ -350,5 +404,14 @@ export default function MediaPageComponent({ mode = "user" }) {
         </div>
       )}
     </div>
+
+      {lightboxSrc && (
+        <ImagePreviewComponent
+          src={lightboxSrc}
+          onClose={() => setLightboxSrc(null)}
+          readOnly
+        />
+      )}
+    </>
   );
 }
