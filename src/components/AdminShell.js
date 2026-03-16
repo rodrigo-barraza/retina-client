@@ -2,88 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import Link from "next/link";
-import {
-  LayoutDashboard,
-  ScrollText,
-  MessageSquare,
-  Eye,
-  ArrowLeft,
-  Server,
-  DollarSign,
-  GitBranch,
-  Sun,
-  Moon,
-  Image as ImageIcon,
-  Layers,
-  Type,
-} from "lucide-react";
+import { Eye, Sun, Moon } from "lucide-react";
 import { IrisService } from "../services/IrisService";
 import { useTheme } from "./ThemeProvider";
-import ThreePanelLayout from "./ThreePanelLayout";
+import NavigationSidebarComponent from "./NavigationSidebarComponent";
 import styles from "./AdminShell.module.css";
-
-const NAV_ITEMS = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/requests", label: "Requests", icon: ScrollText },
-  { href: "/admin/conversations", label: "Conversations", icon: MessageSquare, showBadge: true },
-  { href: "/admin/workflows", label: "Workflows", icon: GitBranch },
-  { href: "/admin/providers", label: "Providers", icon: Layers },
-  { href: "/admin/media", label: "Media", icon: ImageIcon },
-  { href: "/admin/text", label: "Text", icon: Type },
-  { href: "/admin/pricing", label: "Usage", icon: DollarSign },
-  { href: "/admin/models", label: "Models", icon: Server },
-];
-
-function AdminNavContent({ liveCount, systemStatus, onNavClick }) {
-  const pathname = usePathname();
-
-  return (
-    <div className={styles.navContent}>
-      <nav className={styles.nav}>
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const isActive =
-            item.href === "/admin"
-              ? pathname === "/admin"
-              : pathname.startsWith(item.href);
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`${styles.navLink} ${isActive ? styles.active : ""}`}
-              onClick={() => onNavClick?.(item.href)}
-              data-panel-close
-            >
-              <Icon className={styles.navIcon} />
-              <span>{item.label}</span>
-              {item.showBadge && liveCount > 0 && (
-                <span className={`${styles.badge} ${styles.live}`}>
-                  {liveCount}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-      <div className={styles.footer}>
-        <Link href="/" className={styles.navLink} data-panel-close>
-          <ArrowLeft className={styles.navIcon} />
-          <span>Back to Retina</span>
-        </Link>
-        <div className={styles.statusRow}>
-          <span
-            className={`${styles.statusDot} ${systemStatus !== "connected" ? styles.offline : ""}`}
-          />
-          <span>
-            Prism {systemStatus === "connected" ? "Connected" : "Offline"}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function AdminShell({ children }) {
   const [newCount, setNewCount] = useState(0);
@@ -173,35 +96,27 @@ export default function AdminShell({ children }) {
     return segment.charAt(0).toUpperCase() + segment.slice(1);
   })();
 
-  const headerControls = (
-    <button className={styles.themeToggle} onClick={toggleTheme}>
-      {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-    </button>
-  );
-
-  const headerMeta = (
-    <div className={styles.headerMeta}>
-      <Eye size={12} />
-      <span>Iris · Prism Admin</span>
-    </div>
-  );
-
   return (
-    <ThreePanelLayout
-      leftPanel={
-        <AdminNavContent
-          liveCount={newCount}
-          systemStatus={systemStatus}
-          onNavClick={handleNavClick}
-        />
-      }
-      leftTitle="Admin"
-      rightPanel={null}
-      headerTitle={pageTitle}
-      headerMeta={headerMeta}
-      headerControls={headerControls}
-    >
-      <div className={styles.main}>{children}</div>
-    </ThreePanelLayout>
+    <div className={styles.shell}>
+      <NavigationSidebarComponent
+        mode="admin"
+        liveCount={newCount}
+        systemStatus={systemStatus}
+        onNavClick={handleNavClick}
+      />
+      <div className={styles.mainArea}>
+        <header className={styles.header}>
+          <h1 className={styles.headerTitle}>{pageTitle}</h1>
+          <div className={styles.headerMeta}>
+            <Eye size={12} />
+            <span>Iris · Prism Admin</span>
+          </div>
+          <button className={styles.themeToggle} onClick={toggleTheme}>
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+        </header>
+        <div className={styles.main}>{children}</div>
+      </div>
+    </div>
   );
 }

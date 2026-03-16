@@ -1,27 +1,31 @@
+/* ── NavigationSidebarComponent ── */
+
 .sidebar {
-  width: var(--sidebar-width);
-  height: 100vh;
+  width: fit-content;
+  min-width: 200px;
+  height: 100%;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  transition: width var(--transition-normal);
-  overflow: hidden;
   flex-shrink: 0;
   z-index: 100;
+  overflow: hidden;
 }
+
+/* ── Logo ── */
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 20px 20px 16px;
+  gap: 10px;
+  padding: 16px 16px 14px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
 .logoIcon {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--border-radius-md);
   background: linear-gradient(135deg, var(--accent-color), #a855f7);
   display: flex;
@@ -35,81 +39,96 @@
 .logoText {
   display: flex;
   flex-direction: column;
+  gap: 1px;
 }
 
 .logoTitle {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-primary);
+  line-height: 1.1;
 }
 
 .logoSubtitle {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  line-height: 1.2;
 }
+
+/* ── Navigation ── */
 
 .nav {
   flex: 1;
-  padding: 12px 10px;
+  padding: 10px 8px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
+  overflow-y: auto;
 }
 
 .navLink {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
+  gap: 10px;
+  padding: 9px 12px;
   border-radius: var(--border-radius-sm);
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   transition: all var(--transition-fast);
   position: relative;
-}
+  white-space: nowrap;
+  cursor: pointer;
 
-.navLink:hover {
-  background: var(--accent-subtle);
-  color: var(--text-primary);
+  &:hover {
+    background: var(--accent-subtle);
+    color: var(--text-primary);
+  }
 }
 
 .navLink.active {
   background: var(--accent-subtle);
   color: var(--accent-color);
-}
 
-.navLink.active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
-  background: var(--accent-color);
-  border-radius: 0 2px 2px 0;
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 18px;
+    background: var(--accent-color);
+    border-radius: 0 2px 2px 0;
+  }
 }
 
 .navIcon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
 }
 
+.navLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Badge ── */
+
 .badge {
   margin-left: auto;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   border-radius: 2px;
   background: var(--accent-color);
   color: white;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -121,26 +140,28 @@
   animation: pulse 2s ease-in-out infinite;
 }
 
+/* ── Footer ── */
+
 .footer {
-  padding: 12px 10px;
+  padding: 10px 8px;
   border-top: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .statusRow {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
-  font-size: 12px;
+  padding: 7px 12px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
 .statusDot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--success);
   flex-shrink: 0;
@@ -157,5 +178,13 @@
   }
   50% {
     opacity: 0.5;
+  }
+}
+
+/* ── Mobile ── */
+
+@media (max-width: 767px) {
+  .sidebar {
+    display: none;
   }
 }

@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import styles from "../app/page.module.css";
 import { PrismService } from "../services/PrismService";
 import StorageService from "../services/StorageService";
 import { useTheme } from "../components/ThemeProvider";
-import { Sun, Moon, Workflow, Send } from "lucide-react";
+import { Sun, Moon, Send } from "lucide-react";
+import NavigationSidebarComponent from "../components/NavigationSidebarComponent";
 import SettingsPanel from "../components/SettingsPanel";
 import ChatArea from "../components/ChatArea";
 import HistoryPanel from "../components/HistoryPanel";
@@ -1076,6 +1076,7 @@ export default function HomePage({ initialConversationId = null }) {
                     />
                 }
                 headerTitle={title}
+                navSidebar={<NavigationSidebarComponent mode="user" />}
                 headerMeta={
                     messages.length > 0 ? (
                         <div className={styles.headerMeta}>
@@ -1145,21 +1146,6 @@ export default function HomePage({ initialConversationId = null }) {
                                 To Workflow
                             </button>
                         )}
-                        <Link
-                            href="/workflows"
-                            className={styles.modeToggle}
-                            title="Workflows"
-                        >
-                            <Workflow size={14} />
-                            Workflows
-                        </Link>
-                        <Link
-                            href="/admin"
-                            className={styles.modeToggle}
-                            title="Admin Dashboard"
-                        >
-                            Admin
-                        </Link>
                         <button
                             className={styles.themeToggle}
                             onClick={toggleTheme}

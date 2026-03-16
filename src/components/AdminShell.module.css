@@ -1,121 +1,52 @@
-/* ── Admin Shell (within ThreePanelLayout) ── */
+/* ── Admin Shell ── */
 
-.main {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 28px 32px;
-}
-
-/* ── Navigation content (left panel) ── */
-.navContent {
+.shell {
   display: flex;
-  flex-direction: column;
+  width: 100%;
   height: 100%;
   overflow: hidden;
 }
 
-.nav {
+.mainArea {
   flex: 1;
-  padding: 12px 10px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  overflow-y: auto;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.navLink {
+.header {
+  height: 60px;
+  min-height: 60px;
   display: flex;
   align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border-color);
   gap: 12px;
-  padding: 10px 14px;
-  border-radius: var(--border-radius-sm);
-  color: var(--text-secondary);
-  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.headerTitle {
   font-size: 14px;
   font-weight: 500;
-  transition: all var(--transition-fast);
-  position: relative;
-
-  &:hover {
-    background: var(--accent-subtle);
-    color: var(--text-primary);
-  }
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.navLink.active {
-  background: var(--accent-subtle);
-  color: var(--accent-color);
-}
-
-.navLink.active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
-  background: var(--accent-color);
-  border-radius: 0 2px 2px 0;
-}
-
-.navIcon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-}
-
-.badge {
-  margin-left: auto;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 2px;
-  background: var(--accent-color);
-  color: white;
+.headerMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.badge.live {
-  background: var(--success);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-.footer {
-  padding: 12px 10px;
-  border-top: 1px solid var(--border-subtle);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.statusRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  font-size: 12px;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
-.statusDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--success);
-  flex-shrink: 0;
-}
-
-.statusDot.offline {
-  background: var(--danger);
-}
-
-/* ── Header extras ── */
 .themeToggle {
   display: flex;
   align-items: center;
@@ -138,23 +69,11 @@
   }
 }
 
-.headerMeta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+.main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 28px 32px;
 }
 
 @media (max-width: 767px) {

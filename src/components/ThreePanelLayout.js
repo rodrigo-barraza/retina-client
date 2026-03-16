@@ -18,6 +18,7 @@ import styles from "./ThreePanelLayout.module.css";
  *   children       — Main content area (chat, viewer, etc.)
  */
 export default function ThreePanelLayout({
+    navSidebar = null,
     leftPanel,
     leftTitle = "Settings",
     rightPanel,
@@ -97,6 +98,7 @@ export default function ThreePanelLayout({
 
     return (
         <div className={styles.container}>
+            {navSidebar}
             {/* Left Sidebar */}
             <aside
                 className={`${styles.leftSidebar} ${!showLeft ? styles.sidebarHidden : ""}`}

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { ArrowLeft, Sun, Moon, Play, Square, Loader2, Download, Upload, Undo2, RotateCcw, MessageSquare } from "lucide-react";
-import Link from "next/link";
+import { Sun, Moon, Play, Square, Loader2, Download, Upload, Undo2, RotateCcw, MessageSquare } from "lucide-react";
 import { PrismService } from "../../services/PrismService";
 import WorkflowService from "../../services/WorkflowService";
 import { executeWorkflow } from "../../services/WorkflowExecutor";
@@ -10,6 +9,7 @@ import WorkflowComponent from "../../components/WorkflowComponent";
 import ProviderLogo from "../../components/ProviderLogos";
 import { MODALITY_ICONS } from "../../components/WorkflowNodeConstants";
 import { useTheme } from "../../components/ThemeProvider";
+import NavigationSidebarComponent from "../../components/NavigationSidebarComponent";
 import styles from "./page.module.css";
 
 const MODEL_SECTIONS = [
@@ -783,13 +783,12 @@ export default function WorkflowsPage({ initialWorkflowId }) {
     }, [nodes]);
 
     return (
-        <div className={styles.page}>
+        <div className={styles.pageWrapper}>
+            <NavigationSidebarComponent mode="user" />
+            <div className={styles.page}>
             {/* Header */}
             <header className={styles.header}>
                 <div className={styles.headerLeft}>
-                    <Link href="/" className={styles.backBtn}>
-                        <ArrowLeft size={16} />
-                    </Link>
                     <h1 className={styles.headerTitle}>Workflows</h1>
                     <span className={styles.headerBadge}>
                         {nodes.length} nodes · {edges.length} edges
@@ -977,6 +976,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
                     {toast.message}
                 </div>
             )}
+        </div>
         </div>
     );
 }
