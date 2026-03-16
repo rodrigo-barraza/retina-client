@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -18,6 +18,8 @@ import {
   Type,
   Workflow,
   Settings,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import styles from "./NavigationSidebarComponent.module.css";
@@ -171,78 +173,113 @@ export default function NavigationSidebarComponent({
 }) {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const [showNav, setShowNav] = useState(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("panel_nav");
+    if (stored !== null) setShowNav(stored === "true");
+  }, []);
+
+  const toggleNav = useCallback(() => {
+    setShowNav((prev) => {
+      const next = !prev;
+      localStorage.setItem("panel_nav", String(next));
+      return next;
+    });
+  }, []);
 
   const navItems = mode === "admin" ? ADMIN_NAV_ITEMS : USER_NAV_ITEMS;
   const isAdmin = mode === "admin";
 
   return (
-    <aside className={styles.sidebar}>
-      {/* Rainbow logo banner */}
-      <div className={styles.logoBanner}>
-        <RainbowCanvas />
-      </div>
-
-      {/* Navigation */}
-      <nav className={styles.nav}>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = item.exact
-            ? pathname === item.href
-            : pathname.startsWith(item.href);
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`${styles.navLink} ${isActive ? styles.active : ""}`}
-              onClick={() => onNavClick?.(item.href)}
-            >
-              <Icon className={styles.navIcon} />
-              <span className={styles.navLabel}>{item.label}</span>
-              {item.showBadge && liveCount > 0 && (
-                <span className={`${styles.badge} ${styles.live}`}>
-                  {liveCount}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Footer */}
-      <div className={styles.footer}>
-        {isAdmin ? (
-          <Link href="/" className={styles.navLink}>
-            <ArrowLeft className={styles.navIcon} />
-            <span className={styles.navLabel}>Back to Retina</span>
-          </Link>
-        ) : (
-          <Link href="/admin" className={styles.navLink}>
-            <Settings className={styles.navIcon} />
-            <span className={styles.navLabel}>Admin</span>
-          </Link>
-        )}
-        <button className={styles.navLink} onClick={toggleTheme}>
-          {theme === "dark" ? (
-            <Sun className={styles.navIcon} />
-          ) : (
-            <Moon className={styles.navIcon} />
-          )}
-          <span className={styles.navLabel}>
-            {theme === "dark" ? "Light Mode" : "Dark Mode"}
-          </span>
+    <div className={`${styles.wrapper} ${!showNav ? styles.collapsed : ""}`}>
+      {/* Collapsed: just a toggle strip */}
+      {!showNav && (
+        <button
+          className={styles.expandBtn}
+          onClick={toggleNav}
+          title="Show navigation"
+        >
+          <ChevronsRight size={16} />
         </button>
-        {isAdmin && (
-          <div className={styles.statusRow}>
-            <span
-              className={`${styles.statusDot} ${systemStatus !== "connected" ? styles.offline : ""}`}
-            />
-            <span>
-              Prism {systemStatus === "connected" ? "Connected" : "Offline"}
+      )}
+
+      {/* Expanded sidebar */}
+      <aside className={styles.sidebar}>
+        {/* Rainbow logo banner */}
+        <div className={styles.logoBanner}>
+          <RainbowCanvas />
+          <button
+            className={styles.collapseBtn}
+            onClick={toggleNav}
+            title="Hide navigation"
+          >
+            <ChevronsLeft size={14} />
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className={styles.nav}>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = item.exact
+              ? pathname === item.href
+              : pathname.startsWith(item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`${styles.navLink} ${isActive ? styles.active : ""}`}
+                onClick={() => onNavClick?.(item.href)}
+              >
+                <Icon className={styles.navIcon} />
+                <span className={styles.navLabel}>{item.label}</span>
+                {item.showBadge && liveCount > 0 && (
+                  <span className={`${styles.badge} ${styles.live}`}>
+                    {liveCount}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Footer */}
+        <div className={styles.footer}>
+          {isAdmin ? (
+            <Link href="/" className={styles.navLink}>
+              <ArrowLeft className={styles.navIcon} />
+              <span className={styles.navLabel}>Back to Retina</span>
+            </Link>
+          ) : (
+            <Link href="/admin" className={styles.navLink}>
+              <Settings className={styles.navIcon} />
+              <span className={styles.navLabel}>Admin</span>
+            </Link>
+          )}
+          <button className={styles.navLink} onClick={toggleTheme}>
+            {theme === "dark" ? (
+              <Sun className={styles.navIcon} />
+            ) : (
+              <Moon className={styles.navIcon} />
+            )}
+            <span className={styles.navLabel}>
+              {theme === "dark" ? "Light Mode" : "Dark Mode"}
             </span>
-          </div>
-        )}
-      </div>
-    </aside>
+          </button>
+          {isAdmin && (
+            <div className={styles.statusRow}>
+              <span
+                className={`${styles.statusDot} ${systemStatus !== "connected" ? styles.offline : ""}`}
+              />
+              <span>
+                Prism {systemStatus === "connected" ? "Connected" : "Offline"}
+              </span>
+            </div>
+          )}
+        </div>
+      </aside>
+    </div>
   );
 }

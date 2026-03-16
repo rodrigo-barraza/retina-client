@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import { Eye, Sun, Moon, LayoutDashboard } from "lucide-react";
+import { Eye, Sun, Moon } from "lucide-react";
 import { IrisService } from "../services/IrisService";
 import { useTheme } from "./ThemeProvider";
 import NavigationSidebarComponent from "./NavigationSidebarComponent";
@@ -11,7 +11,6 @@ import styles from "./AdminShell.module.css";
 export default function AdminShell({ children }) {
   const [newCount, setNewCount] = useState(0);
   const [systemStatus, setSystemStatus] = useState("connected");
-  const [showNav, setShowNav] = useState(true);
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
 
@@ -84,20 +83,6 @@ export default function AdminShell({ children }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Restore nav state from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem("panel_nav");
-    if (stored !== null) setShowNav(stored === "true");
-  }, []);
-
-  const toggleNav = useCallback(() => {
-    setShowNav((prev) => {
-      const next = !prev;
-      localStorage.setItem("panel_nav", String(next));
-      return next;
-    });
-  }, []);
-
   const handleNavClick = useCallback((href) => {
     if (href === "/admin/conversations") {
       setNewCount(0);
@@ -113,21 +98,14 @@ export default function AdminShell({ children }) {
 
   return (
     <div className={styles.shell}>
-      <div
-        className={`${styles.navWrapper} ${!showNav ? styles.navHidden : ""}`}
-      >
-        <NavigationSidebarComponent
-          mode="admin"
-          liveCount={newCount}
-          systemStatus={systemStatus}
-          onNavClick={handleNavClick}
-        />
-      </div>
+      <NavigationSidebarComponent
+        mode="admin"
+        liveCount={newCount}
+        systemStatus={systemStatus}
+        onNavClick={handleNavClick}
+      />
       <div className={styles.mainArea}>
         <header className={styles.header}>
-          <button className={styles.navToggle} onClick={toggleNav} title={showNav ? "Hide navigation" : "Show navigation"}>
-            <LayoutDashboard size={16} />
-          </button>
           <h1 className={styles.headerTitle}>{pageTitle}</h1>
           <div className={styles.headerMeta}>
             <Eye size={12} />

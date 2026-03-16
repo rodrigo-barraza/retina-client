@@ -7,45 +7,6 @@
   overflow: hidden;
 }
 
-.navWrapper {
-  display: flex;
-  flex-shrink: 0;
-  height: 100%;
-  overflow: hidden;
-  transition:
-    width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s ease;
-  opacity: 1;
-}
-
-.navHidden {
-  width: 0 !important;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.navToggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  border-radius: 2px;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  opacity: 0.6;
-  transition: all 0.2s;
-
-  &:hover {
-    background: var(--accent-glow);
-    color: var(--accent-color);
-    opacity: 1;
-  }
-}
-
 .mainArea {
   flex: 1;
   display: flex;

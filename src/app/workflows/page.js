@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Sun, Moon, Play, Square, Loader2, Download, Upload, Undo2, RotateCcw, MessageSquare, LayoutDashboard } from "lucide-react";
+import { Sun, Moon, Play, Square, Loader2, Download, Upload, Undo2, RotateCcw, MessageSquare } from "lucide-react";
 import { PrismService } from "../../services/PrismService";
 import WorkflowService from "../../services/WorkflowService";
 import { executeWorkflow } from "../../services/WorkflowExecutor";
@@ -782,33 +782,13 @@ export default function WorkflowsPage({ initialWorkflowId }) {
         return { models, modalities: [...modalities], conversationCount };
     }, [nodes]);
 
-    const [showNav, setShowNav] = useState(true);
-
-    useEffect(() => {
-        const stored = localStorage.getItem("panel_nav");
-        if (stored !== null) setShowNav(stored === "true");
-    }, []);
-
-    const toggleNav = useCallback(() => {
-        setShowNav((prev) => {
-            const next = !prev;
-            localStorage.setItem("panel_nav", String(next));
-            return next;
-        });
-    }, []);
-
     return (
         <div className={styles.pageWrapper}>
-            <div className={`${styles.navWrapper} ${!showNav ? styles.navHidden : ""}`}>
-                <NavigationSidebarComponent mode="user" />
-            </div>
+            <NavigationSidebarComponent mode="user" />
             <div className={styles.page}>
             {/* Header */}
             <header className={styles.header}>
                 <div className={styles.headerLeft}>
-                    <button className={styles.headerActionBtn} onClick={toggleNav} title={showNav ? "Hide navigation" : "Show navigation"}>
-                        <LayoutDashboard size={16} />
-                    </button>
                     <h1 className={styles.headerTitle}>Workflows</h1>
                     <span className={styles.headerBadge}>
                         {nodes.length} nodes · {edges.length} edges

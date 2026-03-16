@@ -7,25 +7,6 @@
   overflow: hidden;
 }
 
-/* ── Nav Sidebar (collapsible wrapper) ─────────────── */
-
-.navSidebar {
-  display: flex;
-  flex-shrink: 0;
-  height: 100%;
-  overflow: hidden;
-  transition:
-    width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s ease;
-  opacity: 1;
-}
-
-.navSidebarHidden {
-  width: 0 !important;
-  opacity: 0;
-  pointer-events: none;
-}
-
 /* Column wrapper (header → body), sits beside navSidebar */
 .page {
   display: flex;

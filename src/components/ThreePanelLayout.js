@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { PanelLeftClose, PanelLeft, PanelRightClose, PanelRight, LayoutDashboard } from "lucide-react";
+import { PanelLeftClose, PanelLeft, PanelRightClose, PanelRight } from "lucide-react";
 import styles from "./ThreePanelLayout.module.css";
 
 /**
@@ -32,7 +32,6 @@ export default function ThreePanelLayout({
     // Start with panels visible (matches SSR), then sync from localStorage after mount
     const [showLeft, setShowLeft] = useState(true);
     const [showRight, setShowRight] = useState(true);
-    const [showNav, setShowNav] = useState(true);
     const [hydrated, setHydrated] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
@@ -48,8 +47,6 @@ export default function ThreePanelLayout({
             const storedRight = localStorage.getItem("panel_right");
             setShowLeft(storedLeft !== null ? storedLeft === "true" : true);
             setShowRight(storedRight !== null ? storedRight === "true" : true);
-            const storedNav = localStorage.getItem("panel_nav");
-            setShowNav(storedNav !== null ? storedNav === "true" : true);
         }
         // eslint-disable-next-line react-compiler/react-compiler
         setHydrated(true);
@@ -86,13 +83,6 @@ export default function ThreePanelLayout({
         });
     }, []);
 
-    const toggleNav = useCallback(() => {
-        setShowNav((prev) => {
-            const next = !prev;
-            localStorage.setItem("panel_nav", String(next));
-            return next;
-        });
-    }, []);
 
     /* ── Mobile: auto-close sidebar when a [data-panel-close] element is clicked ── */
     const handleSidebarClick = useCallback(
@@ -110,26 +100,10 @@ export default function ThreePanelLayout({
 
     return (
         <div className={styles.container}>
-            {navSidebar && (
-                <div
-                    className={`${styles.navSidebar} ${!showNav ? styles.navSidebarHidden : ""}`}
-                    style={transitionStyle}
-                >
-                    {navSidebar}
-                </div>
-            )}
+            {navSidebar}
             <div className={styles.page}>
                 {/* Full-width header */}
                 <header className={styles.glassHeader}>
-                    {navSidebar && (
-                        <button
-                            className={styles.headerToggle}
-                            onClick={toggleNav}
-                            title={showNav ? "Hide navigation" : "Show navigation"}
-                        >
-                            <LayoutDashboard size={16} />
-                        </button>
-                    )}
                     <button
                         className={styles.headerToggle}
                         onClick={toggleLeft}

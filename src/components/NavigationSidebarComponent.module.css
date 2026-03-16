@@ -1,5 +1,46 @@
 /* ── NavigationSidebarComponent ── */
 
+/* ── Wrapper (self-contained collapse) ── */
+
+.wrapper {
+  display: flex;
+  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
+  transition:
+    width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    min-width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wrapper.collapsed {
+  & .sidebar {
+    width: 0;
+    min-width: 0;
+    opacity: 0;
+    pointer-events: none;
+    border-width: 0;
+  }
+}
+
+.expandBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border: none;
+  border-right: 1px solid var(--border-color);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--accent-subtle);
+    color: var(--accent-color);
+  }
+}
+
 .sidebar {
   width: fit-content;
   min-width: 200px;
@@ -11,6 +52,11 @@
   flex-shrink: 0;
   z-index: 100;
   overflow: hidden;
+  transition:
+    width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    min-width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease,
+    border-width 0.3s ease;
 }
 
 /* ── Rainbow Logo Banner ── */
@@ -31,6 +77,34 @@
   width: 100%;
   height: 100%;
   image-rendering: pixelated;
+}
+
+.collapseBtn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: none;
+  color: white;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+
+  .logoBanner:hover & {
+    opacity: 0.8;
+  }
+
+  &:hover {
+    opacity: 1 !important;
+    background: rgba(0, 0, 0, 0.55);
+  }
 }
 
 /* ── Navigation ── */
@@ -159,7 +233,7 @@
 /* ── Mobile ── */
 
 @media (max-width: 767px) {
-  .sidebar {
+  .wrapper {
     display: none;
   }
 }
