@@ -1,41 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Download, X, ChevronUp, ChevronDown, AlertCircle } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Download, X, MessageSquare, GitBranch } from "lucide-react";
+import Link from "next/link";
 import { IrisService } from "../../../services/IrisService";
+import { formatNumber, formatCost, formatLatency } from "../../../utils/utilities";
+import SortableTableComponent from "../../../components/SortableTableComponent";
+import PaginationComponent from "../../../components/PaginationComponent";
+import PageHeaderComponent from "../../../components/PageHeaderComponent";
+import { ErrorMessage } from "../../../components/StateMessageComponent";
+import { FilterBarComponent, FilterGroupComponent, FilterInputComponent, FilterSelectComponent, FilterClearButton } from "../../../components/FilterBarComponent";
 import styles from "./page.module.css";
 
-function formatNumber(n) {
-    if (n === null || n === undefined) return "0";
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-    return n.toLocaleString();
-}
 
-function formatCost(n) {
-    if (n === null || n === undefined) return "$0.00";
-    return `$${n.toFixed(6)}`;
-}
-
-function formatLatency(ms) {
-    if (ms === null || ms === undefined) return "-";
-    if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
-    return `${Math.round(ms)}ms`;
-}
-
-const COLUMNS = [
-    { key: "timestamp", label: "Time" },
-    { key: "project", label: "Project" },
-    { key: "endpoint", label: "Endpoint" },
-    { key: "provider", label: "Provider" },
-    { key: "model", label: "Model" },
-    { key: "inputTokens", label: "In Tokens" },
-    { key: "outputTokens", label: "Out Tokens" },
-    { key: "estimatedCost", label: "Cost" },
-    { key: "tokensPerSec", label: "Tok/s" },
-    { key: "totalTime", label: "Latency" },
-    { key: "success", label: "Status" },
-];
 
 export default function RequestsPage() {
     const [requests, setRequests] = useState([]);
@@ -46,6 +23,8 @@ export default function RequestsPage() {
     const [sort, setSort] = useState("timestamp");
     const [order, setOrder] = useState("desc");
     const [selectedRequest, setSelectedRequest] = useState(null);
+    const [associations, setAssociations] = useState(null);
+    const [loadingAssociations, setLoadingAssociations] = useState(false);
     const [filters, setFilters] = useState({
         project: "",
         provider: "",
@@ -80,13 +59,30 @@ export default function RequestsPage() {
         loadRequests();
     }, [loadRequests]);
 
-    function handleSort(key) {
-        if (sort === key) {
-            setOrder(order === "asc" ? "desc" : "asc");
-        } else {
-            setSort(key);
-            setOrder("desc");
+    // Fetch associations when a request is selected
+    useEffect(() => {
+        if (!selectedRequest?.requestId) {
+            setAssociations(null);
+            return;
         }
+        let cancelled = false;
+        setLoadingAssociations(true);
+        IrisService.getRequestAssociations(selectedRequest.requestId)
+            .then((data) => {
+                if (!cancelled) setAssociations(data);
+            })
+            .catch(() => {
+                if (!cancelled) setAssociations({ conversations: [], workflows: [] });
+            })
+            .finally(() => {
+                if (!cancelled) setLoadingAssociations(false);
+            });
+        return () => { cancelled = true; };
+    }, [selectedRequest?.requestId]);
+
+    function handleSort(key, dir) {
+        setSort(key);
+        setOrder(dir);
         setPage(1);
     }
 
@@ -133,216 +129,122 @@ export default function RequestsPage() {
         URL.revokeObjectURL(url);
     }
 
-    const totalPages = Math.ceil(total / LIMIT);
+    const columns = useMemo(() => [
+        { key: "timestamp", label: "Time", render: (r) => r.timestamp ? new Date(r.timestamp).toLocaleString() : "-" },
+        { key: "project", label: "Project" },
+        {
+            key: "endpoint", label: "Endpoint", render: (r) => (
+                <span className={`${styles.badge} ${styles.badgeEndpoint}`}>{r.endpoint || "-"}</span>
+            )
+        },
+        {
+            key: "provider", label: "Provider", render: (r) => (
+                <span className={`${styles.badge} ${styles.badgeProvider}`}>{r.provider || "-"}</span>
+            )
+        },
+        { key: "model", label: "Model" },
+        { key: "inputTokens", label: "In Tokens", render: (r) => formatNumber(r.inputTokens), align: "right" },
+        { key: "outputTokens", label: "Out Tokens", render: (r) => formatNumber(r.outputTokens), align: "right" },
+        { key: "estimatedCost", label: "Cost", render: (r) => formatCost(r.estimatedCost), align: "right" },
+        { key: "tokensPerSec", label: "Tok/s", render: (r) => r.tokensPerSec != null ? Number(r.tokensPerSec).toFixed(1) : "—", align: "right" },
+        { key: "totalTime", label: "Latency", render: (r) => formatLatency(r.totalTime), align: "right" },
+        {
+            key: "success", label: "Status", render: (r) => (
+                <span className={`${styles.badge} ${r.success ? styles.badgeSuccess : styles.badgeError}`}>
+                    {r.success ? "OK" : "ERR"}
+                </span>
+            )
+        },
+    ], []);
 
-    function renderCellValue(col, request) {
-        switch (col.key) {
-            case "timestamp":
-                return request.timestamp
-                    ? new Date(request.timestamp).toLocaleString()
-                    : "-";
-            case "inputTokens":
-            case "outputTokens":
-                return formatNumber(request[col.key]);
-            case "estimatedCost":
-                return formatCost(request.estimatedCost);
-            case "tokensPerSec": {
-                const v = request.tokensPerSec;
-                if (v === null || v === undefined) return "—";
-                return `${Number(v).toFixed(1)}`;
-            }
-            case "totalTime":
-                return formatLatency(request.totalTime);
-            case "success":
-                return (
-                    <span
-                        className={`${styles.badge} ${request.success ? styles.badgeSuccess : styles.badgeError}`}
-                    >
-                        {request.success ? "OK" : "ERR"}
-                    </span>
-                );
-            case "provider":
-                return (
-                    <span className={`${styles.badge} ${styles.badgeProvider}`}>
-                        {request.provider || "-"}
-                    </span>
-                );
-            case "endpoint":
-                return (
-                    <span className={`${styles.badge} ${styles.badgeEndpoint}`}>
-                        {request.endpoint || "-"}
-                    </span>
-                );
-            default:
-                return request[col.key] || "-";
-        }
-    }
+    const totalPages = Math.ceil(total / LIMIT);
 
     return (
         <div className={styles.page}>
-            <div className={styles.pageHeader}>
-                <h1 className={styles.pageTitle}>Requests</h1>
-                <div className={styles.headerActions}>
-                    <button className={styles.exportBtn} onClick={exportCSV}>
-                        <Download size={14} /> Export CSV
-                    </button>
-                </div>
-            </div>
+            <PageHeaderComponent title="Requests">
+                <button className={styles.exportBtn} onClick={exportCSV}>
+                    <Download size={14} /> Export CSV
+                </button>
+            </PageHeaderComponent>
 
-            {error && (
-                <div className={styles.errorBanner}>
-                    <AlertCircle size={18} />
-                    {error}
-                </div>
-            )}
+            <ErrorMessage message={error} />
 
             {/* Filters */}
-            <div className={styles.filterBar}>
-                <div className={styles.filterGroup}>
-                    <label className={styles.filterLabel}>Project</label>
-                    <input
-                        className={styles.filterInput}
+            <FilterBarComponent>
+                <FilterGroupComponent label="Project">
+                    <FilterInputComponent
                         placeholder="Filter by project..."
                         value={filters.project}
-                        onChange={(e) => handleFilterChange("project", e.target.value)}
+                        onChange={(val) => handleFilterChange("project", val)}
                     />
-                </div>
-                <div className={styles.filterGroup}>
-                    <label className={styles.filterLabel}>Provider</label>
-                    <select
-                        className={styles.filterSelect}
+                </FilterGroupComponent>
+                <FilterGroupComponent label="Provider">
+                    <FilterSelectComponent
                         value={filters.provider}
-                        onChange={(e) => handleFilterChange("provider", e.target.value)}
-                    >
-                        <option value="">All</option>
-                        <option value="openai">OpenAI</option>
-                        <option value="anthropic">Anthropic</option>
-                        <option value="google">Google</option>
-                        <option value="elevenlabs">ElevenLabs</option>
-                    </select>
-                </div>
-                <div className={styles.filterGroup}>
-                    <label className={styles.filterLabel}>Model</label>
-                    <input
-                        className={styles.filterInput}
+                        onChange={(val) => handleFilterChange("provider", val)}
+                        options={[
+                            { value: "", label: "All" },
+                            { value: "openai", label: "OpenAI" },
+                            { value: "anthropic", label: "Anthropic" },
+                            { value: "google", label: "Google" },
+                            { value: "elevenlabs", label: "ElevenLabs" },
+                        ]}
+                    />
+                </FilterGroupComponent>
+                <FilterGroupComponent label="Model">
+                    <FilterInputComponent
                         placeholder="Filter by model..."
                         value={filters.model}
-                        onChange={(e) => handleFilterChange("model", e.target.value)}
+                        onChange={(val) => handleFilterChange("model", val)}
                     />
-                </div>
-                <div className={styles.filterGroup}>
-                    <label className={styles.filterLabel}>Endpoint</label>
-                    <select
-                        className={styles.filterSelect}
+                </FilterGroupComponent>
+                <FilterGroupComponent label="Endpoint">
+                    <FilterSelectComponent
                         value={filters.endpoint}
-                        onChange={(e) => handleFilterChange("endpoint", e.target.value)}
-                    >
-                        <option value="">All</option>
-                        <option value="/chat">/chat</option>
-                        <option value="/audio">/audio</option>
-                        <option value="/embed">/embed</option>
-                    </select>
-                </div>
-                <div className={styles.filterGroup}>
-                    <label className={styles.filterLabel}>Status</label>
-                    <select
-                        className={styles.filterSelect}
+                        onChange={(val) => handleFilterChange("endpoint", val)}
+                        options={[
+                            { value: "", label: "All" },
+                            { value: "/chat", label: "/chat" },
+                            { value: "/audio", label: "/audio" },
+                            { value: "/embed", label: "/embed" },
+                        ]}
+                    />
+                </FilterGroupComponent>
+                <FilterGroupComponent label="Status">
+                    <FilterSelectComponent
                         value={filters.success}
-                        onChange={(e) => handleFilterChange("success", e.target.value)}
-                    >
-                        <option value="">All</option>
-                        <option value="true">Success</option>
-                        <option value="false">Error</option>
-                    </select>
-                </div>
-                <button className={styles.clearBtn} onClick={clearFilters}>
-                    Clear
-                </button>
-            </div>
+                        onChange={(val) => handleFilterChange("success", val)}
+                        options={[
+                            { value: "", label: "All" },
+                            { value: "true", label: "Success" },
+                            { value: "false", label: "Error" },
+                        ]}
+                    />
+                </FilterGroupComponent>
+                <FilterClearButton onClick={clearFilters} />
+            </FilterBarComponent>
 
             {/* Table */}
             <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                    <thead>
-                        <tr>
-                            {COLUMNS.map((col) => (
-                                <th key={col.key} onClick={() => handleSort(col.key)}>
-                                    {col.label}
-                                    {sort === col.key ? (
-                                        order === "asc" ? (
-                                            <ChevronUp
-                                                size={12}
-                                                className={`${styles.sortIcon} ${styles.active}`}
-                                            />
-                                        ) : (
-                                            <ChevronDown
-                                                size={12}
-                                                className={`${styles.sortIcon} ${styles.active}`}
-                                            />
-                                        )
-                                    ) : (
-                                        <ChevronDown size={12} className={styles.sortIcon} />
-                                    )}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading && requests.length === 0 ? (
-                            <tr>
-                                <td colSpan={COLUMNS.length} className={styles.emptyState}>
-                                    Loading...
-                                </td>
-                            </tr>
-                        ) : requests.length === 0 ? (
-                            <tr>
-                                <td colSpan={COLUMNS.length} className={styles.emptyState}>
-                                    No requests found
-                                </td>
-                            </tr>
-                        ) : (
-                            requests.map((req, i) => (
-                                <tr
-                                    key={req.requestId || i}
-                                    onClick={() => setSelectedRequest(req)}
-                                    className={
-                                        selectedRequest?.requestId === req.requestId
-                                            ? styles.selected
-                                            : ""
-                                    }
-                                >
-                                    {COLUMNS.map((col) => (
-                                        <td key={col.key}>{renderCellValue(col, req)}</td>
-                                    ))}
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                <SortableTableComponent
+                    columns={columns}
+                    data={requests}
+                    sortKey={sort}
+                    sortDir={order}
+                    onSort={handleSort}
+                    onRowClick={(req) => setSelectedRequest(req)}
+                    getRowKey={(req, i) => req.requestId || i}
+                    emptyText={loading ? "Loading..." : "No requests found"}
+                />
 
                 {/* Pagination */}
-                <div className={styles.pagination}>
-                    <span className={styles.pageInfo}>
-                        Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of{" "}
-                        {total.toLocaleString()}
-                    </span>
-                    <div className={styles.pageButtons}>
-                        <button
-                            className={styles.pageBtn}
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                            disabled={page === 1}
-                        >
-                            Previous
-                        </button>
-                        <button
-                            className={styles.pageBtn}
-                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                            disabled={page >= totalPages}
-                        >
-                            Next
-                        </button>
-                    </div>
-                </div>
+                <PaginationComponent
+                    page={page}
+                    totalPages={totalPages}
+                    totalItems={total}
+                    onPageChange={setPage}
+                    limit={LIMIT}
+                />
             </div>
 
             {/* Detail Drawer */}
@@ -542,6 +444,62 @@ export default function RequestsPage() {
                                         </span>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className={styles.detailSection}>
+                                <div className={styles.detailSectionTitle}>Associations</div>
+                                {loadingAssociations ? (
+                                    <span className={styles.detailValue} style={{ color: "var(--text-muted)" }}>Loading…</span>
+                                ) : (
+                                    <div className={styles.associationGrid}>
+                                        <div className={styles.associationGroup}>
+                                            <span className={styles.associationGroupLabel}>
+                                                <MessageSquare size={12} /> Conversations
+                                            </span>
+                                            {associations?.conversations?.length > 0 ? (
+                                                <ul className={styles.associationList}>
+                                                    {associations.conversations.map((c) => (
+                                                        <li key={c.id} className={styles.associationItem}>
+                                                            <Link
+                                                                href={`/admin/conversations/${c.id}`}
+                                                                className={styles.associationLink}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <span className={styles.associationTitle}>{c.title || "Untitled"}</span>
+                                                                <span className={styles.associationMeta}>{c.project}</span>
+                                                            </Link>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <span className={styles.associationEmpty}>—</span>
+                                            )}
+                                        </div>
+                                        <div className={styles.associationGroup}>
+                                            <span className={styles.associationGroupLabel}>
+                                                <GitBranch size={12} /> Workflows
+                                            </span>
+                                            {associations?.workflows?.length > 0 ? (
+                                                <ul className={styles.associationList}>
+                                                    {associations.workflows.map((w) => (
+                                                        <li key={w.id} className={styles.associationItem}>
+                                                            <Link
+                                                                href={`/admin/workflows/${w.id}`}
+                                                                className={styles.associationLink}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <span className={styles.associationTitle}>{w.name}</span>
+                                                                <span className={styles.associationMeta}>{w.nodeCount} nodes · {w.edgeCount} edges</span>
+                                                            </Link>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <span className={styles.associationEmpty}>—</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -1,13 +1,18 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Image as ImageIcon, Music, Film, FileText, User, Sparkles, ExternalLink, Grid, List, Search } from "lucide-react";
+import { Image as ImageIcon, Music, Film, FileText, User, Sparkles, ExternalLink, Grid, List } from "lucide-react";
 import Link from "next/link";
 import { IrisService } from "../services/IrisService";
 import { PrismService } from "../services/PrismService";
 import ComboboxFilter from "./ComboboxFilter";
 import ImagePreviewComponent from "./ImagePreviewComponent";
-import AudioRecorderComponent from "./AudioRecorderComponent"; // Added this import
+import AudioRecorderComponent from "./AudioRecorderComponent";
+import PaginationComponent from "./PaginationComponent";
+import SortableTableComponent from "./SortableTableComponent";
+import PageHeaderComponent from "./PageHeaderComponent";
+import { LoadingMessage, EmptyMessage } from "./StateMessageComponent";
+import { FilterBarComponent, FilterGroupComponent, FilterPillsComponent, SearchInputComponent, ViewModeToggleComponent } from "./FilterBarComponent";
 import styles from "./MediaPageComponent.module.css";
 
 const ORIGIN_FILTERS = [
@@ -105,59 +110,92 @@ export default function MediaPageComponent({ mode = "user" }) {
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
+  const listColumns = [
+    {
+      key: "preview", label: "Preview", sortable: false, render: (m) => {
+        const resolvedUrl = resolveUrl(m.url);
+        return (
+          <div className={styles.listThumb}>
+            {m.mediaType === "image" && resolvedUrl ? (
+              <img
+                src={resolvedUrl}
+                alt={`${m.origin === "ai" ? "Generated" : "Uploaded"} image`}
+                className={styles.listThumbImg}
+                style={{ cursor: "pointer" }}
+                loading="lazy"
+                onClick={() => setLightboxSrc(resolvedUrl)}
+              />
+            ) : m.mediaType === "video" && resolvedUrl ? (
+              <video
+                src={resolvedUrl}
+                className={styles.listThumbImg}
+                muted
+                preload="metadata"
+              />
+            ) : m.mediaType === "audio" && resolvedUrl ? (
+              <div className={styles.listThumbAudio} onClick={(e) => e.stopPropagation()}>
+                <AudioRecorderComponent src={resolvedUrl} compact />
+              </div>
+            ) : m.mediaType === "pdf" && resolvedUrl ? (
+              <iframe
+                src={resolvedUrl}
+                className={styles.listThumbPdf}
+                title="PDF"
+              />
+            ) : (
+              <div className={styles.listThumbPlaceholder}>
+                <MediaTypeIcon type={m.mediaType} size={16} />
+              </div>
+            )}
+          </div>
+        );
+      }
+    },
+    { key: "type", label: "Type", render: (m) => <span className={styles.typeBadge}>{m.mediaType}</span> },
+    { key: "source", label: "Source", render: (m) => <OriginBadge origin={m.origin} className={styles.originPill} /> },
+    {
+      key: "conversation", label: "Conversation", render: (m) => (
+        <Link href={`${convBasePath}/${m.convId}`} className={styles.convLink} title={m.convTitle}>
+          <ExternalLink size={10} />
+          <span>{m.convTitle}</span>
+        </Link>
+      )
+    },
+    ...(isAdmin ? [{
+      key: "project", label: "Project", render: (m) => m.project ? <span className={styles.projectTag}>{m.project}</span> : <span className={styles.time}>—</span>
+    }] : []),
+    { key: "model", label: "Model", render: (m) => m.model ? <span className={styles.modelTag}>{m.model.split("/").pop()}</span> : <span className={styles.time}>—</span> },
+    { key: "date", label: "Date", render: (m) => <span className={styles.time}>{m.timestamp ? new Date(m.timestamp).toLocaleDateString() : "—"}</span> },
+  ];
+
   return (
     <>
     <div className={styles.content}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Media</h1>
-        <p className={styles.pageSubtitle}>
-          {total} files across conversations
-        </p>
-      </div>
+      <PageHeaderComponent
+        title="Media"
+        subtitle={`${total} files across conversations`}
+      />
 
       {/* Filters */}
-      <div className={styles.filterBar}>
-        <div className={styles.filterGroup}>
-          <span className={styles.filterLabel}>Source</span>
-          <div className={styles.pills}>
-            {ORIGIN_FILTERS.map((f) => {
-              const Icon = f.icon;
-              return (
-                <button
-                  key={f.key}
-                  className={`${styles.pill} ${origin === f.key ? styles.pillActive : ""}`}
-                  onClick={() => { setOrigin(f.key); setPage(1); }}
-                >
-                  {Icon && <Icon size={12} />}
-                  {f.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      <FilterBarComponent>
+        <FilterGroupComponent label="Source">
+          <FilterPillsComponent
+            options={ORIGIN_FILTERS}
+            value={origin}
+            onChange={(v) => { setOrigin(v); setPage(1); }}
+          />
+        </FilterGroupComponent>
 
-        <div className={styles.filterGroup}>
-          <span className={styles.filterLabel}>Type</span>
-          <div className={styles.pills}>
-            {TYPE_FILTERS.map((f) => {
-              const Icon = f.icon;
-              return (
-                <button
-                  key={f.key}
-                  className={`${styles.pill} ${type === f.key ? styles.pillActive : ""}`}
-                  onClick={() => { setType(f.key); setPage(1); }}
-                >
-                  {Icon && <Icon size={12} />}
-                  {f.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <FilterGroupComponent label="Type">
+          <FilterPillsComponent
+            options={TYPE_FILTERS}
+            value={type}
+            onChange={(v) => { setType(v); setPage(1); }}
+          />
+        </FilterGroupComponent>
 
         {isAdmin && (
-          <div className={styles.filterGroup}>
-            <span className={styles.filterLabel}>Project</span>
+          <FilterGroupComponent label="Project">
             <ComboboxFilter
               options={projects}
               value={project}
@@ -165,12 +203,11 @@ export default function MediaPageComponent({ mode = "user" }) {
               placeholder="All Projects"
               allLabel="All Projects"
             />
-          </div>
+          </FilterGroupComponent>
         )}
 
         {isAdmin && (
-          <div className={styles.filterGroup}>
-            <span className={styles.filterLabel}>User</span>
+          <FilterGroupComponent label="User">
             <ComboboxFilter
               options={usernames}
               value={username}
@@ -178,42 +215,28 @@ export default function MediaPageComponent({ mode = "user" }) {
               placeholder="All Users"
               allLabel="All Users"
             />
-          </div>
+          </FilterGroupComponent>
         )}
 
-        <form className={styles.searchBox} onSubmit={handleSearch}>
-          <Search size={14} />
-          <input
-            type="text"
-            placeholder="Search by conversation..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className={styles.searchInput}
-          />
-        </form>
+        <SearchInputComponent
+          value={searchInput}
+          onChange={setSearchInput}
+          onSubmit={handleSearch}
+          placeholder="Search by conversation..."
+        />
 
         {/* View mode toggle */}
-        <div className={styles.viewToggle}>
-          <button
-            className={`${styles.viewBtn} ${viewMode === "grid" ? styles.viewBtnActive : ""}`}
-            onClick={() => setViewMode("grid")}
-            title="Grid view"
-          >
-            <Grid size={14} />
-          </button>
-          <button
-            className={`${styles.viewBtn} ${viewMode === "list" ? styles.viewBtnActive : ""}`}
-            onClick={() => setViewMode("list")}
-            title="List view"
-          >
-            <List size={14} />
-          </button>
-        </div>
-      </div>
+        <ViewModeToggleComponent
+          mode={viewMode}
+          onChange={setViewMode}
+          modes={[
+            { key: "grid", icon: Grid, title: "Grid view" },
+            { key: "list", icon: List, title: "List view" }
+          ]}
+        />
+      </FilterBarComponent>
 
-      {loading && (
-        <div className={styles.loading}>Loading media...</div>
-      )}
+      {loading && <LoadingMessage message="Loading media..." />}
 
       {/* ── Grid View ── */}
       {!loading && viewMode === "grid" && (
@@ -282,127 +305,23 @@ export default function MediaPageComponent({ mode = "user" }) {
       {/* ── List View ── */}
       {!loading && viewMode === "list" && (
         <div className={styles.listWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th style={{ width: 60 }}>Preview</th>
-                <th>Type</th>
-                <th>Source</th>
-                <th>Conversation</th>
-                {isAdmin && <th>Project</th>}
-                <th>Model</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {media.map((m, i) => {
-                const resolvedUrl = resolveUrl(m.url);
-                return (
-                  <tr key={`${m.convId}-${i}`}>
-                    <td>
-                      <div className={styles.listThumb}>
-                        {m.mediaType === "image" && resolvedUrl ? (
-                          <img
-                            src={resolvedUrl}
-                            alt={`${m.origin === "ai" ? "Generated" : "Uploaded"} image`}
-                            className={styles.listThumbImg}
-                            style={{ cursor: "pointer" }}
-                            loading="lazy"
-                            onClick={() => setLightboxSrc(resolvedUrl)}
-                          />
-                        ) : m.mediaType === "video" && resolvedUrl ? (
-                          <video
-                            src={resolvedUrl}
-                            className={styles.listThumbImg}
-                            muted
-                            preload="metadata"
-                          />
-                        ) : m.mediaType === "audio" && resolvedUrl ? (
-                          <div className={styles.listThumbAudio} onClick={(e) => e.stopPropagation()}>
-                            <AudioRecorderComponent src={resolvedUrl} compact />
-                          </div>
-                        ) : m.mediaType === "pdf" && resolvedUrl ? (
-                          <iframe
-                            src={resolvedUrl}
-                            className={styles.listThumbPdf}
-                            title="PDF"
-                          />
-                        ) : (
-                          <div className={styles.listThumbPlaceholder}>
-                            <MediaTypeIcon type={m.mediaType} size={16} />
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <span className={styles.typeBadge}>{m.mediaType}</span>
-                    </td>
-                    <td>
-                      <OriginBadge origin={m.origin} className={styles.originPill} />
-                    </td>
-                    <td>
-                      <Link href={`${convBasePath}/${m.convId}`} className={styles.convLink} title={m.convTitle}>
-                        <ExternalLink size={10} />
-                        <span>{m.convTitle}</span>
-                      </Link>
-                    </td>
-                    {isAdmin && (
-                      <td>
-                        {m.project ? (
-                          <span className={styles.projectTag}>{m.project}</span>
-                        ) : (
-                          <span className={styles.time}>—</span>
-                        )}
-                      </td>
-                    )}
-                    <td>
-                      {m.model ? (
-                        <span className={styles.modelTag}>{m.model.split("/").pop()}</span>
-                      ) : (
-                        <span className={styles.time}>—</span>
-                      )}
-                    </td>
-                    <td>
-                      <span className={styles.time}>
-                        {m.timestamp ? new Date(m.timestamp).toLocaleDateString() : "—"}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <SortableTableComponent
+            columns={listColumns}
+            data={media}
+            getRowKey={(m, i) => `${m.convId}-${i}`}
+          />
         </div>
       )}
 
-      {!loading && media.length === 0 && (
-        <div className={styles.empty}>No media found</div>
-      )}
+      {!loading && media.length === 0 && <EmptyMessage message="No media found" />}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className={styles.pagination}>
-          <span className={styles.pageInfo}>
-            Page {page} of {totalPages} · {total} total
-          </span>
-          <div className={styles.pageButtons}>
-            <button
-              className={styles.pageBtn}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-            >
-              Prev
-            </button>
-            <button
-              className={styles.pageBtn}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
+      <PaginationComponent
+        page={page}
+        totalPages={totalPages}
+        totalItems={total}
+        onPageChange={setPage}
+      />
     </div>
 
       {lightboxSrc && (

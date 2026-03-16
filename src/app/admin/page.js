@@ -10,6 +10,7 @@ import {
   AlertCircle,
   CheckCircle,
   TrendingUp,
+  Workflow,
 } from "lucide-react";
 import { IrisService } from "../../services/IrisService";
 import StatsCard from "../../components/StatsCard";
@@ -674,6 +675,7 @@ export default function DashboardPage() {
                 <th>Project</th>
                 <th>Requests</th>
                 <th>Cost</th>
+                <th>Workflows</th>
               </tr>
             </thead>
             <tbody>
@@ -687,12 +689,22 @@ export default function DashboardPage() {
                     </td>
                     <td>{formatNumber(p.totalRequests)}</td>
                     <td>{formatCost(p.totalCost)}</td>
+                    <td>
+                      {p.workflowCount > 0 ? (
+                        <Link href="/admin/workflows" className={styles.workflowLink}>
+                          <Workflow size={12} />
+                          {p.workflowCount}
+                        </Link>
+                      ) : (
+                        <span style={{ color: "var(--text-muted)" }}>0</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td
-                    colSpan={3}
+                    colSpan={4}
                     style={{
                       textAlign: "center",
                       color: "var(--text-muted)",

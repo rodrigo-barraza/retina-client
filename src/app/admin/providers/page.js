@@ -2,25 +2,12 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { IrisService } from "../../../services/IrisService";
+import SortableTableComponent from "../../../components/SortableTableComponent";
+import PageHeaderComponent from "../../../components/PageHeaderComponent";
+import { LoadingMessage, ErrorMessage } from "../../../components/StateMessageComponent";
+import { formatNumber, formatCost, formatLatency } from "../../../utils/utilities";
 import styles from "./page.module.css";
 
-function formatNumber(n) {
-  if (n === null || n === undefined) return "0";
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
-
-function formatCost(n) {
-  if (n === null || n === undefined) return "$0.00";
-  return `$${n.toFixed(4)}`;
-}
-
-function formatLatency(ms) {
-  if (ms === null || ms === undefined) return "0ms";
-  if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
-  return `${Math.round(ms)}ms`;
-}
 
 const PROVIDER_COLORS = [
   "#6366f1", "#a855f7", "#ec4899", "#f59e0b",
@@ -30,6 +17,7 @@ const PROVIDER_COLORS = [
 export default function ProvidersPage() {
   const [modelStats, setModelStats] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [expandedProvider, setExpandedProvider] = useState(null);
 
   useEffect(() => {
@@ -39,7 +27,7 @@ export default function ProvidersPage() {
         const models = await IrisService.getModelStats();
         setModelStats(models);
       } catch (err) {
-        console.error(err);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -83,18 +71,24 @@ export default function ProvidersPage() {
 
   const totalRequests = providers.reduce((s, p) => s + p.totalRequests, 0) || 1;
 
+  const modelColumns = useMemo(() => [
+    { key: "model", label: "Model", render: (m) => <span style={{ fontWeight: 500, color: "var(--text-primary)" }}>{m.model}</span> },
+    { key: "totalRequests", label: "Requests", render: (m) => formatNumber(m.totalRequests), align: "right" },
+    { key: "totalTokens", label: "Tokens", render: (m) => formatNumber(m.totalTokens), align: "right" },
+    { key: "totalCost", label: "Cost", render: (m) => formatCost(m.totalCost), align: "right" },
+    { key: "avgLatency", label: "Avg Latency", render: (m) => formatLatency(m.avgLatency), align: "right" },
+  ], []);
+
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Providers</h1>
-        <p className={styles.pageSubtitle}>
-          {providers.length} providers · {modelStats.length} models
-        </p>
-      </div>
+      <PageHeaderComponent
+        title="Providers"
+        subtitle={`${providers.length} providers \u00B7 ${modelStats.length} models`}
+      />
 
-      {loading && (
-        <div className={styles.loading}>Loading provider data...</div>
-      )}
+      <ErrorMessage message={error} />
+
+      {loading && <LoadingMessage message="Loading provider data..." />}
 
       <div className={styles.providerList}>
         {providers.map((p, i) => {
@@ -153,30 +147,11 @@ export default function ProvidersPage() {
               </button>
               {isExpanded && (
                 <div className={styles.modelList}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Model</th>
-                        <th>Requests</th>
-                        <th>Tokens</th>
-                        <th>Cost</th>
-                        <th>Avg Latency</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {p.models.map((m) => (
-                        <tr key={m.model}>
-                          <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>
-                            {m.model}
-                          </td>
-                          <td>{formatNumber(m.totalRequests)}</td>
-                          <td>{formatNumber(m.totalTokens)}</td>
-                          <td>{formatCost(m.totalCost)}</td>
-                          <td>{formatLatency(m.avgLatency)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <SortableTableComponent
+                    columns={modelColumns}
+                    data={p.models}
+                    getRowKey={(m) => m.model}
+                  />
                 </div>
               )}
             </div>

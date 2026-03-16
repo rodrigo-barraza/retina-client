@@ -2,10 +2,10 @@
 
 import { useState, Fragment } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import styles from "./SortableTable.module.css";
+import styles from "./SortableTableComponent.module.css";
 
 /**
- * SortableTable — a reusable, sortable table component matching the ModelGrid
+ * SortableTableComponent — a reusable, sortable table component matching the ModelGrid
  * aesthetic. Supports sortable columns, custom cell rendering, and expandable
  * sub-rows.
  *
@@ -17,8 +17,11 @@ import styles from "./SortableTable.module.css";
  * @param {Function} [props.getSubRows] — (row) => array of sub-row objects
  * @param {Function} [props.onRowClick] — (row) => void
  * @param {string} [props.emptyText] — Text to show when data is empty
+ * @param {string} [props.sortKey] — External sort key (for server sorting)
+ * @param {string} [props.sortDir] — External sort direction ('asc' | 'desc')
+ * @param {Function} [props.onSort] — (key, dir) => void
  */
-export default function SortableTable({
+export default function SortableTableComponent({
     title,
     columns,
     data = [],
@@ -26,16 +29,27 @@ export default function SortableTable({
     getSubRows,
     onRowClick,
     emptyText = "No data",
+    sortKey: externalSortKey,
+    sortDir: externalSortDir,
+    onSort,
 }) {
-    const [sort, setSort] = useState({ key: null, dir: "desc" });
+    const [internalSort, setInternalSort] = useState({ key: null, dir: "desc" });
+    const sort = onSort ? { key: externalSortKey, dir: externalSortDir } : internalSort;
     const [expanded, setExpanded] = useState(new Set());
 
     function handleSort(key) {
-        setSort((prev) => {
-            if (prev.key === key)
-                return { key, dir: prev.dir === "desc" ? "asc" : "desc" };
-            return { key, dir: "desc" };
-        });
+        let newDir;
+        if (sort.key === key) {
+            newDir = sort.dir === "desc" ? "asc" : "desc";
+        } else {
+            newDir = "desc";
+        }
+
+        if (onSort) {
+            onSort(key, newDir);
+        } else {
+            setInternalSort({ key, dir: newDir });
+        }
     }
 
     function toggleExpand(rowKey) {
@@ -47,8 +61,8 @@ export default function SortableTable({
         });
     }
 
-    // Sort data
-    const sorted = sort.key
+    // Sort data (only if not controlled)
+    const sorted = sort.key && !onSort
         ? [...data].sort((a, b) => {
             const va = a[sort.key] ?? 0;
             const vb = b[sort.key] ?? 0;

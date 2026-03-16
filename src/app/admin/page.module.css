@@ -194,6 +194,21 @@
   color: var(--info);
 }
 
+.workflowLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-color);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color var(--transition-fast);
+
+  &:hover {
+    color: var(--accent-hover);
+  }
+}
+
 /* Charts row */
 .chartsRow {
   display: grid;

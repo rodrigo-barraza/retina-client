@@ -1,0 +1,30 @@
+.headerBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: var(--accent-subtle);
+  color: var(--accent-color);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.headerModelTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:not(:last-child)::after {
+    content: "·";
+    margin-left: 3px;
+    color: var(--text-muted);
+  }
+}

@@ -33,6 +33,10 @@ export class IrisService {
         return fetchJSON(`/requests/${id}`);
     }
 
+    static async getRequestAssociations(id) {
+        return fetchJSON(`/requests/${id}/associations`);
+    }
+
     // ── Stats ─────────────────────────────────────────────────
     static async getStats(params = {}) {
         const query = new URLSearchParams(params).toString();

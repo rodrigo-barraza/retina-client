@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ArrowLeft, AlertCircle, MessageSquare } from "lucide-react";
+import { ArrowLeft, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { IrisService } from "../../../services/IrisService";
 import WorkflowComponent from "../../../components/WorkflowComponent";
-import ProviderLogo from "../../../components/ProviderLogos";
-import { MODALITY_ICONS } from "../../../components/WorkflowNodeConstants";
+import WorkflowHeaderStatsComponent from "../../../components/WorkflowHeaderStatsComponent";
 import styles from "./page.module.css";
 
 export default function AdminWorkflowsPage() {
@@ -74,6 +73,11 @@ export default function AdminWorkflowsPage() {
   // nodeStatuses are ephemeral runtime state — always empty for read-only view
   const nodeStatuses = useMemo(() => ({}), []);
 
+  const edgeCount = useMemo(() => {
+    const edges = selectedWorkflow?.edges || selectedWorkflow?.connections || [];
+    return edges.length;
+  }, [selectedWorkflow]);
+
   // Local node state for drag-to-rearrange (not persisted)
   const [localNodes, setLocalNodes] = useState([]);
 
@@ -120,20 +124,6 @@ export default function AdminWorkflowsPage() {
     }
   }, []);
 
-  const nodeCount = localNodes.length;
-  const edgeCount = (selectedWorkflow?.edges || selectedWorkflow?.connections || []).length;
-
-  const workflowStats = useMemo(() => {
-    const modelNodes = localNodes.filter((n) => !n.nodeType);
-    const models = [...new Map(modelNodes.map((n) => [`${n.provider}:${n.modelName}`, { provider: n.provider, name: n.displayName || n.modelName }])).values()];
-    const modalities = new Set();
-    for (const n of localNodes) {
-      for (const t of n.inputTypes || []) if (t !== "conversation") modalities.add(t);
-      for (const t of n.outputTypes || []) if (t !== "conversation") modalities.add(t);
-    }
-    return { models, modalities: [...modalities], conversationCount: modelNodes.length };
-  }, [localNodes]);
-
   return (
     <div className={styles.page}>
       {/* Header — matches /workflows layout */}
@@ -143,35 +133,7 @@ export default function AdminWorkflowsPage() {
             <ArrowLeft size={16} />
           </Link>
           <h1 className={styles.headerTitle}>Workflows</h1>
-          <span className={styles.headerBadge}>
-            {nodeCount} nodes · {edgeCount} edges
-          </span>
-          {workflowStats.modalities.length > 0 && (
-            <span className={styles.headerBadge}>
-              {workflowStats.modalities.map((mod) => {
-                const info = MODALITY_ICONS[mod];
-                if (!info) return null;
-                const Icon = info.icon;
-                return <Icon key={mod} size={11} style={{ color: info.color }} title={info.label} />;
-              })}
-            </span>
-          )}
-          {workflowStats.models.length > 0 && (
-            <span className={styles.headerBadge}>
-              {workflowStats.models.map((m) => (
-                <span key={`${m.provider}:${m.name}`} className={styles.headerModelTag} title={m.name}>
-                  <ProviderLogo provider={m.provider} size={11} />
-                  {m.name}
-                </span>
-              ))}
-            </span>
-          )}
-          {workflowStats.conversationCount > 0 && (
-            <span className={styles.headerBadge} title="Conversations created per run">
-              <MessageSquare size={11} />
-              {workflowStats.conversationCount}
-            </span>
-          )}
+          <WorkflowHeaderStatsComponent nodes={localNodes} edgeCount={edgeCount} />
         </div>
         <div className={styles.headerRight}>
           {error && (

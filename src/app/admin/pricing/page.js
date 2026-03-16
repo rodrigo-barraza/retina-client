@@ -11,7 +11,7 @@ import {
 import { IrisService } from "../../../services/IrisService";
 import StatsCard from "../../../components/StatsCard";
 import SelectDropdown from "../../../components/SelectDropdown";
-import SortableTable from "../../../components/SortableTable";
+import SortableTable from "../../../components/SortableTableComponent";
 import styles from "./page.module.css";
 
 const ENDPOINT_LABELS = {

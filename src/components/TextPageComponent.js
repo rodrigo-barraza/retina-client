@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, User, Sparkles, ExternalLink, Image as ImageIcon, Code, Eye } from "lucide-react";
+import { User, Sparkles, ExternalLink, Image as ImageIcon, Code, Eye } from "lucide-react";
 import Link from "next/link";
 import { IrisService } from "../services/IrisService";
 import MarkdownContent from "./MarkdownContent";
+import PaginationComponent from "./PaginationComponent";
+import PageHeaderComponent from "./PageHeaderComponent";
+import { LoadingMessage, EmptyMessage } from "./StateMessageComponent";
+import { FilterBarComponent, FilterGroupComponent, FilterPillsComponent, SearchInputComponent, ViewModeToggleComponent } from "./FilterBarComponent";
 import styles from "./TextPageComponent.module.css";
 
 const ORIGIN_FILTERS = [
@@ -59,67 +63,40 @@ export default function TextPageComponent({ mode = "user" }) {
 
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Text</h1>
-        <p className={styles.pageSubtitle}>
-          {total} messages across conversations
-        </p>
-      </div>
+      <PageHeaderComponent
+        title="Text"
+        subtitle={`${total} messages across conversations`}
+      />
 
       {/* Filters */}
-      <div className={styles.filterBar}>
-        <div className={styles.filterGroup}>
-          <span className={styles.filterLabel}>Source</span>
-          <div className={styles.pills}>
-            {ORIGIN_FILTERS.map((f) => {
-              const Icon = f.icon;
-              return (
-                <button
-                  key={f.key}
-                  className={`${styles.pill} ${origin === f.key ? styles.pillActive : ""}`}
-                  onClick={() => { setOrigin(f.key); setPage(1); }}
-                >
-                  {Icon && <Icon size={12} />}
-                  {f.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <form className={styles.searchBox} onSubmit={handleSearch}>
-          <Search size={14} />
-          <input
-            type="text"
-            placeholder="Search text content..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className={styles.searchInput}
+      <FilterBarComponent>
+        <FilterGroupComponent label="Source">
+          <FilterPillsComponent
+            options={ORIGIN_FILTERS}
+            value={origin}
+            onChange={(v) => { setOrigin(v); setPage(1); }}
           />
-        </form>
+        </FilterGroupComponent>
+
+        <SearchInputComponent
+          value={searchInput}
+          onChange={setSearchInput}
+          onSubmit={handleSearch}
+          placeholder="Search text content..."
+        />
 
         {/* Raw / Preview toggle */}
-        <div className={styles.viewToggle}>
-          <button
-            className={`${styles.viewBtn} ${viewMode === "raw" ? styles.viewBtnActive : ""}`}
-            onClick={() => setViewMode("raw")}
-            title="Raw text"
-          >
-            <Code size={14} />
-          </button>
-          <button
-            className={`${styles.viewBtn} ${viewMode === "preview" ? styles.viewBtnActive : ""}`}
-            onClick={() => setViewMode("preview")}
-            title="Markdown preview"
-          >
-            <Eye size={14} />
-          </button>
-        </div>
-      </div>
+        <ViewModeToggleComponent
+          mode={viewMode}
+          onChange={setViewMode}
+          modes={[
+            { key: "raw", icon: Code, title: "Raw text" },
+            { key: "preview", icon: Eye, title: "Markdown preview" }
+          ]}
+        />
+      </FilterBarComponent>
 
-      {loading && (
-        <div className={styles.loading}>Loading messages...</div>
-      )}
+      {loading && <LoadingMessage message="Loading messages..." />}
 
       {/* Text List */}
       {!loading && (
@@ -173,34 +150,15 @@ export default function TextPageComponent({ mode = "user" }) {
         </div>
       )}
 
-      {!loading && texts.length === 0 && (
-        <div className={styles.empty}>No text content found</div>
-      )}
+      {!loading && texts.length === 0 && <EmptyMessage message="No text content found" />}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className={styles.pagination}>
-          <span className={styles.pageInfo}>
-            Page {page} of {totalPages} · {total} total
-          </span>
-          <div className={styles.pageButtons}>
-            <button
-              className={styles.pageBtn}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-            >
-              Prev
-            </button>
-            <button
-              className={styles.pageBtn}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
+      <PaginationComponent
+        page={page}
+        totalPages={totalPages}
+        totalItems={total}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

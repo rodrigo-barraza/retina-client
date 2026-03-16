@@ -2,25 +2,7 @@
   animation: fadeIn var(--transition-normal) ease-out;
 }
 
-.pageHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
 
-.pageTitle {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--text-primary);
-}
-
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 
 .exportBtn {
   display: flex;
@@ -40,56 +22,7 @@
   color: white;
 }
 
-/* Filter bar */
-.filterBar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 16px;
-  padding: 14px 18px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-}
 
-.filterGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.filterLabel {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.filterInput {
-  padding: 6px 10px;
-  font-size: 13px;
-  min-width: 140px;
-}
-
-.filterSelect {
-  padding: 6px 10px;
-  font-size: 13px;
-  min-width: 120px;
-  cursor: pointer;
-}
-
-.clearBtn {
-  align-self: flex-end;
-  padding: 6px 12px;
-  font-size: 12px;
-  color: var(--text-muted);
-  transition: color var(--transition-fast);
-}
-
-.clearBtn:hover {
-  color: var(--text-primary);
-}
 
 /* Table */
 .tableWrapper {
@@ -338,31 +271,86 @@
   font-weight: 500;
 }
 
+/* Associations */
+.associationGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.associationGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.associationGroupLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.associationList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.associationItem {
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+.associationLink {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    border-color: var(--accent-color);
+    background: var(--accent-subtle);
+  }
+}
+
+.associationTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.associationMeta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.associationEmpty {
+  font-size: 14px;
+  color: var(--text-muted);
+  padding-left: 2px;
+}
+
 .mono {
   font-family: "SF Mono", "Fira Code", monospace;
   font-size: 12px;
 }
 
-/* Empty / Error */
-.emptyState {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--text-muted);
-  font-size: 14px;
-}
 
-.errorBanner {
-  background: var(--danger-subtle);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: var(--border-radius-md);
-  padding: 14px 18px;
-  color: var(--danger);
-  font-size: 14px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 
 @keyframes fadeIn {
   from {
