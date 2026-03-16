@@ -5,6 +5,7 @@ import { Image as ImageIcon, Music, Film, User, Sparkles, ExternalLink, Grid, Li
 import Link from "next/link";
 import { IrisService } from "../../../services/IrisService";
 import { PrismService } from "../../../services/PrismService";
+import ComboboxFilter from "../../../components/ComboboxFilter";
 import styles from "./page.module.css";
 
 const ORIGIN_FILTERS = [
@@ -46,10 +47,12 @@ export default function MediaPage() {
   const [media, setMedia] = useState([]);
   const [total, setTotal] = useState(0);
   const [projects, setProjects] = useState([]);
+  const [usernames, setUsernames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [origin, setOrigin] = useState("all");
   const [type, setType] = useState("all");
-  const [project, setProject] = useState("all");
+  const [project, setProject] = useState("");
+  const [username, setUsername] = useState("");
   const [viewMode, setViewMode] = useState("grid");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -62,19 +65,21 @@ export default function MediaPage() {
       const params = { page, limit: PAGE_SIZE };
       if (origin !== "all") params.origin = origin;
       if (type !== "all") params.type = type;
-      if (project !== "all") params.project = project;
+      if (project) params.project = project;
+      if (username) params.username = username;
       if (search) params.search = search;
 
       const result = await IrisService.getMedia(params);
       setMedia(result.data || []);
       setTotal(result.total || 0);
       if (result.projects) setProjects(result.projects);
+      if (result.usernames) setUsernames(result.usernames);
     } catch (err) {
       console.error("Failed to load media:", err);
     } finally {
       setLoading(false);
     }
-  }, [page, origin, type, project, search]);
+  }, [page, origin, type, project, username, search]);
 
   useEffect(() => {
     loadMedia();
@@ -137,21 +142,27 @@ export default function MediaPage() {
           </div>
         </div>
 
-        {projects.length > 0 && (
-          <div className={styles.filterGroup}>
-            <span className={styles.filterLabel}>Project</span>
-            <select
-              className={styles.filterSelect}
-              value={project}
-              onChange={(e) => { setProject(e.target.value); setPage(1); }}
-            >
-              <option value="all">All Projects</option>
-              {projects.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div className={styles.filterGroup}>
+          <span className={styles.filterLabel}>Project</span>
+          <ComboboxFilter
+            options={projects}
+            value={project}
+            onChange={(v) => { setProject(v); setPage(1); }}
+            placeholder="All Projects"
+            allLabel="All Projects"
+          />
+        </div>
+
+        <div className={styles.filterGroup}>
+          <span className={styles.filterLabel}>User</span>
+          <ComboboxFilter
+            options={usernames}
+            value={username}
+            onChange={(v) => { setUsername(v); setPage(1); }}
+            placeholder="All Users"
+            allLabel="All Users"
+          />
+        </div>
 
         <form className={styles.searchBox} onSubmit={handleSearch}>
           <Search size={14} />
