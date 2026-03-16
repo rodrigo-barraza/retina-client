@@ -184,6 +184,8 @@ export default function ConversationsPage({ initialId = null }) {
     async function selectConversation(id) {
         if (id === selectedId) return;
         setSelectedId(id);
+        // Update URL for deep-linking
+        window.history.replaceState(null, "", `/admin/conversations/${id}`);
         // Remove NEW badge when clicking into a conversation
         setNewIds((prev) => {
             if (!prev.has(id)) return prev;
