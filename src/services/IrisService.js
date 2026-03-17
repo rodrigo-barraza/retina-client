@@ -1,4 +1,4 @@
-import { PRISM_URL, ADMIN_SECRET } from "../../config.js";
+import { PRISM_URL, ADMIN_SECRET, PRISM_SECRET } from "../../config.js";
 
 const API_BASE = PRISM_URL;
 const SECRET = ADMIN_SECRET;
@@ -15,6 +15,27 @@ function getHeaders() {
 async function fetchJSON(path, options = {}) {
     const res = await fetch(`${API_BASE}/admin${path}`, {
         headers: getHeaders(),
+        ...options,
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `Request failed: ${res.status}`);
+    }
+    return res.json();
+}
+
+/**
+ * Fetch a user-scoped route (behind x-api-secret) but with admin identity.
+ * Used for routes like /config that don't live under /admin.
+ */
+async function fetchUserRouteAsAdmin(path, options = {}) {
+    const res = await fetch(`${API_BASE}${path}`, {
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-secret": PRISM_SECRET,
+            "x-project": "retina",
+            "x-username": "admin",
+        },
         ...options,
     });
     if (!res.ok) {
@@ -80,6 +101,10 @@ export default class IrisService {
         return fetchJSON(`/conversations/${id}`);
     }
 
+    static async getConversationWorkflows(id) {
+        return fetchUserRouteAsAdmin(`/conversations/${id}/workflows`);
+    }
+
     // ── Live ──────────────────────────────────────────────────
     static async getLiveActivity(minutes = 5) {
         return fetchJSON(`/live?minutes=${minutes}`);
@@ -129,5 +154,10 @@ export default class IrisService {
     static async getText(params = {}) {
         const query = new URLSearchParams(params).toString();
         return fetchJSON(`/text${query ? `?${query}` : ""}`);
+    }
+
+    // ── Config (user route, admin identity) ───────────────────
+    static async getConfig() {
+        return fetchUserRouteAsAdmin("/config");
     }
 }

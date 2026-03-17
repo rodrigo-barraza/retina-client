@@ -51,6 +51,7 @@ export default function HomePage({ initialConversationId = null }) {
     const [showModelList, setShowModelList] = useState(false);
     const [showSystemPromptModal, setShowSystemPromptModal] = useState(false);
     const skipSystemPromptSave = useRef(false);
+    const [workflows, setWorkflows] = useState([]);
 
     // Helper to update URL bar without triggering Next.js navigation.
     // Uses History.prototype.replaceState to bypass Next.js's patching of window.history.
@@ -93,6 +94,17 @@ export default function HomePage({ initialConversationId = null }) {
         }, 500);
         return () => clearTimeout(timer);
     }, [settings.systemPrompt]);
+
+    // Fetch workflows that include this conversation
+    useEffect(() => {
+        if (!activeId) {
+            setWorkflows([]);
+            return;
+        }
+        PrismService.getConversationWorkflows(activeId)
+            .then(setWorkflows)
+            .catch(() => setWorkflows([]));
+    }, [activeId]);
 
     useEffect(() => {
         PrismService.getConfig()
@@ -1064,6 +1076,7 @@ export default function HomePage({ initialConversationId = null }) {
                         onSystemPromptClick={() => setShowSystemPromptModal(true)}
                         showSystemPromptModal={showSystemPromptModal}
                         onCloseSystemPromptModal={() => setShowSystemPromptModal(false)}
+                        workflows={workflows}
                     />
                 }
                 rightPanel={

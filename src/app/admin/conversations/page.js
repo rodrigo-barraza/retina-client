@@ -8,7 +8,6 @@ import {
     MessageSquare,
 } from "lucide-react";
 import IrisService from "../../../services/IrisService";
-import PrismService from "../../../services/PrismService";
 import MessageList from "../../../components/MessageList";
 import SettingsPanel from "../../../components/SettingsPanel";
 import HistoryPanel from "../../../components/HistoryPanel";
@@ -30,6 +29,7 @@ export default function ConversationsPage({ initialId = null }) {
     const [newIds, setNewIds] = useState(new Set());
     const [activeCount, setActiveCount] = useState(0);
     const [fingerprint, setFingerprint] = useState("");
+    const [workflows, setWorkflows] = useState([]);
 
     const knownIdsRef = useRef(null); // null = not yet initialized
     const lastFingerprintRef = useRef("");
@@ -38,7 +38,7 @@ export default function ConversationsPage({ initialId = null }) {
     const intervalRef = useRef(null);
 
     useEffect(() => {
-        PrismService.getConfig()
+        IrisService.getConfig()
             .then(setConfig)
             .catch(() => { });
     }, []);
@@ -158,6 +158,17 @@ export default function ConversationsPage({ initialId = null }) {
         return () => clearInterval(intervalRef.current);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Fetch workflows for the selected conversation
+    useEffect(() => {
+        if (!selectedId) {
+            setWorkflows([]);
+            return;
+        }
+        IrisService.getConversationWorkflows(selectedId)
+            .then(setWorkflows)
+            .catch(() => setWorkflows([]));
+    }, [selectedId]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -287,6 +298,7 @@ export default function ConversationsPage({ initialId = null }) {
                                 config={config}
                                 settings={selectedConv.settings}
                                 readOnly
+                                workflows={workflows}
                             />
                         ) : (
                             <div className={styles.emptyPanel}>

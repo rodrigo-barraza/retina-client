@@ -17,6 +17,8 @@ import {
     Search,
     Brain,
     DollarSign,
+    GitBranch,
+    ExternalLink,
 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import SelectDropdown from "./SelectDropdown";
@@ -35,6 +37,7 @@ export default function SettingsPanel({
     onSystemPromptClick,
     showSystemPromptModal = false,
     onCloseSystemPromptModal,
+    workflows = [],
 }) {
     const { _providers = {}, textToText = {} } = config || {};
     const textModelsMap = textToText.models || {};
@@ -235,6 +238,31 @@ export default function SettingsPanel({
     return (
         <>
             <div className={styles.container}>
+                {workflows.length > 0 && (
+                    <div className={styles.modalities} style={{ marginBottom: 12 }}>
+                        <div className={styles.modalitiesHeader}>
+                            <GitBranch size={12} style={{ marginRight: 4 }} /> Workflow
+                        </div>
+                        {workflows.map((wf) => (
+                            <a
+                                key={wf._id}
+                                href={`/workflows/${wf._id}`}
+                                className={styles.workflowLink}
+                            >
+                                <span className={styles.modalityIcon}>
+                                    <GitBranch size={12} />
+                                </span>
+                                <span className={styles.modalityName}>
+                                    {wf.workflowName || "Untitled Workflow"}
+                                </span>
+                                <span className={styles.modalityStatus}>
+                                    <ExternalLink size={10} />
+                                </span>
+                            </a>
+                        ))}
+                    </div>
+                )}
+
                 <div className={styles.sectionTitle}>
                     <Cpu size={16} /> Model Settings
                 </div>

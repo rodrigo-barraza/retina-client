@@ -66,8 +66,9 @@ export default function ModelsPageComponent({ mode = "user" }) {
     try {
       setError(null);
       const lmService = isAdmin ? IrisService : PrismService;
+      const configService = isAdmin ? IrisService : PrismService;
       const [config, lmData] = await Promise.all([
-        PrismService.getConfig().catch(() => null),
+        configService.getConfig().catch(() => null),
         lmService.getLmStudioModels().catch(() => ({ models: [] })),
       ]);
 

@@ -113,6 +113,15 @@ export default class PrismService {
     return PrismService._request(`/conversations/${id}`, { method: "PATCH", body: fields });
   }
 
+  /**
+   * Get workflows that include this conversation.
+   * @param {string} id - Conversation ID
+   * @returns {Promise<Array<{ _id, workflowName, updatedAt }>>}
+   */
+  static async getConversationWorkflows(id) {
+    return PrismService._request(`/conversations/${id}/workflows`, { method: "GET" });
+  }
+
   // ---------------------------------------------------------------------------
   // Chat
   // ---------------------------------------------------------------------------

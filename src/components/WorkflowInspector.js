@@ -5,6 +5,7 @@ import { Eye, Type, Volume2, X, Maximize2, Search, ChevronDown, Paperclip, Code,
 import ProviderLogo from "./ProviderLogos";
 import { MODALITY_ICONS } from "./WorkflowNodeConstants";
 import MarkdownContent from "./MarkdownContent";
+import TextContentComponent from "./TextContentComponent";
 import MessageList from "./MessageList";
 import AudioRecorderComponent from "./AudioRecorderComponent";
 import AssetInputOptions from "./AssetInputOptions";
@@ -51,11 +52,8 @@ export default function WorkflowInspector({
     // Model change state (hooks must be called before any early return)
     const [modelSearch, setModelSearch] = useState("");
     const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
-    const [contentPreview, setContentPreview] = useState(false);
-    const [modelTextPreview, setModelTextPreview] = useState(false);
-    const [viewerTextPreview, setViewerTextPreview] = useState(false);
     const [conversationView, setConversationView] = useState("json");
-    const textareaRef = useRef(null);
+
 
     // ── Resize logic ──
     const [inspectorWidth, setInspectorWidth] = useState(getStoredWidth);
@@ -90,12 +88,7 @@ export default function WorkflowInspector({
         try { localStorage.setItem(STORAGE_KEY, String(inspectorWidth)); } catch { /* ignore */ }
     }, [inspectorWidth]);
 
-    const autoResizeTextarea = useCallback((el) => {
-        if (!el) return;
-        textareaRef.current = el;
-        el.style.height = "auto";
-        el.style.height = el.scrollHeight + "px";
-    }, []);
+
 
 
 
@@ -371,46 +364,13 @@ export default function WorkflowInspector({
                 {/* Content — text input assets */}
                 {isInput && node.modality === "text" && (
                     <section className={`${styles.section} ${styles.scrollableSection}`}>
-                        <div className={styles.sectionHeaderRow}>
-                            <label className={styles.sectionLabel}>Text Content</label>
-                            <div className={styles.contentTabs}>
-                                <button
-                                    className={`${styles.contentTab} ${!contentPreview ? styles.contentTabActive : ""}`}
-                                    onClick={() => setContentPreview(false)}
-                                >
-                                    <Code size={10} />
-                                    Raw
-                                </button>
-                                <button
-                                    className={`${styles.contentTab} ${contentPreview ? styles.contentTabActive : ""}`}
-                                    onClick={() => setContentPreview(true)}
-                                >
-                                    <BookOpen size={10} />
-                                    Preview
-                                </button>
-                            </div>
-                        </div>
-                        {contentPreview ? (
-                            <div className={styles.markdownPreview}>
-                                {node.content ? (
-                                    <MarkdownContent content={node.content} />
-                                ) : (
-                                    <span className={styles.previewEmpty}>Nothing to preview</span>
-                                )}
-                            </div>
-                        ) : (
-                            <textarea
-                                ref={autoResizeTextarea}
-                                className={styles.textarea}
-                                value={node.content || ""}
-                                onChange={readOnly ? undefined : (e) => {
-                                    onUpdateNodeContent?.(node.id, e.target.value);
-                                    autoResizeTextarea(e.target);
-                                }}
-                                readOnly={readOnly}
-                                placeholder="Enter text..."
-                            />
-                        )}
+                        <TextContentComponent
+                            label="Text Content"
+                            value={node.content || ""}
+                            onChange={readOnly ? undefined : (val) => onUpdateNodeContent?.(node.id, val)}
+                            readOnly={readOnly}
+                            placeholder="Enter text..."
+                        />
                     </section>
                 )}
 
@@ -571,32 +531,11 @@ export default function WorkflowInspector({
 
                         {results.text && (
                             <div className={styles.resultBlock}>
-                                <div className={styles.sectionHeaderRow}>
-                                    <span className={styles.resultType}>Text</span>
-                                    <div className={styles.contentTabs}>
-                                        <button
-                                            className={`${styles.contentTab} ${!modelTextPreview ? styles.contentTabActive : ""}`}
-                                            onClick={() => setModelTextPreview(false)}
-                                        >
-                                            <Code size={10} />
-                                            Raw
-                                        </button>
-                                        <button
-                                            className={`${styles.contentTab} ${modelTextPreview ? styles.contentTabActive : ""}`}
-                                            onClick={() => setModelTextPreview(true)}
-                                        >
-                                            <BookOpen size={10} />
-                                            Preview
-                                        </button>
-                                    </div>
-                                </div>
-                                {modelTextPreview ? (
-                                    <div className={styles.markdownPreview}>
-                                        <MarkdownContent content={results.text} />
-                                    </div>
-                                ) : (
-                                    <div className={styles.resultText}>{results.text}</div>
-                                )}
+                                <TextContentComponent
+                                    label="Text"
+                                    value={results.text}
+                                    readOnly
+                                />
                             </div>
                         )}
 
@@ -628,11 +567,10 @@ export default function WorkflowInspector({
                 {/* Viewer received content — show all types */}
                 {isViewer && node.receivedOutputs && Object.keys(node.receivedOutputs).length > 0 && (
                     <section className={`${styles.section} ${styles.scrollableSection}`}>
-                        <label className={styles.sectionLabel}>Received Output</label>
 
                         {node.receivedOutputs.image && (
                             <div className={styles.resultBlock}>
-                                <span className={styles.resultType}>Image</span>
+                                <span className={styles.resultType}>Image Content</span>
                                 <div className={styles.resultImageContainer}>
                                     <img /* eslint-disable-line @next/next/no-img-element */
                                         src={PrismService.getFileUrl(node.receivedOutputs.image)}
@@ -654,45 +592,24 @@ export default function WorkflowInspector({
 
                         {node.receivedOutputs.text && (
                             <div className={styles.resultBlock}>
-                                <div className={styles.sectionHeaderRow}>
-                                    <span className={styles.resultType}>Text</span>
-                                    <div className={styles.contentTabs}>
-                                        <button
-                                            className={`${styles.contentTab} ${!viewerTextPreview ? styles.contentTabActive : ""}`}
-                                            onClick={() => setViewerTextPreview(false)}
-                                        >
-                                            <Code size={10} />
-                                            Raw
-                                        </button>
-                                        <button
-                                            className={`${styles.contentTab} ${viewerTextPreview ? styles.contentTabActive : ""}`}
-                                            onClick={() => setViewerTextPreview(true)}
-                                        >
-                                            <BookOpen size={10} />
-                                            Preview
-                                        </button>
-                                    </div>
-                                </div>
-                                {viewerTextPreview ? (
-                                    <div className={styles.markdownPreview}>
-                                        <MarkdownContent content={node.receivedOutputs.text} />
-                                    </div>
-                                ) : (
-                                    <div className={styles.resultText}>{node.receivedOutputs.text}</div>
-                                )}
+                                <TextContentComponent
+                                    label="Text Content"
+                                    value={node.receivedOutputs.text}
+                                    readOnly
+                                />
                             </div>
                         )}
 
                         {node.receivedOutputs.audio && (
                             <div className={styles.resultBlock}>
-                                <span className={styles.resultType}>Audio</span>
+                                <span className={styles.resultType}>Audio Content</span>
                                 <audio controls src={PrismService.getFileUrl(node.receivedOutputs.audio)} className={styles.resultAudio} />
                             </div>
                         )}
 
                         {node.receivedOutputs.embedding && (
                             <div className={styles.resultBlock}>
-                                <span className={styles.resultType}>Embedding [{node.receivedOutputs.embedding.length} dims]</span>
+                                <span className={styles.resultType}>Embedding Content [{node.receivedOutputs.embedding.length} dims]</span>
                                 <div className={styles.resultText} style={{ fontSize: "11px", fontFamily: "monospace", maxHeight: "120px", overflow: "auto" }}>
                                     [{node.receivedOutputs.embedding.slice(0, 8).map((v) => v.toFixed(6)).join(", ")}{node.receivedOutputs.embedding.length > 8 ? ", …" : ""}]
                                 </div>

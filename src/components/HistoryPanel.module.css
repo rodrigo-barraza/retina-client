@@ -6,7 +6,7 @@
 
 .newBtn {
   margin: 12px;
-  height: var(--input-height);
+  height: var(--button-height);
   padding: 0 10px;
   display: flex;
   align-items: center;
