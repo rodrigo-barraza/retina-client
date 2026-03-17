@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { User, Sparkles, ExternalLink, Image as ImageIcon, Code, Eye } from "lucide-react";
 import Link from "next/link";
 import IrisService from "../services/IrisService";
+import PrismService from "../services/PrismService";
 import MarkdownContent from "./MarkdownContent";
 import PaginationComponent from "./PaginationComponent";
 import PageHeaderComponent from "./PageHeaderComponent";
@@ -37,9 +38,9 @@ export default function TextPageComponent({ mode = "user" }) {
       const params = { page, limit: PAGE_SIZE };
       if (origin !== "all") params.origin = origin;
       if (search) params.search = search;
-      if (!isAdmin) params.project = "retina";
 
-      const result = await IrisService.getText(params);
+      const service = isAdmin ? IrisService : PrismService;
+      const result = await service.getText(params);
       setTexts(result.data || []);
       setTotal(result.total || 0);
     } catch (err) {

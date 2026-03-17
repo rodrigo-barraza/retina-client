@@ -65,9 +65,10 @@ export default function ModelsPageComponent({ mode = "user" }) {
   const fetchModels = useCallback(async () => {
     try {
       setError(null);
+      const lmService = isAdmin ? IrisService : PrismService;
       const [config, lmData] = await Promise.all([
         PrismService.getConfig().catch(() => null),
-        IrisService.getLmStudioModels().catch(() => ({ models: [] })),
+        lmService.getLmStudioModels().catch(() => ({ models: [] })),
       ]);
 
       const flat = flattenConfigModels(config);
@@ -97,7 +98,7 @@ export default function ModelsPageComponent({ mode = "user" }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     fetchModels();
@@ -113,7 +114,8 @@ export default function ModelsPageComponent({ mode = "user" }) {
   const handleLoad = async (modelKey) => {
     setActionInProgress({ id: modelKey, type: "load" });
     try {
-      await IrisService.loadLmStudioModel(modelKey);
+      const lmService = isAdmin ? IrisService : PrismService;
+      await lmService.loadLmStudioModel(modelKey);
       showToast(`Loaded ${modelKey}`, "success");
       await fetchModels();
     } catch (err) {
@@ -126,7 +128,8 @@ export default function ModelsPageComponent({ mode = "user" }) {
   const handleUnload = async (instanceId) => {
     setActionInProgress({ id: instanceId, type: "unload" });
     try {
-      await IrisService.unloadLmStudioModel(instanceId);
+      const lmService = isAdmin ? IrisService : PrismService;
+      await lmService.unloadLmStudioModel(instanceId);
       showToast(`Unloaded ${instanceId}`, "success");
       await fetchModels();
     } catch (err) {

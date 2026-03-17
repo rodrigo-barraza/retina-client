@@ -379,4 +379,64 @@ export default class PrismService {
       body: { conversationIds },
     });
   }
+
+  // ---------------------------------------------------------------------------
+  // Media
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List media items from the caller's project conversations.
+   * @param {object} [params] - { page, limit, type, origin, search }
+   * @returns {Promise<{ data, total, page, limit }>}
+   */
+  static async getMedia(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return PrismService._request(`/media${query ? `?${query}` : ""}`, { method: "GET" });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Text
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List text content from the caller's project conversations.
+   * @param {object} [params] - { page, limit, origin, search }
+   * @returns {Promise<{ data, total, page, limit }>}
+   */
+  static async getText(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return PrismService._request(`/text${query ? `?${query}` : ""}`, { method: "GET" });
+  }
+
+  // ---------------------------------------------------------------------------
+  // LM Studio
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List all LM Studio models (loaded + downloaded).
+   * @returns {Promise<{ models: Array }>}
+   */
+  static async getLmStudioModels() {
+    return PrismService._request("/lm-studio/models", { method: "GET" });
+  }
+
+  /**
+   * Load a model into LM Studio.
+   * @param {string} model - model key to load
+   * @returns {Promise<object>}
+   */
+  static async loadLmStudioModel(model) {
+    return PrismService._request("/lm-studio/load", { body: { model } });
+  }
+
+  /**
+   * Unload a model from LM Studio memory.
+   * @param {string} instanceId - instance ID to unload
+   * @returns {Promise<object>}
+   */
+  static async unloadLmStudioModel(instanceId) {
+    return PrismService._request("/lm-studio/unload", {
+      body: { instance_id: instanceId },
+    });
+  }
 }

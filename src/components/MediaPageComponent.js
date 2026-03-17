@@ -80,13 +80,12 @@ export default function MediaPageComponent({ mode = "user" }) {
       if (type !== "all") params.type = type;
       if (isAdmin) {
         if (project) params.project = project;
-      } else {
-        params.project = "retina";
+        if (username) params.username = username;
       }
-      if (username) params.username = username;
       if (search) params.search = search;
 
-      const result = await IrisService.getMedia(params);
+      const service = isAdmin ? IrisService : PrismService;
+      const result = await service.getMedia(params);
       setMedia(result.data || []);
       setTotal(result.total || 0);
       if (result.projects) setProjects(result.projects);
