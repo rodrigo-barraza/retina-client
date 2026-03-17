@@ -7,6 +7,8 @@ function getHeaders() {
     return {
         "Content-Type": "application/json",
         "x-admin-secret": SECRET,
+        "x-project": "retina",
+        "x-username": "admin",
     };
 }
 
