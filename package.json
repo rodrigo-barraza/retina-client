@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "WATCHPACK_POLLING=true next dev -p 3333",
+    "dev": ". ./.env 2>/dev/null; WATCHPACK_POLLING=true next dev -p ${PORT:-3333}",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --quiet",
