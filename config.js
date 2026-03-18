@@ -10,8 +10,19 @@
 // ============================================================
 
 // Prism API Gateway
-export const PRISM_URL = "https://prism.clankerbox.com";
-export const PRISM_WS_URL = "wss://prism.clankerbox.com";
+const IS_LOCAL =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1");
+
+export const PRISM_URL = IS_LOCAL
+  ? "http://localhost:7777"
+  : "https://prism.clankerbox.com";
+
+export const PRISM_WS_URL = IS_LOCAL
+  ? "ws://localhost:7777"
+  : "wss://prism.clankerbox.com";
+
 export const PRISM_SECRET = "banana";
 
 // Admin Auth (Iris Dashboard)
