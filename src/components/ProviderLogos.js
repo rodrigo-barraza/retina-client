@@ -154,23 +154,3 @@ export const PROVIDER_LABELS = {
     ollama: "Ollama",
 };
 
-/**
- * Get the correct display label for the local LLM provider.
- * Uses the backend type from config to show "LM Studio" or "vLLM".
- * @param {object} config - The Prism config object
- * @returns {string}
- */
-export function getLocalLlmLabel(config) {
-    if (config?.localLlmBackend === "vllm") return "vLLM";
-    return "LM Studio";
-}
-
-/**
- * Get the correct logo key for the local LLM provider.
- * @param {object} config - The Prism config object
- * @returns {string}
- */
-export function getLocalLlmLogoKey(config) {
-    if (config?.localLlmBackend === "vllm") return "vllm";
-    return "lm-studio";
-}

@@ -23,7 +23,3 @@ export const PRISM_WS_URL = IS_LOCAL
   ? "ws://localhost:7777"
   : "wss://prism.clankerbox.com";
 
-export const PRISM_SECRET = "banana";
-
-// Admin Auth (Iris Dashboard)
-export const ADMIN_SECRET = "iris-admin";

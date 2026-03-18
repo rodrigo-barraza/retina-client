@@ -1,14 +1,12 @@
 // API Service for communicating with Prism AI Gateway
 
-import { PRISM_URL, PRISM_SECRET } from "../../config.js";
+import { PRISM_URL } from "../../config.js";
 
 const API_BASE = PRISM_URL;
-const SECRET = PRISM_SECRET;
 
 function getHeaders() {
   return {
     "Content-Type": "application/json",
-    "x-api-secret": SECRET,
     "x-project": "retina",
     "x-username": "default",
   };
@@ -22,7 +20,7 @@ function getHeaders() {
 function resolveFileRef(ref) {
   if (typeof ref === "string" && ref.startsWith("minio://")) {
     const key = ref.replace("minio://", "");
-    return `${API_BASE}/files/${key}?secret=${encodeURIComponent(SECRET)}`;
+    return `${API_BASE}/files/${key}`;
   }
   return ref;
 }

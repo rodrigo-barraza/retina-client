@@ -72,8 +72,6 @@ export default function ModelsPageComponent({ mode = "user" }) {
         lmService.getLmStudioModels().catch(() => ({ models: [] })),
       ]);
 
-      const isVllm = config?.localLlmBackend === "vllm";
-
       const flat = flattenConfigModels(config);
 
       const lmApiModels = (lmData.models || []).filter((m) => m.type === "llm");
@@ -88,10 +86,8 @@ export default function ModelsPageComponent({ mode = "user" }) {
               loaded_instances: apiModel.loaded_instances,
               loaded: apiModel.loaded_instances?.length > 0,
               key: apiModel.key,
-              _isVllm: isVllm,
             };
           }
-          return { ...m, _isVllm: isVllm };
         }
         return m;
       });
@@ -154,7 +150,6 @@ export default function ModelsPageComponent({ mode = "user" }) {
   const renderActions = isAdmin
     ? (model) => {
         if (model.provider !== "lm-studio") return null;
-        if (model._isVllm) return null; // vLLM doesn't support load/unload
 
         const isLoaded = model.loaded_instances?.length > 0;
         const instance = model.loaded_instances?.[0];

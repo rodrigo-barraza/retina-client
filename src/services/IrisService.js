@@ -1,12 +1,10 @@
-import { PRISM_URL, ADMIN_SECRET, PRISM_SECRET } from "../../config.js";
+import { PRISM_URL } from "../../config.js";
 
 const API_BASE = PRISM_URL;
-const SECRET = ADMIN_SECRET;
 
 function getHeaders() {
     return {
         "Content-Type": "application/json",
-        "x-admin-secret": SECRET,
         "x-project": "retina",
         "x-username": "admin",
     };
@@ -25,17 +23,12 @@ async function fetchJSON(path, options = {}) {
 }
 
 /**
- * Fetch a user-scoped route (behind x-api-secret) but with admin identity.
+ * Fetch a user-scoped route with admin identity.
  * Used for routes like /config that don't live under /admin.
  */
 async function fetchUserRouteAsAdmin(path, options = {}) {
     const res = await fetch(`${API_BASE}${path}`, {
-        headers: {
-            "Content-Type": "application/json",
-            "x-api-secret": PRISM_SECRET,
-            "x-project": "retina",
-            "x-username": "admin",
-        },
+        headers: getHeaders(),
         ...options,
     });
     if (!res.ok) {
