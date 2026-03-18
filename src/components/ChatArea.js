@@ -29,6 +29,7 @@ import ModelGrid from "./ModelGrid";
 import styles from "./ChatArea.module.css";
 import { useEffect, useRef, useState } from "react";
 import PrismService from "../services/PrismService";
+import { MODALITY_COLORS } from "./WorkflowNodeConstants";
 
 // Map model input types to file accept strings
 const TYPE_ACCEPT_MAP = {
@@ -555,7 +556,7 @@ export default function ChatArea({
                                                     }
                                                 }}
                                             >
-                                                <div className={styles.capabilityIcon}>
+                                                <div className={styles.capabilityIcon} style={{ color: MODALITY_COLORS[mod.key] }}>
                                                     <Icon size={20} />
                                                 </div>
                                                 <div className={styles.capabilityInfo}>
@@ -626,7 +627,7 @@ export default function ChatArea({
                                                                 }
                                                             }}
                                                         >
-                                                            <div className={styles.capabilityIcon}>
+                                                            <div className={styles.capabilityIcon} style={{ color: MODALITY_COLORS[key] }}>
                                                                 <Icon size={20} />
                                                             </div>
                                                             <div className={styles.capabilityInfo}>

@@ -26,6 +26,7 @@ import ToggleSwitch from "./ToggleSwitch";
 import SliderComponent from "./SliderComponent";
 import SystemPromptModal from "./SystemPromptModal";
 import styles from "./SettingsPanel.module.css";
+import { MODALITY_COLORS } from "./WorkflowNodeConstants";
 
 export default function SettingsPanel({
     config,
@@ -346,7 +347,7 @@ export default function SettingsPanel({
                                                 key={m.type}
                                                 className={styles.modalityRow}
                                             >
-                                                <span className={styles.modalityIcon}>
+                                                <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS[m.type] }}>
                                                     {iconMap[m.type]}
                                                 </span>
                                                 <span className={styles.modalityName}>{m.type}</span>

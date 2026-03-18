@@ -15,6 +15,7 @@ import {
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import { DateTime } from "luxon";
 import styles from "./HistoryList.module.css";
+import { MODALITY_COLORS } from "./WorkflowNodeConstants";
 
 const MODALITY_FILTERS = [
   { key: "text", icon: Type, title: "Text" },
@@ -223,17 +224,17 @@ export default function HistoryList({
                 {/* Modality icons */}
                 {Object.keys(mod).length > 0 && (
                   <div className={styles.modalities}>
-                    {mod.textIn && <span className={styles.modalityIcon} title="Text input"><Type size={11} /></span>}
-                    {mod.imageIn && <span className={styles.modalityIcon} title="Image input"><Image size={11} /></span>}
-                    {mod.audioIn && <span className={styles.modalityIcon} title="Audio input"><Volume2 size={11} /></span>}
-                    {mod.docIn && <span className={styles.modalityIcon} title="Document input"><DocIcon size={11} /></span>}
+                    {mod.textIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.text }} title="Text input"><Type size={11} /></span>}
+                    {mod.imageIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.image }} title="Image input"><Image size={11} /></span>}
+                    {mod.audioIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.audio }} title="Audio input"><Volume2 size={11} /></span>}
+                    {mod.docIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.pdf }} title="Document input"><DocIcon size={11} /></span>}
                     {(mod.textIn || mod.imageIn || mod.audioIn || mod.docIn) &&
                       (mod.textOut || mod.imageOut || mod.audioOut) && (
                         <span className={styles.modalityArrow}>→</span>
                       )}
-                    {mod.textOut && <span className={styles.modalityIcon} title="Text output"><Type size={11} /></span>}
-                    {mod.imageOut && <span className={styles.modalityIcon} title="Image output"><Image size={11} /></span>}
-                    {mod.audioOut && <span className={styles.modalityIcon} title="Audio output"><Volume2 size={11} /></span>}
+                    {mod.textOut && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.text }} title="Text output"><Type size={11} /></span>}
+                    {mod.imageOut && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.image }} title="Image output"><Image size={11} /></span>}
+                    {mod.audioOut && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.audio }} title="Audio output"><Volume2 size={11} /></span>}
                   </div>
                 )}
               </div>
