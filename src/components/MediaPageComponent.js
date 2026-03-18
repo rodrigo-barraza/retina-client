@@ -13,6 +13,7 @@ import SortableTableComponent from "./SortableTableComponent";
 import PageHeaderComponent from "./PageHeaderComponent";
 import { LoadingMessage, EmptyMessage } from "./StateMessageComponent";
 import { FilterBarComponent, FilterGroupComponent, FilterPillsComponent, SearchInputComponent, ViewModeToggleComponent } from "./FilterBarComponent";
+import { MODALITY_COLORS } from "./WorkflowNodeConstants";
 import styles from "./MediaPageComponent.module.css";
 
 const ORIGIN_FILTERS = [
@@ -23,10 +24,10 @@ const ORIGIN_FILTERS = [
 
 const TYPE_FILTERS = [
   { key: "all", label: "All" },
-  { key: "image", label: "Images", icon: ImageIcon },
-  { key: "audio", label: "Audio", icon: Music },
-  { key: "video", label: "Video", icon: Film },
-  { key: "pdf", label: "PDF", icon: FileText },
+  { key: "image", label: "Images", icon: ImageIcon, color: MODALITY_COLORS.image },
+  { key: "audio", label: "Audio", icon: Music, color: MODALITY_COLORS.audio },
+  { key: "video", label: "Video", icon: Film, color: MODALITY_COLORS.video },
+  { key: "pdf", label: "PDF", icon: FileText, color: MODALITY_COLORS.pdf },
 ];
 
 function resolveUrl(url) {
@@ -38,10 +39,11 @@ function resolveUrl(url) {
 }
 
 function MediaTypeIcon({ type, size = 32 }) {
-  if (type === "audio") return <Music size={size} />;
-  if (type === "video") return <Film size={size} />;
-  if (type === "pdf") return <FileText size={size} />;
-  return <ImageIcon size={size} />;
+  const color = MODALITY_COLORS[type] || MODALITY_COLORS.image;
+  if (type === "audio") return <Music size={size} style={{ color }} />;
+  if (type === "video") return <Film size={size} style={{ color }} />;
+  if (type === "pdf") return <FileText size={size} style={{ color }} />;
+  return <ImageIcon size={size} style={{ color }} />;
 }
 
 function OriginBadge({ origin, className }) {
@@ -150,7 +152,7 @@ export default function MediaPageComponent({ mode = "user" }) {
         );
       }
     },
-    { key: "type", label: "Type", render: (m) => <span className={styles.typeBadge}>{m.mediaType}</span> },
+    { key: "type", label: "Type", render: (m) => <span className={styles.typeBadge} style={{ color: MODALITY_COLORS[m.mediaType] }}>{m.mediaType}</span> },
     { key: "source", label: "Source", render: (m) => <OriginBadge origin={m.origin} className={styles.originPill} /> },
     {
       key: "conversation", label: "Conversation", render: (m) => (

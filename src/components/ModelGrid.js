@@ -6,15 +6,10 @@ import {
     X,
     ChevronDown,
     ChevronUp,
-    Type,
-    Image,
-    Volume2,
-    Video,
-    FileText,
     ArrowRight,
-    Hash,
 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
+import { MODALITY_ICONS, MODALITY_COLORS } from "./WorkflowNodeConstants";
 import styles from "./ModelGrid.module.css";
 
 function formatBytes(bytes) {
@@ -41,14 +36,7 @@ const ARENA_COLUMNS = [
     { key: "search", label: "Search" },
 ];
 
-const MODALITY_ICONS = {
-    text: { icon: Type, title: "Text" },
-    image: { icon: Image, title: "Image" },
-    audio: { icon: Volume2, title: "Audio" },
-    video: { icon: Video, title: "Video" },
-    pdf: { icon: FileText, title: "PDF" },
-    embedding: { icon: Hash, title: "Embedding" },
-};
+
 
 function ModalityCell({ inputTypes, outputTypes }) {
     if (!inputTypes?.length && !outputTypes?.length) return "—";
@@ -58,7 +46,7 @@ function ModalityCell({ inputTypes, outputTypes }) {
                 const m = MODALITY_ICONS[t];
                 if (!m) return null;
                 const Icon = m.icon;
-                return <Icon key={`in-${t}`} size={12} title={m.title} />;
+                return <Icon key={`in-${t}`} size={12} title={m.label} style={{ color: MODALITY_COLORS[t] }} />;
             })}
             {inputTypes?.length > 0 && outputTypes?.length > 0 && (
                 <ArrowRight size={10} className={styles.modalityArrow} />
@@ -67,7 +55,7 @@ function ModalityCell({ inputTypes, outputTypes }) {
                 const m = MODALITY_ICONS[t];
                 if (!m) return null;
                 const Icon = m.icon;
-                return <Icon key={`out-${t}`} size={12} title={m.title} />;
+                return <Icon key={`out-${t}`} size={12} title={m.label} style={{ color: MODALITY_COLORS[t] }} />;
             })}
         </span>
     );
@@ -287,9 +275,9 @@ export default function ModelGrid({
                                     onClick={() =>
                                         setActiveModality(activeModality === t ? null : t)
                                     }
-                                    title={m.title}
+                                    title={m.label}
                                 >
-                                    <Icon size={14} />
+                                    <Icon size={14} style={{ color: MODALITY_COLORS[t] }} />
                                 </button>
                             );
                         })}
