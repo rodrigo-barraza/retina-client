@@ -28,7 +28,7 @@ export function FilterPillsComponent({ options, value, onChange }) {
             className={`${styles.pill} ${value === f.key ? styles.pillActive : ""}`}
             onClick={() => onChange(f.key)}
           >
-            {Icon && <Icon size={12} />}
+            {Icon && <Icon size={12} style={f.color ? { color: f.color } : undefined} />}
             {f.label}
           </button>
         );

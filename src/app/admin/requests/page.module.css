@@ -125,6 +125,18 @@
   color: var(--warning);
 }
 
+/* Modality cell */
+.modalityCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.modalityArrow {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
 /* Pagination */
 .pagination {
   display: flex;

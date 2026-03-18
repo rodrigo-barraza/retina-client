@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Download, X, MessageSquare, GitBranch } from "lucide-react";
+import { Download, X, MessageSquare, GitBranch, Type, Image as ImageIcon, Volume2, Hash, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import IrisService from "../../../services/IrisService";
 import { formatNumber, formatCost, formatLatency } from "../../../utils/utilities";
+import { MODALITY_COLORS } from "../../../components/WorkflowNodeConstants";
 import SortableTableComponent from "../../../components/SortableTableComponent";
 import PaginationComponent from "../../../components/PaginationComponent";
 import PageHeaderComponent from "../../../components/PageHeaderComponent";
@@ -132,6 +133,27 @@ export default function RequestsPage() {
     const columns = useMemo(() => [
         { key: "timestamp", label: "Time", render: (r) => r.timestamp ? new Date(r.timestamp).toLocaleString() : "-" },
         { key: "project", label: "Project" },
+        {
+            key: "modality", label: "Modality", sortable: false, render: (r) => {
+                const map = {
+                    "chat": { inIcon: Type, inColor: MODALITY_COLORS.text, outIcon: Type, outColor: MODALITY_COLORS.text, label: "Text → Text" },
+                    "chat/image-api": { inIcon: Type, inColor: MODALITY_COLORS.text, outIcon: ImageIcon, outColor: MODALITY_COLORS.image, label: "Text → Image" },
+                    "text-to-audio": { inIcon: Type, inColor: MODALITY_COLORS.text, outIcon: Volume2, outColor: MODALITY_COLORS.audio, label: "Text → Audio" },
+                    "audio-to-text": { inIcon: Volume2, inColor: MODALITY_COLORS.audio, outIcon: Type, outColor: MODALITY_COLORS.text, label: "Audio → Text" },
+                    "embed": { inIcon: Type, inColor: MODALITY_COLORS.text, outIcon: Hash, outColor: MODALITY_COLORS.embedding, label: "Text → Embedding" },
+                };
+                const m = map[r.endpoint] || map["chat"];
+                const InIcon = m.inIcon;
+                const OutIcon = m.outIcon;
+                return (
+                    <span className={styles.modalityCell} title={m.label}>
+                        <InIcon size={13} style={{ color: m.inColor }} />
+                        <ArrowRight size={10} className={styles.modalityArrow} />
+                        <OutIcon size={13} style={{ color: m.outColor }} />
+                    </span>
+                );
+            }
+        },
         {
             key: "endpoint", label: "Endpoint", render: (r) => (
                 <span className={`${styles.badge} ${styles.badgeEndpoint}`}>{r.endpoint || "-"}</span>
