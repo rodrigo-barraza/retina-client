@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState, useRef, useCallback, Fragment } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import styles from "./SortableTableComponent.module.css";
 
@@ -37,6 +37,60 @@ export default function SortableTableComponent({
     const [internalSort, setInternalSort] = useState({ key: null, dir: "desc" });
     const sort = onSort ? { key: externalSortKey, dir: externalSortDir } : internalSort;
     const [expanded, setExpanded] = useState(new Set());
+
+    /* ── Drag-to-scroll (grab scrolling) ── */
+    const scrollRef = useRef(null);
+    const dragRef = useRef({ active: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0, moved: false });
+
+    const onPointerDown = useCallback((e) => {
+        // Ignore if clicking interactive elements
+        if (e.target.closest("a, button, input, select, textarea")) return;
+        const el = scrollRef.current;
+        if (!el) return;
+        dragRef.current = {
+            active: true,
+            startX: e.clientX,
+            startY: e.clientY,
+            scrollLeft: el.scrollLeft,
+            scrollTop: el.scrollTop,
+            moved: false,
+        };
+        el.setPointerCapture(e.pointerId);
+    }, []);
+
+    const onPointerMove = useCallback((e) => {
+        const d = dragRef.current;
+        if (!d.active) return;
+        const dx = e.clientX - d.startX;
+        const dy = e.clientY - d.startY;
+        // 5px threshold to distinguish drag from click
+        if (!d.moved && Math.abs(dx) + Math.abs(dy) > 5) {
+            d.moved = true;
+            scrollRef.current?.classList.add(styles.grabbing);
+        }
+        if (d.moved) {
+            const el = scrollRef.current;
+            el.scrollLeft = d.scrollLeft - dx;
+            el.scrollTop = d.scrollTop - dy;
+        }
+    }, []);
+
+    const onPointerUp = useCallback((e) => {
+        const d = dragRef.current;
+        const wasDrag = d.moved;
+        d.active = false;
+        d.moved = false;
+        const el = scrollRef.current;
+        if (el) {
+            el.releasePointerCapture(e.pointerId);
+            el.classList.remove(styles.grabbing);
+        }
+        // If it was a drag, suppress the next click on the row
+        if (wasDrag) {
+            const handler = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+            el?.addEventListener("click", handler, { capture: true, once: true });
+        }
+    }, []);
 
     function handleSort(key) {
         let newDir;
@@ -94,7 +148,15 @@ export default function SortableTableComponent({
             {sorted.length === 0 ? (
                 <div className={styles.empty}>{emptyText}</div>
             ) : (
-                <div className={styles.tableScroll} style={maxHeight ? { maxHeight, overflowY: "auto" } : undefined}>
+                <div
+                    ref={scrollRef}
+                    className={styles.tableScroll}
+                    style={maxHeight ? { maxHeight, overflowY: "auto" } : undefined}
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={onPointerUp}
+                    onPointerCancel={onPointerUp}
+                >
                     <table className={styles.table}>
                         <thead>
                             <tr>

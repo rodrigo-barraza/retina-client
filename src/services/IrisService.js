@@ -95,6 +95,10 @@ export default class IrisService {
         return fetchJSON(`/conversations/${id}`);
     }
 
+    static async getConversationFilters() {
+        return fetchJSON("/conversations/filters");
+    }
+
     static async getConversationWorkflows(id) {
         return fetchUserRouteAsAdmin(`/conversations/${id}/workflows`);
     }

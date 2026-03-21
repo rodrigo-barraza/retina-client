@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import { Eye, Sun, Moon } from "lucide-react";
+import { Eye } from "lucide-react";
 import IrisService from "../services/IrisService";
-import { useTheme } from "./ThemeProvider";
+
 import NavigationSidebarComponent from "./NavigationSidebarComponent";
 import styles from "./AdminShell.module.css";
 
@@ -12,7 +12,7 @@ export default function AdminShell({ children }) {
   const [newCount, setNewCount] = useState(0);
   const [systemStatus, setSystemStatus] = useState("connected");
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
+
 
   // Track conversations by ID → messageCount to detect both new convos and updates
   const knownConvsRef = useRef(null); // null = not initialized
@@ -111,9 +111,6 @@ export default function AdminShell({ children }) {
             <Eye size={12} />
             <span>Iris · Prism Admin</span>
           </div>
-          <button className={styles.themeToggle} onClick={toggleTheme}>
-            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
         </header>
         <div className={styles.main}>{children}</div>
       </div>

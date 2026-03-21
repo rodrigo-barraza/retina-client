@@ -12,6 +12,12 @@
   overflow-x: auto;
   border: 1px solid var(--border-color);
   border-radius: 2px;
+  cursor: grab;
+}
+
+.tableScroll.grabbing {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .table {

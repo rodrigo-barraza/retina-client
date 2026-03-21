@@ -20,6 +20,8 @@ import {
   Settings,
   ChevronsLeft,
   ChevronsRight,
+  Menu,
+  X,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import styles from "./NavigationSidebarComponent.module.css";
@@ -131,10 +133,18 @@ function RainbowCanvas() {
     window.addEventListener("resize", resize);
     rafId = requestAnimationFrame(tick);
 
+    // Re-size when the parent's layout dimensions change (e.g. flex resolving)
+    let ro;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(resize);
+      ro.observe(parent);
+    }
+
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("resize", resize);
+      ro?.disconnect();
     };
   }, [draw]);
 
@@ -175,10 +185,19 @@ export default function NavigationSidebarComponent({
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const [showNav, setShowNav] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("panel_nav");
     if (stored !== null) setShowNav(stored === "true");
+  }, []);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   const toggleNav = useCallback(() => {
@@ -191,6 +210,103 @@ export default function NavigationSidebarComponent({
 
   const navItems = mode === "admin" ? ADMIN_NAV_ITEMS : USER_NAV_ITEMS;
   const isAdmin = mode === "admin";
+
+  /* ── Mobile: render floating hamburger + compact popover menu ── */
+  if (isMobile) {
+    return (
+      <>
+        {/* Floating hamburger trigger */}
+        <button
+          className={styles.mobileHamburger}
+          onClick={() => setMobileOpen((v) => !v)}
+          title={mobileOpen ? "Close navigation" : "Open navigation"}
+        >
+          {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
+
+        {/* Popover card */}
+        {mobileOpen && (
+          <>
+            <div
+              className={styles.mobileBackdrop}
+              onClick={() => setMobileOpen(false)}
+            />
+            <div className={styles.mobilePopover}>
+              {/* Rainbow strip */}
+              <div className={styles.rainbowStrip}>
+                <RainbowCanvas />
+              </div>
+
+              {/* Navigation links */}
+              <nav className={styles.mobilePopoverNav}>
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = item.exact
+                    ? pathname === item.href
+                    : pathname.startsWith(item.href);
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`${styles.navLink} ${isActive ? styles.active : ""}`}
+                      onClick={() => {
+                        onNavClick?.(item.href);
+                        setMobileOpen(false);
+                      }}
+                    >
+                      <Icon className={styles.navIcon} />
+                      <span className={styles.navLabel}>{item.label}</span>
+                      {item.showBadge && liveCount > 0 && (
+                        <span className={`${styles.badge} ${styles.live}`}>
+                          {liveCount}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              {/* Footer actions */}
+              <div className={styles.mobilePopoverFooter}>
+                {isAdmin ? (
+                  <Link
+                    href="/"
+                    className={styles.navLink}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <ArrowLeft className={styles.navIcon} />
+                    <span className={styles.navLabel}>Back to Retina</span>
+                  </Link>
+                ) : (
+                  <Link
+                    href="/admin"
+                    className={styles.navLink}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <Settings className={styles.navIcon} />
+                    <span className={styles.navLabel}>Admin</span>
+                  </Link>
+                )}
+                <button className={styles.navLink} onClick={toggleTheme}>
+                  {theme === "dark" ? (
+                    <Sun className={styles.navIcon} />
+                  ) : (
+                    <Moon className={styles.navIcon} />
+                  )}
+                  <span className={styles.navLabel}>
+                    {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </>
+    );
+  }
+
+  /* ── Desktop: standard collapsible sidebar ── */
 
   return (
     <div className={`${styles.wrapper} ${!showNav ? styles.collapsed : ""}`}>

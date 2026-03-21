@@ -14,10 +14,11 @@ export default function AdminWorkflowsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const projectFilter = searchParams.get("project") || null;
+  const initialId = searchParams.get("id") || null;
   const [workflows, setWorkflows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedId, setSelectedId] = useState(initialId);
   const [selectedWorkflow, setSelectedWorkflow] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
@@ -25,8 +26,8 @@ export default function AdminWorkflowsPage() {
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {
-    IrisService.getProjectStats()
-      .then((list) => setProjects(list.map((p) => p.project).filter(Boolean)))
+    IrisService.getConversationFilters()
+      .then((data) => setProjects(data.projects || []))
       .catch(() => { });
   }, []);
 
@@ -64,7 +65,7 @@ export default function AdminWorkflowsPage() {
       const data = await IrisService.getWorkflows(params);
       const list = data.data || [];
       setWorkflows(list);
-      if (list.length > 0 && !selectedId) {
+      if (list.length > 0 && !selectedId && !initialId) {
         selectWorkflow(list[0]._id);
       }
     } catch (err) {
@@ -83,6 +84,10 @@ export default function AdminWorkflowsPage() {
     if (id === selectedId) return;
     setSelectedId(id);
     setSelectedNodeId(null);
+    // Update URL for deep-linking
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("id", id);
+    window.history.replaceState(null, "", `/admin/workflows?${params.toString()}`);
     setLoadingDetail(true);
     try {
       const wf = await IrisService.getWorkflow(id);
@@ -93,6 +98,13 @@ export default function AdminWorkflowsPage() {
       setLoadingDetail(false);
     }
   }
+
+  // Auto-load workflow from URL param
+  useEffect(() => {
+    if (!initialId) return;
+    selectWorkflow(initialId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialId]);
 
   // Use persisted nodeResults and nodeStatuses from the workflow document
   const nodeResults = useMemo(() => {

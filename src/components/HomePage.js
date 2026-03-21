@@ -7,10 +7,7 @@ import PrismService from "../services/PrismService";
 import SunService from "../services/SunService";
 import { prepareDisplayMessages } from "./MessageList";
 import StorageService from "../services/StorageService";
-import { useTheme } from "../components/ThemeProvider";
 import {
-    Sun,
-    Moon,
     Send,
     Zap,
     ChevronDown,
@@ -28,7 +25,6 @@ import ThreePanelLayout from "../components/ThreePanelLayout";
 import consoleStyles from "../components/ConsoleComponent.module.css";
 
 export default function HomePage({ initialConversationId = null }) {
-    const { theme, toggleTheme } = useTheme();
     const router = useRouter();
     const [config, setConfig] = useState(null);
     const [inferenceMode, _setInferenceMode] = useState(() =>
@@ -1569,17 +1565,6 @@ Guidelines:
                                 To Workflow
                             </button>
                         )}
-                        <button
-                            className={styles.themeToggle}
-                            onClick={toggleTheme}
-                            title={
-                                theme === "dark"
-                                    ? "Switch to light mode"
-                                    : "Switch to dark mode"
-                            }
-                        >
-                            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-                        </button>
                     </div>
                 }
             >

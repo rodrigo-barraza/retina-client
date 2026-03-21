@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Sun, Moon, Play, Square, Loader2, Download, Upload, Undo2, RotateCcw } from "lucide-react";
+import { Play, Square, Loader2, Download, Upload, Undo2, RotateCcw } from "lucide-react";
 import PrismService from "../../services/PrismService";
 import WorkflowService from "../../services/WorkflowService";
 import { executeWorkflow } from "../../services/WorkflowExecutor";
 import WorkflowComponent from "../../components/WorkflowComponent";
 import WorkflowHeaderStatsComponent from "../../components/WorkflowHeaderStatsComponent";
-import { useTheme } from "../../components/ThemeProvider";
 import NavigationSidebarComponent from "../../components/NavigationSidebarComponent";
 import styles from "./page.module.css";
 
@@ -100,7 +99,7 @@ function generateEdgeId() {
 }
 
 export default function WorkflowsPage({ initialWorkflowId }) {
-    const { theme, toggleTheme } = useTheme();
+
     const [_config, setConfig] = useState(null);
     const [allModels, setAllModels] = useState([]);
     const [savedWorkflows, setSavedWorkflows] = useState([]);
@@ -872,9 +871,6 @@ export default function WorkflowsPage({ initialWorkflowId }) {
                         </button>
                     )}
                     {isRunning && <Loader2 size={16} className={styles.spinner} />}
-                    <button className={styles.themeToggle} onClick={toggleTheme}>
-                        {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-                    </button>
                 </div>
             </header>
 

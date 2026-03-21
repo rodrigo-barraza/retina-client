@@ -5,9 +5,11 @@ import { useSearchParams, useRouter } from "next/navigation";
 import {
     Activity,
     AlertCircle,
+    ArrowLeft,
     Loader,
     MessageSquare,
 } from "lucide-react";
+import Link from "next/link";
 import IrisService from "../../../services/IrisService";
 import MessageList, { prepareDisplayMessages } from "../../../components/MessageList";
 import SettingsPanel from "../../../components/SettingsPanel";
@@ -47,8 +49,8 @@ export default function ConversationsPage({ initialId = null }) {
         IrisService.getConfig()
             .then(setConfig)
             .catch(() => { });
-        IrisService.getProjectStats()
-            .then((list) => setProjects(list.map((p) => p.project).filter(Boolean)))
+        IrisService.getConversationFilters()
+            .then((data) => setProjects(data.projects || []))
             .catch(() => { });
     }, []);
 
@@ -222,8 +224,9 @@ export default function ConversationsPage({ initialId = null }) {
     async function selectConversation(id) {
         if (id === selectedId) return;
         setSelectedId(id);
-        // Update URL for deep-linking
-        window.history.replaceState(null, "", `/admin/conversations/${id}`);
+        // Update URL for deep-linking (preserve project filter)
+        const qs = projectFilter ? `?project=${encodeURIComponent(projectFilter)}` : "";
+        window.history.replaceState(null, "", `/admin/conversations/${id}${qs}`);
         // Remove NEW badge when clicking into a conversation
         setNewIds((prev) => {
             if (!prev.has(id)) return prev;
@@ -268,9 +271,13 @@ export default function ConversationsPage({ initialId = null }) {
 
     return (
         <div className={styles.page}>
-            <div className={styles.pageHeader}>
-                <div className={styles.titleRow}>
-                    <h1 className={styles.pageTitle}>Conversations</h1>
+            {/* Header — matches /workflows layout */}
+            <header className={styles.header}>
+                <div className={styles.headerLeft}>
+                    <Link href="/admin" className={styles.backBtn}>
+                        <ArrowLeft size={16} />
+                    </Link>
+                    <h1 className={styles.headerTitle}>Conversations</h1>
                     <SelectDropdown
                         value={projectFilter || ""}
                         options={projectOptions}
@@ -282,17 +289,15 @@ export default function ConversationsPage({ initialId = null }) {
                         Live
                     </span>
                 </div>
-                <p className={styles.pageSubtitle}>
-                    Browse conversations across {projectFilter ? `project: ${projectFilter}` : "all projects"}
-                </p>
-            </div>
-
-            {error && (
-                <div className={styles.errorBanner}>
-                    <AlertCircle size={18} />
-                    {error}
+                <div className={styles.headerRight}>
+                    {error && (
+                        <span style={{ color: "var(--danger)", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                            <AlertCircle size={14} />
+                            {error}
+                        </span>
+                    )}
                 </div>
-            )}
+            </header>
 
             {/* Stats */}
             <div className={styles.statsRow}>
