@@ -1,9 +1,17 @@
 // ============================================================
-// Sun Service — Tool Schemas & Proxy Execution
+// Sun Service — Tool Schemas & API Execution
 // ============================================================
-// Defines tool schemas for Sun ecosystem APIs. Execution is
-// proxied through the Next.js /api/tools route to avoid CORS.
+// Defines tool schemas for Sun ecosystem APIs and provides
+// execution logic for the Console's tool-calling orchestration.
 // ============================================================
+
+import {
+  WEATHER_API_URL,
+  EVENT_API_URL,
+  PRODUCT_API_URL,
+  TREND_API_URL,
+  MARKET_API_URL,
+} from "../../config.js";
 
 // ────────────────────────────────────────────────────────────
 // Tool Definitions — JSON Schema format for AI function calling
@@ -272,6 +280,110 @@ const TOOL_DEFINITIONS = [
 ];
 
 // ────────────────────────────────────────────────────────────
+// Execution — maps tool names to Sun API calls
+// ────────────────────────────────────────────────────────────
+
+const TOOL_EXECUTORS = {
+  // ── Weather / Environment ──
+  get_current_weather: async () =>
+    fetchJson(`${WEATHER_API_URL}/weather/current`),
+
+  get_weather_forecast: async (args) => {
+    const days = args.days || 7;
+    return fetchJson(`${WEATHER_API_URL}/weather/forecast?days=${days}`);
+  },
+
+  get_air_quality: async () =>
+    fetchJson(`${WEATHER_API_URL}/air-quality`),
+
+  get_earthquakes: async () =>
+    fetchJson(`${WEATHER_API_URL}/earthquakes`),
+
+  get_solar_activity: async () =>
+    fetchJson(`${WEATHER_API_URL}/solar`),
+
+  get_aurora_forecast: async () =>
+    fetchJson(`${WEATHER_API_URL}/aurora`),
+
+  get_twilight: async () =>
+    fetchJson(`${WEATHER_API_URL}/twilight`),
+
+  get_tides: async () =>
+    fetchJson(`${WEATHER_API_URL}/tides`),
+
+  get_wildfires: async () =>
+    fetchJson(`${WEATHER_API_URL}/wildfires`),
+
+  get_iss_position: async () =>
+    fetchJson(`${WEATHER_API_URL}/iss`),
+
+  // ── Events ──
+  search_events: async (args) => {
+    const params = new URLSearchParams();
+    if (args.query) params.set("query", args.query);
+    if (args.source) params.set("source", args.source);
+    if (args.category) params.set("category", args.category);
+    if (args.limit) params.set("limit", args.limit);
+    if (args.startDate) params.set("startDate", args.startDate);
+    if (args.endDate) params.set("endDate", args.endDate);
+    const qs = params.toString();
+    return fetchJson(`${EVENT_API_URL}/events/search${qs ? `?${qs}` : ""}`);
+  },
+
+  get_upcoming_events: async (args) => {
+    const params = new URLSearchParams();
+    if (args.days) params.set("days", args.days);
+    if (args.limit) params.set("limit", args.limit);
+    const qs = params.toString();
+    return fetchJson(`${EVENT_API_URL}/events/upcoming${qs ? `?${qs}` : ""}`);
+  },
+
+  // ── Commodities / Markets ──
+  get_commodities_summary: async () =>
+    fetchJson(`${MARKET_API_URL}/commodities/summary`),
+
+  get_commodity_by_category: async (args) =>
+    fetchJson(`${MARKET_API_URL}/commodities/category/${args.category}`),
+
+  get_commodity_ticker: async (args) =>
+    fetchJson(`${MARKET_API_URL}/commodities/ticker/${encodeURIComponent(args.ticker)}`),
+
+  // ── Trends ──
+  get_trends: async (args) => {
+    if (args.source) {
+      return fetchJson(`${TREND_API_URL}/trends/${args.source}`);
+    }
+    return fetchJson(`${TREND_API_URL}/trends`);
+  },
+
+  // ── Products ──
+  search_products: async (args) => {
+    const params = new URLSearchParams();
+    if (args.query) params.set("query", args.query);
+    if (args.category) params.set("category", args.category);
+    if (args.limit) params.set("limit", args.limit);
+    const qs = params.toString();
+    return fetchJson(`${PRODUCT_API_URL}/products/search${qs ? `?${qs}` : ""}`);
+  },
+};
+
+// ────────────────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────────────────
+
+async function fetchJson(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      return { error: `API returned ${res.status}: ${res.statusText}` };
+    }
+    return await res.json();
+  } catch (err) {
+    return { error: `Failed to reach API: ${err.message}` };
+  }
+}
+
+// ────────────────────────────────────────────────────────────
 // Public API
 // ────────────────────────────────────────────────────────────
 
@@ -285,51 +397,31 @@ export default class SunService {
   }
 
   /**
-   * Execute a single tool call via the server-side proxy.
+   * Execute a tool call by name with given arguments.
    * @param {string} name - Tool function name
    * @param {object} args - Arguments for the tool
    * @returns {Promise<object>} Tool execution result
    */
   static async executeTool(name, args = {}) {
-    try {
-      const res = await fetch("/api/tools", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, args }),
-      });
-      const data = await res.json();
-      return data.result || data;
-    } catch (err) {
-      return { error: `Tool execution failed: ${err.message}` };
+    const executor = TOOL_EXECUTORS[name];
+    if (!executor) {
+      return { error: `Unknown tool: ${name}` };
     }
+    return executor(args);
   }
 
   /**
-   * Execute multiple tool calls in parallel via the server-side proxy.
-   * @param {Array<{ name: string, args: object, id?: string }>} toolCalls
-   * @returns {Promise<Array<{ name: string, id?: string, result: object }>>}
+   * Execute multiple tool calls in parallel.
+   * @param {Array<{ name: string, args: object }>} toolCalls
+   * @returns {Promise<Array<{ name: string, result: object }>>}
    */
   static async executeToolCalls(toolCalls) {
-    try {
-      const res = await fetch("/api/tools", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          calls: toolCalls.map((tc) => ({
-            name: tc.name,
-            args: tc.args || {},
-            id: tc.id,
-          })),
-        }),
-      });
-      const data = await res.json();
-      return data.results || [];
-    } catch (err) {
-      return toolCalls.map((tc) => ({
+    return Promise.all(
+      toolCalls.map(async (tc) => ({
         name: tc.name,
         id: tc.id,
-        result: { error: `Tool execution failed: ${err.message}` },
-      }));
-    }
+        result: await SunService.executeTool(tc.name, tc.args),
+      })),
+    );
   }
 }
