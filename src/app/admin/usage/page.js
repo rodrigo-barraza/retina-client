@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
     DollarSign,
     Activity,
@@ -12,6 +12,7 @@ import IrisService from "../../../services/IrisService";
 import StatsCard from "../../../components/StatsCard";
 import SelectDropdown from "../../../components/SelectDropdown";
 import SortableTable from "../../../components/SortableTableComponent";
+import DatePickerComponent from "../../../components/DatePickerComponent";
 import styles from "./page.module.css";
 
 const ENDPOINT_LABELS = {
@@ -75,27 +76,32 @@ function mergeByModality(rows) {
     return Object.values(map);
 }
 
-export default function PricingPage() {
+export default function UsagePage() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [projectBreakdown, setProjectBreakdown] = useState("provider");
+    const [dateRange, setDateRange] = useState({ from: "", to: "" });
+
+    const loadCosts = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const params = {};
+            if (dateRange.from) params.from = new Date(dateRange.from).toISOString();
+            if (dateRange.to) params.to = new Date(dateRange.to + "T23:59:59").toISOString();
+            const result = await IrisService.getCostStats(params);
+            setData(result);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [dateRange]);
 
     useEffect(() => {
-        async function loadCosts() {
-            try {
-                setLoading(true);
-                setError(null);
-                const result = await IrisService.getCostStats();
-                setData(result);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        }
         loadCosts();
-    }, []);
+    }, [loadCosts]);
 
     const totals = data?.totals || {};
 
@@ -330,7 +336,7 @@ export default function PricingPage() {
     return (
         <div className={styles.page}>
             <div className={styles.pageHeader}>
-                <h1 className={styles.pageTitle}>Pricing</h1>
+                <h1 className={styles.pageTitle}>Usage</h1>
                 <p className={styles.pageSubtitle}>
                     Cost breakdown across all projects, providers, and modalities
                 </p>
@@ -342,6 +348,15 @@ export default function PricingPage() {
                     {error}
                 </div>
             )}
+
+            {/* Date Filter */}
+            <div className={styles.dateFilter}>
+                <DatePickerComponent
+                    from={dateRange.from}
+                    to={dateRange.to}
+                    onChange={setDateRange}
+                />
+            </div>
 
             {/* Stats Row */}
             <div className={styles.statsGrid}>

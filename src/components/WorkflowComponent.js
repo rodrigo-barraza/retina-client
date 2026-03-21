@@ -68,6 +68,8 @@ export default function WorkflowComponent({
   onWorkflowNameChange,
   loading = false,
   isLoadingWorkflow = false,
+  favorites = [],
+  onToggleFavorite,
 
   allModels,
   onChangeModel,
@@ -134,6 +136,8 @@ export default function WorkflowComponent({
           workflowName={workflowName}
           onWorkflowNameChange={onWorkflowNameChange}
           loading={loading}
+          favorites={favorites}
+          onToggleFavorite={onToggleFavorite}
         />
       </div>
       {/* Mobile sidebar backdrop */}

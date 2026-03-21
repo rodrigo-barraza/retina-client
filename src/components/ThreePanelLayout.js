@@ -107,7 +107,7 @@ export default function ThreePanelLayout({
                     <button
                         className={styles.headerToggle}
                         onClick={toggleLeft}
-                        title={showLeft ? `Hide ${leftTitle.toLowerCase()}` : `Show ${leftTitle.toLowerCase()}`}
+                        title={showLeft ? `Hide ${(leftTitle || "panel").toLowerCase()}` : `Show ${(leftTitle || "panel").toLowerCase()}`}
                     >
                         {showLeft ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
                     </button>
@@ -139,7 +139,7 @@ export default function ThreePanelLayout({
                         style={transitionStyle}
                         onClick={handleSidebarClick(toggleLeft)}
                     >
-                        <div className={styles.sidebarHeader}>{leftTitle}</div>
+                        {leftTitle && <div className={styles.sidebarHeader}>{leftTitle}</div>}
                         {leftPanel}
                     </aside>
 

@@ -71,12 +71,19 @@ export default function HomePage({ initialConversationId = null }) {
     // ── Function Calling state ──────────────────────────────────
     const [leftTab, setLeftTab] = useState("settings");
 
-    // Reset to Settings tab when FC is toggled off
+    // Determine if the selected model supports Function Calling
+    const selectedModelSupportsFc = useMemo(() => {
+        const providerModels = config?.textToText?.models?.[settings.provider] || [];
+        const modelDef = providerModels.find((m) => m.name === settings.model);
+        return modelDef?.tools?.includes("Function Calling") ?? false;
+    }, [config, settings.provider, settings.model]);
+
+    // Reset to Settings tab when the model doesn't support FC
     useEffect(() => {
-        if (!settings.functionCallingEnabled && leftTab === "tools") {
+        if (!selectedModelSupportsFc && leftTab === "tools") {
             setLeftTab("settings");
         }
-    }, [settings.functionCallingEnabled, leftTab]);
+    }, [selectedModelSupportsFc, leftTab]);
     const [customTools, setCustomTools] = useState([]);
     const [disabledBuiltIns, setDisabledBuiltIns] = useState(new Set());
     const [offlineTools, setOfflineTools] = useState(() => new Set());
@@ -1431,25 +1438,26 @@ Guidelines:
     return (
         <main className={styles.appContainer}>
             <ThreePanelLayout
+                leftTitle={null}
                 leftPanel={
                     <>
-                        {settings.functionCallingEnabled && (
-                            <div className={consoleStyles.tabBar}>
-                                <button
-                                    className={`${consoleStyles.tab} ${leftTab === "settings" ? consoleStyles.tabActive : ""}`}
-                                    onClick={() => setLeftTab("settings")}
-                                >
-                                    Settings
-                                </button>
-                                <button
-                                    className={`${consoleStyles.tab} ${leftTab === "tools" ? consoleStyles.tabActive : ""}`}
-                                    onClick={() => setLeftTab("tools")}
-                                >
-                                    Tools
+                        <div className={consoleStyles.tabBar}>
+                            <button
+                                className={`${consoleStyles.tab} ${leftTab === "settings" ? consoleStyles.tabActive : ""}`}
+                                onClick={() => setLeftTab("settings")}
+                            >
+                                Settings
+                            </button>
+                            <button
+                                className={`${consoleStyles.tab} ${leftTab === "tools" ? consoleStyles.tabActive : ""}${!selectedModelSupportsFc ? ` ${consoleStyles.tabDisabled}` : ""}`}
+                                onClick={() => setLeftTab("tools")}
+                            >
+                                Tools
+                                {settings.functionCallingEnabled && (
                                     <span className={consoleStyles.tabBadge}>{allToolSchemas.length}</span>
-                                </button>
-                            </div>
-                        )}
+                                )}
+                            </button>
+                        </div>
                         {leftTab === "settings" && (
                             <SettingsPanel
                                 config={config}
@@ -1465,7 +1473,7 @@ Guidelines:
                                 workflows={workflows}
                             />
                         )}
-                        {leftTab === "tools" && settings.functionCallingEnabled && (
+                        {leftTab === "tools" && selectedModelSupportsFc && (
                             <CustomToolsPanel
                                 tools={customTools}
                                 onToolsChange={loadCustomTools}
@@ -1537,12 +1545,6 @@ Guidelines:
                 }
                 headerControls={
                     <div className={styles.headerControls}>
-                        {settings.functionCallingEnabled && (
-                            <span className={consoleStyles.headerBadge}>
-                                <Zap size={10} />
-                                Tool Calling
-                            </span>
-                        )}
                         {messages.length > 0 && (
                             <button
                                 className={styles.modeToggle}

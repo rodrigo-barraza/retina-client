@@ -78,6 +78,7 @@ function normalizeModel(model) {
         isLoaded: model.loaded || model.loaded_instances?.length > 0 || false,
         pricing: model.pricing || null,
         arena: model.arena || null,
+        year: model.year || null,
     };
 }
 
@@ -100,6 +101,7 @@ function getSortValue(rawModel, model, key, favorites = []) {
         return favorites.includes(favKey) ? 1 : 0;
     }
     if (key === "model") return model.name.toLowerCase();
+    if (key === "year") return rawModel.year || 0;
     if (key === "quant") return (model.quantization || "").toLowerCase();
     if (key === "context")
         return (
@@ -214,6 +216,7 @@ export default function ModelGrid({
         })
         : filtered;
 
+    const hasYear = filtered.some((m) => m.year);
     const hasSize = filtered.some((m) => normalizeModel(m).size);
     const hasParams = filtered.some((m) => normalizeModel(m).params);
     const hasContext = filtered.some((m) => normalizeModel(m).contextLength);
@@ -349,6 +352,7 @@ export default function ModelGrid({
                                     </th>
                                 )}
                                 {sortableTh("Model", "model", styles.thModel)}
+                                {hasYear && sortableTh("Year", "year")}
                                 {hasModalities && <th className={styles.th}>Modalities</th>}
                                 {hasContext && sortableTh("Context", "context")}
                                 {hasSize && sortableTh("Size", "size")}
@@ -429,6 +433,11 @@ export default function ModelGrid({
                                                 </span>
                                             </div>
                                         </td>
+                                        {hasYear && (
+                                            <td className={styles.td}>
+                                                {rawModel.year || "—"}
+                                            </td>
+                                        )}
                                         {hasModalities && (
                                             <td className={styles.td}>
                                                 <ModalityCell

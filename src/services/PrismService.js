@@ -525,8 +525,8 @@ export default class PrismService {
 
   /**
    * List media items from the caller's project conversations.
-   * @param {object} [params] - { page, limit, type, origin, search }
-   * @returns {Promise<{ data, total, page, limit }>}
+   * @param {object} [params] - { page, limit, type, origin, search, provider, model }
+   * @returns {Promise<{ data, total, page, limit, providers, models }>}
    */
   static async getMedia(params = {}) {
     const query = new URLSearchParams(params).toString();
@@ -539,8 +539,8 @@ export default class PrismService {
 
   /**
    * List text content from the caller's project conversations.
-   * @param {object} [params] - { page, limit, origin, search }
-   * @returns {Promise<{ data, total, page, limit }>}
+   * @param {object} [params] - { page, limit, origin, search, provider, model }
+   * @returns {Promise<{ data, total, page, limit, providers, models }>}
    */
   static async getText(params = {}) {
     const query = new URLSearchParams(params).toString();

@@ -3,6 +3,19 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Sector,
+} from "recharts";
+import {
   Activity,
   Zap,
   DollarSign,
@@ -14,6 +27,7 @@ import {
 } from "lucide-react";
 import IrisService from "../../services/IrisService";
 import StatsCard from "../../components/StatsCard";
+import DatePickerComponent from "../../components/DatePickerComponent";
 import styles from "./page.module.css";
 
 const PROVIDER_COLORS = [
@@ -57,8 +71,85 @@ function getDateRange(rangeKey) {
   if (rangeKey === "all") return {};
   const range = TIME_RANGES.find((r) => r.key === rangeKey);
   if (!range) return {};
-  const from = new Date(Date.now() - range.hours * 60 * 60 * 1000).toISOString();
+  const from = new Date(
+    Date.now() - range.hours * 60 * 60 * 1000,
+  ).toISOString();
   return { from };
+}
+
+/* ── Recharts custom tooltip ── */
+function TimelineTooltipComponent({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className={styles.chartTooltip}>
+      <span className={styles.chartTooltipLabel}>{label}</span>
+      <span className={styles.chartTooltipValue}>
+        {payload[0].value.toLocaleString()} requests
+      </span>
+    </div>
+  );
+}
+
+/* ── Custom glow dot for active point ── */
+function GlowDotComponent(props) {
+  const { cx, cy } = props;
+  if (cx == null || cy == null) return null;
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r="8" fill="#6366f1" opacity="0.2" />
+      <circle cx={cx} cy={cy} r="4" fill="#6366f1" stroke="#fff" strokeWidth="1.5" />
+    </g>
+  );
+}
+
+/* ── Recharts active pie sector with outward expansion ── */
+function renderActiveSector(props) {
+  const {
+    cx,
+    cy,
+    innerRadius,
+    outerRadius,
+    startAngle,
+    endAngle,
+    fill,
+    payload,
+    percent,
+  } = props;
+
+  return (
+    <g>
+      <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={innerRadius - 2}
+        outerRadius={outerRadius + 6}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        fill={fill}
+        opacity={1}
+        style={{ filter: `drop-shadow(0 0 8px ${fill})` }}
+      />
+      <text
+        x={cx}
+        y={cy - 7}
+        textAnchor="middle"
+        fill="#f8f8f8"
+        fontSize="13"
+        fontWeight="600"
+      >
+        {payload.name}
+      </text>
+      <text
+        x={cx}
+        y={cy + 10}
+        textAnchor="middle"
+        fill="#8e95ae"
+        fontSize="11"
+      >
+        {(percent * 100).toFixed(1)}%
+      </text>
+    </g>
+  );
 }
 
 export default function DashboardPage() {
@@ -72,25 +163,25 @@ export default function DashboardPage() {
 
   // Time range
   const [timeRange, setTimeRange] = useState("day");
-  const [customFrom, setCustomFrom] = useState("");
-  const [customTo, setCustomTo] = useState("");
-  const [useCustom, setUseCustom] = useState(false);
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
+  const useCustom = !!(dateRange.from || dateRange.to);
 
-  // Hovering chart
-  const [hoveredBar, setHoveredBar] = useState(null);
+  // Active pie sector
+  const [activePieIndex, setActivePieIndex] = useState(null);
 
   const dateParams = useMemo(() => {
-    if (useCustom && (customFrom || customTo)) {
+    if (useCustom) {
       const p = {};
-      if (customFrom) p.from = new Date(customFrom).toISOString();
-      if (customTo) p.to = new Date(customTo + "T23:59:59").toISOString();
+      if (dateRange.from) p.from = new Date(dateRange.from).toISOString();
+      if (dateRange.to)
+        p.to = new Date(dateRange.to + "T23:59:59").toISOString();
       return p;
     }
     return getDateRange(timeRange);
-  }, [timeRange, useCustom, customFrom, customTo]);
+  }, [timeRange, useCustom, dateRange]);
 
   const timelineHours = useMemo(() => {
-    if (useCustom) return 720; // 30 days for custom range
+    if (useCustom) return 720;
     const range = TIME_RANGES.find((r) => r.key === timeRange);
     return range?.hours || 24;
   }, [timeRange, useCustom]);
@@ -143,23 +234,27 @@ export default function DashboardPage() {
   const totalProviderRequests =
     providerEntries.reduce((s, [, v]) => s + v, 0) || 1;
 
-  // SVG donut
-  const donutRadius = 45;
-  const donutCircumference = 2 * Math.PI * donutRadius;
-  let donutOffset = 0;
-
   // Top 10 models
   const topModels = [...modelStats]
     .sort((a, b) => b.totalRequests - a.totalRequests)
     .slice(0, 10);
 
-  // Chart data
-  const maxTimelineRequests = Math.max(...timeline.map((t) => t.requests), 1);
-  const chartWidth = 600;
-  const chartHeight = 140;
-  const chartPadding = { top: 10, right: 10, bottom: 24, left: 40 };
-  const plotW = chartWidth - chartPadding.left - chartPadding.right;
-  const plotH = chartHeight - chartPadding.top - chartPadding.bottom;
+  // Recharts-friendly timeline data — add display label
+  const chartData = useMemo(() => {
+    return timeline.map((t) => ({
+      ...t,
+      label: t.hour ? t.hour.slice(11) + "h" : "",
+    }));
+  }, [timeline]);
+
+  // Recharts-friendly pie data
+  const pieData = useMemo(() => {
+    return providerEntries.map(([name, value], i) => ({
+      name,
+      value,
+      fill: PROVIDER_COLORS[i % PROVIDER_COLORS.length],
+    }));
+  }, [providerEntries]);
 
   const timeRangeLabel = useMemo(() => {
     const range = TIME_RANGES.find((r) => r.key === timeRange);
@@ -183,7 +278,7 @@ export default function DashboardPage() {
               key={r.key}
               className={`${styles.timePill} ${!useCustom && timeRange === r.key ? styles.timePillActive : ""}`}
               onClick={() => {
-                setUseCustom(false);
+                setDateRange({ from: "", to: "" });
                 setTimeRange(r.key);
               }}
             >
@@ -191,29 +286,11 @@ export default function DashboardPage() {
             </button>
           ))}
         </div>
-        <div className={styles.datePicker}>
-          <input
-            type="date"
-            className={styles.dateInput}
-            value={customFrom}
-            onChange={(e) => {
-              setCustomFrom(e.target.value);
-              setUseCustom(true);
-            }}
-            placeholder="From"
-          />
-          <span className={styles.dateArrow}>→</span>
-          <input
-            type="date"
-            className={styles.dateInput}
-            value={customTo}
-            onChange={(e) => {
-              setCustomTo(e.target.value);
-              setUseCustom(true);
-            }}
-            placeholder="To"
-          />
-        </div>
+        <DatePickerComponent
+          from={dateRange.from}
+          to={dateRange.to}
+          onChange={setDateRange}
+        />
       </div>
 
       {error && (
@@ -286,146 +363,69 @@ export default function DashboardPage() {
 
       {/* ── Charts Row ── */}
       <div className={styles.chartsRow}>
-        {/* Requests Timeline Chart */}
+        {/* Requests Timeline — Recharts Area Chart */}
         <div className={styles.chartCard}>
           <div className={styles.chartTitle}>
             <TrendingUp size={14} />
             Requests Over Time
           </div>
-          <div className={styles.chartSvgWrapper}>
-            {timeline.length > 0 ? (
-              <svg
-                viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                className={styles.chartSvg}
-                preserveAspectRatio="none"
-              >
-                {/* Y-axis grid lines */}
-                {[0.25, 0.5, 0.75, 1].map((pct) => (
-                  <g key={pct}>
-                    <line
-                      x1={chartPadding.left}
-                      y1={chartPadding.top + plotH * (1 - pct)}
-                      x2={chartPadding.left + plotW}
-                      y2={chartPadding.top + plotH * (1 - pct)}
-                      stroke="var(--border-subtle)"
-                      strokeDasharray="3 3"
-                    />
-                    <text
-                      x={chartPadding.left - 6}
-                      y={chartPadding.top + plotH * (1 - pct) + 3}
-                      fill="var(--text-muted)"
-                      fontSize="8"
-                      textAnchor="end"
+          <div className={styles.rechartsWrapper}>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart
+                  data={chartData}
+                  margin={{ top: 8, right: 12, bottom: 0, left: -12 }}
+                >
+                  <defs>
+                    <linearGradient
+                      id="areaFillGrad"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
                     >
-                      {formatNumber(Math.round(maxTimelineRequests * pct))}
-                    </text>
-                  </g>
-                ))}
-
-                {/* Area fill */}
-                <path
-                  d={(() => {
-                    const pts = timeline.map((t, i) => {
-                      const x = chartPadding.left + (i / (timeline.length - 1 || 1)) * plotW;
-                      const y = chartPadding.top + plotH - (t.requests / maxTimelineRequests) * plotH;
-                      return `${x},${y}`;
-                    });
-                    return `M${pts[0]} ${pts.map((p) => `L${p}`).join(" ")} L${chartPadding.left + plotW},${chartPadding.top + plotH} L${chartPadding.left},${chartPadding.top + plotH} Z`;
-                  })()}
-                  fill="url(#areaGrad)"
-                  opacity="0.3"
-                />
-
-                {/* Line */}
-                <path
-                  d={timeline
-                    .map((t, i) => {
-                      const x = chartPadding.left + (i / (timeline.length - 1 || 1)) * plotW;
-                      const y = chartPadding.top + plotH - (t.requests / maxTimelineRequests) * plotH;
-                      return `${i === 0 ? "M" : "L"}${x},${y}`;
-                    })
-                    .join(" ")}
-                  fill="none"
-                  stroke="var(--accent-color)"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                />
-
-                {/* Hover bars */}
-                {timeline.map((t, i) => {
-                  const x = chartPadding.left + (i / (timeline.length - 1 || 1)) * plotW;
-                  const y = chartPadding.top + plotH - (t.requests / maxTimelineRequests) * plotH;
-                  const barW = plotW / timeline.length;
-                  return (
-                    <g key={i}>
-                      <rect
-                        x={x - barW / 2}
-                        y={chartPadding.top}
-                        width={barW}
-                        height={plotH}
-                        fill="transparent"
-                        onMouseEnter={() => setHoveredBar(i)}
-                        onMouseLeave={() => setHoveredBar(null)}
-                      />
-                      {hoveredBar === i && (
-                        <>
-                          <circle cx={x} cy={y} r="3" fill="var(--accent-color)" />
-                          <rect
-                            x={x - 36}
-                            y={y - 22}
-                            width="72"
-                            height="16"
-                            rx="3"
-                            fill="var(--bg-secondary)"
-                            stroke="var(--border-color)"
-                          />
-                          <text
-                            x={x}
-                            y={y - 11}
-                            fill="var(--text-primary)"
-                            fontSize="8"
-                            textAnchor="middle"
-                          >
-                            {t.requests} req
-                          </text>
-                        </>
-                      )}
-                    </g>
-                  );
-                })}
-
-                {/* X-axis labels */}
-                {timeline
-                  .filter(
-                    (_, i) =>
-                      i === 0 ||
-                      i === timeline.length - 1 ||
-                      i % Math.max(1, Math.floor(timeline.length / 6)) === 0,
-                  )
-                  .map((t, _j, arr) => {
-                    const i = timeline.indexOf(t);
-                    const x = chartPadding.left + (i / (timeline.length - 1 || 1)) * plotW;
-                    return (
-                      <text
-                        key={i}
-                        x={x}
-                        y={chartHeight - 4}
-                        fill="var(--text-muted)"
-                        fontSize="7"
-                        textAnchor="middle"
-                      >
-                        {t.hour?.slice(11) || ""}h
-                      </text>
-                    );
-                  })}
-
-                <defs>
-                  <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--accent-color)" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="var(--accent-color)" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-              </svg>
+                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 6"
+                    stroke="rgba(255,255,255,0.04)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fill: "#5a6078", fontSize: 11 }}
+                    axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
+                    tickLine={false}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    tick={{ fill: "#5a6078", fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={formatNumber}
+                  />
+                  <Tooltip
+                    content={<TimelineTooltipComponent />}
+                    cursor={{
+                      stroke: "rgba(99,102,241,0.25)",
+                      strokeWidth: 1,
+                      strokeDasharray: "4 4",
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="requests"
+                    stroke="#6366f1"
+                    strokeWidth={2}
+                    fill="url(#areaFillGrad)"
+                    activeDot={<GlowDotComponent />}
+                    animationDuration={800}
+                    animationEasing="ease-out"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             ) : (
               <div className={styles.chartEmpty}>
                 {loading ? "Loading..." : "No data yet"}
@@ -434,38 +434,56 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Provider Distribution */}
+        {/* Provider Distribution — Recharts Pie Chart */}
         <div className={styles.chartCard}>
           <div className={styles.chartTitle}>Provider Distribution</div>
           <div className={styles.donutContainer}>
-            {providerEntries.length > 0 ? (
+            {pieData.length > 0 ? (
               <>
-                <svg width="110" height="110" viewBox="0 0 110 110">
-                  {providerEntries.map(([provider, count], i) => {
-                    const pct = count / totalProviderRequests;
-                    const dashLength = pct * donutCircumference;
-                    const currentOffset = donutOffset;
-                    donutOffset += dashLength;
-                    return (
-                      <circle
-                        key={provider}
-                        cx="55"
-                        cy="55"
-                        r={donutRadius}
-                        fill="none"
-                        stroke={PROVIDER_COLORS[i % PROVIDER_COLORS.length]}
-                        strokeWidth="10"
-                        strokeDasharray={`${dashLength} ${donutCircumference - dashLength}`}
-                        strokeDashoffset={-currentOffset}
-                        transform="rotate(-90 55 55)"
-                        style={{ transition: "all 0.5s ease" }}
-                      />
-                    );
-                  })}
-                </svg>
+                <div className={styles.pieWrapper}>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={48}
+                        outerRadius={72}
+                        paddingAngle={2}
+                        dataKey="value"
+                        activeIndex={activePieIndex}
+                        activeShape={renderActiveSector}
+                        onMouseEnter={(_, index) => setActivePieIndex(index)}
+                        onMouseLeave={() => setActivePieIndex(null)}
+                        animationDuration={600}
+                        animationEasing="ease-out"
+                      >
+                        {pieData.map((entry, i) => (
+                          <Cell
+                            key={entry.name}
+                            fill={entry.fill}
+                            stroke="transparent"
+                            opacity={
+                              activePieIndex === null ||
+                              activePieIndex === i
+                                ? 1
+                                : 0.35
+                            }
+                            style={{ transition: "opacity 0.2s ease" }}
+                          />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
                 <div className={styles.donutLegend}>
                   {providerEntries.map(([provider, count], i) => (
-                    <div key={provider} className={styles.legendItem}>
+                    <div
+                      key={provider}
+                      className={styles.legendItem}
+                      onMouseEnter={() => setActivePieIndex(i)}
+                      onMouseLeave={() => setActivePieIndex(null)}
+                    >
                       <span
                         className={styles.legendDot}
                         style={{
@@ -509,11 +527,18 @@ export default function DashboardPage() {
               {topModels.length > 0 ? (
                 topModels.map((m, i) => (
                   <tr key={`${m.provider}-${m.model}-${i}`}>
-                    <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>
+                    <td
+                      style={{
+                        fontWeight: 500,
+                        color: "var(--text-primary)",
+                      }}
+                    >
                       {m.model}
                     </td>
                     <td>
-                      <span className={styles.badgeProvider}>{m.provider}</span>
+                      <span className={styles.badgeProvider}>
+                        {m.provider}
+                      </span>
                     </td>
                     <td>{formatNumber(m.totalRequests)}</td>
                     <td>{formatCost(m.totalCost)}</td>
@@ -554,7 +579,12 @@ export default function DashboardPage() {
               {providerEntries.length > 0 ? (
                 providerEntries.map(([provider, count], i) => (
                   <tr key={provider}>
-                    <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>
+                    <td
+                      style={{
+                        fontWeight: 500,
+                        color: "var(--text-primary)",
+                      }}
+                    >
                       <span className={styles.providerRow}>
                         <span
                           className={styles.legendDot}
@@ -683,7 +713,10 @@ export default function DashboardPage() {
                 projectStats.map((p, i) => (
                   <tr key={p.project || i}>
                     <td
-                      style={{ fontWeight: 500, color: "var(--text-primary)" }}
+                      style={{
+                        fontWeight: 500,
+                        color: "var(--text-primary)",
+                      }}
                     >
                       {p.project}
                     </td>
@@ -691,7 +724,10 @@ export default function DashboardPage() {
                     <td>{formatCost(p.totalCost)}</td>
                     <td>
                       {p.workflowCount > 0 ? (
-                        <Link href="/admin/workflows" className={styles.workflowLink}>
+                        <Link
+                          href="/admin/workflows"
+                          className={styles.workflowLink}
+                        >
                           <Workflow size={12} />
                           {p.workflowCount}
                         </Link>

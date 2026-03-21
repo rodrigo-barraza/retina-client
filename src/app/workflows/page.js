@@ -105,6 +105,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
     const [allModels, setAllModels] = useState([]);
     const [savedWorkflows, setSavedWorkflows] = useState([]);
     const [toast, setToast] = useState(null);
+    const [wfFavoriteKeys, setWfFavoriteKeys] = useState([]);
 
     // Update URL without Next.js navigation (avoids re-mount)
     const updateUrl = (path) => {
@@ -147,6 +148,10 @@ export default function WorkflowsPage({ initialWorkflowId }) {
         WorkflowService.getWorkflows()
             .then((wfs) => setSavedWorkflows(wfs.map((w) => ({ ...w, id: w._id || w.id }))))
             .catch(console.error);
+
+        PrismService.getFavorites("workflow")
+            .then((favs) => setWfFavoriteKeys(favs.map((f) => f.key)))
+            .catch(() => {});
     }, []);
 
     // Auto-load workflow from URL param
@@ -934,6 +939,19 @@ export default function WorkflowsPage({ initialWorkflowId }) {
                     allModels={modelsWithModalities}
                     onChangeModel={handleChangeModel}
                     onDuplicateNode={handleDuplicateNode}
+                    favorites={wfFavoriteKeys}
+                    onToggleFavorite={async (wfId) => {
+                        if (wfFavoriteKeys.includes(wfId)) {
+                            setWfFavoriteKeys((prev) => prev.filter((k) => k !== wfId));
+                            PrismService.removeFavorite("workflow", wfId).catch(() => {});
+                        } else {
+                            setWfFavoriteKeys((prev) => [...prev, wfId]);
+                            const wf = savedWorkflows.find((w) => (w._id || w.id) === wfId);
+                            PrismService.addFavorite("workflow", wfId, {
+                                title: wf?.name || "Untitled Workflow",
+                            }).catch(() => {});
+                        }
+                    }}
                 />
             </div>
 

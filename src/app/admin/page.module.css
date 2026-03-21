@@ -64,32 +64,7 @@
   }
 }
 
-.datePicker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
-.dateInput {
-  padding: 5px 10px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  transition: border-color var(--transition-fast);
-  color-scheme: dark;
-
-  &:focus {
-    outline: none;
-    border-color: var(--accent-color);
-  }
-}
-
-.dateArrow {
-  color: var(--text-muted);
-  font-size: 13px;
-}
 
 /* Stats grid */
 .statsGrid {
@@ -234,20 +209,48 @@
   gap: 8px;
 }
 
-/* SVG Chart */
-.chartSvgWrapper {
+/* Recharts wrapper */
+.rechartsWrapper {
   width: 100%;
-  min-height: 140px;
+  min-height: 220px;
 }
 
-.chartSvg {
-  width: 100%;
-  height: 140px;
+/* Custom tooltip — glassmorphism */
+.chartTooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(19, 20, 28, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 8px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.chartTooltipLabel {
+  font-size: 11px;
+  color: #5a6078;
+  font-weight: 500;
+}
+
+.chartTooltipValue {
+  font-size: 13px;
+  color: #f8f8f8;
+  font-weight: 600;
+}
+
+/* Pie chart wrapper */
+.pieWrapper {
+  width: 180px;
+  height: 180px;
+  flex-shrink: 0;
 }
 
 .chartEmpty {
   width: 100%;
-  min-height: 120px;
+  min-height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -255,7 +258,7 @@
   font-size: 13px;
 }
 
-/* Donut chart */
+/* Donut / Pie layout */
 .donutContainer {
   display: flex;
   align-items: center;
@@ -275,6 +278,12 @@
   gap: 8px;
   font-size: 12px;
   color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: var(--text-primary);
+  }
 }
 
 .legendDot {
@@ -346,14 +355,6 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
-  }
-
-  .datePicker {
-    width: 100%;
-  }
-
-  .dateInput {
-    flex: 1;
   }
 
   .statsGrid {

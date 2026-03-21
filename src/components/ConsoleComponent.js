@@ -874,7 +874,7 @@ export default function ConsoleComponent() {
     <ThreePanelLayout
       navSidebar={<NavigationSidebarComponent mode="user" />}
       leftPanel={leftPanel}
-      leftTitle="Settings"
+      leftTitle={null}
       rightPanel={
         <HistoryPanel
           conversations={conversations}

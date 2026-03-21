@@ -57,6 +57,12 @@
   border-radius: 999px;
 }
 
+.tabDisabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* ── Header Meta & Controls ───────────────────────────────── */
 
 .headerMeta {

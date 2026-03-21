@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import IrisService from "../../../services/IrisService";
 import SortableTableComponent from "../../../components/SortableTableComponent";
 import PageHeaderComponent from "../../../components/PageHeaderComponent";
+import DatePickerComponent from "../../../components/DatePickerComponent";
+import { FilterBarComponent, FilterGroupComponent } from "../../../components/FilterBarComponent";
 import { LoadingMessage, ErrorMessage } from "../../../components/StateMessageComponent";
 import { formatNumber, formatCost, formatLatency } from "../../../utils/utilities";
 import styles from "./page.module.css";
@@ -19,12 +21,16 @@ export default function ProvidersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedProvider, setExpandedProvider] = useState(null);
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
 
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
-        const models = await IrisService.getModelStats();
+        const params = {};
+        if (dateRange.from) params.from = new Date(dateRange.from).toISOString();
+        if (dateRange.to) params.to = new Date(dateRange.to + "T23:59:59").toISOString();
+        const models = await IrisService.getModelStats(params);
         setModelStats(models);
       } catch (err) {
         setError(err.message);
@@ -33,7 +39,7 @@ export default function ProvidersPage() {
       }
     }
     load();
-  }, []);
+  }, [dateRange]);
 
   // Aggregate by provider
   const providers = useMemo(() => {
@@ -87,6 +93,16 @@ export default function ProvidersPage() {
       />
 
       <ErrorMessage message={error} />
+
+      <FilterBarComponent>
+        <FilterGroupComponent label="Date">
+          <DatePickerComponent
+            from={dateRange.from}
+            to={dateRange.to}
+            onChange={setDateRange}
+          />
+        </FilterGroupComponent>
+      </FilterBarComponent>
 
       {loading && <LoadingMessage message="Loading provider data..." />}
 

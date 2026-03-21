@@ -2,6 +2,10 @@
   animation: fadeIn var(--transition-normal) ease-out;
 }
 
+.dateFilter {
+  margin-bottom: 20px;
+}
+
 .pageHeader {
   margin-bottom: 20px;
 }

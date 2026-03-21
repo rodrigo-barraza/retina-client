@@ -639,7 +639,7 @@ export default function ChatArea({
                                             <div className={styles.recentSection}>
                                                 <span className={styles.recentLabel}>
                                                     <Clock size={12} />
-                                                    Recent
+                                                    Recentnly Used Models
                                                 </span>
                                                 <div className={styles.recentModels}>
                                                     {recent.map((r) => (

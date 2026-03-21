@@ -13,17 +13,12 @@ import {
   Copy,
   Star,
 } from "lucide-react";
-import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
+import { PROVIDER_LABELS } from "./ProviderLogos";
+import SidebarFilterComponent, { MODALITY_FILTERS } from "./SidebarFilterComponent";
+import DatePickerComponent from "./DatePickerComponent";
 import { DateTime } from "luxon";
 import styles from "./HistoryList.module.css";
 import { MODALITY_COLORS } from "./WorkflowNodeConstants";
-
-const MODALITY_FILTERS = [
-  { key: "text", icon: Type, title: "Text" },
-  { key: "image", icon: Image, title: "Image" },
-  { key: "audio", icon: Volume2, title: "Audio" },
-  { key: "doc", icon: DocIcon, title: "Document" },
-];
 
 /**
  * HistoryList — shared list component for both conversations and workflows.
@@ -66,6 +61,7 @@ export default function HistoryList({
   const [activeModality, setActiveModality] = useState(null);
   const [activeProvider, setActiveProvider] = useState(null);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
 
   // Discover modalities across all items
   const allModalities = useMemo(() => {
@@ -113,14 +109,16 @@ export default function HistoryList({
       if (activeProvider) {
         if (!(item.providers || []).includes(activeProvider)) return false;
       }
+      if (dateRange.from || dateRange.to) {
+        const itemDate = new Date(item.updatedAt || item.createdAt);
+        if (dateRange.from && itemDate < new Date(dateRange.from)) return false;
+        if (dateRange.to && itemDate > new Date(dateRange.to + "T23:59:59")) return false;
+      }
       return true;
     });
-  }, [items, searchQuery, activeModality, activeProvider, showFavoritesOnly, favorites, onToggleFavorite]);
+  }, [items, searchQuery, activeModality, activeProvider, showFavoritesOnly, favorites, onToggleFavorite, dateRange]);
 
   const hasFavorites = !!onToggleFavorite && favorites.length > 0;
-  const hasFilters = hasFavorites ||
-    (showModalityFilters && allModalities.length >= 2) ||
-    (showProviderFilters && allProviders.length >= 2);
 
   return (
     <div className={styles.container}>
@@ -144,59 +142,26 @@ export default function HistoryList({
         )}
       </div>
 
-      {/* Filter toggles */}
-      {hasFilters && (
-        <div className={styles.filterSection}>
-          {hasFavorites && (
-            <div className={styles.filterRow}>
-              <span className={styles.filterLabel}>Favorite</span>
-              <div className={styles.filterBar}>
-                <button
-                  className={`${styles.filterBtn} ${showFavoritesOnly ? styles.filterBtnActive : ""}`}
-                  onClick={() => setShowFavoritesOnly((v) => !v)}
-                  title="Show favorites only"
-                >
-                  <Star size={13} fill={showFavoritesOnly ? "currentColor" : "none"} />
-                </button>
-              </div>
-            </div>
-          )}
-          {showModalityFilters && allModalities.length >= 2 && (
-            <div className={styles.filterRow}>
-              <span className={styles.filterLabel}>Modality</span>
-              <div className={styles.filterBar}>
-                {allModalities.map(({ key, icon: Icon, title }) => (
-                  <button
-                    key={key}
-                    className={`${styles.filterBtn} ${activeModality === key ? styles.filterBtnActive : ""}`}
-                    onClick={() => setActiveModality(activeModality === key ? null : key)}
-                    title={title}
-                  >
-                    <Icon size={13} />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {showProviderFilters && allProviders.length >= 2 && (
-            <div className={styles.filterRow}>
-              <span className={styles.filterLabel}>Provider</span>
-              <div className={styles.filterBar}>
-                {allProviders.map((p) => (
-                  <button
-                    key={p}
-                    className={`${styles.filterBtn} ${activeProvider === p ? styles.filterBtnActive : ""}`}
-                    onClick={() => setActiveProvider(activeProvider === p ? null : p)}
-                    title={p}
-                  >
-                    <ProviderLogo provider={p} size={13} />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      <SidebarFilterComponent
+        modalities={showModalityFilters ? allModalities : []}
+        providers={showProviderFilters ? allProviders : []}
+        activeModality={activeModality}
+        activeProvider={activeProvider}
+        onModalityChange={setActiveModality}
+        onProviderChange={setActiveProvider}
+        showFavoritesOnly={showFavoritesOnly}
+        onFavoritesToggle={onToggleFavorite ? () => setShowFavoritesOnly((v) => !v) : undefined}
+        hasFavorites={hasFavorites}
+      />
+
+      <div className={styles.datePickerWrapper}>
+        <DatePickerComponent
+          from={dateRange.from}
+          to={dateRange.to}
+          onChange={setDateRange}
+          placeholder="All dates"
+        />
+      </div>
 
       <div className={styles.list}>
         {filtered.map((item) => {

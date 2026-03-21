@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Image as ImageIcon, Music, Film, FileText, User, Sparkles, ExternalLink, Grid, List } from "lucide-react";
+import { Image as ImageIcon, Music, Film, FileText, User, Sparkles, ExternalLink, Grid, List, Star } from "lucide-react";
 import Link from "next/link";
 import IrisService from "../services/IrisService";
 import PrismService from "../services/PrismService";
@@ -11,6 +11,7 @@ import AudioRecorderComponent from "./AudioRecorderComponent";
 import PaginationComponent from "./PaginationComponent";
 import SortableTableComponent from "./SortableTableComponent";
 import PageHeaderComponent from "./PageHeaderComponent";
+import DatePickerComponent from "./DatePickerComponent";
 import { LoadingMessage, EmptyMessage } from "./StateMessageComponent";
 import { FilterBarComponent, FilterGroupComponent, FilterPillsComponent, SearchInputComponent, ViewModeToggleComponent } from "./FilterBarComponent";
 import { MODALITY_COLORS } from "./WorkflowNodeConstants";
@@ -67,11 +68,18 @@ export default function MediaPageComponent({ mode = "user" }) {
   const [type, setType] = useState("all");
   const [project, setProject] = useState("");
   const [username, setUsername] = useState("");
+  const [provider, setProvider] = useState("");
+  const [model, setModel] = useState("");
+  const [providers, setProviders] = useState([]);
+  const [models, setModels] = useState([]);
   const [viewMode, setViewMode] = useState("grid");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
   const [lightboxSrc, setLightboxSrc] = useState(null);
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
+  const [favoriteKeys, setFavoriteKeys] = useState([]);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const PAGE_SIZE = 60;
 
   const loadMedia = useCallback(async () => {
@@ -85,6 +93,10 @@ export default function MediaPageComponent({ mode = "user" }) {
         if (username) params.username = username;
       }
       if (search) params.search = search;
+      if (provider) params.provider = provider;
+      if (model) params.model = model;
+      if (dateRange.from) params.from = new Date(dateRange.from).toISOString();
+      if (dateRange.to) params.to = new Date(dateRange.to + "T23:59:59").toISOString();
 
       const service = isAdmin ? IrisService : PrismService;
       const result = await service.getMedia(params);
@@ -92,22 +104,46 @@ export default function MediaPageComponent({ mode = "user" }) {
       setTotal(result.total || 0);
       if (result.projects) setProjects(result.projects);
       if (result.usernames) setUsernames(result.usernames);
+      if (result.providers) setProviders(result.providers);
+      if (result.models) setModels(result.models);
     } catch (err) {
       console.error("Failed to load media:", err);
     } finally {
       setLoading(false);
     }
-  }, [page, origin, type, project, username, search, isAdmin]);
+  }, [page, origin, type, project, username, search, provider, model, dateRange, isAdmin]);
 
   useEffect(() => {
     loadMedia();
   }, [loadMedia]);
+
+  useEffect(() => {
+    PrismService.getFavorites("media")
+      .then((favs) => setFavoriteKeys(favs.map((f) => f.key)))
+      .catch(() => {});
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
     setSearch(searchInput);
     setPage(1);
   };
+
+  const toggleFavorite = async (mediaKey) => {
+    if (favoriteKeys.includes(mediaKey)) {
+      setFavoriteKeys((prev) => prev.filter((k) => k !== mediaKey));
+      PrismService.removeFavorite("media", mediaKey).catch(() => {});
+    } else {
+      setFavoriteKeys((prev) => [...prev, mediaKey]);
+      PrismService.addFavorite("media", mediaKey).catch(() => {});
+    }
+  };
+
+  const getMediaKey = (m, i) => `${m.convId}-${m.mediaType}-${i}`;
+
+  const displayMedia = showFavoritesOnly
+    ? media.filter((m, i) => favoriteKeys.includes(getMediaKey(m, i)))
+    : media;
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -179,6 +215,17 @@ export default function MediaPageComponent({ mode = "user" }) {
 
       {/* Filters */}
       <FilterBarComponent>
+        <FilterGroupComponent label="Favorites">
+          <FilterPillsComponent
+            options={[
+              { value: "all", label: "All" },
+              { value: "favorites", label: "★ Favorites" },
+            ]}
+            value={showFavoritesOnly ? "favorites" : "all"}
+            onChange={(v) => setShowFavoritesOnly(v === "favorites")}
+          />
+        </FilterGroupComponent>
+
         <FilterGroupComponent label="Source">
           <FilterPillsComponent
             options={ORIGIN_FILTERS}
@@ -219,6 +266,34 @@ export default function MediaPageComponent({ mode = "user" }) {
           </FilterGroupComponent>
         )}
 
+        <FilterGroupComponent label="Provider">
+          <ComboboxFilter
+            options={providers}
+            value={provider}
+            onChange={(v) => { setProvider(v); setModel(""); setPage(1); }}
+            placeholder="All Providers"
+            allLabel="All Providers"
+          />
+        </FilterGroupComponent>
+
+        <FilterGroupComponent label="Model">
+          <ComboboxFilter
+            options={provider ? models.filter((m) => m.startsWith(provider + "/")) : models}
+            value={model}
+            onChange={(v) => { setModel(v); setPage(1); }}
+            placeholder="All Models"
+            allLabel="All Models"
+          />
+        </FilterGroupComponent>
+
+        <FilterGroupComponent label="Date">
+          <DatePickerComponent
+            from={dateRange.from}
+            to={dateRange.to}
+            onChange={(v) => { setDateRange(v); setPage(1); }}
+          />
+        </FilterGroupComponent>
+
         <SearchInputComponent
           value={searchInput}
           onChange={setSearchInput}
@@ -242,10 +317,19 @@ export default function MediaPageComponent({ mode = "user" }) {
       {/* ── Grid View ── */}
       {!loading && viewMode === "grid" && (
         <div className={styles.mediaGrid}>
-          {media.map((m, i) => {
+          {displayMedia.map((m, i) => {
             const resolvedUrl = resolveUrl(m.url);
+            const mediaKey = getMediaKey(m, i);
+            const isFav = favoriteKeys.includes(mediaKey);
             return (
               <div key={`${m.convId}-${i}`} className={styles.mediaCard}>
+                <button
+                  className={`${styles.favBtn} ${isFav ? styles.favBtnActive : ""}`}
+                  onClick={() => toggleFavorite(mediaKey)}
+                  title={isFav ? "Remove from favorites" : "Add to favorites"}
+                >
+                  <Star size={12} fill={isFav ? "currentColor" : "none"} />
+                </button>
                 <div className={styles.mediaPreview}>
                   {m.mediaType === "image" && resolvedUrl ? (
                     <img
@@ -308,13 +392,13 @@ export default function MediaPageComponent({ mode = "user" }) {
         <div className={styles.listWrapper}>
           <SortableTableComponent
             columns={listColumns}
-            data={media}
+            data={displayMedia}
             getRowKey={(m, i) => `${m.convId}-${i}`}
           />
         </div>
       )}
 
-      {!loading && media.length === 0 && <EmptyMessage message="No media found" />}
+      {!loading && displayMedia.length === 0 && <EmptyMessage message="No media found" />}
 
       {/* Pagination */}
       <PaginationComponent

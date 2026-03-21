@@ -9,6 +9,7 @@ import { MODALITY_COLORS } from "../../../components/WorkflowNodeConstants";
 import SortableTableComponent from "../../../components/SortableTableComponent";
 import PaginationComponent from "../../../components/PaginationComponent";
 import PageHeaderComponent from "../../../components/PageHeaderComponent";
+import DatePickerComponent from "../../../components/DatePickerComponent";
 import { ErrorMessage } from "../../../components/StateMessageComponent";
 import { FilterBarComponent, FilterGroupComponent, FilterInputComponent, FilterSelectComponent, FilterClearButton } from "../../../components/FilterBarComponent";
 import styles from "./page.module.css";
@@ -33,6 +34,7 @@ export default function RequestsPage() {
         endpoint: "",
         success: "",
     });
+    const [dateRange, setDateRange] = useState({ from: "", to: "" });
 
     const LIMIT = 50;
 
@@ -45,6 +47,8 @@ export default function RequestsPage() {
             Object.entries(filters).forEach(([k, v]) => {
                 if (v) params[k] = v;
             });
+            if (dateRange.from) params.from = new Date(dateRange.from).toISOString();
+            if (dateRange.to) params.to = new Date(dateRange.to + "T23:59:59").toISOString();
 
             const data = await IrisService.getRequests(params);
             setRequests(data.data || []);
@@ -54,7 +58,7 @@ export default function RequestsPage() {
         } finally {
             setLoading(false);
         }
-    }, [page, sort, order, filters]);
+    }, [page, sort, order, filters, dateRange]);
 
     useEffect(() => {
         loadRequests();
@@ -100,6 +104,7 @@ export default function RequestsPage() {
             endpoint: "",
             success: "",
         });
+        setDateRange({ from: "", to: "" });
         setPage(1);
     }
 
@@ -246,6 +251,13 @@ export default function RequestsPage() {
                             { value: "true", label: "Success" },
                             { value: "false", label: "Error" },
                         ]}
+                    />
+                </FilterGroupComponent>
+                <FilterGroupComponent label="Date">
+                    <DatePickerComponent
+                        from={dateRange.from}
+                        to={dateRange.to}
+                        onChange={(v) => { setDateRange(v); setPage(1); }}
                     />
                 </FilterGroupComponent>
                 <FilterClearButton onClick={clearFilters} />
