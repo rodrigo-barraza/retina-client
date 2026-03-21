@@ -19,6 +19,7 @@ import HistoryPanel from "./HistoryPanel.js";
 import SettingsPanel from "./SettingsPanel.js";
 import CustomToolsPanel from "./CustomToolsPanel.js";
 import MessageList from "./MessageList.js";
+import { ALL_CONSOLE_PROMPTS } from "../arrays.js";
 import chatStyles from "./ChatArea.module.css";
 import styles from "./ConsoleComponent.module.css";
 
@@ -211,6 +212,18 @@ export default function ConsoleComponent() {
     }
     return map;
   }, [customTools]);
+
+  // Pick 5 random prompt suggestions — re-shuffles on new chat (client-only to avoid hydration mismatch)
+  const [randomPrompts, setRandomPrompts] = useState([]);
+
+  useEffect(() => {
+    const pool = [...ALL_CONSOLE_PROMPTS];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    setRandomPrompts(pool.slice(0, 5));
+  }, [conversationId]);
 
   // ── Orchestration loop ───────────────────────────────────────
   const runOrchestrationLoop = useCallback(
@@ -551,13 +564,7 @@ export default function ConsoleComponent() {
               powered by the Sun ecosystem.
             </p>
             <div className={styles.quickPrompts}>
-              {[
-                "What's the weather like right now?",
-                "What are the top commodity movers today?",
-                "Are there any events this weekend?",
-                "What's trending on Reddit?",
-                "What's the UV index and air quality?",
-              ].map((prompt) => (
+              {randomPrompts.map((prompt) => (
                 <button
                   key={prompt}
                   className={styles.quickPrompt}

@@ -38,20 +38,22 @@
 .addBtnSmall {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   margin-left: auto;
-  padding: 2px 8px;
-  font-size: 9px;
-  font-weight: 600;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
   background: color-mix(in srgb, var(--accent-color) 12%, transparent);
   color: var(--accent-color);
   border: 1px solid color-mix(in srgb, var(--accent-color) 25%, transparent);
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
   transition: all 0.15s ease;
 
   &:hover {
     background: color-mix(in srgb, var(--accent-color) 22%, transparent);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
   }
 }
 
@@ -349,6 +351,58 @@
   border-color: #ef4444;
   color: #ef4444;
   background: color-mix(in srgb, #ef4444 8%, var(--bg-card));
+}
+
+/* ── Delete Confirmation ──────────────────────────────────── */
+
+.deleteConfirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.deleteConfirmLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.deleteConfirmYes,
+.deleteConfirmNo {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid var(--border-color);
+}
+
+.deleteConfirmYes {
+  background: color-mix(in srgb, #ef4444 12%, transparent);
+  color: #ef4444;
+  border-color: color-mix(in srgb, #ef4444 30%, transparent);
+
+  &:hover {
+    background: color-mix(in srgb, #ef4444 25%, transparent);
+    border-color: #ef4444;
+  }
+}
+
+.deleteConfirmNo {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+
+  &:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+  }
 }
 
 /* ── Form View ─────────────────────────────────────────────── */

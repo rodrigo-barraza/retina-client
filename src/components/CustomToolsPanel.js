@@ -68,6 +68,7 @@ export default function CustomToolsPanel({
   const [saving, setSaving] = useState(false);
   const [builtInOpen, setBuiltInOpen] = useState(true);
   const [customOpen, setCustomOpen] = useState(true);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
 
   // ── CRUD ─────────────────────────────────────────────────────
 
@@ -128,10 +129,15 @@ export default function CustomToolsPanel({
     }
   }, [editingTool, isNew, onToolsChange]);
 
-  const handleDelete = useCallback(
+  const handleDelete = useCallback((id) => {
+    setConfirmingDeleteId(id);
+  }, []);
+
+  const confirmDelete = useCallback(
     async (id) => {
       try {
         await PrismService.deleteCustomTool(id);
+        setConfirmingDeleteId(null);
         onToolsChange();
       } catch (err) {
         console.error("Failed to delete tool:", err);
@@ -461,12 +467,30 @@ export default function CustomToolsPanel({
                     >
                       <Edit3 size={12} /> Edit
                     </button>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => handleDelete(id)}
-                    >
-                      <Trash2 size={12} /> Delete
-                    </button>
+                    {confirmingDeleteId === id ? (
+                      <div className={styles.deleteConfirm}>
+                        <span className={styles.deleteConfirmLabel}>Delete?</span>
+                        <button
+                          className={styles.deleteConfirmYes}
+                          onClick={() => confirmDelete(id)}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          className={styles.deleteConfirmNo}
+                          onClick={() => setConfirmingDeleteId(null)}
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className={styles.deleteBtn}
+                        onClick={() => handleDelete(id)}
+                      >
+                        <Trash2 size={12} /> Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
