@@ -61,6 +61,7 @@ export default function ModelsPageComponent({ mode = "user" }) {
   const [error, setError] = useState(null);
   const [actionInProgress, setActionInProgress] = useState(null);
   const [toast, setToast] = useState(null);
+  const [favoriteKeys, setFavoriteKeys] = useState([]);
 
   const fetchModels = useCallback(async () => {
     try {
@@ -103,9 +104,23 @@ export default function ModelsPageComponent({ mode = "user" }) {
 
   useEffect(() => {
     fetchModels();
+    PrismService.getFavorites("model")
+      .then((favs) => setFavoriteKeys(favs.map((f) => f.key)))
+      .catch(() => {});
     const interval = setInterval(fetchModels, 15000);
     return () => clearInterval(interval);
   }, [fetchModels]);
+
+  const handleToggleFavorite = async (key) => {
+    if (favoriteKeys.includes(key)) {
+      setFavoriteKeys((prev) => prev.filter((k) => k !== key));
+      PrismService.removeFavorite("model", key).catch(() => {});
+    } else {
+      setFavoriteKeys((prev) => [...prev, key]);
+      const [provider, ...rest] = key.split(":");
+      PrismService.addFavorite("model", key, { provider, name: rest.join(":") }).catch(() => {});
+    }
+  };
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -251,7 +266,12 @@ export default function ModelsPageComponent({ mode = "user" }) {
           <span>Loading models...</span>
         </div>
       ) : (
-        <ModelGrid models={allModels} renderActions={renderActions} />
+        <ModelGrid
+          models={allModels}
+          renderActions={renderActions}
+          favorites={favoriteKeys}
+          onToggleFavorite={handleToggleFavorite}
+        />
       )}
     </div>
   );

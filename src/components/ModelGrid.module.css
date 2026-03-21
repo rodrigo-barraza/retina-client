@@ -350,18 +350,18 @@
 /* ── Favorite star ─────────────────────────────────── */
 
 .thFav {
-  width: 32px;
-  min-width: 32px;
-  max-width: 32px;
-  padding: 10px 6px 10px 14px !important;
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  padding: 10px 0 !important;
   text-align: center !important;
 }
 
 .tdFav {
-  width: 32px;
-  min-width: 32px;
-  max-width: 32px;
-  padding: 10px 6px 10px 14px !important;
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  padding: 10px 0 !important;
   text-align: center !important;
   cursor: pointer;
 }

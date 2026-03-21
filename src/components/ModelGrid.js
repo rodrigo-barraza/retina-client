@@ -93,7 +93,11 @@ function parseParams(str) {
  * Get a numeric sort value for a given model and sort key.
  * Always uses raw data to avoid issues with formatted display strings.
  */
-function getSortValue(rawModel, model, key) {
+function getSortValue(rawModel, model, key, favorites = []) {
+    if (key === "favorite") {
+        const favKey = `${model.provider}:${model.key}`;
+        return favorites.includes(favKey) ? 1 : 0;
+    }
     if (key === "context")
         return (
             rawModel.max_context_length ||
@@ -190,8 +194,8 @@ export default function ModelGrid({
         ? [...filtered].sort((a, b) => {
             const na = normalizeModel(a);
             const nb = normalizeModel(b);
-            const va = getSortValue(a, na, sort.key);
-            const vb = getSortValue(b, nb, sort.key);
+            const va = getSortValue(a, na, sort.key, favorites);
+            const vb = getSortValue(b, nb, sort.key, favorites);
             return sort.dir === "asc" ? va - vb : vb - va;
         })
         : filtered;
@@ -223,7 +227,7 @@ export default function ModelGrid({
         });
     };
 
-    const SortIcon = ({ colKey }) => {
+    const renderSortIcon = (colKey) => {
         if (sort.key !== colKey) return null;
         return sort.dir === "desc" ? (
             <ChevronDown size={12} className={styles.sortIcon} />
@@ -237,7 +241,7 @@ export default function ModelGrid({
             className={`${styles.th} ${styles.thSortable} ${extra}`}
             onClick={() => handleSort(key)}
         >
-            {label} <SortIcon colKey={key} />
+            {label} {renderSortIcon(key)}
         </th>
     );
 
@@ -316,7 +320,15 @@ export default function ModelGrid({
                     <table className={styles.table}>
                         <thead>
                             <tr>
-                                {onToggleFavorite && <th className={`${styles.th} ${styles.thFav}`} />}
+                                {onToggleFavorite && (
+                                    <th
+                                        className={`${styles.th} ${styles.thSortable} ${styles.thFav}`}
+                                        onClick={() => handleSort("favorite")}
+                                    >
+                                        <Star size={12} className={sort.key === "favorite" ? styles.favStarActive : ""} />
+                                        {renderSortIcon("favorite")}
+                                    </th>
+                                )}
                                 <th className={styles.th}>Model</th>
                                 {hasModalities && <th className={styles.th}>Modalities</th>}
                                 {hasContext && sortableTh("Context", "context")}
@@ -331,7 +343,7 @@ export default function ModelGrid({
                                         className={`${styles.th} ${styles.thSortable} ${styles.thArena}`}
                                         onClick={() => handleSort(col.key)}
                                     >
-                                        {col.label} <SortIcon colKey={col.key} />
+                                        {col.label} {renderSortIcon(col.key)}
                                     </th>
                                 ))}
                             </tr>
