@@ -117,7 +117,7 @@ export default function HistoryList({
     });
   }, [items, searchQuery, activeModality, activeProvider, showFavoritesOnly, favorites, onToggleFavorite]);
 
-  const hasFavorites = !!onToggleFavorite;
+  const hasFavorites = !!onToggleFavorite && favorites.length > 0;
   const hasFilters = hasFavorites ||
     (showModalityFilters && allModalities.length >= 2) ||
     (showProviderFilters && allProviders.length >= 2);
