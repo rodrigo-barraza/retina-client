@@ -66,6 +66,7 @@ export default function HomePage({ initialConversationId = null }) {
     const skipSystemPromptSave = useRef(false);
     const [workflows, setWorkflows] = useState([]);
     const [favoriteKeys, setFavoriteKeys] = useState([]);
+    const [convFavoriteKeys, setConvFavoriteKeys] = useState([]);
 
     // ── Function Calling state ──────────────────────────────────
     const [leftTab, setLeftTab] = useState("settings");
@@ -180,6 +181,11 @@ export default function HomePage({ initialConversationId = null }) {
         // Load favorite models
         PrismService.getFavorites("model")
             .then((favs) => setFavoriteKeys(favs.map((f) => f.key)))
+            .catch(() => {});
+
+        // Load favorite conversations
+        PrismService.getFavorites("conversation")
+            .then((favs) => setConvFavoriteKeys(favs.map((f) => f.key)))
             .catch(() => {});
     }, []);
 
@@ -1478,6 +1484,19 @@ Guidelines:
                         onSelect={handleSelectConversation}
                         onNew={handleNewChatClick}
                         onDelete={handleDeleteConversation}
+                        favorites={convFavoriteKeys}
+                        onToggleFavorite={async (convId) => {
+                            if (convFavoriteKeys.includes(convId)) {
+                                setConvFavoriteKeys((prev) => prev.filter((k) => k !== convId));
+                                PrismService.removeFavorite("conversation", convId).catch(() => {});
+                            } else {
+                                setConvFavoriteKeys((prev) => [...prev, convId]);
+                                const conv = conversations.find((c) => c.id === convId);
+                                PrismService.addFavorite("conversation", convId, {
+                                    title: conv?.title || "Untitled",
+                                }).catch(() => {});
+                            }
+                        }}
                     />
                 }
                 headerTitle={title}

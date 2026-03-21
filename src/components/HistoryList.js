@@ -11,6 +11,7 @@ import {
   FileText as DocIcon,
   Download,
   Copy,
+  Star,
 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import { DateTime } from "luxon";
@@ -58,10 +59,13 @@ export default function HistoryList({
   showModalityFilters = true,
   admin = false,
   newIds,
+  favorites = [],
+  onToggleFavorite,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeModality, setActiveModality] = useState(null);
   const [activeProvider, setActiveProvider] = useState(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   // Discover modalities across all items
   const allModalities = useMemo(() => {
@@ -91,6 +95,9 @@ export default function HistoryList({
 
   const filtered = useMemo(() => {
     return items.filter((item) => {
+      if (showFavoritesOnly && onToggleFavorite) {
+        if (!(favorites || []).includes(item.id)) return false;
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
         const matchesSearch =
@@ -108,9 +115,11 @@ export default function HistoryList({
       }
       return true;
     });
-  }, [items, searchQuery, activeModality, activeProvider]);
+  }, [items, searchQuery, activeModality, activeProvider, showFavoritesOnly, favorites, onToggleFavorite]);
 
-  const hasFilters = (showModalityFilters && allModalities.length >= 2) ||
+  const hasFavorites = !!onToggleFavorite;
+  const hasFilters = hasFavorites ||
+    (showModalityFilters && allModalities.length >= 2) ||
     (showProviderFilters && allProviders.length >= 2);
 
   return (
@@ -138,6 +147,20 @@ export default function HistoryList({
       {/* Filter toggles */}
       {hasFilters && (
         <div className={styles.filterSection}>
+          {hasFavorites && (
+            <div className={styles.filterRow}>
+              <span className={styles.filterLabel}>Favorite</span>
+              <div className={styles.filterBar}>
+                <button
+                  className={`${styles.filterBtn} ${showFavoritesOnly ? styles.filterBtnActive : ""}`}
+                  onClick={() => setShowFavoritesOnly((v) => !v)}
+                  title="Show favorites only"
+                >
+                  <Star size={13} fill={showFavoritesOnly ? "currentColor" : "none"} />
+                </button>
+              </div>
+            </div>
+          )}
           {showModalityFilters && allModalities.length >= 2 && (
             <div className={styles.filterRow}>
               <span className={styles.filterLabel}>Modality</span>
@@ -192,6 +215,15 @@ export default function HistoryList({
                 <div className={styles.icon}>
                   <ItemIcon size={14} />
                 </div>
+              )}
+              {onToggleFavorite && (
+                <button
+                  className={`${styles.favBtn} ${(favorites || []).includes(item.id) ? styles.favBtnActive : ""}`}
+                  onClick={(e) => { e.stopPropagation(); onToggleFavorite(item.id); }}
+                  title={(favorites || []).includes(item.id) ? "Remove from favorites" : "Add to favorites"}
+                >
+                  <Star size={12} fill={(favorites || []).includes(item.id) ? "currentColor" : "none"} />
+                </button>
               )}
               <div className={styles.content}>
                 <div className={styles.title}>
