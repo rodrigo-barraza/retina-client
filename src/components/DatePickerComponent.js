@@ -124,7 +124,7 @@ function MonthGrid({ year, month, from, to, hoverDate, onDayClick, onDayHover })
   );
 }
 
-export default function DatePickerComponent({ from = "", to = "", onChange, placeholder = "All time" }) {
+export default function DatePickerComponent({ from = "", to = "", onChange, placeholder = "All time", storageKey = "" }) {
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => {
     const d = from ? parseDate(from) : new Date();
@@ -132,7 +132,65 @@ export default function DatePickerComponent({ from = "", to = "", onChange, plac
   });
   const [selecting, setSelecting] = useState(null); // null | "from" set, waiting for "to"
   const [hoverDate, setHoverDate] = useState(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const containerRef = useRef(null);
+  const triggerRef = useRef(null);
+  const initializedRef = useRef(false);
+
+  // Calculate fixed position from trigger bounding rect
+  const updateDropdownPos = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setDropdownPos({
+      top: rect.bottom + 6,
+      left: rect.left,
+    });
+  }, []);
+
+  // Recalculate on open, scroll, and resize
+  useEffect(() => {
+    if (!open) return;
+    updateDropdownPos();
+    const handleScroll = () => updateDropdownPos();
+    const handleResize = () => updateDropdownPos();
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [open, updateDropdownPos]);
+
+  // Restore from localStorage on mount
+  useEffect(() => {
+    if (!storageKey || initializedRef.current) return;
+    initializedRef.current = true;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.from || parsed.to) {
+          onChange(parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [storageKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist to localStorage on change
+  useEffect(() => {
+    if (!storageKey || !initializedRef.current) return;
+    try {
+      if (from || to) {
+        localStorage.setItem(storageKey, JSON.stringify({ from, to }));
+      } else {
+        localStorage.removeItem(storageKey);
+      }
+    } catch {
+      // ignore
+    }
+  }, [storageKey, from, to]);
 
   // Close on outside click
   useEffect(() => {
@@ -226,6 +284,7 @@ export default function DatePickerComponent({ from = "", to = "", onChange, plac
   return (
     <div className={styles.container} ref={containerRef}>
       <button
+        ref={triggerRef}
         type="button"
         className={`${styles.trigger} ${hasValue ? styles.triggerActive : ""} ${open ? styles.triggerOpen : ""}`}
         onClick={() => setOpen((v) => !v)}
@@ -246,7 +305,7 @@ export default function DatePickerComponent({ from = "", to = "", onChange, plac
       </button>
 
       {open && (
-        <div className={styles.dropdown}>
+        <div className={styles.dropdown} style={{ top: dropdownPos.top, left: dropdownPos.left }}>
           {/* Presets */}
           <div className={styles.presets}>
             {PRESETS.map((p) => (

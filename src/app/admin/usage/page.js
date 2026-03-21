@@ -355,6 +355,7 @@ export default function UsagePage() {
                     from={dateRange.from}
                     to={dateRange.to}
                     onChange={setDateRange}
+                    storageKey="retina-date-range"
                 />
             </div>
 

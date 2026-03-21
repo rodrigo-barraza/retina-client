@@ -160,6 +160,7 @@ export default function HistoryList({
           to={dateRange.to}
           onChange={setDateRange}
           placeholder="All dates"
+          storageKey="retina-date-range"
         />
       </div>
 

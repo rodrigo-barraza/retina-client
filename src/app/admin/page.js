@@ -3,12 +3,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -22,12 +16,12 @@ import {
   Clock,
   AlertCircle,
   CheckCircle,
-  TrendingUp,
   Workflow,
 } from "lucide-react";
 import IrisService from "../../services/IrisService";
 import StatsCard from "../../components/StatsCard";
 import DatePickerComponent from "../../components/DatePickerComponent";
+import TimelineChartComponent from "../../components/TimelineChartComponent";
 import styles from "./page.module.css";
 
 const PROVIDER_COLORS = [
@@ -41,13 +35,7 @@ const PROVIDER_COLORS = [
   "#06b6d4",
 ];
 
-const TIME_RANGES = [
-  { key: "day", label: "24h", hours: 24 },
-  { key: "week", label: "7d", hours: 168 },
-  { key: "month", label: "30d", hours: 720 },
-  { key: "year", label: "1y", hours: 8760 },
-  { key: "all", label: "All", hours: 0 },
-];
+
 
 function formatNumber(n) {
   if (n === null || n === undefined) return "0";
@@ -67,40 +55,9 @@ function formatLatency(ms) {
   return `${Math.round(ms)}ms`;
 }
 
-function getDateRange(rangeKey) {
-  if (rangeKey === "all") return {};
-  const range = TIME_RANGES.find((r) => r.key === rangeKey);
-  if (!range) return {};
-  const from = new Date(
-    Date.now() - range.hours * 60 * 60 * 1000,
-  ).toISOString();
-  return { from };
-}
 
-/* ── Recharts custom tooltip ── */
-function TimelineTooltipComponent({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className={styles.chartTooltip}>
-      <span className={styles.chartTooltipLabel}>{label}</span>
-      <span className={styles.chartTooltipValue}>
-        {payload[0].value.toLocaleString()} requests
-      </span>
-    </div>
-  );
-}
 
-/* ── Custom glow dot for active point ── */
-function GlowDotComponent(props) {
-  const { cx, cy } = props;
-  if (cx == null || cy == null) return null;
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r="8" fill="#6366f1" opacity="0.2" />
-      <circle cx={cx} cy={cy} r="4" fill="#6366f1" stroke="#fff" strokeWidth="1.5" />
-    </g>
-  );
-}
+
 
 /* ── Recharts active pie sector with outward expansion ── */
 function renderActiveSector(props) {
@@ -161,30 +118,24 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Time range
-  const [timeRange, setTimeRange] = useState("day");
+  // Date range
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
-  const useCustom = !!(dateRange.from || dateRange.to);
 
   // Active pie sector
   const [activePieIndex, setActivePieIndex] = useState(null);
 
   const dateParams = useMemo(() => {
-    if (useCustom) {
-      const p = {};
-      if (dateRange.from) p.from = new Date(dateRange.from).toISOString();
-      if (dateRange.to)
-        p.to = new Date(dateRange.to + "T23:59:59").toISOString();
-      return p;
-    }
-    return getDateRange(timeRange);
-  }, [timeRange, useCustom, dateRange]);
+    const p = {};
+    if (dateRange.from) p.from = new Date(dateRange.from).toISOString();
+    if (dateRange.to)
+      p.to = new Date(dateRange.to + "T23:59:59").toISOString();
+    return p;
+  }, [dateRange]);
 
   const timelineHours = useMemo(() => {
-    if (useCustom) return 720;
-    const range = TIME_RANGES.find((r) => r.key === timeRange);
-    return range?.hours || 24;
-  }, [timeRange, useCustom]);
+    if (dateRange.from || dateRange.to) return 720;
+    return 0;
+  }, [dateRange]);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -256,10 +207,7 @@ export default function DashboardPage() {
     }));
   }, [providerEntries]);
 
-  const timeRangeLabel = useMemo(() => {
-    const range = TIME_RANGES.find((r) => r.key === timeRange);
-    return range?.label || "Custom";
-  }, [timeRange]);
+
 
   return (
     <div className={styles.page}>
@@ -270,26 +218,13 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* ── Time Range Toolbar ── */}
+      {/* ── Date Range Toolbar ── */}
       <div className={styles.timeToolbar}>
-        <div className={styles.timePills}>
-          {TIME_RANGES.map((r) => (
-            <button
-              key={r.key}
-              className={`${styles.timePill} ${!useCustom && timeRange === r.key ? styles.timePillActive : ""}`}
-              onClick={() => {
-                setDateRange({ from: "", to: "" });
-                setTimeRange(r.key);
-              }}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
         <DatePickerComponent
           from={dateRange.from}
           to={dateRange.to}
           onChange={setDateRange}
+          storageKey="retina-date-range"
         />
       </div>
 
@@ -305,7 +240,7 @@ export default function DashboardPage() {
         <StatsCard
           label="Total Requests"
           value={loading ? "..." : formatNumber(stats?.totalRequests)}
-          subtitle={useCustom ? "Custom range" : `Last ${timeRangeLabel}`}
+          subtitle={dateRange.from || dateRange.to ? "Custom range" : "All time"}
           icon={Activity}
           variant="accent"
           loading={loading}
@@ -363,75 +298,13 @@ export default function DashboardPage() {
 
       {/* ── Charts Row ── */}
       <div className={styles.chartsRow}>
-        {/* Requests Timeline — Recharts Area Chart */}
+        {/* Requests Timeline — Tabbed Chart */}
         <div className={styles.chartCard}>
-          <div className={styles.chartTitle}>
-            <TrendingUp size={14} />
-            Requests Over Time
-          </div>
-          <div className={styles.rechartsWrapper}>
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart
-                  data={chartData}
-                  margin={{ top: 8, right: 12, bottom: 0, left: -12 }}
-                >
-                  <defs>
-                    <linearGradient
-                      id="areaFillGrad"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 6"
-                    stroke="rgba(255,255,255,0.04)"
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fill: "#5a6078", fontSize: 11 }}
-                    axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
-                    tickLine={false}
-                    interval="preserveStartEnd"
-                  />
-                  <YAxis
-                    tick={{ fill: "#5a6078", fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={formatNumber}
-                  />
-                  <Tooltip
-                    content={<TimelineTooltipComponent />}
-                    cursor={{
-                      stroke: "rgba(99,102,241,0.25)",
-                      strokeWidth: 1,
-                      strokeDasharray: "4 4",
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="requests"
-                    stroke="#6366f1"
-                    strokeWidth={2}
-                    fill="url(#areaFillGrad)"
-                    activeDot={<GlowDotComponent />}
-                    animationDuration={800}
-                    animationEasing="ease-out"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className={styles.chartEmpty}>
-                {loading ? "Loading..." : "No data yet"}
-              </div>
-            )}
-          </div>
+          <TimelineChartComponent
+            data={chartData}
+            loading={loading}
+            height={220}
+          />
         </div>
 
         {/* Provider Distribution — Recharts Pie Chart */}

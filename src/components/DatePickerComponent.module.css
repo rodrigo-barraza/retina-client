@@ -61,9 +61,7 @@
 /* ── Dropdown ── */
 
 .dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
+  position: fixed;
   z-index: 1000;
   display: flex;
   background: var(--bg-card);
@@ -292,7 +290,6 @@
 @media (max-width: 640px) {
   .dropdown {
     flex-direction: column;
-    left: -40px;
   }
 
   .presets {

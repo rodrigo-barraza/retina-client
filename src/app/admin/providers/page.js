@@ -100,6 +100,7 @@ export default function ProvidersPage() {
             from={dateRange.from}
             to={dateRange.to}
             onChange={setDateRange}
+            storageKey="retina-date-range"
           />
         </FilterGroupComponent>
       </FilterBarComponent>

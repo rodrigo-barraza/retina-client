@@ -258,6 +258,7 @@ export default function RequestsPage() {
                         from={dateRange.from}
                         to={dateRange.to}
                         onChange={(v) => { setDateRange(v); setPage(1); }}
+                        storageKey="retina-date-range"
                     />
                 </FilterGroupComponent>
                 <FilterClearButton onClick={clearFilters} />
