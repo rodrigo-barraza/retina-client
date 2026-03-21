@@ -72,7 +72,6 @@ export default function ConsoleComponent() {
 
   const textareaRef = useRef(null);
   const endRef = useRef(null);
-  const inputRef = useRef(null);
   const abortRef = useRef(null);
 
   // ── Filtered config: only function-calling models ────────────

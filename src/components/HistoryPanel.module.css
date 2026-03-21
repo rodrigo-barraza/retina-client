@@ -7,6 +7,8 @@
 .newBtn {
   margin: 12px;
   height: var(--button-height);
+  min-height: var(--button-height);
+  flex-shrink: 0;
   padding: 0 10px;
   display: flex;
   align-items: center;
