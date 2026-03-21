@@ -10,16 +10,15 @@ import {
   CheckCircle2,
   AlertCircle,
   Zap,
-  Cpu,
 } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import SunService from "../services/SunService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
 import NavigationSidebarComponent from "./NavigationSidebarComponent.js";
 import HistoryPanel from "./HistoryPanel.js";
-import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos.js";
-import SelectDropdown from "./SelectDropdown.js";
-import SliderComponent from "./SliderComponent.js";
+import SettingsPanel from "./SettingsPanel.js";
+import MessageList from "./MessageList.js";
+import chatStyles from "./ChatArea.module.css";
 import styles from "./ConsoleComponent.module.css";
 
 const MAX_TOOL_ITERATIONS = 5;
@@ -44,6 +43,7 @@ export default function ConsoleComponent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [toolActivity, setToolActivity] = useState([]);
   const [showToolPanel, setShowToolPanel] = useState(false);
+  const [showToolsList, setShowToolsList] = useState(false);
   const [conversationId, setConversationId] = useState(() => crypto.randomUUID());
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -53,67 +53,79 @@ export default function ConsoleComponent() {
   const [settings, setSettings] = useState({
     provider: "google",
     model: "gemini-3-flash-preview",
+    systemPrompt: SYSTEM_PROMPT,
+    temperature: 1.0,
     maxTokens: 8192,
+    topP: 1,
+    topK: 0,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+    stopSequences: "",
+    thinkingEnabled: false,
+    reasoningEffort: "high",
+    thinkingLevel: "high",
+    thinkingBudget: "",
+    webSearchEnabled: false,
+    verbosity: "",
+    reasoningSummary: "",
   });
 
-  const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
+  const endRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
 
-  // ── Derived: function-calling models only ────────────────────
-  const { fcProviders, fcModelsMap } = useMemo(() => {
-    const textModelsMap = config?.textToText?.models || {};
-    const providerList = config?.providerList || [];
-    const map = {};
+  // ── Filtered config: only function-calling models ────────────
+  const filteredConfig = useMemo(() => {
+    if (!config) return null;
+    const textModelsMap = config.textToText?.models || {};
+    const filteredTextModels = {};
 
-    for (const p of providerList) {
-      const models = (textModelsMap[p] || []).filter(
+    for (const [provider, models] of Object.entries(textModelsMap)) {
+      const fcModels = models.filter(
         (m) => m.tools?.includes("Function Calling"),
       );
-      if (models.length > 0) map[p] = models;
+      if (fcModels.length > 0) filteredTextModels[provider] = fcModels;
     }
 
+    // Only include providers that have FC models
+    const filteredProviderList = (config.providerList || []).filter(
+      (p) => filteredTextModels[p],
+    );
+
     return {
-      fcProviders: Object.keys(map),
-      fcModelsMap: map,
+      ...config,
+      providerList: filteredProviderList,
+      textToText: {
+        ...config.textToText,
+        models: filteredTextModels,
+      },
+      // Strip non-text model maps so SettingsPanel only shows FC text models
+      textToImage: { models: {} },
+      textToSpeech: { models: {}, voices: {}, defaultVoices: {} },
+      audioToText: { models: {} },
     };
   }, [config]);
-
-  const providerOptions = useMemo(
-    () =>
-      fcProviders.map((p) => ({
-        value: p,
-        label: PROVIDER_LABELS[p] || p.toUpperCase(),
-        icon: <ProviderLogo provider={p} size={18} />,
-      })),
-    [fcProviders],
-  );
-
-  const modelOptions = useMemo(
-    () =>
-      (fcModelsMap[settings.provider] || []).map((m) => ({
-        value: m.name,
-        label: m.label,
-        icon: <ProviderLogo provider={settings.provider} size={18} />,
-      })),
-    [fcModelsMap, settings.provider],
-  );
-
-  const selectedModelDef = useMemo(
-    () => (fcModelsMap[settings.provider] || []).find((m) => m.name === settings.model),
-    [fcModelsMap, settings.provider, settings.model],
-  );
 
   // ── Effects ──────────────────────────────────────────────────
 
   // Auto-scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, toolActivity]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }
+  }, [inputValue]);
 
   // Focus input on mount
   useEffect(() => {
-    inputRef.current?.focus();
+    textareaRef.current?.focus();
   }, []);
 
   // Fetch Prism config
@@ -134,19 +146,6 @@ export default function ConsoleComponent() {
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
-
-  // ── Settings handlers ────────────────────────────────────────
-  const handleProviderChange = useCallback(
-    (pv) => {
-      const defaultModel = fcModelsMap[pv]?.[0]?.name || "";
-      setSettings((s) => ({ ...s, provider: pv, model: defaultModel }));
-    },
-    [fcModelsMap],
-  );
-
-  const handleModelChange = useCallback((modelName) => {
-    setSettings((s) => ({ ...s, model: modelName }));
-  }, []);
 
   // ── Orchestration loop ───────────────────────────────────────
   const runOrchestrationLoop = useCallback(
@@ -282,50 +281,53 @@ export default function ConsoleComponent() {
   );
 
   // ── Send handler ─────────────────────────────────────────────
-  const handleSend = useCallback(async () => {
-    const text = inputValue.trim();
-    if (!text || isGenerating) return;
+  const handleSend = useCallback(
+    async (e) => {
+      if (e) e.preventDefault();
+      const text = inputValue.trim();
+      if (!text || isGenerating) return;
 
-    setInputValue("");
-    setIsGenerating(true);
-    setToolActivity([]);
+      setInputValue("");
+      setIsGenerating(true);
+      setToolActivity([]);
 
-    // Auto-generate title from first message
-    if (messages.length === 0) {
-      const autoTitle = text.length > 60 ? text.slice(0, 57) + "..." : text;
-      setTitle(autoTitle);
-    }
+      // Auto-generate title from first message
+      if (messages.length === 0) {
+        const autoTitle = text.length > 60 ? text.slice(0, 57) + "..." : text;
+        setTitle(autoTitle);
+      }
 
-    const userMessage = { role: "user", content: text };
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
+      const userMessage = { role: "user", content: text };
+      const updatedMessages = [...messages, userMessage];
+      setMessages(updatedMessages);
 
-    try {
-      const finalMessages = await runOrchestrationLoop(updatedMessages);
-      setMessages(
-        finalMessages.filter(
-          (m) =>
-            m.role !== "tool" &&
-            m.role !== "system" &&
-            !(m.role === "assistant" && !m.content?.trim()),
-        ),
-      );
-      // Refresh conversation list
-      loadConversations();
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: `⚠️ Error: ${err.message}`,
-          isError: true,
-        },
-      ]);
-    } finally {
-      setIsGenerating(false);
-      abortRef.current = null;
-    }
-  }, [inputValue, isGenerating, messages, runOrchestrationLoop, loadConversations]);
+      try {
+        const finalMessages = await runOrchestrationLoop(updatedMessages);
+        setMessages(
+          finalMessages.filter(
+            (m) =>
+              m.role !== "tool" &&
+              m.role !== "system" &&
+              !(m.role === "assistant" && !m.content?.trim()),
+          ),
+        );
+        loadConversations();
+      } catch (err) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `⚠️ Error: ${err.message}`,
+            isError: true,
+          },
+        ]);
+      } finally {
+        setIsGenerating(false);
+        abortRef.current = null;
+      }
+    },
+    [inputValue, isGenerating, messages, runOrchestrationLoop, loadConversations],
+  );
 
   const handleKeyDown = useCallback(
     (e) => {
@@ -346,7 +348,7 @@ export default function ConsoleComponent() {
     setConversationId(crypto.randomUUID());
     setActiveId(null);
     setTitle("Sun Console");
-    inputRef.current?.focus();
+    textareaRef.current?.focus();
   }, [isGenerating]);
 
   const handleSelectConversation = useCallback(
@@ -397,130 +399,44 @@ export default function ConsoleComponent() {
       .replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
-  function renderMessage(msg, index) {
-    const isUser = msg.role === "user";
-    return (
-      <div
-        key={index}
-        className={`${styles.message} ${isUser ? styles.userMessage : styles.assistantMessage} ${msg.isError ? styles.errorMessage : ""}`}
-      >
-        <div className={styles.messageAvatar}>
-          {isUser ? (
-            <span className={styles.userAvatar}>You</span>
-          ) : (
-            <Terminal size={16} />
-          )}
-        </div>
-        <div className={styles.messageContent}>
-          {msg.content ? (
-            <div
-              className={styles.messageText}
-              dangerouslySetInnerHTML={{
-                __html: formatMessageContent(msg.content),
-              }}
-            />
-          ) : (
-            <div className={styles.messageText}>
-              <Loader2 size={14} className={styles.spinner} />
-              <span className={styles.thinkingText}>Processing...</span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  function formatMessageContent(text) {
-    if (!text) return "";
-    return text
-      .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="code-block"><code>$2</code></pre>')
-      .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.+?)\*/g, "<em>$1</em>")
-      .replace(/^### (.+)$/gm, '<h4 class="md-h4">$1</h4>')
-      .replace(/^## (.+)$/gm, '<h3 class="md-h3">$1</h3>')
-      .replace(/^# (.+)$/gm, '<h2 class="md-h2">$1</h2>')
-      .replace(/^---$/gm, "<hr />")
-      .replace(/\n/g, "<br />");
-  }
-
-  // ── Settings Panel (left sidebar) ────────────────────────────
-  const settingsPanel = (
-    <div className={styles.settingsContainer}>
-      <div className={styles.sectionTitle}>
-        <Cpu size={16} /> Model Settings
-      </div>
-
-      <div className={styles.formGroup}>
-        <label>Provider</label>
-        <SelectDropdown
-          value={settings.provider}
-          options={providerOptions}
-          onChange={handleProviderChange}
-          placeholder="Select Provider"
-          icon={<ProviderLogo provider={settings.provider} size={18} />}
-        />
-      </div>
-
-      {settings.provider && fcModelsMap[settings.provider] && (
-        <div className={styles.formGroup}>
-          <label>Model</label>
-          <SelectDropdown
-            value={settings.model}
-            options={modelOptions}
-            onChange={handleModelChange}
-            placeholder="Select Model"
-            icon={<ProviderLogo provider={settings.provider} size={18} />}
-          />
-          {selectedModelDef?.pricing && (
-            <div className={styles.pricingInfo}>
-              {selectedModelDef.pricing.inputPerMillion && (
-                <span>
-                  Input: ${selectedModelDef.pricing.inputPerMillion}/1M
-                </span>
-              )}
-              {selectedModelDef.pricing.outputPerMillion && (
-                <span>
-                  Output: ${selectedModelDef.pricing.outputPerMillion}/1M
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className={styles.formGroup}>
-        <label>Max Tokens ({settings.maxTokens})</label>
-        <SliderComponent
-          min={256}
-          max={32000}
-          step={256}
-          value={settings.maxTokens}
-          onChange={(val) => setSettings((s) => ({ ...s, maxTokens: val }))}
-        />
-      </div>
-
+  // ── Left sidebar: SettingsPanel + collapsible tools ──────────
+  const leftPanel = (
+    <>
+      <SettingsPanel
+        config={filteredConfig}
+        settings={settings}
+        onChange={(updates) => setSettings((s) => ({ ...s, ...updates }))}
+        hasAssistantImages={false}
+      />
       <div className={styles.toolsSection}>
-        <div className={styles.toolsSectionTitle}>
-          <Zap size={12} /> Available Tools
-        </div>
-        <div className={styles.toolsList}>
-          {SunService.getToolSchemas().map((tool) => (
-            <div key={tool.name} className={styles.toolItem}>
-              <CheckCircle2 size={10} className={styles.toolItemIcon} />
-              {renderToolName(tool.name)}
-            </div>
-          ))}
-        </div>
+        <button
+          className={styles.toolsToggle}
+          onClick={() => setShowToolsList((v) => !v)}
+        >
+          <Zap size={12} className={styles.toolsToggleIcon} />
+          <span>Available Tools ({SunService.getToolSchemas().length})</span>
+          {showToolsList ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </button>
+        {showToolsList && (
+          <div className={styles.toolsList}>
+            {SunService.getToolSchemas().map((tool) => (
+              <div key={tool.name} className={styles.toolItem}>
+                <CheckCircle2 size={10} className={styles.toolItemIcon} />
+                <span className={styles.toolItemName}>{renderToolName(tool.name)}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 
-  // ── Chat content (center) ───────────────────────────────────
+  // ── Center: chat area ───────────────────────────────────────
   const chatContent = (
-    <div className={styles.chatContainer}>
-      <div className={styles.chatArea}>
-        {messages.length === 0 ? (
+    <div className={chatStyles.container}>
+      {/* Messages */}
+      <div className={chatStyles.messagesList}>
+        {messages.length === 0 && (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>
               <Terminal size={40} />
@@ -543,7 +459,7 @@ export default function ConsoleComponent() {
                   className={styles.quickPrompt}
                   onClick={() => {
                     setInputValue(prompt);
-                    inputRef.current?.focus();
+                    textareaRef.current?.focus();
                   }}
                 >
                   {prompt}
@@ -551,14 +467,16 @@ export default function ConsoleComponent() {
               ))}
             </div>
           </div>
-        ) : (
-          <div className={styles.messageList}>
-            {messages
-              .filter((m) => m.role === "user" || m.role === "assistant")
-              .map((msg, i) => renderMessage(msg, i))}
-            <div ref={messagesEndRef} />
-          </div>
         )}
+
+        <MessageList
+          messages={messages.filter(
+            (m) => m.role === "user" || m.role === "assistant",
+          )}
+          isGenerating={isGenerating}
+        />
+
+        <div ref={endRef} />
       </div>
 
       {/* Tool Activity Panel */}
@@ -611,38 +529,34 @@ export default function ConsoleComponent() {
         </div>
       )}
 
-      {/* Input area */}
-      <div className={styles.inputArea}>
-        <div className={styles.inputWrapper}>
-          <textarea
-            ref={inputRef}
-            className={styles.input}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about weather, events, commodities, trends..."
-            rows={1}
-            disabled={isGenerating}
-          />
-          <button
-            className={styles.sendButton}
-            onClick={handleSend}
-            disabled={!inputValue.trim() || isGenerating}
-          >
-            {isGenerating ? (
-              <Loader2 size={16} className={styles.spinner} />
-            ) : (
-              <Send size={16} />
-            )}
-          </button>
-        </div>
-        <div className={styles.inputFooter}>
-          <span className={styles.modelBadge}>
-            {selectedModelDef?.label || settings.model}
-          </span>
-          <span className={styles.toolCount}>
-            {SunService.getToolSchemas().length} tools available
-          </span>
+      {/* Input area — same as ChatArea */}
+      <div className={chatStyles.inputWrapper}>
+        <form onSubmit={handleSend} className={chatStyles.inputBox}>
+          <div className={chatStyles.inputRow}>
+            <textarea
+              ref={textareaRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about weather, events, commodities, trends..."
+              rows={1}
+            />
+            <button
+              type="submit"
+              className={isGenerating ? chatStyles.submitGenerating : ""}
+              disabled={!inputValue.trim() || isGenerating}
+            >
+              {isGenerating ? (
+                <Loader2 size={18} className={chatStyles.spin} />
+              ) : (
+                <Send size={18} />
+              )}
+            </button>
+          </div>
+        </form>
+        <div className={chatStyles.hint}>
+          Press <kbd>Enter</kbd> to send, <kbd>Shift</kbd> + <kbd>Enter</kbd>{" "}
+          for new line
         </div>
       </div>
     </div>
@@ -652,7 +566,7 @@ export default function ConsoleComponent() {
   return (
     <ThreePanelLayout
       navSidebar={<NavigationSidebarComponent mode="user" />}
-      leftPanel={settingsPanel}
+      leftPanel={leftPanel}
       leftTitle="Settings"
       rightPanel={
         <HistoryPanel
@@ -668,8 +582,10 @@ export default function ConsoleComponent() {
       headerMeta={
         messages.length > 0 ? (
           <div className={styles.headerMeta}>
-            <span>{messages.filter((m) => m.role === "user" || m.role === "assistant").length} messages</span>
-            <span>{selectedModelDef?.label || settings.model}</span>
+            <span>
+              {messages.filter((m) => m.role === "user" || m.role === "assistant").length}{" "}
+              messages
+            </span>
           </div>
         ) : null
       }
