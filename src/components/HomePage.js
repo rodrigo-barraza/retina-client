@@ -282,8 +282,19 @@ Guidelines:
                 .then((full) => {
                     setActiveId(full.id);
                     setTitle(full.title);
-                    setMessages(full.messages || []);
+                    const displayMessages = (full.messages || []).filter(
+                        (m) =>
+                            m.role !== "tool" &&
+                            m.role !== "system" &&
+                            !(m.role === "assistant" && !m.content?.trim()),
+                    );
+                    setMessages(displayMessages);
                     skipSystemPromptSave.current = true;
+
+                    // Detect if conversation used function calling
+                    const hadToolCalls = (full.messages || []).some(
+                        (m) => m.role === "tool" || m.toolCalls?.length > 0,
+                    );
 
                     let restoredSettings = full.settings || {};
                     if (!restoredSettings.provider && full.messages?.length) {
@@ -303,6 +314,7 @@ Guidelines:
                         ...s,
                         ...restoredSettings,
                         systemPrompt: full.systemPrompt || "You are a helpful AI assistant.",
+                        ...(hadToolCalls && { functionCallingEnabled: true }),
                     }));
                 })
                 .catch(() => {
@@ -362,8 +374,19 @@ Guidelines:
             setActiveId(full.id);
             updateUrl(full.id);
             setTitle(full.title);
-            setMessages(full.messages || []);
+            const displayMessages = (full.messages || []).filter(
+                (m) =>
+                    m.role !== "tool" &&
+                    m.role !== "system" &&
+                    !(m.role === "assistant" && !m.content?.trim()),
+            );
+            setMessages(displayMessages);
             skipSystemPromptSave.current = true;
+
+            // Detect if conversation used function calling
+            const hadToolCalls = (full.messages || []).some(
+                (m) => m.role === "tool" || m.toolCalls?.length > 0,
+            );
 
             // Restore settings — use saved settings, or fall back to
             // provider/model from the last assistant message (for older conversations).
@@ -385,6 +408,7 @@ Guidelines:
                 ...s,
                 ...restoredSettings,
                 systemPrompt: full.systemPrompt || "You are a helpful AI assistant.",
+                ...(hadToolCalls && { functionCallingEnabled: true }),
             }));
         } catch (err) {
             console.error(err);
@@ -1103,6 +1127,18 @@ Guidelines:
                             }),
                         );
 
+                        // Persist tool result messages to the conversation
+                        const toolResultMessages = results.map((result) => ({
+                            role: "tool",
+                            name: result.name,
+                            tool_call_id: result.id,
+                            content: JSON.stringify(result.result),
+                            timestamp: new Date().toISOString(),
+                        }));
+                        PrismService.appendMessages(currentId, toolResultMessages).catch((err) =>
+                            console.error("Failed to append tool results:", err),
+                        );
+
                         const assistantMsg = {
                             role: "assistant",
                             content: streamedText || "",
@@ -1580,6 +1616,7 @@ Guidelines:
                     }
                     systemPrompt={settings.systemPrompt}
                     onSystemPromptClick={() => setShowSystemPromptModal(true)}
+                    functionCallingEnabled={!!settings.functionCallingEnabled}
                     toolActivitySlot={
                         settings.functionCallingEnabled && toolActivity.length > 0 ? (
                             <div className={consoleStyles.toolPanel}>

@@ -144,29 +144,45 @@ export default function SettingsPanel({
     const providerToolLabels = TOOL_LABELS[settings.provider] || {};
     const getToolLabel = (tool) => providerToolLabels[tool] || tool;
 
+    const fcEnabled = settings.functionCallingEnabled;
+
     // Build options for provider dropdown
     const providerOptions = providerList
         .filter((p) => modelsMap[p])
         .map((p) => {
-            const allDisabled =
+            const allImgDisabled =
                 hasAssistantImages &&
                 modelsMap[p]?.every((m) => m.assistantImages === false);
+            const allFcDisabled =
+                fcEnabled &&
+                modelsMap[p]?.every((m) => !m.tools?.includes("Function Calling"));
+            const disabled = allImgDisabled || allFcDisabled;
+            const suffix = allImgDisabled
+                ? " (no image context)"
+                : allFcDisabled
+                    ? " (no function calling)"
+                    : "";
             return {
                 value: p,
-                label:
-                    (PROVIDER_LABELS[p] || p.toUpperCase()) +
-                    (allDisabled ? " (no image context)" : ""),
+                label: (PROVIDER_LABELS[p] || p.toUpperCase()) + suffix,
                 icon: <ProviderLogo provider={p} size={18} />,
-                disabled: allDisabled,
+                disabled,
             };
         });
 
     // Build options for model dropdown
     const modelOptions = currentProviderModels.map((m) => {
-        const disabled = hasAssistantImages && m.assistantImages === false;
+        const imgDisabled = hasAssistantImages && m.assistantImages === false;
+        const fcDisabled = fcEnabled && !m.tools?.includes("Function Calling");
+        const disabled = imgDisabled || fcDisabled;
+        const suffix = imgDisabled
+            ? " (no image context)"
+            : fcDisabled
+                ? " (no function calling)"
+                : "";
         return {
             value: m.name,
-            label: m.label + (disabled ? " (no image context)" : ""),
+            label: m.label + suffix,
             icon: <ProviderLogo provider={settings.provider} size={18} />,
             disabled,
         };

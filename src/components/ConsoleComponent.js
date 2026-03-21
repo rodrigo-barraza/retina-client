@@ -451,6 +451,18 @@ export default function ConsoleComponent() {
             }),
           );
 
+          // Persist tool result messages to the conversation
+          const toolResultMessages = results.map((result) => ({
+            role: "tool",
+            name: result.name,
+            tool_call_id: result.id,
+            content: JSON.stringify(result.result),
+            timestamp: new Date().toISOString(),
+          }));
+          PrismService.appendMessages(conversationId, toolResultMessages, PROJECT).catch((err) =>
+            console.error("Failed to append tool results:", err),
+          );
+
           const assistantMsg = {
             role: "assistant",
             content: streamedText || "",

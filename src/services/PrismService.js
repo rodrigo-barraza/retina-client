@@ -149,6 +149,20 @@ export default class PrismService {
     return PrismService._request(`/conversations/${id}?project=${encodeURIComponent(project)}`, { method: "DELETE" });
   }
 
+  /**
+   * Append messages to an existing conversation (e.g. tool results after execution).
+   * @param {string} id - Conversation ID
+   * @param {Array} messages - Messages to append
+   * @param {string} [project] - Project identifier
+   * @returns {Promise<object>}
+   */
+  static async appendMessages(id, messages, project) {
+    const qs = project ? `?project=${encodeURIComponent(project)}` : "";
+    return PrismService._request(`/conversations/${id}/messages${qs}`, {
+      body: { messages },
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Custom Tools
   // ---------------------------------------------------------------------------

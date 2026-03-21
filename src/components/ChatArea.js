@@ -19,6 +19,7 @@ import {
     LayoutGrid,
     Pencil,
     X,
+    Zap,
 } from "lucide-react";
 import AudioRecorderComponent from "./AudioRecorderComponent";
 import ImagePreviewComponent from "./ImagePreviewComponent";
@@ -27,6 +28,8 @@ import DocumentViewer from "./DocumentViewer";
 import MessageList from "./MessageList";
 import ModelGrid from "./ModelGrid";
 import styles from "./ChatArea.module.css";
+import consoleStyles from "./ConsoleComponent.module.css";
+import { ALL_CONSOLE_PROMPTS } from "../arrays.js";
 import { useEffect, useRef, useState } from "react";
 import PrismService from "../services/PrismService";
 import { MODALITY_COLORS } from "./WorkflowNodeConstants";
@@ -291,6 +294,7 @@ export default function ChatArea({
     readOnly = false,
     newChatKey = 0,
     toolActivitySlot = null,
+    functionCallingEnabled = false,
 }) {
     const [_modelSort, _setModelSort] = useState({ key: null, dir: "desc" });
     const nonTextTypes = supportedInputTypes.filter((t) => t !== "text");
@@ -315,6 +319,7 @@ export default function ChatArea({
     const [systemPromptExpanded, setSystemPromptExpanded] = useState(true);
     const [isDragging, setIsDragging] = useState(false);
     const [showDrawing, setShowDrawing] = useState(false);
+    const [fcRandomPrompts, setFcRandomPrompts] = useState([]);
     const dragCounter = useRef(0);
 
     // Check if a file matches the accepted types
@@ -412,6 +417,18 @@ export default function ChatArea({
         }
     }, [messages.length, newChatKey]);
 
+    // Shuffle FC prompt suggestions on new chat
+    useEffect(() => {
+        if (functionCallingEnabled) {
+            const pool = [...ALL_CONSOLE_PROMPTS];
+            for (let i = pool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pool[i], pool[j]] = [pool[j], pool[i]];
+            }
+            setFcRandomPrompts(pool.slice(0, 5));
+        }
+    }, [functionCallingEnabled, newChatKey]);
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (isTranscriptionModel) {
@@ -486,7 +503,34 @@ export default function ChatArea({
                         </div>
                     )}
 
-                {messages.length === 0 && !welcomeDone && config?.availableProviders?.length === 0 && (
+                {messages.length === 0 && functionCallingEnabled && (
+                    <div className={consoleStyles.emptyState}>
+                        <div className={consoleStyles.emptyIcon}>
+                            <Zap size={40} />
+                        </div>
+                        <h2 className={consoleStyles.emptyTitle}>Function Calling</h2>
+                        <p className={consoleStyles.emptySubtitle}>
+                            Ask about weather, events, commodities, trends, or anything
+                            powered by the Sun ecosystem.
+                        </p>
+                        <div className={consoleStyles.quickPrompts}>
+                            {fcRandomPrompts.map((prompt) => (
+                                <button
+                                    key={prompt}
+                                    className={consoleStyles.quickPrompt}
+                                    onClick={() => {
+                                        setInput(prompt);
+                                        textareaRef.current?.focus();
+                                    }}
+                                >
+                                    {prompt}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {messages.length === 0 && !functionCallingEnabled && !welcomeDone && config?.availableProviders?.length === 0 && (
                     <div className={styles.welcome}>
                         <div style={{
                             display: "flex",
@@ -531,7 +575,7 @@ export default function ChatArea({
                     </div>
                 )}
 
-                {messages.length === 0 && !welcomeDone && config?.availableProviders?.length > 0 && (
+                {messages.length === 0 && !functionCallingEnabled && !welcomeDone && config?.availableProviders?.length > 0 && (
                     <div className={styles.welcome}>
                         {welcomeStep === "pickOutput" && (
                             <>
@@ -701,7 +745,7 @@ export default function ChatArea({
                     </div>
                 )}
 
-                {messages.length === 0 && welcomeDone && (
+                {messages.length === 0 && !functionCallingEnabled && welcomeDone && (
                     <div className={styles.readyPrompt}>
                         <h3>You&apos;re all set! 🎉</h3>
                         <p>Your model is ready — start typing below to begin.</p>
