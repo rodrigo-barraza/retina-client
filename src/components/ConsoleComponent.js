@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Zap,
+  Paperclip,
+  X,
 } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import SunService from "../services/SunService.js";
@@ -19,6 +21,7 @@ import HistoryPanel from "./HistoryPanel.js";
 import SettingsPanel from "./SettingsPanel.js";
 import CustomToolsPanel from "./CustomToolsPanel.js";
 import MessageList from "./MessageList.js";
+import ImagePreviewComponent from "./ImagePreviewComponent.js";
 import { ALL_CONSOLE_PROMPTS } from "../arrays.js";
 import chatStyles from "./ChatArea.module.css";
 import styles from "./ConsoleComponent.module.css";
@@ -77,9 +80,15 @@ export default function ConsoleComponent() {
     reasoningSummary: "",
   });
 
+  const [pendingImages, setPendingImages] = useState([]);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
+
   const textareaRef = useRef(null);
   const endRef = useRef(null);
   const abortRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // ── Filtered config: only function-calling models ────────────
   const filteredConfig = useMemo(() => {
@@ -112,6 +121,14 @@ export default function ConsoleComponent() {
       audioToText: { models: {} },
     };
   }, [config]);
+
+  // ── Model capability detection ──────────────────────────────
+  const supportsImageInput = useMemo(() => {
+    if (!filteredConfig) return false;
+    const models = filteredConfig.textToText?.models?.[settings.provider] || [];
+    const modelDef = models.find((m) => m.name === settings.model);
+    return modelDef?.inputTypes?.includes("image") ?? false;
+  }, [filteredConfig, settings.provider, settings.model]);
 
   // ── Effects ──────────────────────────────────────────────────
 
@@ -179,10 +196,19 @@ export default function ConsoleComponent() {
     const builtIn = SunService.getToolSchemas().filter(
       (t) => !disabledBuiltIns.has(t.name) && !offlineTools.has(t.name),
     );
+
+    // Google's function calling API requires names to be alphanumeric + _ . : -
+    // starting with a letter or underscore, max 128 chars.
+    const sanitizeName = (name) =>
+      name
+        .replace(/[^a-zA-Z0-9_.:/-]/g, "_")
+        .replace(/^[^a-zA-Z_]/, "_$&")
+        .slice(0, 128);
+
     const custom = customTools
       .filter((t) => t.enabled)
       .map((t) => ({
-        name: t.name,
+        name: sanitizeName(t.name),
         description: t.description,
         parameters: {
           type: "object",
@@ -204,11 +230,16 @@ export default function ConsoleComponent() {
     return [...builtIn, ...custom];
   }, [customTools, disabledBuiltIns, offlineTools]);
 
-  // Build a lookup for custom tools by name for execution
+  // Build a lookup for custom tools by sanitized name for execution
   const customToolMap = useMemo(() => {
+    const sanitizeName = (name) =>
+      name
+        .replace(/[^a-zA-Z0-9_.:/-]/g, "_")
+        .replace(/^[^a-zA-Z_]/, "_$&")
+        .slice(0, 128);
     const map = new Map();
     for (const t of customTools) {
-      if (t.enabled) map.set(t.name, t);
+      if (t.enabled) map.set(sanitizeName(t.name), t);
     }
     return map;
   }, [customTools]);
@@ -224,6 +255,81 @@ export default function ConsoleComponent() {
     }
     setRandomPrompts(pool.slice(0, 5));
   }, [conversationId]);
+
+  // ── Image handlers ──────────────────────────────────────────
+  const handleImageSelect = useCallback((e) => {
+    const files = Array.from(e.target.files);
+    for (const file of files) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setPendingImages((prev) => [...prev, ev.target.result]);
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = "";
+  }, []);
+
+  const removeImage = useCallback((index) => {
+    setPendingImages((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleDragEnter = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (supportsImageInput && e.dataTransfer?.items?.length > 0) {
+      setIsDragging(true);
+    }
+  }, [supportsImageInput]);
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounter.current = 0;
+    if (!supportsImageInput) return;
+    const files = Array.from(e.dataTransfer?.files || []);
+    const images = files.filter((f) => f.type.startsWith("image/"));
+    for (const file of images) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setPendingImages((prev) => [...prev, ev.target.result]);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, [supportsImageInput]);
+
+  const handlePaste = useCallback((e) => {
+    if (!supportsImageInput) return;
+    const items = Array.from(e.clipboardData?.items || []);
+    const files = items
+      .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+      .map((item) => item.getAsFile())
+      .filter(Boolean);
+    if (files.length === 0) return;
+    e.preventDefault();
+    for (const file of files) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setPendingImages((prev) => [...prev, ev.target.result]);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, [supportsImageInput]);
 
   // ── Orchestration loop ───────────────────────────────────────
   const runOrchestrationLoop = useCallback(
@@ -248,7 +354,11 @@ export default function ConsoleComponent() {
             project: PROJECT,
             messages: [
               { role: "system", content: SYSTEM_PROMPT },
-              ...currentMessages,
+              ...currentMessages.map((m) => ({
+                role: m.role,
+                content: m.content,
+                ...(m.images?.length > 0 ? { images: m.images } : {}),
+              })),
             ],
             options: {
               tools: allToolSchemas,
@@ -383,20 +493,27 @@ export default function ConsoleComponent() {
     async (e) => {
       if (e) e.preventDefault();
       const text = inputValue.trim();
-      if (!text || isGenerating) return;
+      if ((!text && pendingImages.length === 0) || isGenerating) return;
 
+      const currentImages = [...pendingImages];
       setInputValue("");
+      setPendingImages([]);
       setIsGenerating(true);
       setToolActivity([]);
 
       // Auto-generate title from first message
       let resolvedTitle = title;
       if (messages.length === 0) {
-        resolvedTitle = text.length > 60 ? text.slice(0, 57) + "..." : text;
+        const titleText = text || "Image conversation";
+        resolvedTitle = titleText.length > 60 ? titleText.slice(0, 57) + "..." : titleText;
         setTitle(resolvedTitle);
       }
 
-      const userMessage = { role: "user", content: text };
+      const userMessage = {
+        role: "user",
+        content: text,
+        ...(currentImages.length > 0 ? { images: currentImages } : {}),
+      };
       const updatedMessages = [...messages, userMessage];
       setMessages(updatedMessages);
 
@@ -425,7 +542,7 @@ export default function ConsoleComponent() {
         abortRef.current = null;
       }
     },
-    [inputValue, isGenerating, messages, title, runOrchestrationLoop, loadConversations],
+    [inputValue, pendingImages, isGenerating, messages, title, runOrchestrationLoop, loadConversations],
   );
 
   const handleKeyDown = useCallback(
@@ -444,6 +561,7 @@ export default function ConsoleComponent() {
     setMessages([]);
     setToolActivity([]);
     setShowToolPanel(false);
+    setPendingImages([]);
     setConversationId(crypto.randomUUID());
     setActiveId(null);
     setTitle("Console");
@@ -642,8 +760,64 @@ export default function ConsoleComponent() {
 
       {/* Input area — same as ChatArea */}
       <div className={chatStyles.inputWrapper}>
-        <form onSubmit={handleSend} className={chatStyles.inputBox}>
+        <form
+          onSubmit={handleSend}
+          className={`${chatStyles.inputBox} ${isDragging ? chatStyles.inputBoxDragActive : ""}`}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onPaste={handlePaste}
+        >
+          {isDragging && (
+            <div className={chatStyles.dragOverlay}>
+              <Paperclip size={20} />
+              <span>Drop images here</span>
+            </div>
+          )}
+          {pendingImages.length > 0 && (
+            <div className={chatStyles.pendingImages}>
+              {pendingImages.map((dataUrl, i) => (
+                <div key={i} className={chatStyles.pendingAttachmentWrap}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={dataUrl}
+                    alt="Attached"
+                    className={chatStyles.pendingImg}
+                    onClick={() => setLightboxSrc(dataUrl)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(i)}
+                    className={chatStyles.removeAttachment}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className={chatStyles.inputRow}>
+            {supportsImageInput && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  hidden
+                  onChange={handleImageSelect}
+                />
+                <button
+                  type="button"
+                  className={chatStyles.imageUploadBtn}
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Attach image"
+                >
+                  <Paperclip size={18} />
+                </button>
+              </>
+            )}
             <textarea
               ref={textareaRef}
               value={inputValue}
@@ -655,7 +829,7 @@ export default function ConsoleComponent() {
             <button
               type="submit"
               className={isGenerating ? chatStyles.submitGenerating : ""}
-              disabled={!inputValue.trim() || isGenerating}
+              disabled={(!inputValue.trim() && pendingImages.length === 0) || isGenerating}
             >
               {isGenerating ? (
                 <Loader2 size={18} className={chatStyles.spin} />
@@ -670,6 +844,16 @@ export default function ConsoleComponent() {
           for new line
         </div>
       </div>
+      {lightboxSrc && (
+        <ImagePreviewComponent
+          src={lightboxSrc}
+          onClose={() => setLightboxSrc(null)}
+          onUseAnnotated={(dataUrl) => {
+            setPendingImages((prev) => [...prev, dataUrl]);
+            setLightboxSrc(null);
+          }}
+        />
+      )}
     </div>
   );
 
