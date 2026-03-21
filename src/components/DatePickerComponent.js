@@ -7,6 +7,7 @@ import styles from "./DatePickerComponent.module.css";
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 const PRESETS = [
+  { label: "All Time", getValue: () => ({ from: "", to: "" }) },
   { label: "Today", getValue: () => { const d = fmt(new Date()); return { from: d, to: d }; } },
   { label: "Last 7 days", getValue: () => ({ from: fmt(daysAgo(6)), to: fmt(new Date()) }) },
   { label: "Last 30 days", getValue: () => ({ from: fmt(daysAgo(29)), to: fmt(new Date()) }) },
@@ -308,25 +309,21 @@ export default function DatePickerComponent({ from = "", to = "", onChange, plac
         <div className={styles.dropdown} style={{ top: dropdownPos.top, left: dropdownPos.left }}>
           {/* Presets */}
           <div className={styles.presets}>
-            {PRESETS.map((p) => (
-              <button
-                key={p.label}
-                type="button"
-                className={styles.presetBtn}
-                onClick={() => handlePreset(p)}
-              >
-                {p.label}
-              </button>
-            ))}
-            {hasValue && (
-              <button
-                type="button"
-                className={`${styles.presetBtn} ${styles.presetClear}`}
-                onClick={handleClear}
-              >
-                Clear
-              </button>
-            )}
+            {PRESETS.map((p) => {
+              const isActive = p.label === "All Time"
+                ? !hasValue
+                : p.getValue().from === from && p.getValue().to === to;
+              return (
+                <button
+                  key={p.label}
+                  type="button"
+                  className={`${styles.presetBtn} ${isActive ? styles.presetBtnActive : ""}`}
+                  onClick={() => handlePreset(p)}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Calendar */}

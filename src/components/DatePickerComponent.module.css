@@ -64,7 +64,7 @@
   position: fixed;
   z-index: 1000;
   display: flex;
-  background: var(--bg-card);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.25));
@@ -113,15 +113,10 @@
   }
 }
 
-.presetClear {
-  margin-top: 4px;
-  border-top: 1px solid var(--border-subtle);
-  padding-top: 8px;
-  color: var(--text-muted);
-
-  &:hover {
-    color: var(--danger);
-  }
+.presetBtnActive {
+  color: var(--accent-color);
+  background: var(--accent-subtle);
+  font-weight: 600;
 }
 
 /* ── Calendar area ── */

@@ -3,13 +3,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Sector,
-} from "recharts";
-import {
   Activity,
   Zap,
   DollarSign,
@@ -22,18 +15,16 @@ import IrisService from "../../services/IrisService";
 import StatsCard from "../../components/StatsCard";
 import DatePickerComponent from "../../components/DatePickerComponent";
 import TimelineChartComponent from "../../components/TimelineChartComponent";
+import DistributionChartComponent from "../../components/DistributionChartComponent";
+import UsageBarComponent from "../../components/UsageBarComponent";
 import styles from "./page.module.css";
 
 const PROVIDER_COLORS = [
-  "#6366f1",
-  "#a855f7",
-  "#ec4899",
-  "#f59e0b",
-  "#10b981",
-  "#3b82f6",
-  "#ef4444",
-  "#06b6d4",
+  "#6366f1", "#a855f7", "#ec4899", "#f59e0b",
+  "#10b981", "#3b82f6", "#ef4444", "#06b6d4",
 ];
+
+
 
 
 
@@ -57,58 +48,6 @@ function formatLatency(ms) {
 
 
 
-
-
-/* ── Recharts active pie sector with outward expansion ── */
-function renderActiveSector(props) {
-  const {
-    cx,
-    cy,
-    innerRadius,
-    outerRadius,
-    startAngle,
-    endAngle,
-    fill,
-    payload,
-    percent,
-  } = props;
-
-  return (
-    <g>
-      <Sector
-        cx={cx}
-        cy={cy}
-        innerRadius={innerRadius - 2}
-        outerRadius={outerRadius + 6}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        fill={fill}
-        opacity={1}
-        style={{ filter: `drop-shadow(0 0 8px ${fill})` }}
-      />
-      <text
-        x={cx}
-        y={cy - 7}
-        textAnchor="middle"
-        fill="#f8f8f8"
-        fontSize="13"
-        fontWeight="600"
-      >
-        {payload.name}
-      </text>
-      <text
-        x={cx}
-        y={cy + 10}
-        textAnchor="middle"
-        fill="#8e95ae"
-        fontSize="11"
-      >
-        {(percent * 100).toFixed(1)}%
-      </text>
-    </g>
-  );
-}
-
 export default function DashboardPage() {
   const [stats, setStats] = useState(null);
   const [projectStats, setProjectStats] = useState([]);
@@ -121,9 +60,6 @@ export default function DashboardPage() {
   // Date range
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
 
-  // Active pie sector
-  const [activePieIndex, setActivePieIndex] = useState(null);
-
   const dateParams = useMemo(() => {
     const p = {};
     if (dateRange.from) p.from = new Date(dateRange.from).toISOString();
@@ -134,7 +70,7 @@ export default function DashboardPage() {
 
   const timelineHours = useMemo(() => {
     if (dateRange.from || dateRange.to) return 720;
-    return 0;
+    return 8760; // 1 year default for "All Time"
   }, [dateRange]);
 
   const loadDashboard = useCallback(async () => {
@@ -159,7 +95,7 @@ export default function DashboardPage() {
       setStats(statsData);
       setProjectStats(projects);
       setModelStats(models);
-      setTimeline(timelineData);
+      setTimeline(timelineData.data || timelineData);
       setRecentRequests(requestsData.data || []);
     } catch (err) {
       setError(err.message);
@@ -174,7 +110,7 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [loadDashboard]);
 
-  // Build provider distribution from model stats
+  // Build provider distribution for Top Providers table
   const providerMap = {};
   modelStats.forEach((m) => {
     providerMap[m.provider] = (providerMap[m.provider] || 0) + m.totalRequests;
@@ -185,28 +121,32 @@ export default function DashboardPage() {
   const totalProviderRequests =
     providerEntries.reduce((s, [, v]) => s + v, 0) || 1;
 
+
+
   // Top 10 models
   const topModels = [...modelStats]
     .sort((a, b) => b.totalRequests - a.totalRequests)
     .slice(0, 10);
 
+  const totalModelRequests =
+    modelStats.reduce((s, m) => s + m.totalRequests, 0) || 1;
+
   // Recharts-friendly timeline data — add display label
   const chartData = useMemo(() => {
-    return timeline.map((t) => ({
-      ...t,
-      label: t.hour ? t.hour.slice(11) + "h" : "",
-    }));
+    return timeline.map((t) => {
+      let label = "";
+      if (t.hour) {
+        if (t.hour.length <= 10) {
+          const [y, m, d] = t.hour.split("-").map(Number);
+          const date = new Date(y, m - 1, d);
+          label = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        } else {
+          label = t.hour.slice(11) + "h";
+        }
+      }
+      return { ...t, label };
+    });
   }, [timeline]);
-
-  // Recharts-friendly pie data
-  const pieData = useMemo(() => {
-    return providerEntries.map(([name, value], i) => ({
-      name,
-      value,
-      fill: PROVIDER_COLORS[i % PROVIDER_COLORS.length],
-    }));
-  }, [providerEntries]);
-
 
 
   return (
@@ -307,76 +247,14 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Provider Distribution — Recharts Pie Chart */}
+        {/* Distribution — Tabbed Pie Chart */}
         <div className={styles.chartCard}>
-          <div className={styles.chartTitle}>Provider Distribution</div>
-          <div className={styles.donutContainer}>
-            {pieData.length > 0 ? (
-              <>
-                <div className={styles.pieWrapper}>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={48}
-                        outerRadius={72}
-                        paddingAngle={2}
-                        dataKey="value"
-                        activeIndex={activePieIndex}
-                        activeShape={renderActiveSector}
-                        onMouseEnter={(_, index) => setActivePieIndex(index)}
-                        onMouseLeave={() => setActivePieIndex(null)}
-                        animationDuration={600}
-                        animationEasing="ease-out"
-                      >
-                        {pieData.map((entry, i) => (
-                          <Cell
-                            key={entry.name}
-                            fill={entry.fill}
-                            stroke="transparent"
-                            opacity={
-                              activePieIndex === null ||
-                              activePieIndex === i
-                                ? 1
-                                : 0.35
-                            }
-                            style={{ transition: "opacity 0.2s ease" }}
-                          />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className={styles.donutLegend}>
-                  {providerEntries.map(([provider, count], i) => (
-                    <div
-                      key={provider}
-                      className={styles.legendItem}
-                      onMouseEnter={() => setActivePieIndex(i)}
-                      onMouseLeave={() => setActivePieIndex(null)}
-                    >
-                      <span
-                        className={styles.legendDot}
-                        style={{
-                          background:
-                            PROVIDER_COLORS[i % PROVIDER_COLORS.length],
-                        }}
-                      />
-                      <span>
-                        {provider} ({count})
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className={styles.chartEmpty}>
-                {loading ? "Loading..." : "No data yet"}
-              </div>
-            )}
-          </div>
+          <DistributionChartComponent
+            modelStats={modelStats}
+            projectStats={projectStats}
+            stats={stats}
+            loading={loading}
+          />
         </div>
       </div>
 
@@ -392,6 +270,7 @@ export default function DashboardPage() {
                 <th>Model</th>
                 <th>Provider</th>
                 <th>Requests</th>
+                <th>Usage</th>
                 <th>Cost</th>
                 <th>Avg Latency</th>
               </tr>
@@ -414,6 +293,12 @@ export default function DashboardPage() {
                       </span>
                     </td>
                     <td>{formatNumber(m.totalRequests)}</td>
+                    <td>
+                      <UsageBarComponent
+                        value={m.totalRequests}
+                        total={totalModelRequests}
+                      />
+                    </td>
                     <td>{formatCost(m.totalCost)}</td>
                     <td>{formatLatency(m.avgLatency)}</td>
                   </tr>
@@ -421,7 +306,7 @@ export default function DashboardPage() {
               ) : (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     style={{
                       textAlign: "center",
                       color: "var(--text-muted)",
@@ -445,7 +330,7 @@ export default function DashboardPage() {
               <tr>
                 <th>Provider</th>
                 <th>Requests</th>
-                <th>% Share</th>
+                <th>Usage</th>
               </tr>
             </thead>
             <tbody>
@@ -471,19 +356,11 @@ export default function DashboardPage() {
                     </td>
                     <td>{formatNumber(count)}</td>
                     <td>
-                      <div className={styles.shareBar}>
-                        <div
-                          className={styles.shareBarFill}
-                          style={{
-                            width: `${(count / totalProviderRequests) * 100}%`,
-                            background:
-                              PROVIDER_COLORS[i % PROVIDER_COLORS.length],
-                          }}
-                        />
-                        <span>
-                          {((count / totalProviderRequests) * 100).toFixed(1)}%
-                        </span>
-                      </div>
+                      <UsageBarComponent
+                        value={count}
+                        total={totalProviderRequests}
+                        color={PROVIDER_COLORS[i % PROVIDER_COLORS.length]}
+                      />
                     </td>
                   </tr>
                 ))
