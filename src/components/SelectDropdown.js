@@ -55,6 +55,16 @@ export default function SelectDropdown({
 
   return (
     <div className={styles.dropdown} ref={containerRef}>
+      {/* Hidden sizer — forces width to widest option */}
+      <div className={styles.sizer} aria-hidden="true">
+        {options.map((opt) => (
+          <span key={opt.value} className={styles.sizerItem}>
+            {icon && <span className={styles.triggerIcon}>{icon}</span>}
+            {opt.icon && <span className={styles.optionIcon}>{opt.icon}</span>}
+            <span>{opt.label}</span>
+          </span>
+        ))}
+      </div>
       <button
         type="button"
         className={`${styles.trigger} ${open ? styles.triggerOpen : ""}`}

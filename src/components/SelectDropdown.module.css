@@ -1,7 +1,27 @@
 .dropdown {
   position: relative;
-  width: 100%;
+  width: fit-content;
   min-width: fit-content;
+}
+
+/* Invisible ghost that measures the widest option label */
+.sizer {
+  display: flex;
+  flex-direction: column;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  /* same inline padding as trigger + chevron space */
+  padding: 0 calc(12px + 14px + 4px) 0 12px;
+}
+
+.sizerItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  font-size: 14px;
 }
 
 /* Trigger (the visible "selected" area) */
