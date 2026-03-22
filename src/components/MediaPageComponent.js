@@ -55,7 +55,7 @@ function OriginBadge({ origin, className }) {
   );
 }
 
-export default function MediaPageComponent({ mode = "user" }) {
+export default function MediaPageComponent({ mode = "user", project: externalProject }) {
   const isAdmin = mode === "admin";
   const convBasePath = isAdmin ? "/admin/conversations" : "/conversations";
 
@@ -66,7 +66,8 @@ export default function MediaPageComponent({ mode = "user" }) {
   const [loading, setLoading] = useState(true);
   const [origin, setOrigin] = useState("all");
   const [type, setType] = useState("all");
-  const [project, setProject] = useState("");
+  const [internalProject, setInternalProject] = useState("");
+  const project = externalProject ?? internalProject;
   const [username, setUsername] = useState("");
   const [provider, setProvider] = useState("");
   const [model, setModel] = useState("");
@@ -242,12 +243,12 @@ export default function MediaPageComponent({ mode = "user" }) {
           />
         </FilterGroupComponent>
 
-        {isAdmin && (
+        {isAdmin && externalProject === undefined && (
           <FilterGroupComponent label="Project">
             <ComboboxFilter
               options={projects}
               value={project}
-              onChange={(v) => { setProject(v); setPage(1); }}
+              onChange={(v) => { setInternalProject(v); setPage(1); }}
               placeholder="All Projects"
               allLabel="All Projects"
             />
