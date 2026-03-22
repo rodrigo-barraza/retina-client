@@ -8,8 +8,10 @@ import {
   Cell,
   Sector,
 } from "recharts";
-import styles from "./DistributionChartComponent.module.css";
+import SelectDropdown from "./SelectDropdown";
 import ChartTabsComponent from "./ChartTabsComponent";
+import { formatNumber, formatCost, formatLatency } from "../utils/utilities";
+import styles from "./DistributionChartComponent.module.css";
 
 const COLORS = [
   "#6366f1",
@@ -26,82 +28,163 @@ const COLORS = [
   "#8b5cf6",
 ];
 
-const ENDPOINT_LABELS = {
-  chat: "Text Generation",
-  "chat/image-api": "Image Generation",
-  "text-to-audio": "Text-to-Speech",
-  "audio-to-text": "Speech-to-Text",
-  embed: "Embeddings",
+const STATUS_COLORS = {
+  Success: "#10b981",
+  Error: "#ef4444",
 };
 
-function formatEndpoint(endpoint) {
-  return ENDPOINT_LABELS[endpoint] || endpoint;
+/* ── Metric definitions ── */
+
+const METRICS = [
+  { value: "requests", label: "Requests" },
+  { value: "totalTokens", label: "Total Tokens" },
+  { value: "tokensIn", label: "Tokens In" },
+  { value: "tokensOut", label: "Tokens Out" },
+  { value: "avgTps", label: "Average Tokens per Second" },
+  { value: "cost", label: "Cost" },
+  { value: "avgLatency", label: "Average Latency" },
+  { value: "conversations", label: "Conversations" },
+  { value: "status", label: "Status" },
+];
+
+const TABS = [
+  { key: "project", label: "Projects" },
+  { key: "provider", label: "Providers" },
+  { key: "model", label: "Models" },
+];
+
+/**
+ * Extracts the raw numeric value for a metric from a stat record.
+ */
+function extractValue(record, metric) {
+  switch (metric) {
+    case "requests":
+      return record.totalRequests || 0;
+    case "totalTokens":
+      return (record.totalInputTokens || 0) + (record.totalOutputTokens || 0);
+    case "tokensIn":
+      return record.totalInputTokens || 0;
+    case "tokensOut":
+      return record.totalOutputTokens || 0;
+    case "avgTps":
+      return record.avgTokensPerSec || 0;
+    case "cost":
+      return record.totalCost || 0;
+    case "avgLatency":
+      return record.avgLatency || 0;
+    case "conversations":
+      return record.conversationCount || 0;
+    default:
+      return 0;
+  }
 }
 
 /**
- * Builds distribution datasets from model stats, project stats, and overall stats.
+ * Formats a value using the appropriate unit for its metric.
  */
-function buildDistributions(modelStats, endpointStats, projectStats, stats) {
-  // Provider distribution
-  const providerMap = {};
-  modelStats.forEach((m) => {
-    providerMap[m.provider] = (providerMap[m.provider] || 0) + m.totalRequests;
-  });
+function formatValue(value, metric) {
+  switch (metric) {
+    case "cost":
+      return formatCost(value);
+    case "avgLatency":
+      return formatLatency(value);
+    case "avgTps":
+      return value > 0 ? `${value.toFixed(1)} tok/s` : "—";
+    default:
+      return formatNumber(value);
+  }
+}
 
-  // Model distribution
-  const modelMap = {};
-  modelStats.forEach((m) => {
-    if (!m.model) return;
-    const label = m.model.split("/").pop();
-    modelMap[label] = (modelMap[label] || 0) + m.totalRequests;
-  });
+/**
+ * Returns the unit label for the center text (e.g. "requests", "tokens").
+ */
+function metricUnit(metric) {
+  switch (metric) {
+    case "requests":
+      return "requests";
+    case "totalTokens":
+    case "tokensIn":
+    case "tokensOut":
+      return "tokens";
+    case "avgTps":
+      return "tok/s";
+    case "cost":
+      return "";
+    case "avgLatency":
+      return "";
+    case "conversations":
+      return "convos";
+    case "status":
+      return "requests";
+    default:
+      return "";
+  }
+}
 
-  // Endpoint / Modality distribution — from dedicated endpoint stats
-  const endpointMap = {};
-  endpointStats.forEach((e) => {
-    if (e.endpoint) {
-      const label = formatEndpoint(e.endpoint);
-      endpointMap[label] = (endpointMap[label] || 0) + e.totalRequests;
-    }
-  });
+/**
+ * Builds distribution entries: an array of { name, value } per tab/metric.
+ */
+function buildEntries(tab, metric, projectStats, providerStats, modelStats) {
+  let source;
+  let nameKey;
 
-  // Project distribution
-  const projectMap = {};
-  projectStats.forEach((p) => {
-    if (p.project) {
-      projectMap[p.project] = (projectMap[p.project] || 0) + p.totalRequests;
-    }
-  });
-
-  // Status distribution
-  const statusMap = {};
-  if (stats) {
-    if (stats.successCount) statusMap["Success"] = stats.successCount;
-    if (stats.errorCount) statusMap["Error"] = stats.errorCount;
+  switch (tab) {
+    case "project":
+      source = projectStats;
+      nameKey = "project";
+      break;
+    case "provider":
+      source = providerStats;
+      nameKey = "provider";
+      break;
+    case "model":
+      source = modelStats;
+      nameKey = (r) => (r.model || "").split("/").pop() || "unknown";
+      break;
+    default:
+      return [];
   }
 
-  return { providerMap, modelMap, endpointMap, projectMap, statusMap };
+  const entries = source.map((record) => {
+    const name = typeof nameKey === "function" ? nameKey(record) : (record[nameKey] || "unknown");
+    const value = extractValue(record, metric);
+    return { name, value };
+  });
+
+  // Aggregate duplicate names (e.g. same model basename from different paths)
+  const aggMap = {};
+  for (const { name, value } of entries) {
+    aggMap[name] = (aggMap[name] || 0) + value;
+  }
+
+  return Object.entries(aggMap)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
 }
 
-function toSortedEntries(map) {
-  return Object.entries(map)
-    .sort((a, b) => b[1] - a[1]);
-}
-
-function toPieData(entries) {
-  return entries.map(([name, value], i) => ({
-    name,
-    value,
-    fill: COLORS[i % COLORS.length],
-  }));
+/**
+ * Builds status entries from overall stats (Success / Error).
+ */
+function buildStatusEntries(stats) {
+  const entries = [];
+  if (stats?.successCount) entries.push({ name: "Success", value: stats.successCount });
+  if (stats?.errorCount) entries.push({ name: "Error", value: stats.errorCount });
+  return entries;
 }
 
 /* ── Active sector renderer with glow and center text ── */
+
 function ActiveSectorRenderer(props) {
   const {
     cx, cy, innerRadius, outerRadius,
     startAngle, endAngle, fill, payload, percent,
+    metric,
   } = props;
+
+  const unit = metricUnit(metric);
+  const formattedValue = metric === "status"
+    ? payload.value.toLocaleString()
+    : formatValue(payload.value, metric);
 
   return (
     <g>
@@ -135,7 +218,7 @@ function ActiveSectorRenderer(props) {
         fill="#8e95ae"
         fontSize="11"
       >
-      {payload.value.toLocaleString()} requests
+        {formattedValue}{unit ? ` ${unit}` : ""}
       </text>
       <text
         x={cx}
@@ -150,81 +233,78 @@ function ActiveSectorRenderer(props) {
   );
 }
 
-const STATUS_COLORS = {
-  Success: "#10b981",
-  Error: "#ef4444",
-};
-
-const TABS = [
-  { key: "provider", label: "Provider" },
-  { key: "model", label: "Model" },
-  { key: "modality", label: "Modality" },
-  { key: "project", label: "Project" },
-  { key: "status", label: "Status" },
-];
-
-const TAB_TO_KEY = {
-  provider: "providerMap",
-  model: "modelMap",
-  modality: "endpointMap",
-  project: "projectMap",
-  status: "statusMap",
-};
-
 export default function DistributionChartComponent({
-  modelStats = [],
-  endpointStats = [],
   projectStats = [],
+  providerStats = [],
+  modelStats = [],
   stats = null,
   loading = false,
   height = 220,
-  title = "Requests",
+  title = "Distribution",
 }) {
-  const [activeTab, setActiveTab] = useState("provider");
+  const [activeTab, setActiveTab] = useState("project");
+  const [activeMetric, setActiveMetric] = useState("requests");
   const [activeIndex, setActiveIndex] = useState(null);
 
-  const distributions = useMemo(
-    () => buildDistributions(modelStats, endpointStats, projectStats, stats),
-    [modelStats, endpointStats, projectStats, stats],
-  );
+  const isStatus = activeMetric === "status";
 
-  const entries = useMemo(
-    () => toSortedEntries(distributions[TAB_TO_KEY[activeTab]] || {}),
-    [activeTab, distributions],
-  );
+  const entries = useMemo(() => {
+    if (isStatus) return buildStatusEntries(stats);
+    return buildEntries(activeTab, activeMetric, projectStats, providerStats, modelStats);
+  }, [activeTab, activeMetric, projectStats, providerStats, modelStats, stats, isStatus]);
 
   const pieData = useMemo(() => {
-    if (activeTab === "status") {
-      return entries.map(([name, value]) => ({
-        name,
-        value,
-        fill: STATUS_COLORS[name] || COLORS[0],
-      }));
-    }
-    return toPieData(entries);
-  }, [entries, activeTab]);
+    return entries.map(({ name, value }, i) => ({
+      name,
+      value,
+      fill: isStatus
+        ? (STATUS_COLORS[name] || COLORS[0])
+        : COLORS[i % COLORS.length],
+    }));
+  }, [entries, isStatus]);
 
-  const total = entries.reduce((sum, [, v]) => sum + v, 0);
+  const isAvgMetric = activeMetric === "avgTps" || activeMetric === "avgLatency";
+  const total = entries.reduce((sum, e) => sum + e.value, 0);
+  const displayTotal = isAvgMetric
+    ? (entries.length > 0 ? total / entries.length : 0)
+    : total;
+  const totalLabel = isAvgMetric ? "avg" : "total";
 
-  // Reset active index when switching tabs
   const handleTabChange = (key) => {
     setActiveTab(key);
     setActiveIndex(null);
   };
 
+  const handleMetricChange = (value) => {
+    setActiveMetric(value);
+    setActiveIndex(null);
+  };
+
   return (
     <div className={styles.container}>
-      {title && <h2 className={styles.title}>{title}</h2>}
+      {/* ── Metric selector + title ── */}
+      <div className={styles.metricRow}>
+        {title && <h2 className={styles.title}>{title}</h2>}
+        <SelectDropdown
+          value={activeMetric}
+          options={METRICS}
+          onChange={handleMetricChange}
+        />
+      </div>
+
       {/* ── Tab bar ── */}
       <div className={styles.header}>
-        <ChartTabsComponent
-          tabs={TABS}
-          activeTab={activeTab}
-          onChange={handleTabChange}
-        />
+        {!isStatus && (
+          <ChartTabsComponent
+            tabs={TABS}
+            activeTab={activeTab}
+            onChange={handleTabChange}
+          />
+        )}
+        {isStatus && <span className={styles.statusLabel}>Success / Error</span>}
         {total > 0 && (
           <span className={styles.totalBadge}>
-            {total.toLocaleString()} total
+            {formatValue(displayTotal, activeMetric)} {totalLabel}
           </span>
         )}
       </div>
@@ -245,7 +325,9 @@ export default function DistributionChartComponent({
                     paddingAngle={2}
                     dataKey="value"
                     activeIndex={activeIndex}
-                    activeShape={ActiveSectorRenderer}
+                    activeShape={(props) => (
+                      <ActiveSectorRenderer {...props} metric={activeMetric} />
+                    )}
                     onMouseEnter={(_, index) => setActiveIndex(index)}
                     onMouseLeave={() => setActiveIndex(null)}
                     animationDuration={200}
@@ -268,9 +350,9 @@ export default function DistributionChartComponent({
             </div>
 
             <div className={styles.legend}>
-              {entries.map(([name, value], i) => {
+              {entries.map(({ name, value }, i) => {
                 const pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                const color = activeTab === "status"
+                const color = isStatus
                   ? (STATUS_COLORS[name] || COLORS[0])
                   : COLORS[i % COLORS.length];
 
@@ -289,7 +371,7 @@ export default function DistributionChartComponent({
                       {name}
                     </span>
                     <span className={styles.legendValue}>
-                      {value.toLocaleString()}
+                      {formatValue(value, activeMetric)}
                     </span>
                     <span className={styles.legendPct}>{pct}%</span>
                   </div>

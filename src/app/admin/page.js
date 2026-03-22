@@ -20,8 +20,10 @@ import TimelineChartComponent from "../../components/TimelineChartComponent";
 import DistributionChartComponent from "../../components/DistributionChartComponent";
 import UsageBarComponent from "../../components/UsageBarComponent";
 import SortableTableComponent from "../../components/SortableTableComponent";
-import PageHeaderComponent from "../../components/PageHeaderComponent";
+import SelectDropdown from "../../components/SelectDropdown";
 import { ErrorMessage } from "../../components/StateMessageComponent";
+import { useAdminHeader } from "../../components/AdminHeaderContext";
+import useProjectFilter from "../../hooks/useProjectFilter";
 import styles from "./page.module.css";
 
 const PROVIDER_COLORS = [
@@ -34,10 +36,12 @@ const PROVIDER_COLORS = [
 
 
 export default function DashboardPage() {
+  const { projectFilter, projectOptions, handleProjectChange } = useProjectFilter();
+  const { setControls } = useAdminHeader();
   const [stats, setStats] = useState(null);
   const [projectStats, setProjectStats] = useState([]);
   const [modelStats, setModelStats] = useState([]);
-  const [endpointStats, setEndpointStats] = useState([]);
+
   const [timeline, setTimeline] = useState([]);
   const [recentRequests, setRecentRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,25 +68,27 @@ export default function DashboardPage() {
       setLoading(true);
       setError(null);
 
-      const [statsData, projects, models, endpoints, timelineData, requestsData] =
+      const filterParams = { ...dateParams };
+      if (projectFilter) filterParams.project = projectFilter;
+
+      const [statsData, projects, models, timelineData, requestsData] =
         await Promise.all([
-          IrisService.getStats(dateParams),
-          IrisService.getProjectStats(dateParams),
-          IrisService.getModelStats(dateParams),
-          IrisService.getEndpointStats(dateParams),
-          IrisService.getTimeline(timelineHours, dateParams),
+          IrisService.getStats(filterParams),
+          IrisService.getProjectStats(filterParams),
+          IrisService.getModelStats(filterParams),
+          IrisService.getTimeline(timelineHours, filterParams),
           IrisService.getRequests({
             limit: 10,
             sort: "timestamp",
             order: "desc",
-            ...dateParams,
+            ...filterParams,
           }),
         ]);
 
       setStats(statsData);
       setProjectStats(projects);
       setModelStats(models);
-      setEndpointStats(endpoints);
+
       setTimeline(timelineData.data || timelineData);
       setRecentRequests(requestsData.data || []);
     } catch (err) {
@@ -90,13 +96,30 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [dateParams, timelineHours]);
+  }, [dateParams, timelineHours, projectFilter]);
 
   useEffect(() => {
     loadDashboard();
     const interval = setInterval(loadDashboard, 60000);
     return () => clearInterval(interval);
   }, [loadDashboard]);
+
+  // Inject project dropdown into AdminShell header
+  useEffect(() => {
+    setControls(
+      <SelectDropdown
+        value={projectFilter || ""}
+        options={projectOptions}
+        onChange={handleProjectChange}
+        placeholder="All Projects"
+      />
+    );
+  }, [setControls, projectFilter, projectOptions, handleProjectChange]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => setControls(null);
+  }, [setControls]);
 
   // Build provider distribution from model stats
   const providerAgg = {};
@@ -169,10 +192,6 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeaderComponent
-        title="Dashboard"
-        subtitle="Prism AI Gateway — Overview & Analytics"
-      />
 
       {/* ── Date Range Toolbar ── */}
       <div className={styles.timeToolbar}>
@@ -261,9 +280,9 @@ export default function DashboardPage() {
         {/* Distribution — Tabbed Pie Chart */}
         <div className={styles.chartCard}>
           <DistributionChartComponent
-            modelStats={modelStats}
-            endpointStats={endpointStats}
             projectStats={projectStats}
+            providerStats={providerData}
+            modelStats={modelStats}
             stats={stats}
             loading={loading}
           />
@@ -276,8 +295,6 @@ export default function DashboardPage() {
         maxHeight={420}
         columns={[
           { key: "project", label: "Project" },
-          { key: "providerCount", label: "Providers" },
-          { key: "modelCount", label: "Models" },
           { key: "totalRequests", label: "Requests", render: (p) => formatNumber(p.totalRequests) },
           {
             key: "usage", label: "Usage",
@@ -288,6 +305,8 @@ export default function DashboardPage() {
               />
             ),
           },
+          { key: "providerCount", label: "Providers" },
+          { key: "modelCount", label: "Models" },
           { key: "totalInputTokens", label: "Tokens In", render: (p) => formatNumber(p.totalInputTokens) },
           { key: "totalOutputTokens", label: "Tokens Out", render: (p) => formatNumber(p.totalOutputTokens) },
           {
@@ -341,7 +360,6 @@ export default function DashboardPage() {
               </span>
             ),
           },
-          { key: "modelCount", label: "Models" },
           { key: "totalRequests", label: "Requests", render: (p) => formatNumber(p.totalRequests) },
           {
             key: "usage", label: "Usage",
@@ -353,6 +371,7 @@ export default function DashboardPage() {
               />
             ),
           },
+          { key: "modelCount", label: "Models" },
           { key: "totalInputTokens", label: "Tokens In", render: (p) => formatNumber(p.totalInputTokens) },
           { key: "totalOutputTokens", label: "Tokens Out", render: (p) => formatNumber(p.totalOutputTokens) },
           {
@@ -395,17 +414,17 @@ export default function DashboardPage() {
         maxHeight={420}
         columns={[
           { key: "model", label: "Model" },
-          {
-            key: "provider", label: "Provider",
-            render: (m) => (
-              <span className={styles.badgeProvider}>{m.provider}</span>
-            ),
-          },
           { key: "totalRequests", label: "Requests", render: (m) => formatNumber(m.totalRequests) },
           {
             key: "usage", label: "Usage",
             render: (m) => (
               <UsageBarComponent value={m.totalRequests} total={totalModelRequests} />
+            ),
+          },
+          {
+            key: "provider", label: "Provider",
+            render: (m) => (
+              <span className={styles.badgeProvider}>{m.provider}</span>
             ),
           },
           { key: "totalInputTokens", label: "Tokens In", render: (m) => formatNumber(m.totalInputTokens) },

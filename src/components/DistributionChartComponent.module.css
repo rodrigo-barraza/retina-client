@@ -9,6 +9,16 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
+  margin: 0;
+}
+
+/* ── Metric selector row ── */
+
+.metricRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
@@ -22,8 +32,11 @@
   margin-bottom: 16px;
 }
 
-
-
+.statusLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
 
 .totalBadge {
   font-size: 11px;

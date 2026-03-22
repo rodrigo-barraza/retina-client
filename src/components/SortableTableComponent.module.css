@@ -45,6 +45,7 @@
   user-select: none;
 
   &:first-child {
+    width: 1%;
     text-align: left;
     position: sticky;
     left: 0;
@@ -104,6 +105,7 @@
 
 /* Primary name column — sticky on horizontal scroll */
 .tdName {
+  width: 1%;
   padding: 10px 14px;
   text-align: left;
   white-space: nowrap;
