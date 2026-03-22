@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
 import {
     Loader,
     MessageSquare,
@@ -16,14 +15,13 @@ import ThreePanelLayout from "../../../components/ThreePanelLayout";
 import SelectDropdown from "../../../components/SelectDropdown";
 import { ErrorMessage } from "../../../components/StateMessageComponent";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
+import useProjectFilter from "../../../hooks/useProjectFilter";
 import styles from "./page.module.css";
 
 const POLL_INTERVAL = 5000; // 5s
 
 export default function ConversationsPage({ initialId = null }) {
-    const searchParams = useSearchParams();
-    const router = useRouter();
-    const projectFilter = searchParams.get("project") || null;
+    const { projectFilter, projectOptions, handleProjectChange } = useProjectFilter();
     const [conversations, setConversations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -36,7 +34,6 @@ export default function ConversationsPage({ initialId = null }) {
     const [generatingCount, setGeneratingCount] = useState(0);
     const [recentCount, setRecentCount] = useState(0);
     const [workflows, setWorkflows] = useState([]);
-    const [projects, setProjects] = useState([]);
 
     const knownIdsRef = useRef(null); // null = not yet initialized
     const lastFingerprintRef = useRef("");
@@ -48,25 +45,7 @@ export default function ConversationsPage({ initialId = null }) {
         IrisService.getConfig()
             .then(setConfig)
             .catch(() => { });
-        IrisService.getConversationFilters()
-            .then((data) => setProjects(data.projects || []))
-            .catch(() => { });
     }, []);
-
-    const projectOptions = useMemo(() => [
-        { value: "", label: "All Projects" },
-        ...projects.map((p) => ({ value: p, label: p })),
-    ], [projects]);
-
-    const handleProjectChange = useCallback((val) => {
-        const params = new URLSearchParams(searchParams.toString());
-        if (val) {
-            params.set("project", val);
-        } else {
-            params.delete("project");
-        }
-        router.replace(`/admin/conversations?${params.toString()}`);
-    }, [searchParams, router]);
 
     // If initialId is set, load that conversation immediately
     useEffect(() => {

@@ -1,39 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import IrisService from "../../../services/IrisService";
+import { useEffect } from "react";
 import SelectDropdown from "../../../components/SelectDropdown";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
+import useProjectFilter from "../../../hooks/useProjectFilter";
 import ModelsPageComponent from "../../../components/ModelsPageComponent";
 
 export default function AdminModelsPage() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const projectFilter = searchParams.get("project") || null;
-  const [projects, setProjects] = useState([]);
-
-  useEffect(() => {
-    IrisService.getConversationFilters()
-      .then((data) => setProjects(data.projects || []))
-      .catch(() => { });
-  }, []);
-
-  const projectOptions = useMemo(() => [
-    { value: "", label: "All Projects" },
-    ...projects.map((p) => ({ value: p, label: p })),
-  ], [projects]);
-
-  const handleProjectChange = useCallback((val) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (val) {
-      params.set("project", val);
-    } else {
-      params.delete("project");
-    }
-    router.replace(`/admin/models?${params.toString()}`);
-  }, [searchParams, router]);
-
+  const { projectFilter, projectOptions, handleProjectChange } = useProjectFilter();
   const { setControls } = useAdminHeader();
 
   useEffect(() => {

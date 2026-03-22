@@ -9,17 +9,20 @@ import { MODALITY_COLORS } from "../../../components/WorkflowNodeConstants";
 import SortableTableComponent from "../../../components/SortableTableComponent";
 import PaginationComponent from "../../../components/PaginationComponent";
 import DatePickerComponent from "../../../components/DatePickerComponent";
+import SelectDropdown from "../../../components/SelectDropdown";
 import { ErrorMessage } from "../../../components/StateMessageComponent";
 import { FilterBarComponent, FilterGroupComponent, FilterInputComponent, FilterSelectComponent, FilterClearButton } from "../../../components/FilterBarComponent";
 import BadgeComponent from "../../../components/BadgeComponent";
 import ButtonComponent from "../../../components/ButtonComponent";
 import DetailDrawerComponent from "../../../components/DetailDrawerComponent";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
+import useProjectFilter from "../../../hooks/useProjectFilter";
 import styles from "./page.module.css";
 
 
 
 export default function RequestsPage() {
+    const { projectFilter, projectOptions, handleProjectChange } = useProjectFilter();
     const [requests, setRequests] = useState([]);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
@@ -31,7 +34,6 @@ export default function RequestsPage() {
     const [associations, setAssociations] = useState(null);
     const [loadingAssociations, setLoadingAssociations] = useState(false);
     const [filters, setFilters] = useState({
-        project: "",
         provider: "",
         model: "",
         endpoint: "",
@@ -47,6 +49,7 @@ export default function RequestsPage() {
             setError(null);
 
             const params = { page, limit: LIMIT, sort, order };
+            if (projectFilter) params.project = projectFilter;
             Object.entries(filters).forEach(([k, v]) => {
                 if (v) params[k] = v;
             });
@@ -61,7 +64,7 @@ export default function RequestsPage() {
         } finally {
             setLoading(false);
         }
-    }, [page, sort, order, filters, dateRange]);
+    }, [page, sort, order, filters, dateRange, projectFilter]);
 
     useEffect(() => {
         loadRequests();
@@ -101,7 +104,6 @@ export default function RequestsPage() {
 
     function clearFilters() {
         setFilters({
-            project: "",
             provider: "",
             model: "",
             endpoint: "",
@@ -213,14 +215,15 @@ export default function RequestsPage() {
                     </span>
                 )}
                 <ErrorMessage message={error} />
-                <FilterInputComponent
-                    placeholder="Filter by project..."
-                    value={filters.project}
-                    onChange={(val) => handleFilterChange("project", val)}
+                <SelectDropdown
+                    value={projectFilter || ""}
+                    options={projectOptions}
+                    onChange={handleProjectChange}
+                    placeholder="All Projects"
                 />
             </>
         );
-    }, [setControls, total, error, filters.project, handleFilterChange]);
+    }, [setControls, total, error, projectFilter, projectOptions, handleProjectChange]);
 
     // Cleanup on unmount
     useEffect(() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import IrisService from "../../../services/IrisService";
 import WorkflowComponent from "../../../components/WorkflowComponent";
 import WorkflowHeaderStatsComponent from "../../../components/WorkflowHeaderStatsComponent";
@@ -9,12 +9,12 @@ import SelectDropdown from "../../../components/SelectDropdown";
 import { ErrorMessage } from "../../../components/StateMessageComponent";
 import { useToast } from "../../../components/ToastComponent";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
+import useProjectFilter from "../../../hooks/useProjectFilter";
 import styles from "./page.module.css";
 
 export default function AdminWorkflowsPage() {
+  const { projectFilter, projectOptions, handleProjectChange } = useProjectFilter();
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const projectFilter = searchParams.get("project") || null;
   const initialId = searchParams.get("id") || null;
   const [workflows, setWorkflows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,28 +24,6 @@ export default function AdminWorkflowsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [toastElement, showToast] = useToast();
-  const [projects, setProjects] = useState([]);
-
-  useEffect(() => {
-    IrisService.getConversationFilters()
-      .then((data) => setProjects(data.projects || []))
-      .catch(() => { });
-  }, []);
-
-  const projectOptions = useMemo(() => [
-    { value: "", label: "All Projects" },
-    ...projects.map((p) => ({ value: p, label: p })),
-  ], [projects]);
-
-  const handleProjectChange = useCallback((val) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (val) {
-      params.set("project", val);
-    } else {
-      params.delete("project");
-    }
-    router.replace(`/admin/workflows?${params.toString()}`);
-  }, [searchParams, router]);
 
   const loadWorkflows = useCallback(async () => {
     try {

@@ -3,8 +3,9 @@
 import { useRef, useEffect, useCallback } from "react";
 
 /**
- * StarfieldComponent — Deep-field starry sky with Milky Way band
- * and real northern hemisphere constellations.
+ * StarfieldComponent — Deep-field starry sky with Milky Way band,
+ * real northern hemisphere constellations, nebula patches,
+ * and a galactic core glow.
  * Sharp pinpoint stars, subtle twinkling, parallax offset.
  */
 
@@ -263,7 +264,7 @@ function generateFieldStars(count, w, h, rng) {
   const sinA = Math.sin(bandAngle);
 
   for (let i = 0; i < count; i++) {
-    let x = rng() * totalW - padX;
+    const x = rng() * totalW - padX;
     let y = rng() * totalH - padY;
 
     // Density boosting in the Milky Way band
@@ -313,12 +314,116 @@ function generateFieldStars(count, w, h, rng) {
   return stars;
 }
 
+// ── Nebula & galactic core pre-render ──
+
+function renderNebulaLayer(w, h, rng) {
+  const offscreen = document.createElement("canvas");
+  offscreen.width = w;
+  offscreen.height = h;
+  const ctx = offscreen.getContext("2d");
+  if (!ctx) return offscreen;
+
+  // Milky Way band parameters (must match field star generation)
+  const bandAngle = -0.35;
+  const bandCenterY = 0.4;
+  const cosA = Math.cos(bandAngle);
+  const sinA = Math.sin(bandAngle);
+
+  // ── Galactic core glow ──
+  // A warm, very subtle elongated glow near the densest part of the band
+  const coreX = w * 0.55;
+  const coreY = (bandCenterY * cosA + 0.55 * sinA) * h;
+  const coreRadius = Math.max(w, h) * 0.22;
+
+  // Elongated ellipse via scale transform
+  ctx.save();
+  ctx.translate(coreX, coreY);
+  ctx.rotate(bandAngle);
+  ctx.scale(1.8, 1); // stretch along the band
+  const coreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, coreRadius);
+  coreGrad.addColorStop(0, "rgba(180, 160, 120, 0.06)");
+  coreGrad.addColorStop(0.3, "rgba(160, 140, 100, 0.035)");
+  coreGrad.addColorStop(0.6, "rgba(140, 120, 90, 0.015)");
+  coreGrad.addColorStop(1, "rgba(100, 90, 80, 0)");
+  ctx.fillStyle = coreGrad;
+  ctx.fillRect(-coreRadius * 2, -coreRadius, coreRadius * 4, coreRadius * 2);
+  ctx.restore();
+
+  // ── Milky Way diffuse glow band ──
+  // Multiple overlapping soft patches along the band
+  const bandPatches = 8;
+  for (let i = 0; i < bandPatches; i++) {
+    const nx = rng() * 1.2 - 0.1; // normalized x across canvas
+    const patchX = nx * w;
+    const patchY = (bandCenterY * cosA + nx * sinA) * h + (rng() - 0.5) * h * 0.12;
+    const patchR = (rng() * 0.12 + 0.06) * Math.max(w, h);
+    const alpha = rng() * 0.02 + 0.01; // 0.01–0.03 — barely visible
+
+    ctx.save();
+    ctx.translate(patchX, patchY);
+    ctx.rotate(bandAngle + (rng() - 0.5) * 0.3);
+    ctx.scale(1.5 + rng() * 0.8, 1);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, patchR);
+    g.addColorStop(0, `rgba(200, 195, 180, ${alpha})`);
+    g.addColorStop(0.5, `rgba(180, 175, 165, ${alpha * 0.5})`);
+    g.addColorStop(1, "rgba(150, 145, 140, 0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(-patchR * 2, -patchR, patchR * 4, patchR * 2);
+    ctx.restore();
+  }
+
+  // ── Nebula patches ──
+  // Scattered across the sky — emission (red/pink), reflection (blue),
+  // and a couple of subtle purple/teal wisps
+  const nebulae = [
+    // Emission nebulae (reddish) — near Orion, Cygnus
+    { x: 0.44, y: 0.67, r: 0.07, color: [180, 60, 70], a: 0.025 },
+    { x: 0.60, y: 0.22, r: 0.055, color: [170, 55, 65], a: 0.02 },
+    { x: 0.72, y: 0.72, r: 0.04, color: [185, 50, 60], a: 0.018 },
+
+    // Reflection nebulae (blue) — scattered
+    { x: 0.26, y: 0.12, r: 0.05, color: [80, 110, 180], a: 0.018 },
+    { x: 0.52, y: 0.15, r: 0.04, color: [70, 100, 170], a: 0.015 },
+
+    // Purple/teal wisps
+    { x: 0.35, y: 0.35, r: 0.06, color: [120, 80, 160], a: 0.012 },
+    { x: 0.68, y: 0.45, r: 0.05, color: [60, 130, 140], a: 0.012 },
+
+    // Very faint large-scale patches
+    { x: 0.15, y: 0.55, r: 0.09, color: [160, 70, 80], a: 0.008 },
+    { x: 0.80, y: 0.30, r: 0.08, color: [90, 100, 160], a: 0.008 },
+  ];
+
+  for (const n of nebulae) {
+    const nx = n.x * w;
+    const ny = n.y * h;
+    const nr = n.r * Math.max(w, h);
+    const [cr, cg, cb] = n.color;
+
+    ctx.save();
+    ctx.translate(nx, ny);
+    ctx.rotate((rng() - 0.5) * 1.2);
+    ctx.scale(1 + rng() * 0.6, 1);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, nr);
+    g.addColorStop(0, `rgba(${cr}, ${cg}, ${cb}, ${n.a})`);
+    g.addColorStop(0.4, `rgba(${cr}, ${cg}, ${cb}, ${n.a * 0.5})`);
+    g.addColorStop(0.7, `rgba(${cr}, ${cg}, ${cb}, ${n.a * 0.2})`);
+    g.addColorStop(1, `rgba(${cr}, ${cg}, ${cb}, 0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(-nr * 2, -nr, nr * 4, nr * 2);
+    ctx.restore();
+  }
+
+  return offscreen;
+}
+
 // ── Component ──
 
 export default function StarfieldComponent({ className, style, panX = 0, panY = 0 }) {
   const canvasRef = useRef(null);
   const starsRef = useRef(null);
   const constellationStarsRef = useRef(null);
+  const nebulaCanvasRef = useRef(null);
   const rafRef = useRef(null);
   const sizeRef = useRef({ w: 0, h: 0 });
   const panRef = useRef({ x: panX, y: panY });
@@ -345,13 +450,17 @@ export default function StarfieldComponent({ className, style, panX = 0, panY = 
     const rng = seededRandom(42);
     starsRef.current = generateFieldStars(count, w, h, rng);
 
+    // Pre-render nebula layer (static — painted once)
+    const nebulaRng = seededRandom(1337);
+    nebulaCanvasRef.current = renderNebulaLayer(w, h, nebulaRng);
+
     // Map constellation data to pixel coordinates
     constellationStarsRef.current = CONSTELLATIONS.map((c) => ({
       name: c.name,
       stars: c.stars.map((s) => ({
         x: s.x * w,
         y: s.y * h,
-        radius: 0.9 + Math.random() * 0.4, // slightly brighter anchor stars
+        radius: 0.55 + Math.random() * 0.3, // slightly brighter than dust, but still sharp
         brightness: 0.8 + Math.random() * 0.2,
         r: 220 + (Math.random() * 35) | 0,
         g: 225 + (Math.random() * 30) | 0,
@@ -403,13 +512,25 @@ export default function StarfieldComponent({ className, style, panX = 0, panY = 
       ctx.save();
       ctx.translate(px, py);
 
-      // ── Draw field stars ──
+      // ── Draw nebula / galactic core layer (pre-rendered) ──
+      if (nebulaCanvasRef.current) {
+        ctx.drawImage(nebulaCanvasRef.current, 0, 0, w, h);
+      }
+
+      // ── Draw field stars with atmospheric scintillation ──
       for (const star of fieldStars) {
+        // Slow twinkle (intrinsic)
         const twinkle =
           1 - star.twinkleAmount +
           star.twinkleAmount *
             (0.5 + 0.5 * Math.sin(t * star.twinkleSpeed + star.twinklePhase));
-        const alpha = star.brightness * twinkle;
+        // Fast atmospheric scintillation — rapid micro-flicker
+        // Brighter/larger stars scintillate more (realistic)
+        const scintAmount = star.radius > 0.6 ? 0.12 : 0.05;
+        const scintillation = 1 - scintAmount + scintAmount *
+          (0.5 + 0.5 * Math.sin(t * 11.3 + star.x * 0.7 + star.y * 1.3)) *
+          (0.5 + 0.5 * Math.cos(t * 7.7 + star.y * 0.9 + star.x * 0.4));
+        const alpha = star.brightness * twinkle * scintillation;
 
         ctx.globalAlpha = alpha;
         ctx.fillStyle = `rgb(${star.r},${star.g},${star.b})`;
@@ -450,7 +571,12 @@ export default function StarfieldComponent({ className, style, panX = 0, panY = 
               1 - star.twinkleAmount +
               star.twinkleAmount *
                 (0.5 + 0.5 * Math.sin(t * star.twinkleSpeed + star.twinklePhase));
-            const alpha = star.brightness * twinkle;
+            // Atmospheric scintillation for constellation stars too
+            const scint = 0.10;
+            const scintillation = 1 - scint + scint *
+              (0.5 + 0.5 * Math.sin(t * 9.1 + star.x * 0.5 + star.y * 1.1)) *
+              (0.5 + 0.5 * Math.cos(t * 6.3 + star.y * 0.7 + star.x * 0.3));
+            const alpha = star.brightness * twinkle * scintillation;
 
             ctx.globalAlpha = alpha;
             ctx.fillStyle = `rgb(${star.r},${star.g},${star.b})`;

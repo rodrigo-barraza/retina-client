@@ -112,6 +112,8 @@ export default function DashboardPage() {
         tpsSum: 0,
         tpsCount: 0,
         modelCount: 0,
+        conversationCount: 0,
+        workflowCount: 0,
       };
     }
     const p = providerAgg[m.provider];
@@ -121,6 +123,8 @@ export default function DashboardPage() {
     p.totalCost += m.totalCost || 0;
     p.latencySum += (m.avgLatency || 0) * m.totalRequests;
     p.modelCount += 1;
+    p.conversationCount += m.conversationCount || 0;
+    p.workflowCount += m.workflowCount || 0;
     if (m.avgTokensPerSec) {
       p.tpsSum += m.avgTokensPerSec * m.totalRequests;
       p.tpsCount += m.totalRequests;
@@ -337,8 +341,8 @@ export default function DashboardPage() {
               </span>
             ),
           },
-          { key: "totalRequests", label: "Requests", render: (p) => formatNumber(p.totalRequests) },
           { key: "modelCount", label: "Models" },
+          { key: "totalRequests", label: "Requests", render: (p) => formatNumber(p.totalRequests) },
           {
             key: "usage", label: "Usage",
             render: (p, i) => (
@@ -357,6 +361,28 @@ export default function DashboardPage() {
           },
           { key: "totalCost", label: "Cost", render: (p) => formatCost(p.totalCost) },
           { key: "avgLatency", label: "Avg Latency", render: (p) => formatLatency(p.avgLatency) },
+          {
+            key: "conversationCount", label: "Conversations",
+            render: (p) => p.conversationCount > 0 ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <MessageSquare size={12} />
+                {p.conversationCount}
+              </span>
+            ) : (
+              <span style={{ color: "var(--text-muted)" }}>0</span>
+            ),
+          },
+          {
+            key: "workflowCount", label: "Workflows",
+            render: (p) => p.workflowCount > 0 ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <Workflow size={12} />
+                {p.workflowCount}
+              </span>
+            ) : (
+              <span style={{ color: "var(--text-muted)" }}>0</span>
+            ),
+          },
         ]}
         data={providerData}
         getRowKey={(p) => p.provider}
@@ -390,6 +416,28 @@ export default function DashboardPage() {
           },
           { key: "totalCost", label: "Cost", render: (m) => formatCost(m.totalCost) },
           { key: "avgLatency", label: "Avg Latency", render: (m) => formatLatency(m.avgLatency) },
+          {
+            key: "conversationCount", label: "Conversations",
+            render: (m) => m.conversationCount > 0 ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <MessageSquare size={12} />
+                {m.conversationCount}
+              </span>
+            ) : (
+              <span style={{ color: "var(--text-muted)" }}>0</span>
+            ),
+          },
+          {
+            key: "workflowCount", label: "Workflows",
+            render: (m) => m.workflowCount > 0 ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <Workflow size={12} />
+                {m.workflowCount}
+              </span>
+            ) : (
+              <span style={{ color: "var(--text-muted)" }}>0</span>
+            ),
+          },
         ]}
         data={topModels}
         getRowKey={(m, i) => `${m.provider}-${m.model}-${i}`}

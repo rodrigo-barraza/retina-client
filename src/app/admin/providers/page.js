@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
 import IrisService from "../../../services/IrisService";
 import SortableTableComponent from "../../../components/SortableTableComponent";
 import PageHeaderComponent from "../../../components/PageHeaderComponent";
@@ -11,6 +10,7 @@ import { FilterBarComponent, FilterGroupComponent } from "../../../components/Fi
 import { LoadingMessage, ErrorMessage } from "../../../components/StateMessageComponent";
 import { formatNumber, formatCost, formatLatency } from "../../../utils/utilities";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
+import useProjectFilter from "../../../hooks/useProjectFilter";
 import styles from "./page.module.css";
 
 
@@ -20,36 +20,12 @@ const PROVIDER_COLORS = [
 ];
 
 export default function ProvidersPage() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const projectFilter = searchParams.get("project") || null;
+  const { projectFilter, projectOptions, handleProjectChange } = useProjectFilter();
   const [modelStats, setModelStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedProvider, setExpandedProvider] = useState(null);
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
-  const [projects, setProjects] = useState([]);
-
-  useEffect(() => {
-    IrisService.getConversationFilters()
-      .then((data) => setProjects(data.projects || []))
-      .catch(() => { });
-  }, []);
-
-  const projectOptions = useMemo(() => [
-    { value: "", label: "All Projects" },
-    ...projects.map((p) => ({ value: p, label: p })),
-  ], [projects]);
-
-  const handleProjectChange = useCallback((val) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (val) {
-      params.set("project", val);
-    } else {
-      params.delete("project");
-    }
-    router.replace(`/admin/providers?${params.toString()}`);
-  }, [searchParams, router]);
 
   useEffect(() => {
     async function load() {
@@ -110,6 +86,7 @@ export default function ProvidersPage() {
     { key: "model", label: "Model", render: (m) => <span style={{ fontWeight: 500, color: "var(--text-primary)" }}>{m.model}</span> },
     { key: "totalRequests", label: "Requests", render: (m) => formatNumber(m.totalRequests), align: "right" },
     { key: "totalTokens", label: "Tokens", render: (m) => formatNumber(m.totalTokens), align: "right" },
+    { key: "avgTokensPerSec", label: "Tok/s", render: (m) => m.avgTokensPerSec ? `${Number(m.avgTokensPerSec).toFixed(1)}` : "—", align: "right" },
     { key: "totalCost", label: "Cost", render: (m) => formatCost(m.totalCost), align: "right" },
     { key: "avgLatency", label: "Avg Latency", render: (m) => formatLatency(m.avgLatency), align: "right" },
   ], []);
