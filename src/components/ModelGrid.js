@@ -6,6 +6,14 @@ import {
     X,
     Star,
     ArrowRight,
+    Brain,
+    Wrench,
+    Globe,
+    Terminal,
+    Monitor,
+    FileSearch,
+    Link,
+    ImagePlus,
 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import { MODALITY_ICONS, MODALITY_COLORS } from "./WorkflowNodeConstants";
@@ -50,6 +58,18 @@ const ARENA_COLUMNS = [
     { key: "arena_imageEdit", dataKey: "imageEdit", label: "Image Edit" },
     { key: "arena_search", dataKey: "search", label: "Search" },
 ];
+
+const TOOL_ICONS = {
+    "Thinking": Brain,
+    "Function Calling": Wrench,
+    "Web Search": Globe,
+    "Google Search": Globe,
+    "Code Execution": Terminal,
+    "Computer Use": Monitor,
+    "File Search": FileSearch,
+    "URL Context": Link,
+    "Image Generation": ImagePlus,
+};
 
 function ModalityCell({ inputTypes, outputTypes }) {
     if (!inputTypes?.length && !outputTypes?.length) return "—";
@@ -122,6 +142,7 @@ function buildRow(rawModel, favorites = []) {
         input: rawModel.pricing?.inputPerMillion ?? Infinity,
         output: rawModel.pricing?.outputPerMillion ?? Infinity,
         favorite: favorites.includes(favKey) ? 1 : 0,
+        tools: rawModel.tools?.length || 0,
     };
     // Arena columns
     for (const col of ARENA_COLUMNS) {
@@ -147,6 +168,7 @@ export default function ModelGrid({
     const [searchQuery, setSearchQuery] = useState("");
     const [activeProvider, setActiveProvider] = useState(null);
     const [activeModality, setActiveModality] = useState(null);
+    const [activeTool, setActiveTool] = useState(null);
 
     // Discover all providers from models (ordered by PROVIDER_LABELS definition)
     const allProviders = useMemo(() => {
@@ -178,7 +200,21 @@ export default function ModelGrid({
         });
     }, [models]);
 
-    // Apply modality filter, then provider filter, then search
+    // Discover all unique tools from models (ordered by TOOL_ICONS definition)
+    const allTools = useMemo(() => {
+        const set = new Set();
+        for (const m of models) {
+            for (const t of m.tools || []) set.add(t);
+        }
+        const iconOrder = Object.keys(TOOL_ICONS);
+        return [...set].sort((a, b) => {
+            const ai = iconOrder.indexOf(a);
+            const bi = iconOrder.indexOf(b);
+            return (ai === -1 ? Infinity : ai) - (bi === -1 ? Infinity : bi);
+        });
+    }, [models]);
+
+    // Apply modality filter → tool filter → provider filter → search
     const modalityFiltered = activeModality
         ? models.filter(
             (m) =>
@@ -187,9 +223,13 @@ export default function ModelGrid({
         )
         : models;
 
-    const providerFiltered = activeProvider
-        ? modalityFiltered.filter((m) => normalizeModel(m).provider === activeProvider)
+    const toolFiltered = activeTool
+        ? modalityFiltered.filter((m) => (m.tools || []).includes(activeTool))
         : modalityFiltered;
+
+    const providerFiltered = activeProvider
+        ? toolFiltered.filter((m) => normalizeModel(m).provider === activeProvider)
+        : toolFiltered;
 
     const filtered = searchQuery.trim()
         ? providerFiltered.filter((m) => {
@@ -227,6 +267,7 @@ export default function ModelGrid({
     const hasModalities = filtered.some(
         (m) => m.inputTypes?.length > 0 || m.outputTypes?.length > 0,
     );
+    const hasTools = filtered.some((m) => m.tools?.length > 0);
     const hasActions = !!renderActions;
 
     const arenaCols = ARENA_COLUMNS.filter((col) =>
@@ -315,6 +356,33 @@ export default function ModelGrid({
             });
         }
 
+        if (hasTools) {
+            cols.push({
+                key: "tools",
+                label: "Tools",
+                align: "left",
+                render: (row) => {
+                    const tools = row._raw.tools;
+                    if (!tools?.length) return "—";
+                    return (
+                        <span className={styles.toolPills}>
+                            {tools.map((t) => {
+                                const Icon = TOOL_ICONS[t];
+                                if (!Icon) return (
+                                    <span key={t} className={styles.toolPill} title={t}>{t}</span>
+                                );
+                                return (
+                                    <span key={t} className={styles.toolPill} title={t}>
+                                        <Icon size={12} />
+                                    </span>
+                                );
+                            })}
+                        </span>
+                    );
+                },
+            });
+        }
+
         if (hasContext) {
             cols.push({
                 key: "context",
@@ -382,7 +450,7 @@ export default function ModelGrid({
 
         return cols;
     }, [
-        onToggleFavorite, favorites, hasYear, hasModalities,
+        onToggleFavorite, favorites, hasYear, hasModalities, hasTools,
         hasContext, hasSize, hasParams, hasQuant,
         hasInputPrice, hasOutputPrice, hasActions, renderActions,
         arenaCols,
@@ -433,7 +501,32 @@ export default function ModelGrid({
                         })}
                     </div>
                 )}
-                {showProviderFilter && allProviders.length >= 2 && allModalities.length >= 2 && (
+                {allTools.length >= 2 && (
+                    <>
+                        {allModalities.length >= 2 && (
+                            <div className={styles.filterDivider} />
+                        )}
+                        <div className={styles.filterBar}>
+                            {allTools.map((t) => {
+                                const Icon = TOOL_ICONS[t];
+                                if (!Icon) return null;
+                                return (
+                                    <button
+                                        key={t}
+                                        className={`${styles.filterBtn} ${activeTool === t ? styles.filterBtnActive : ""}`}
+                                        onClick={() =>
+                                            setActiveTool(activeTool === t ? null : t)
+                                        }
+                                        title={t}
+                                    >
+                                        <Icon size={14} />
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </>
+                )}
+                {showProviderFilter && allProviders.length >= 2 && (allModalities.length >= 2 || allTools.length >= 2) && (
                     <div className={styles.filterDivider} />
                 )}
                 {showProviderFilter && allProviders.length >= 2 && (

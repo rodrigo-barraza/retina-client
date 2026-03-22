@@ -427,6 +427,14 @@ export default function DashboardPage() {
               <span className={styles.badgeProvider}>{m.provider}</span>
             ),
           },
+          {
+            key: "toolsUsed", label: "Tools",
+            render: (m) => m.toolsUsed ? (
+              <span style={{ color: "var(--success)", fontWeight: 600 }}>✓</span>
+            ) : (
+              <span style={{ color: "var(--text-muted)" }}>—</span>
+            ),
+          },
           { key: "totalInputTokens", label: "Tokens In", render: (m) => formatNumber(m.totalInputTokens) },
           { key: "totalOutputTokens", label: "Tokens Out", render: (m) => formatNumber(m.totalOutputTokens) },
           {
