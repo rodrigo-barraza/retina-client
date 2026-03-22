@@ -68,8 +68,6 @@
   min-height: 60px;
   overflow: hidden;
   border-bottom: 1px solid var(--border-subtle);
-  cursor: crosshair;
-  image-rendering: pixelated;
 }
 
 .rainbowCanvas {

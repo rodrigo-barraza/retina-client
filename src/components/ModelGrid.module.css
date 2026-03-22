@@ -143,6 +143,13 @@
   color: var(--text-primary);
 }
 
+.modelKey {
+  font-size: 11px;
+  font-family: var(--font-mono, "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace);
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
 .modelProvider {
   font-size: 11px;
   color: var(--text-secondary);

@@ -283,6 +283,7 @@ export default function ModelGrid({
                                     </span>
                                 )}
                             </span>
+                            <span className={styles.modelKey}>{model.key}</span>
                             <span className={styles.modelProvider}>
                                 {PROVIDER_LABELS[model.provider] || model.provider}
                             </span>

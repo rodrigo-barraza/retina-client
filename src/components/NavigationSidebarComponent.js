@@ -26,13 +26,11 @@ import {
 import { useTheme } from "./ThemeProvider";
 import styles from "./NavigationSidebarComponent.module.css";
 
-/** 8-bit dithered rainbow — auto-animates, mouse accelerates it */
+/** 8-bit dithered rainbow — auto-animates, turbo during LLM generation */
 const PIXEL_SIZE = 6;
 const BASE_SPEED = 30; // degrees/sec
-const TURBO_MAX = 1200; // degrees/sec — ceiling velocity during generation
-const TURBO_ATTACK = 0.04; // per-frame smoothing toward max (at 60fps ≈ 90% in ~1s)
+const TURBO_ACCEL = 20; // quadratic coefficient — velocity = TURBO_ACCEL × t²
 const TURBO_RELEASE = 0.02; // per-frame smoothing toward zero (at 60fps ≈ 3s wind-down)
-const DECAY = 0.92; // velocity decay per frame (mouse boost)
 const RAINBOW = [
   [255, 0, 0],
   [255, 127, 0],
@@ -62,7 +60,7 @@ function rainbowAt(t) {
 function RainbowCanvas({ turbo = false }) {
   const canvasRef = useRef(null);
   const stateRef = useRef({
-    offset: 0, boost: 0, turboVelocity: 0, lastTime: 0, lastMouse: null,
+    offset: 0, turboVelocity: 0, turboTime: 0, lastTime: 0,
   });
   const turboRef = useRef(turbo);
   useEffect(() => { turboRef.current = turbo; }, [turbo]);
@@ -109,40 +107,34 @@ function RainbowCanvas({ turbo = false }) {
       canvas.height = rect.height;
     };
 
-    const onMouseMove = (e) => {
-      const s = stateRef.current;
-      if (s.lastMouse) {
-        const dx = e.clientX - s.lastMouse.x;
-        const dy = e.clientY - s.lastMouse.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        s.boost += dist * 4;
-      }
-      s.lastMouse = { x: e.clientX, y: e.clientY };
-    };
-
     const tick = (now) => {
       const s = stateRef.current;
       if (!s.lastTime) s.lastTime = now;
       const dt = (now - s.lastTime) / 1000;
       s.lastTime = now;
 
-      // Turbo: smooth exponential lerp toward target (frame-rate independent)
-      const turboTarget = turboRef.current ? TURBO_MAX : 0;
-      const rate = turboRef.current ? TURBO_ATTACK : TURBO_RELEASE;
-      const smoothing = 1 - Math.pow(1 - rate, dt * 60);
-      s.turboVelocity += (turboTarget - s.turboVelocity) * smoothing;
+      // Turbo: quadratic ease-in while generating (starts slow, compounds faster)
+      if (turboRef.current) {
+        s.turboTime += dt;
+        s.turboVelocity = TURBO_ACCEL * s.turboTime * s.turboTime;
+      } else if (s.turboVelocity > 0.5) {
+        // Smooth exponential release back to base speed
+        s.turboTime = 0;
+        const smoothing = 1 - Math.pow(1 - TURBO_RELEASE, dt * 60);
+        s.turboVelocity += (0 - s.turboVelocity) * smoothing;
+      } else {
+        s.turboVelocity = 0;
+        s.turboTime = 0;
+      }
 
-      const speed = BASE_SPEED + s.boost + s.turboVelocity;
+      const speed = BASE_SPEED + s.turboVelocity;
       s.offset = (s.offset + speed * dt) % 360;
-      s.boost *= DECAY;
-      if (s.boost < 0.5) s.boost = 0;
 
       draw();
       rafId = requestAnimationFrame(tick);
     };
 
     resize();
-    window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("resize", resize);
     rafId = requestAnimationFrame(tick);
 
@@ -155,7 +147,6 @@ function RainbowCanvas({ turbo = false }) {
 
     return () => {
       cancelAnimationFrame(rafId);
-      window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("resize", resize);
       ro?.disconnect();
     };
