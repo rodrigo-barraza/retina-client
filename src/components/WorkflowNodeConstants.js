@@ -1,6 +1,6 @@
 "use client";
 
-import { Type, Image, Volume2, Video, FileText, Hash, MessageSquare } from "lucide-react";
+import { Type, Image, Volume2, Video, FileText, Hash, MessageSquare, Wrench } from "lucide-react";
 
 // ── Modality Icons (icon, label, color) ──
 export const MODALITY_ICONS = {
@@ -11,6 +11,7 @@ export const MODALITY_ICONS = {
   pdf: { icon: FileText, label: "PDF", color: "#64748b" },
   embedding: { icon: Hash, label: "Embedding", color: "#06b6d4" },
   conversation: { icon: MessageSquare, label: "Conversation", color: "#8b5cf6" },
+  tools: { icon: Wrench, label: "Tools", color: "#f97316" },
 };
 
 // ── Modality Colors ──
@@ -22,6 +23,7 @@ export const MODALITY_COLORS = {
   pdf: "#64748b",
   embedding: "#06b6d4",
   conversation: "#8b5cf6",
+  tools: "#f97316",
 };
 
 // ── Asset-type Icons ──
@@ -29,6 +31,7 @@ export const ASSET_ICONS = {
   text: Type,
   audio: Volume2,
   conversation: MessageSquare,
+  tools: Wrench,
 };
 
 // ── Role labels for conversation compound ports ──

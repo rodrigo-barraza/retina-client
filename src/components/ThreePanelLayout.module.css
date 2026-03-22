@@ -56,19 +56,34 @@
   width: 34px;
   height: 34px;
   flex-shrink: 0;
-  border-radius: 2px;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
+  border-radius: 6px;
+  background: var(--accent-glow);
+  border: 1px solid transparent;
+  color: var(--accent-color);
   cursor: pointer;
-  opacity: 0.6;
-  transition: all 0.2s;
+  opacity: 0.8;
+  transition: all 0.25s ease;
 }
 
 .headerToggle:hover {
-  background: var(--accent-glow);
+  background: var(--accent-color);
+  color: var(--bg-primary);
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* When the associated panel is hidden */
+.panelHidden {
+  background: color-mix(in srgb, var(--accent-color) 15%, transparent);
+  border-color: var(--accent-color);
   color: var(--accent-color);
   opacity: 1;
+}
+
+.panelHidden:hover {
+  background: var(--accent-color);
+  color: var(--bg-primary);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-color) 40%, transparent);
 }
 
 /* ── Mobile Meta Bar (conversation info below header) ── */
@@ -190,22 +205,41 @@
     min-width: calc(100% - 60px);
     z-index: 200;
     border: none;
-    transition: opacity 0.3s ease;
+    opacity: 1;
+    will-change: transform, opacity;
+    transition:
+      transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .leftSidebar {
     left: 0;
     right: auto;
+    transform: translateX(0);
   }
 
   .rightSidebar {
     right: 0;
     left: auto;
+    transform: translateX(0);
   }
 
-  .sidebarHidden {
+  .leftSidebar.sidebarHidden {
+    transform: translateX(-100%);
     opacity: 0;
     pointer-events: none;
+    width: calc(100% - 60px) !important;
+    min-width: calc(100% - 60px) !important;
+    border-width: 0;
+  }
+
+  .rightSidebar.sidebarHidden {
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+    width: calc(100% - 60px) !important;
+    min-width: calc(100% - 60px) !important;
+    border-width: 0;
   }
 
   .mobileSlit {

@@ -157,11 +157,7 @@ export default function SettingsPanel({
                 fcEnabled &&
                 modelsMap[p]?.every((m) => !m.tools?.includes("Function Calling"));
             const disabled = allImgDisabled || allFcDisabled;
-            const suffix = allImgDisabled
-                ? " (no image context)"
-                : allFcDisabled
-                    ? " (no function calling)"
-                    : "";
+            const suffix = allImgDisabled ? " (no image context)" : "";
             return {
                 value: p,
                 label: (PROVIDER_LABELS[p] || p.toUpperCase()) + suffix,
@@ -175,11 +171,7 @@ export default function SettingsPanel({
         const imgDisabled = hasAssistantImages && m.assistantImages === false;
         const fcDisabled = fcEnabled && !m.tools?.includes("Function Calling");
         const disabled = imgDisabled || fcDisabled;
-        const suffix = imgDisabled
-            ? " (no image context)"
-            : fcDisabled
-                ? " (no function calling)"
-                : "";
+        const suffix = imgDisabled ? " (no image context)" : "";
         return {
             value: m.name,
             label: m.label + suffix,

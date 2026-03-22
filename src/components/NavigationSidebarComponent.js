@@ -29,7 +29,10 @@ import styles from "./NavigationSidebarComponent.module.css";
 /** 8-bit dithered rainbow — auto-animates, mouse accelerates it */
 const PIXEL_SIZE = 6;
 const BASE_SPEED = 30; // degrees/sec
-const DECAY = 0.92; // velocity decay per frame
+const TURBO_MAX = 1200; // degrees/sec — ceiling velocity during generation
+const TURBO_ATTACK = 0.04; // per-frame smoothing toward max (at 60fps ≈ 90% in ~1s)
+const TURBO_RELEASE = 0.02; // per-frame smoothing toward zero (at 60fps ≈ 3s wind-down)
+const DECAY = 0.92; // velocity decay per frame (mouse boost)
 const RAINBOW = [
   [255, 0, 0],
   [255, 127, 0],
@@ -56,9 +59,13 @@ function rainbowAt(t) {
   return lerpColor(RAINBOW[i % RAINBOW.length], RAINBOW[(i + 1) % RAINBOW.length], f);
 }
 
-function RainbowCanvas() {
+function RainbowCanvas({ turbo = false }) {
   const canvasRef = useRef(null);
-  const stateRef = useRef({ offset: 0, boost: 0, lastTime: 0, lastMouse: null });
+  const stateRef = useRef({
+    offset: 0, boost: 0, turboVelocity: 0, lastTime: 0, lastMouse: null,
+  });
+  const turboRef = useRef(turbo);
+  useEffect(() => { turboRef.current = turbo; }, [turbo]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -119,7 +126,13 @@ function RainbowCanvas() {
       const dt = (now - s.lastTime) / 1000;
       s.lastTime = now;
 
-      const speed = BASE_SPEED + s.boost;
+      // Turbo: smooth exponential lerp toward target (frame-rate independent)
+      const turboTarget = turboRef.current ? TURBO_MAX : 0;
+      const rate = turboRef.current ? TURBO_ATTACK : TURBO_RELEASE;
+      const smoothing = 1 - Math.pow(1 - rate, dt * 60);
+      s.turboVelocity += (turboTarget - s.turboVelocity) * smoothing;
+
+      const speed = BASE_SPEED + s.boost + s.turboVelocity;
       s.offset = (s.offset + speed * dt) % 360;
       s.boost *= DECAY;
       if (s.boost < 0.5) s.boost = 0;
@@ -151,6 +164,7 @@ function RainbowCanvas() {
   return <canvas ref={canvasRef} className={styles.rainbowCanvas} />;
 }
 
+
 const USER_NAV_ITEMS = [
   { href: "/", label: "Conversations", icon: MessageSquare, exact: true },
   { href: "/workflows", label: "Workflows", icon: Workflow },
@@ -180,6 +194,7 @@ export default function NavigationSidebarComponent({
   mode = "user",
   liveCount = 0,
   systemStatus = "connected",
+  isGenerating = false,
   onNavClick,
 }) {
   const pathname = usePathname();
@@ -234,7 +249,7 @@ export default function NavigationSidebarComponent({
             <div className={styles.mobilePopover}>
               {/* Rainbow strip */}
               <div className={styles.rainbowStrip}>
-                <RainbowCanvas />
+                <RainbowCanvas turbo={isGenerating} />
               </div>
 
               {/* Navigation links */}
@@ -288,7 +303,7 @@ export default function NavigationSidebarComponent({
                     <span className={styles.navLabel}>Admin</span>
                   </Link>
                 )}
-                <button className={styles.navLink} onClick={toggleTheme}>
+                <button className={`${styles.navLink} ${styles.themeToggle}`} onClick={toggleTheme}>
                   {theme === "dark" ? (
                     <Sun className={styles.navIcon} />
                   ) : (
@@ -325,7 +340,7 @@ export default function NavigationSidebarComponent({
       <aside className={styles.sidebar}>
         {/* Rainbow logo banner */}
         <div className={styles.logoBanner}>
-          <RainbowCanvas />
+          <RainbowCanvas turbo={isGenerating} />
           <button
             className={styles.collapseBtn}
             onClick={toggleNav}
@@ -375,7 +390,7 @@ export default function NavigationSidebarComponent({
               <span className={styles.navLabel}>Admin</span>
             </Link>
           )}
-          <button className={styles.navLink} onClick={toggleTheme}>
+          <button className={`${styles.navLink} ${styles.themeToggle}`} onClick={toggleTheme}>
             {theme === "dark" ? (
               <Sun className={styles.navIcon} />
             ) : (

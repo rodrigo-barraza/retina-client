@@ -1,4 +1,4 @@
-/* ── ModelGrid (Table) ──────────────────────────────── */
+/* ── ModelGrid (Toolbar + Filters) ──────────────────── */
 
 .container {
   display: flex;
@@ -80,7 +80,7 @@
   }
 }
 
-/* ── Provider Filters ──────────────────────────────── */
+/* ── Provider / Modality Filters ──────────────────── */
 
 .filterBar {
   display: flex;
@@ -123,123 +123,7 @@
   color: var(--accent-color);
 }
 
-/* ── Table ─────────────────────────────────────────── */
-
-.tableScroll {
-  overflow-x: auto;
-  border: 1px solid var(--border-color);
-  border-radius: 2px;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  table-layout: auto;
-}
-
-.th {
-  padding: 10px 14px;
-  text-align: right;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  position: sticky;
-  top: 0;
-  user-select: none;
-
-  &:first-child {
-    text-align: left;
-    width: 1%;
-    white-space: nowrap;
-  }
-}
-
-/* Model column left-align when favorites column shifts it to :nth-child(2) */
-.th.thModel {
-  text-align: left;
-  width: 1%;
-  white-space: nowrap;
-}
-
-.thSortable {
-  cursor: pointer;
-  transition: color 0.15s;
-
-  &:hover {
-    color: var(--text-primary);
-
-    .sortIconIdle {
-      opacity: 0.45;
-    }
-  }
-}
-
-.sortIcon {
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 3px;
-  opacity: 0.7;
-}
-
-.sortIconIdle {
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 3px;
-  opacity: 0.2;
-  transition: opacity 0.15s;
-}
-
-.tr {
-  transition: all 0.12s ease;
-
-  &:not(:last-child) td {
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  &.clickable {
-    cursor: pointer;
-  }
-
-  &:hover {
-    .tdName {
-      background: rgba(99, 102, 241, 0.08);
-      border-left: 2px solid var(--accent-color);
-      padding-left: 12px;
-    }
-
-    .td {
-      background: rgba(99, 102, 241, 0.04);
-    }
-  }
-
-  &.loadedRow {
-    background: linear-gradient(90deg, rgba(16, 185, 129, 0.04), transparent);
-  }
-}
-
-.td {
-  padding: 10px 14px;
-  text-align: right;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  background: var(--bg-secondary);
-}
-
-.tdName {
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  white-space: nowrap;
-  background: var(--bg-primary);
-}
+/* ── Model name cell layout ───────────────────────── */
 
 .nameStack {
   display: flex;
@@ -314,22 +198,6 @@
   }
 }
 
-/* ── Arena & pricing cells ─────────────────────────── */
-
-.thArena {
-  color: var(--accent-color);
-  opacity: 0.7;
-}
-
-.tdArena {
-  color: var(--accent-color);
-  font-weight: 600;
-}
-
-.tdEmpty {
-  opacity: 0.3;
-}
-
 /* ── Modalities ────────────────────────────────────── */
 
 .modalities {
@@ -345,44 +213,14 @@
   margin: 0 1px;
 }
 
-/* ── Empty state ───────────────────────────────────── */
-
-.empty {
-  padding: 24px;
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-/* ── Animations ────────────────────────────────────── */
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
 /* ── Favorite star ─────────────────────────────────── */
 
-.thFav {
-  width: 40px;
-  min-width: 40px;
-  max-width: 40px;
-  padding: 10px 0 !important;
-  text-align: center !important;
-}
-
-.tdFav {
-  width: 40px;
-  min-width: 40px;
-  max-width: 40px;
-  padding: 10px 0 !important;
-  text-align: center !important;
+.favWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .favStar {
@@ -406,12 +244,14 @@
   }
 }
 
-/* ── Responsive ────────────────────────────────────── */
+/* ── Animations ────────────────────────────────────── */
 
-@media (max-width: 600px) {
-  .th,
-  .td,
-  .tdName {
-    padding: 8px 10px;
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }

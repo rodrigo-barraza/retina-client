@@ -127,7 +127,7 @@ export default function ThreePanelLayout({
                 {/* Full-width header */}
                 <header className={styles.glassHeader}>
                     <button
-                        className={styles.headerToggle}
+                        className={`${styles.headerToggle} ${!showLeft ? styles.panelHidden : ""}`}
                         onClick={toggleLeft}
                         title={showLeft ? `Hide ${(leftTitle || "panel").toLowerCase()}` : `Show ${(leftTitle || "panel").toLowerCase()}`}
                     >
@@ -138,7 +138,7 @@ export default function ThreePanelLayout({
                     {headerControls}
                     {rightPanel && (
                         <button
-                            className={styles.headerToggle}
+                            className={`${styles.headerToggle} ${!showRight ? styles.panelHidden : ""}`}
                             onClick={toggleRight}
                             title={showRight ? `Hide ${rightTitle.toLowerCase()}` : `Show ${rightTitle.toLowerCase()}`}
                         >

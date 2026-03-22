@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Play, Square, Loader2, Download, Upload, Undo2, RotateCcw } from "lucide-react";
 import PrismService from "../../services/PrismService";
 import WorkflowService from "../../services/WorkflowService";
+import SunService from "../../services/SunService";
 import { executeWorkflow } from "../../services/WorkflowExecutor";
 import WorkflowComponent from "../../components/WorkflowComponent";
 import WorkflowHeaderStatsComponent from "../../components/WorkflowHeaderStatsComponent";
@@ -265,13 +266,15 @@ export default function WorkflowsPage({ initialWorkflowId }) {
             if (modality === "model") {
                 const defaultModel = modelsWithModalities[0];
                 const isConversation = defaultModel?.modelType === "conversation";
+                const supportsFC = defaultModel?.tools?.includes("Function Calling");
+                const baseInputs = isConversation ? ["conversation"] : (defaultModel?.inputTypes || []);
                 const newNode = {
                     id: generateNodeId(),
                     modelName: defaultModel?.name || "select-model",
                     provider: defaultModel?.provider || "",
                     displayName: defaultModel?.display_name || defaultModel?.label || defaultModel?.name || "Select a Model",
                     modelType: defaultModel?.modelType || "conversation",
-                    inputTypes: isConversation ? ["conversation"] : (defaultModel?.inputTypes || []),
+                    inputTypes: supportsFC ? [...baseInputs, "tools"] : baseInputs,
                     rawInputTypes: defaultModel?.rawInputTypes || defaultModel?.inputTypes || [],
                     outputTypes: defaultModel?.outputTypes || [],
                     supportsSystemPrompt: defaultModel?.supportsSystemPrompt !== false,
@@ -284,6 +287,36 @@ export default function WorkflowsPage({ initialWorkflowId }) {
                         y: 80 + nodes.length * 40 + Math.random() * 40,
                     },
                 };
+                setNodes((prev) => [...prev, newNode]);
+                return;
+            }
+
+            // Tool node — function calling tools
+            if (modality === "tools") {
+                const builtIn = SunService.getToolSchemas();
+                const newNode = {
+                    id: generateNodeId(),
+                    nodeType: "tools",
+                    inputTypes: [],
+                    outputTypes: ["tools"],
+                    builtInTools: builtIn,
+                    customTools: [],
+                    disabledTools: [],
+                    position: {
+                        x: 80 + nodes.length * 60 + Math.random() * 40,
+                        y: 80 + nodes.length * 40 + Math.random() * 40,
+                    },
+                };
+                // Try to load custom tools and attach them
+                PrismService.getCustomTools()
+                    .then((tools) => {
+                        setNodes((prev) =>
+                            prev.map((n) =>
+                                n.id === newNode.id ? { ...n, customTools: tools } : n,
+                            ),
+                        );
+                    })
+                    .catch(() => {});
                 setNodes((prev) => [...prev, newNode]);
                 return;
             }
@@ -715,6 +748,8 @@ export default function WorkflowsPage({ initialWorkflowId }) {
     const handleChangeModel = useCallback(
         (nodeId, newModel) => {
             const isConversation = newModel.modelType === "conversation";
+            const supportsFC = newModel.tools?.includes("Function Calling");
+            const baseInputs = isConversation ? ["conversation"] : (newModel.inputTypes || []);
             setNodes((prev) =>
                 prev.map((n) => {
                     if (n.id !== nodeId || n.nodeType) return n;
@@ -724,7 +759,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
                         provider: newModel.provider,
                         displayName: newModel.display_name || newModel.label || newModel.name,
                         modelType: newModel.modelType,
-                        inputTypes: isConversation ? ["conversation"] : (newModel.inputTypes || []),
+                        inputTypes: supportsFC ? [...baseInputs, "tools"] : baseInputs,
                         rawInputTypes: newModel.rawInputTypes || newModel.inputTypes || [],
                         outputTypes: newModel.outputTypes || [],
                         supportsSystemPrompt: newModel.supportsSystemPrompt !== false,

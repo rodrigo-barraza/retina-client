@@ -43,8 +43,8 @@ export default function SortableTableComponent({
     const dragRef = useRef({ active: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0, moved: false });
 
     const onPointerDown = useCallback((e) => {
-        // Ignore if clicking interactive elements
-        if (e.target.closest("a, button, input, select, textarea")) return;
+        // Ignore if clicking interactive elements or table headers
+        if (e.target.closest("a, button, input, select, textarea, th")) return;
         const el = scrollRef.current;
         if (!el) return;
         dragRef.current = {

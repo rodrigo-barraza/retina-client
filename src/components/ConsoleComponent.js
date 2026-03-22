@@ -872,7 +872,7 @@ export default function ConsoleComponent() {
   // ── Layout ───────────────────────────────────────────────────
   return (
     <ThreePanelLayout
-      navSidebar={<NavigationSidebarComponent mode="user" />}
+      navSidebar={<NavigationSidebarComponent mode="user" isGenerating={isGenerating} />}
       leftPanel={leftPanel}
       leftTitle={null}
       rightPanel={

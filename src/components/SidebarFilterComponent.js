@@ -1,13 +1,15 @@
 "use client";
 
-import { Star, Type, Image, Volume2, FileText as DocIcon } from "lucide-react";
+import { Star, Type, Image, Volume2, Video, FileText as DocIcon } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
+import TooltipComponent from "./TooltipComponent";
 import styles from "./SidebarFilterComponent.module.css";
 
 const MODALITY_FILTERS = [
   { key: "text", icon: Type, title: "Text" },
   { key: "image", icon: Image, title: "Image" },
   { key: "audio", icon: Volume2, title: "Audio" },
+  { key: "video", icon: Video, title: "Video" },
   { key: "doc", icon: DocIcon, title: "Document" },
 ];
 
@@ -49,13 +51,15 @@ export default function SidebarFilterComponent({
         <div className={styles.filterRow}>
           <span className={styles.filterLabel}>Favorite</span>
           <div className={styles.filterBar}>
-            <button
-              className={`${styles.filterBtn} ${showFavoritesOnly ? styles.filterBtnActive : ""}`}
-              onClick={onFavoritesToggle}
-              title="Show favorites only"
-            >
-              <Star size={13} fill={showFavoritesOnly ? "currentColor" : "none"} />
-            </button>
+            <TooltipComponent label="Favorites" position="bottom">
+              <button
+                className={`${styles.filterBtn} ${showFavoritesOnly ? styles.filterBtnActive : ""}`}
+                onClick={onFavoritesToggle}
+                title="Show favorites only"
+              >
+                <Star size={13} fill={showFavoritesOnly ? "currentColor" : "none"} />
+              </button>
+            </TooltipComponent>
           </div>
         </div>
       )}
@@ -65,14 +69,15 @@ export default function SidebarFilterComponent({
           <span className={styles.filterLabel}>Modality</span>
           <div className={styles.filterBar}>
             {modalities.map(({ key, icon: Icon, title }) => (
-              <button
-                key={key}
-                className={`${styles.filterBtn} ${activeModality === key ? styles.filterBtnActive : ""}`}
-                onClick={() => onModalityChange(activeModality === key ? null : key)}
-                title={title}
-              >
-                <Icon size={13} />
-              </button>
+              <TooltipComponent key={key} label={title} position="bottom">
+                <button
+                  className={`${styles.filterBtn} ${activeModality === key ? styles.filterBtnActive : ""}`}
+                  onClick={() => onModalityChange(activeModality === key ? null : key)}
+                  title={title}
+                >
+                  <Icon size={13} />
+                </button>
+              </TooltipComponent>
             ))}
           </div>
         </div>
@@ -83,14 +88,15 @@ export default function SidebarFilterComponent({
           <span className={styles.filterLabel}>Provider</span>
           <div className={styles.filterBar}>
             {providers.map((p) => (
-              <button
-                key={p}
-                className={`${styles.filterBtn} ${activeProvider === p ? styles.filterBtnActive : ""}`}
-                onClick={() => onProviderChange(activeProvider === p ? null : p)}
-                title={p}
-              >
-                <ProviderLogo provider={p} size={13} />
-              </button>
+              <TooltipComponent key={p} label={p} position="bottom">
+                <button
+                  className={`${styles.filterBtn} ${activeProvider === p ? styles.filterBtnActive : ""}`}
+                  onClick={() => onProviderChange(activeProvider === p ? null : p)}
+                  title={p}
+                >
+                  <ProviderLogo provider={p} size={13} />
+                </button>
+              </TooltipComponent>
             ))}
           </div>
         </div>

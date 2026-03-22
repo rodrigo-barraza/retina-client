@@ -951,3 +951,89 @@
   opacity: 0.5;
 }
 
+/* ── Tool Node Inspector ── */
+.toolSummary {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.toolSummaryCount {
+  font-size: 20px;
+  font-weight: 700;
+  color: #f97316;
+  line-height: 1;
+}
+
+.toolSummaryLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.toolSectionToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0 0 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+
+  &:hover {
+    color: var(--text-secondary);
+  }
+}
+
+.toolList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toolRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px;
+  border-radius: 3px;
+  transition: background var(--transition-fast);
+
+  &:hover {
+    background: var(--bg-primary);
+  }
+}
+
+.toolRowLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.toolRowName {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toolRowNameDisabled {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.toolRowParams {
+  font-size: 9px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}

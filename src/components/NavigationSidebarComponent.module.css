@@ -156,6 +156,28 @@
   }
 }
 
+.themeToggle {
+  :global([data-theme="light"]) & {
+    background: #1e1e1e;
+    color: #999;
+
+    &:hover {
+      background: #2a2a2a;
+      color: #ccc;
+    }
+  }
+
+  :global([data-theme="dark"]) & {
+    background: #f0f0f0;
+    color: #666;
+
+    &:hover {
+      background: #e0e0e0;
+      color: #333;
+    }
+  }
+}
+
 .navIcon {
   width: 18px;
   height: 18px;

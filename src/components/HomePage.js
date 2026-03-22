@@ -1503,7 +1503,7 @@ Guidelines:
                     />
                 }
                 headerTitle={title}
-                navSidebar={<NavigationSidebarComponent mode="user" />}
+                navSidebar={<NavigationSidebarComponent mode="user" isGenerating={isGenerating} />}
                 headerMeta={
                     messages.length > 0 ? (
                         <div className={styles.headerMeta}>

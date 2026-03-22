@@ -8,6 +8,7 @@ import {
   DollarSign,
   Clock,
   CheckCircle,
+  AlertCircle,
   Workflow,
   MessageSquare,
 } from "lucide-react";

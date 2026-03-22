@@ -488,6 +488,42 @@
   animation: flashSelect 1.6s ease-in-out infinite;
 }
 
+/* ── Tool node pills ── */
+.toolNodePills {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.toolNodePill {
+  display: block;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.08);
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+  line-height: 1.4;
+}
+
+.toolNodePillMore {
+  display: block;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+
 /* ── Animations ── */
 @keyframes flashSelect {
   0%, 100% {

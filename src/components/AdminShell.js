@@ -10,6 +10,7 @@ import styles from "./AdminShell.module.css";
 
 export default function AdminShell({ children }) {
   const [newCount, setNewCount] = useState(0);
+  const [generatingCount, setGeneratingCount] = useState(0);
   const [systemStatus, setSystemStatus] = useState("connected");
   const pathname = usePathname();
 
@@ -26,6 +27,14 @@ export default function AdminShell({ children }) {
       setNewCount(0);
     }
   }, [pathname]);
+
+  // SSE subscription for real-time generatingCount across all projects
+  useEffect(() => {
+    const es = IrisService.subscribeConversationStats((data) => {
+      setGeneratingCount(data.generatingCount || 0);
+    });
+    return () => es.close();
+  }, []);
 
   useEffect(() => {
     async function poll() {
@@ -102,6 +111,7 @@ export default function AdminShell({ children }) {
         mode="admin"
         liveCount={newCount}
         systemStatus={systemStatus}
+        isGenerating={generatingCount > 0}
         onNavClick={handleNavClick}
       />
       <div className={styles.mainArea}>

@@ -3,6 +3,7 @@
  * and calling PrismService for each model, passing outputs forward via edges.
  */
 import PrismService from "./PrismService";
+import SunService from "./SunService";
 
 /**
  * Determine which Prism endpoint to use based on the model's modalities
@@ -60,7 +61,7 @@ async function resolveToDataUrl(ref) {
  * @param {Array<{type: string, data: string}>} inputData - Collected inputs from edges
  * @returns {Promise<Object>} - { [modality]: data }
  */
-async function executeModelNode(node, inputData, { onNodeContentUpdate } = {}) {
+async function executeModelNode(node, inputData, { onNodeContentUpdate, toolSchemas, customToolMap } = {}) {
     const endpoint = resolveEndpoint(node, inputData);
     const outputs = {};
 
@@ -189,15 +190,68 @@ async function executeModelNode(node, inputData, { onNodeContentUpdate } = {}) {
             conversationId,
             userMessage,
             conversationMeta,
+            ...(toolSchemas && toolSchemas.length > 0 ? { options: { tools: toolSchemas } } : {}),
         });
 
+        // ── Tool-call orchestration loop ──
+        // If the model returns tool_calls, execute them and re-call the model
+        // up to MAX_TOOL_ITERATIONS times until a final text response is produced.
+        const MAX_TOOL_ITERATIONS = 5;
+        let currentResult = result;
+        const loopMessages = [...finalMessages];
+
+        for (let iter = 0; iter < MAX_TOOL_ITERATIONS; iter++) {
+            const toolCalls = currentResult.tool_calls || currentResult.toolCalls;
+            if (!toolCalls || toolCalls.length === 0) break;
+
+            // Append the assistant message with tool_calls to the conversation
+            loopMessages.push({
+                role: "assistant",
+                content: currentResult.text || currentResult.content || "",
+                tool_calls: toolCalls,
+            });
+
+            // Execute tool calls
+            for (const tc of toolCalls) {
+                const toolName = tc.function?.name || tc.name;
+                const toolArgs = tc.function?.arguments || tc.arguments || {};
+                const parsedArgs = typeof toolArgs === "string" ? JSON.parse(toolArgs) : toolArgs;
+
+                let toolResult;
+                // Check custom tools first, then built-in
+                const customDef = customToolMap?.get(toolName);
+                if (customDef) {
+                    toolResult = await SunService.executeCustomTool(customDef, parsedArgs);
+                } else {
+                    toolResult = await SunService.executeTool(toolName, parsedArgs);
+                }
+
+                loopMessages.push({
+                    role: "tool",
+                    content: JSON.stringify(toolResult),
+                    tool_call_id: tc.id,
+                    name: toolName,
+                });
+            }
+
+            // Re-call the model with tool results
+            currentResult = await PrismService.generateText({
+                provider: node.provider,
+                model: node.modelName,
+                messages: loopMessages,
+                conversationId,
+                conversationMeta,
+                ...(toolSchemas && toolSchemas.length > 0 ? { options: { tools: toolSchemas } } : {}),
+            });
+        }
+
         // Propagate minio refs returned by Prism back to input node content
-        if (result.messages && onNodeContentUpdate) {
+        if (currentResult.messages && onNodeContentUpdate) {
             // Build a map from data URL → minio ref by comparing what we sent vs what came back
             const refMap = new Map();
             for (let i = 0; i < finalMessages.length; i++) {
                 const sent = finalMessages[i];
-                const returned = result.messages[i];
+                const returned = currentResult.messages[i];
                 if (!returned) continue;
                 for (const field of ["images", "audio", "video", "pdf"]) {
                     const sentArr = sent[field];
@@ -220,10 +274,10 @@ async function executeModelNode(node, inputData, { onNodeContentUpdate } = {}) {
             }
         }
 
-        outputs.text = result.text || result.content || "";
+        outputs.text = currentResult.text || currentResult.content || "";
         // Some models return inline images
-        if (result.images && result.images.length > 0) {
-            outputs.image = await resolveToDataUrl(result.images[0]);
+        if (currentResult.images && currentResult.images.length > 0) {
+            outputs.image = await resolveToDataUrl(currentResult.images[0]);
         }
     } else if (endpoint === "textToImage") {
         const pipedPrompt = inputData.find((d) => d.type === "text")?.data || "";
@@ -510,6 +564,56 @@ export async function executeWorkflow(nodes, edges, { onNodeStart, onNodeComplet
                 continue;
             }
 
+            // Tool nodes — emit their enabled tool schemas as output
+            if (node.nodeType === "tools") {
+                const disabled = new Set(node.disabledTools || []);
+                const builtIn = (node.builtInTools || []).filter((t) => !disabled.has(t.name));
+                const custom = (node.customTools || []).filter((t) => !disabled.has(t.name || t._id));
+
+                // Build OpenAI-format tool schemas
+                const schemas = [
+                    ...builtIn.map((t) => ({
+                        type: "function",
+                        function: {
+                            name: t.name,
+                            description: t.description,
+                            parameters: t.parameters || { type: "object", properties: {}, required: [] },
+                        },
+                    })),
+                    ...custom.map((t) => {
+                        const props = {};
+                        const required = [];
+                        for (const p of (t.parameters || [])) {
+                            if (!p.name) continue;
+                            props[p.name] = {
+                                type: p.type || "string",
+                                description: p.description || "",
+                                ...(p.enum?.length > 0 ? { enum: p.enum } : {}),
+                            };
+                            if (p.required) required.push(p.name);
+                        }
+                        return {
+                            type: "function",
+                            function: {
+                                name: t.name,
+                                description: t.description || "",
+                                parameters: { type: "object", properties: props, required },
+                            },
+                        };
+                    }),
+                ];
+
+                // Also build a custom tool lookup map for execution
+                const customMap = new Map();
+                for (const t of custom) {
+                    customMap.set(t.name, t);
+                }
+
+                nodeOutputs[nodeId] = { tools: { schemas, customMap } };
+                onNodeComplete?.(nodeId, {});
+                continue;
+            }
+
             if (node.nodeType === "viewer") {
                 // Viewer nodes collect connected input data and display it
                 const incomingConns = edges.filter((c) => c.targetNodeId === nodeId);
@@ -542,17 +646,39 @@ export async function executeWorkflow(nodes, edges, { onNodeStart, onNodeComplet
                 }
             }
 
+            // Separate tool inputs from regular modality inputs
+            const toolInputs = inputData.filter((d) => d.type === "tools");
+            const regularInputData = inputData.filter((d) => d.type !== "tools");
+
+            // Collect tool schemas from connected tool nodes
+            let toolSchemas = null;
+            let customToolMap = null;
+            if (toolInputs.length > 0) {
+                toolSchemas = [];
+                customToolMap = new Map();
+                for (const ti of toolInputs) {
+                    if (ti.data?.schemas) toolSchemas.push(...ti.data.schemas);
+                    if (ti.data?.customMap) {
+                        for (const [k, v] of ti.data.customMap) customToolMap.set(k, v);
+                    }
+                }
+            }
+
             // Also include any static inputs attached to the node
             if (node.staticInputs) {
                 for (const [modality, data] of Object.entries(node.staticInputs)) {
                     if (data) {
-                        inputData.push({ type: modality, data });
+                        regularInputData.push({ type: modality, data });
                     }
                 }
             }
 
             // Execute the model
-            const { outputs, conversationId } = await executeModelNode(node, inputData, { onNodeContentUpdate });
+            const { outputs, conversationId } = await executeModelNode(node, regularInputData, {
+                onNodeContentUpdate,
+                toolSchemas,
+                customToolMap,
+            });
             nodeOutputs[nodeId] = outputs;
             if (conversationId) generatedConversationIds.push(conversationId);
             onNodeComplete?.(nodeId, outputs);

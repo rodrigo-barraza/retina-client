@@ -13,6 +13,7 @@ function getModalities(messages) {
     imageOut: false,
     audioIn: false,
     audioOut: false,
+    videoIn: false,
     docIn: false,
   };
   for (const m of messages || []) {
@@ -22,22 +23,38 @@ function getModalities(messages) {
       if (isUser) modalities.textIn = true;
       if (isAssistant) modalities.textOut = true;
     }
-    if (m.images?.length > 0 || m.image) {
-      if (isUser) modalities.imageIn = true;
-      if (isAssistant) modalities.imageOut = true;
-    }
     if (m.audio) {
       if (isUser) modalities.audioIn = true;
       if (isAssistant) modalities.audioOut = true;
     }
-    if (
-      m.documents?.length > 0 ||
-      m.images?.some(
-        (ref) =>
-          typeof ref === "string" &&
-          (ref.endsWith(".pdf") || ref.endsWith(".txt")),
-      )
-    ) {
+    if (m.images?.length > 0) {
+      for (const ref of m.images) {
+        if (typeof ref !== "string") continue;
+        const isDoc =
+          ref.startsWith("data:application/") ||
+          ref.startsWith("data:text/") ||
+          ref.endsWith(".pdf") ||
+          ref.endsWith(".txt");
+        const isVideo =
+          ref.startsWith("data:video/") ||
+          [".mp4", ".mov", ".avi", ".webm"].some((ext) => ref.endsWith(ext));
+        if (isDoc) {
+          modalities.docIn = true;
+        } else if (isVideo) {
+          if (isUser) modalities.videoIn = true;
+        } else {
+          // Actual image ref
+          if (isUser) modalities.imageIn = true;
+          if (isAssistant) modalities.imageOut = true;
+        }
+      }
+    }
+    // Standalone image field (not from images array)
+    if (m.image && !m.images?.length) {
+      if (isUser) modalities.imageIn = true;
+      if (isAssistant) modalities.imageOut = true;
+    }
+    if (m.documents?.length > 0) {
       modalities.docIn = true;
     }
   }

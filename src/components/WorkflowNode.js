@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, Upload, Eye, Loader2, Check, Paperclip, MessageSquare, Plus, Minus } from "lucide-react";
+import { X, Upload, Eye, Loader2, Check, Paperclip, MessageSquare, Plus, Minus, Wrench } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
 import AudioRecorderComponent from "./AudioRecorderComponent";
 import AssetInputOptions from "./AssetInputOptions";
@@ -811,9 +811,136 @@ function AssetNode(props) {
 }
 
 /**
- * WorkflowNode — dispatches to ModelNode or AssetNode based on nodeType.
+ * Renders a tool (function calling) node.
+ */
+function ToolNode(props) {
+  const {
+    node,
+    status,
+    isSelected,
+    isExpanded,
+    onMouseDown,
+    onTouchStart,
+    onDelete,
+    onToggleExpand,
+  } = props;
+
+  const portProps = usePortProps(props);
+  const inputTypes = node.inputTypes || [];
+  const outputTypes = node.outputTypes || [];
+  const width = getNodeWidth(node);
+  const accentColor = MODALITY_COLORS.tools;
+
+  // Count enabled tools
+  const builtInTools = node.builtInTools || [];
+  const customToolsList = node.customTools || [];
+  const disabledTools = new Set(node.disabledTools || []);
+  const enabledBuiltIn = builtInTools.filter((t) => !disabledTools.has(t.name)).length;
+  const enabledCustom = customToolsList.filter((t) => !disabledTools.has(t.name || t._id)).length;
+  const totalEnabled = enabledBuiltIn + enabledCustom;
+  const totalTools = builtInTools.length + customToolsList.length;
+
+  const isRunning = status === "running";
+  const isDone = status === "done";
+  const isPrism = isRunning || isDone;
+  const statusGradient = isRunning ? "url(#prism-gradient)" : isDone ? "url(#done-gradient)" : null;
+
+  // Show up to 6 tool name pills when expanded
+  const TOOL_PILL_HEIGHT = 20;
+  const TOOL_PILL_GAP = 3;
+  const MAX_PILLS = 6;
+  const allToolNames = [
+    ...builtInTools.filter((t) => !disabledTools.has(t.name)).map((t) => t.name),
+    ...customToolsList.filter((t) => !disabledTools.has(t.name || t._id)).map((t) => t.name),
+  ];
+  const displayedTools = allToolNames.slice(0, MAX_PILLS);
+  const remainingCount = allToolNames.length - displayedTools.length;
+  const pillRows = displayedTools.length + (remainingCount > 0 ? 1 : 0);
+  const contentH = isExpanded ? pillRows * (TOOL_PILL_HEIGHT + TOOL_PILL_GAP) + 12 : 0;
+
+  const portRows = Math.max(inputTypes.length, outputTypes.length, 1);
+  const portsHeight = portRows * PORT_SECTION_HEIGHT + 12;
+  const nodeHeight = HEADER_HEIGHT + contentH + portsHeight;
+
+  const headerContent = (
+    <>
+      <Wrench size={14} style={{ color: accentColor, flexShrink: 0 }} />
+      <span style={{ fontSize: 12, fontWeight: 600, color: accentColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {node.customName || "Tools"}
+      </span>
+      <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", flexShrink: 0, marginLeft: "auto" }}>
+        {totalEnabled}/{totalTools}
+      </span>
+    </>
+  );
+
+  const headerActions = (
+    <>
+      {status === "running" && (
+        <Loader2 size={12} style={{ color: "#f59e0b", animation: "spin 1s linear infinite", flexShrink: 0 }} />
+      )}
+      <button
+        className={`${styles.deleteNodeBtn} ${isExpanded ? styles.configBtnActive : ""}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleExpand(node.id);
+        }}
+        title="View tools"
+      >
+        <Eye size={12} />
+      </button>
+    </>
+  );
+
+  return (
+    <NodeShell
+      node={node}
+      width={width}
+      height={nodeHeight}
+      status={status}
+      isSelected={isSelected}
+      accentColor={accentColor}
+      headerFillStyle={{ fill: accentColor, fillOpacity: 0.1 }}
+      headerContent={headerContent}
+      headerActions={headerActions}
+      headerActionsWidth={80}
+      typeBadge="Tools"
+      onMouseDown={onMouseDown}
+      onTouchStart={onTouchStart}
+      onDelete={onDelete}
+      inputTypes={inputTypes}
+      outputTypes={outputTypes}
+      configOffset={contentH}
+      isPrism={isPrism}
+      statusGradient={statusGradient}
+      portProps={portProps}
+    >
+      {/* Expanded: show tool name pills */}
+      {isExpanded && displayedTools.length > 0 && (
+        <foreignObject x={4} y={HEADER_HEIGHT + 4} width={width - 8} height={contentH - 8}>
+          <div className={styles.toolNodePills}>
+            {displayedTools.map((name) => (
+              <span key={name} className={styles.toolNodePill}>
+                {name.replace(/^get_/, "").replace(/_/g, " ")}
+              </span>
+            ))}
+            {remainingCount > 0 && (
+              <span className={styles.toolNodePillMore}>+{remainingCount} more</span>
+            )}
+          </div>
+        </foreignObject>
+      )}
+    </NodeShell>
+  );
+}
+
+/**
+ * WorkflowNode — dispatches to ModelNode, ToolNode, or AssetNode based on nodeType.
  */
 export default function WorkflowNode(props) {
+  if (props.node.nodeType === "tools") {
+    return <ToolNode {...props} />;
+  }
   if (props.node.nodeType) {
     return <AssetNode {...props} />;
   }

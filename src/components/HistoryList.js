@@ -8,6 +8,7 @@ import {
   Type,
   Image,
   Volume2,
+  Video,
   FileText as DocIcon,
   Download,
   Copy,
@@ -208,25 +209,26 @@ export default function HistoryList({
                     </span>
                   ))}
                   <span className={styles.time}>{dt}</span>
-                  {item.modelName && (
-                    <span className={styles.modelTag} title={item.modelName}>
-                      {item.modelName.split("/").pop()}
-                    </span>
-                  )}
                   {(item.totalCost || 0) > 0 && (
                     <span className={styles.cost}>
                       ${item.totalCost.toFixed(5)}
                     </span>
                   )}
                 </div>
+                {item.modelName && (
+                  <span className={styles.modelTag} title={item.modelName}>
+                    {item.modelName.split("/").pop()}
+                  </span>
+                )}
                 {/* Modality icons */}
                 {Object.keys(mod).length > 0 && (
                   <div className={styles.modalities}>
                     {mod.textIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.text }} title="Text input"><Type size={11} /></span>}
                     {mod.imageIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.image }} title="Image input"><Image size={11} /></span>}
                     {mod.audioIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.audio }} title="Audio input"><Volume2 size={11} /></span>}
+                    {mod.videoIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.video }} title="Video input"><Video size={11} /></span>}
                     {mod.docIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.pdf }} title="Document input"><DocIcon size={11} /></span>}
-                    {(mod.textIn || mod.imageIn || mod.audioIn || mod.docIn) &&
+                    {(mod.textIn || mod.imageIn || mod.audioIn || mod.videoIn || mod.docIn) &&
                       (mod.textOut || mod.imageOut || mod.audioOut) && (
                         <span className={styles.modalityArrow}>→</span>
                       )}

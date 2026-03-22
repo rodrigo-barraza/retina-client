@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { Eye, Type, Volume2, X, Maximize2, Search, ChevronDown, Paperclip, Code, BookOpen } from "lucide-react";
+import { Eye, Type, Volume2, X, Maximize2, Search, ChevronDown, ChevronRight, Paperclip, Code, BookOpen, Wrench } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
 import { MODALITY_ICONS } from "./WorkflowNodeConstants";
 import MarkdownContent from "./MarkdownContent";
@@ -9,6 +9,7 @@ import TextContentComponent from "./TextContentComponent";
 import MessageList from "./MessageList";
 import AudioRecorderComponent from "./AudioRecorderComponent";
 import AssetInputOptions from "./AssetInputOptions";
+import ToggleSwitchComponent from "./ToggleSwitch";
 import PrismService from "../services/PrismService";
 
 import styles from "./WorkflowInspector.module.css";
@@ -41,7 +42,7 @@ export default function WorkflowInspector({
     allModels = [],
     nodeResults,
     nodeStatuses,
-    _onUpdateNodeConfig,
+    onUpdateNodeConfig,
     onUpdateNodeContent,
     onUpdateFileInput,
     onChangeModel,
@@ -53,6 +54,8 @@ export default function WorkflowInspector({
     const [modelSearch, setModelSearch] = useState("");
     const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
     const [conversationView, setConversationView] = useState("json");
+    const [toolBuiltInOpen, setToolBuiltInOpen] = useState(true);
+    const [toolCustomOpen, setToolCustomOpen] = useState(true);
 
 
     // ── Resize logic ──
@@ -93,6 +96,7 @@ export default function WorkflowInspector({
 
 
     const isModel = node ? !node.nodeType : false;
+    const isTools = node ? node.nodeType === "tools" : false;
 
 
 
@@ -116,9 +120,10 @@ export default function WorkflowInspector({
             const mInputs = m.inputTypes || [];
             const mOutputs = m.outputTypes || [];
             // Check input compatibility: conversation-type models accept "conversation" edges
+            // Tools connections are always compatible with FC-capable models
             if (requiredInputs.length > 0) {
                 const inputsOk = requiredInputs.every((mod) =>
-                    mInputs.includes(mod) || (mod === "conversation" && m.modelType === "conversation"),
+                    mod === "tools" || mInputs.includes(mod) || (mod === "conversation" && m.modelType === "conversation"),
                 );
                 if (!inputsOk) return false;
             }
@@ -153,6 +158,7 @@ export default function WorkflowInspector({
             return n.customName || labels[n.modality] || "Media";
         }
         if (n.nodeType === "viewer") return n.customName || "Output";
+        if (n.nodeType === "tools") return n.customName || "Tools";
         return n.displayName || n.modelName || id;
     };
 
@@ -167,9 +173,11 @@ export default function WorkflowInspector({
 
     const nodeSubtitle = isModel
         ? node.provider
-        : isInput
-            ? (NODE_TYPE_LABELS[node.modality] || "Media Node")
-            : "Output Node";
+        : isTools
+            ? "Function Calling"
+            : isInput
+                ? (NODE_TYPE_LABELS[node.modality] || "Media Node")
+                : "Output Node";
 
     return (
         <div className={styles.inspector} style={{ width: inspectorWidth, minWidth: MIN_WIDTH }}>
@@ -192,9 +200,14 @@ export default function WorkflowInspector({
                             <Eye size={16} />
                         </div>
                     )}
+                    {isTools && (
+                        <div className={styles.typeIcon} style={{ color: "#f97316" }}>
+                            <Wrench size={16} />
+                        </div>
+                    )}
                     <div className={styles.headerInfo}>
                         <span className={styles.headerTitle}>
-                            {isModel ? (node.displayName || node.modelName) : isInput ? (node.customName || { text: "Text", image: "Image", audio: "Audio", video: "Video", pdf: "PDF", conversation: "Chat History" }[node.modality] || "Media") : (node.customName || "Output")}
+                            {isModel ? (node.displayName || node.modelName) : isTools ? (node.customName || "Tools") : isInput ? (node.customName || { text: "Text", image: "Image", audio: "Audio", video: "Video", pdf: "PDF", conversation: "Chat History" }[node.modality] || "Media") : (node.customName || "Output")}
                         </span>
                         <span className={styles.headerSubtitle}>
                             {nodeSubtitle}
@@ -505,6 +518,94 @@ export default function WorkflowInspector({
                                 <MarkdownContent content={`\`\`\`json\n${messagesJson}\n\`\`\``} />
                             )}
                         </section>
+                    );
+                })()}
+
+                {/* Tool node — built-in + custom tool toggles */}
+                {isTools && (() => {
+                    const builtIn = node.builtInTools || [];
+                    const custom = node.customTools || [];
+                    const disabled = new Set(node.disabledTools || []);
+                    const enabledCount = builtIn.filter((t) => !disabled.has(t.name)).length
+                        + custom.filter((t) => !disabled.has(t.name || t._id)).length;
+                    const totalCount = builtIn.length + custom.length;
+
+                    const toggleTool = (toolName) => {
+                        const next = new Set(disabled);
+                        if (next.has(toolName)) next.delete(toolName);
+                        else next.add(toolName);
+                        onUpdateNodeConfig?.(node.id, "disabledTools", [...next]);
+                    };
+
+                    const renderTool = (t, key) => {
+                        const name = t.name || key;
+                        const isDisabled = disabled.has(name);
+                        const paramCount = t.parameters?.properties
+                            ? Object.keys(t.parameters.properties).length
+                            : (t.parameters?.length || 0);
+                        const displayName = name.replace(/^get_/, "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+                        return (
+                            <div key={name} className={styles.toolRow}>
+                                <div className={styles.toolRowLeft}>
+                                    <span className={`${styles.toolRowName} ${isDisabled ? styles.toolRowNameDisabled : ""}`}>
+                                        {displayName}
+                                    </span>
+                                    {paramCount > 0 && (
+                                        <span className={styles.toolRowParams}>{paramCount} params</span>
+                                    )}
+                                </div>
+                                <ToggleSwitchComponent
+                                    checked={!isDisabled}
+                                    onChange={() => toggleTool(name)}
+                                    size="small"
+                                />
+                            </div>
+                        );
+                    };
+
+                    return (
+                        <>
+                            <section className={styles.section}>
+                                <div className={styles.toolSummary}>
+                                    <span className={styles.toolSummaryCount}>{enabledCount}</span>
+                                    <span className={styles.toolSummaryLabel}>of {totalCount} tools enabled</span>
+                                </div>
+                            </section>
+
+                            {builtIn.length > 0 && (
+                                <section className={styles.section}>
+                                    <button
+                                        className={styles.toolSectionToggle}
+                                        onClick={() => setToolBuiltInOpen((v) => !v)}
+                                    >
+                                        {toolBuiltInOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                        <span>Built-in ({builtIn.filter((t) => !disabled.has(t.name)).length}/{builtIn.length})</span>
+                                    </button>
+                                    {toolBuiltInOpen && (
+                                        <div className={styles.toolList}>
+                                            {builtIn.map((t) => renderTool(t, t.name))}
+                                        </div>
+                                    )}
+                                </section>
+                            )}
+
+                            {custom.length > 0 && (
+                                <section className={styles.section}>
+                                    <button
+                                        className={styles.toolSectionToggle}
+                                        onClick={() => setToolCustomOpen((v) => !v)}
+                                    >
+                                        {toolCustomOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                        <span>Custom ({custom.filter((t) => !disabled.has(t.name || t._id)).length}/{custom.length})</span>
+                                    </button>
+                                    {toolCustomOpen && (
+                                        <div className={styles.toolList}>
+                                            {custom.map((t) => renderTool(t, t.name || t._id))}
+                                        </div>
+                                    )}
+                                </section>
+                            )}
+                        </>
                     );
                 })()}
 
