@@ -3,20 +3,19 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-    ArrowLeft,
-    Clock,
     Loader,
     MessageSquare,
 } from "lucide-react";
-import Link from "next/link";
+
 import IrisService from "../../../services/IrisService";
 import MessageList, { prepareDisplayMessages } from "../../../components/MessageList";
 import SettingsPanel from "../../../components/SettingsPanel";
 import HistoryPanel from "../../../components/HistoryPanel";
-import StatsCard from "../../../components/StatsCard";
+
 import ThreePanelLayout from "../../../components/ThreePanelLayout";
 import SelectDropdown from "../../../components/SelectDropdown";
 import { ErrorMessage } from "../../../components/StateMessageComponent";
+import { useAdminHeader } from "../../../components/AdminHeaderContext";
 import styles from "./page.module.css";
 
 const POLL_INTERVAL = 5000; // 5s
@@ -268,50 +267,43 @@ export default function ConversationsPage({ initialId = null }) {
         [selectedConv],
     );
 
+    const { setControls } = useAdminHeader();
+
+    // Inject controls into AdminShell header
+    useEffect(() => {
+        setControls(
+            <>
+                <SelectDropdown
+                    value={projectFilter || ""}
+                    options={projectOptions}
+                    onChange={handleProjectChange}
+                    placeholder="All Projects"
+                />
+                <span className={styles.liveDot}>
+                    <span className={styles.liveDotInner} />
+                    Live
+                </span>
+                <span className={styles.statPill}>
+                    {loading ? "..." : recentCount} recent
+                </span>
+                {generatingCount > 0 && (
+                    <span className={`${styles.statPill} ${styles.statPillGenerating}`}>
+                        <Loader size={10} className={styles.spinning} />
+                        {generatingDisplay} generating
+                    </span>
+                )}
+                <ErrorMessage message={error} />
+            </>
+        );
+    }, [setControls, projectFilter, projectOptions, handleProjectChange, loading, recentCount, generatingCount, generatingDisplay, error]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => setControls(null);
+    }, [setControls]);
+
     return (
         <div className={styles.page}>
-            {/* Header — matches /workflows layout */}
-            <header className={styles.header}>
-                <div className={styles.headerLeft}>
-                    <Link href="/admin" className={styles.backBtn}>
-                        <ArrowLeft size={16} />
-                    </Link>
-                    <h1 className={styles.headerTitle}>Conversations</h1>
-                    <SelectDropdown
-                        value={projectFilter || ""}
-                        options={projectOptions}
-                        onChange={handleProjectChange}
-                        placeholder="All Projects"
-                    />
-                    <span className={styles.liveDot}>
-                        <span className={styles.liveDotInner} />
-                        Live
-                    </span>
-                </div>
-                <div className={styles.headerRight}>
-                    <ErrorMessage message={error} />
-                </div>
-            </header>
-
-            {/* Stats */}
-            <div className={styles.statsRow}>
-                <StatsCard
-                    label="Recent Conversations"
-                    value={loading ? "..." : recentCount}
-                    subtitle="Updated in the last hour"
-                    icon={Clock}
-                    variant="accent"
-                    loading={loading}
-                />
-                <StatsCard
-                    label="Generating"
-                    value={loading ? "..." : generatingDisplay}
-                    subtitle="Currently streaming"
-                    icon={Loader}
-                    variant="info"
-                    loading={loading}
-                />
-            </div>
 
             {/* Chat-like 3-panel layout */}
             <div className={styles.chatContainer}>

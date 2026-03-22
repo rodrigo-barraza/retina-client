@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import { Eye } from "lucide-react";
 import IrisService from "../services/IrisService";
 
 import NavigationSidebarComponent from "./NavigationSidebarComponent";
+import { AdminHeaderProvider, useAdminHeader } from "./AdminHeaderContext";
 import styles from "./AdminShell.module.css";
 
-export default function AdminShell({ children }) {
+function AdminShellInner({ children }) {
   const [newCount, setNewCount] = useState(0);
   const [generatingCount, setGeneratingCount] = useState(0);
   const [systemStatus, setSystemStatus] = useState("connected");
@@ -98,11 +98,14 @@ export default function AdminShell({ children }) {
     }
   }, []);
 
-  // Derive page title from pathname
+  const { controls } = useAdminHeader();
+
+  // Derive page title from pathname (first segment only)
   const pageTitle = (() => {
     const segment = pathname.replace("/admin", "").replace(/^\//, "");
     if (!segment) return "Dashboard";
-    return segment.charAt(0).toUpperCase() + segment.slice(1);
+    const first = segment.split("/")[0];
+    return first.charAt(0).toUpperCase() + first.slice(1);
   })();
 
   return (
@@ -117,13 +120,18 @@ export default function AdminShell({ children }) {
       <div className={styles.mainArea}>
         <header className={styles.header}>
           <h1 className={styles.headerTitle}>{pageTitle}</h1>
-          <div className={styles.headerMeta}>
-            <Eye size={12} />
-            <span>Iris · Prism Admin</span>
-          </div>
+          {controls && <div className={styles.headerControls}>{controls}</div>}
         </header>
         <div className={styles.main}>{children}</div>
       </div>
     </div>
+  );
+}
+
+export default function AdminShell({ children }) {
+  return (
+    <AdminHeaderProvider>
+      <AdminShellInner>{children}</AdminShellInner>
+    </AdminHeaderProvider>
   );
 }
