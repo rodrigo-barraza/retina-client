@@ -18,6 +18,7 @@ import {
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import { MODALITY_ICONS, MODALITY_COLORS } from "./WorkflowNodeConstants";
 import SortableTableComponent from "./SortableTableComponent";
+import TooltipComponent from "./TooltipComponent";
 import styles from "./ModelGrid.module.css";
 
 function formatBytes(bytes) {
@@ -79,7 +80,11 @@ function ModalityCell({ inputTypes, outputTypes }) {
                 const m = MODALITY_ICONS[t];
                 if (!m) return null;
                 const Icon = m.icon;
-                return <Icon key={`in-${t}`} size={12} title={m.label} style={{ color: MODALITY_COLORS[t] }} />;
+                return (
+                    <TooltipComponent key={`in-${t}`} label={m.label} position="top">
+                        <Icon size={12} style={{ color: MODALITY_COLORS[t] }} />
+                    </TooltipComponent>
+                );
             })}
             {inputTypes?.length > 0 && outputTypes?.length > 0 && (
                 <ArrowRight size={10} className={styles.modalityArrow} />
@@ -88,7 +93,11 @@ function ModalityCell({ inputTypes, outputTypes }) {
                 const m = MODALITY_ICONS[t];
                 if (!m) return null;
                 const Icon = m.icon;
-                return <Icon key={`out-${t}`} size={12} title={m.label} style={{ color: MODALITY_COLORS[t] }} />;
+                return (
+                    <TooltipComponent key={`out-${t}`} label={m.label} position="top">
+                        <Icon size={12} style={{ color: MODALITY_COLORS[t] }} />
+                    </TooltipComponent>
+                );
             })}
         </span>
     );
@@ -369,12 +378,16 @@ export default function ModelGrid({
                             {tools.map((t) => {
                                 const Icon = TOOL_ICONS[t];
                                 if (!Icon) return (
-                                    <span key={t} className={styles.toolPill} title={t}>{t}</span>
+                                    <TooltipComponent key={t} label={t} position="top">
+                                        <span className={styles.toolPill}>{t}</span>
+                                    </TooltipComponent>
                                 );
                                 return (
-                                    <span key={t} className={styles.toolPill} title={t}>
-                                        <Icon size={12} />
-                                    </span>
+                                    <TooltipComponent key={t} label={t} position="top">
+                                        <span className={styles.toolPill}>
+                                            <Icon size={12} />
+                                        </span>
+                                    </TooltipComponent>
                                 );
                             })}
                         </span>
@@ -487,16 +500,16 @@ export default function ModelGrid({
                             if (!m) return null;
                             const Icon = m.icon;
                             return (
-                                <button
-                                    key={t}
-                                    className={`${styles.filterBtn} ${activeModality === t ? styles.filterBtnActive : ""}`}
-                                    onClick={() =>
-                                        setActiveModality(activeModality === t ? null : t)
-                                    }
-                                    title={m.label}
-                                >
-                                    <Icon size={14} style={{ color: MODALITY_COLORS[t] }} />
-                                </button>
+                                <TooltipComponent key={t} label={m.label} position="bottom">
+                                    <button
+                                        className={`${styles.filterBtn} ${activeModality === t ? styles.filterBtnActive : ""}`}
+                                        onClick={() =>
+                                            setActiveModality(activeModality === t ? null : t)
+                                        }
+                                    >
+                                        <Icon size={14} style={{ color: MODALITY_COLORS[t] }} />
+                                    </button>
+                                </TooltipComponent>
                             );
                         })}
                     </div>
@@ -511,16 +524,16 @@ export default function ModelGrid({
                                 const Icon = TOOL_ICONS[t];
                                 if (!Icon) return null;
                                 return (
-                                    <button
-                                        key={t}
-                                        className={`${styles.filterBtn} ${activeTool === t ? styles.filterBtnActive : ""}`}
-                                        onClick={() =>
-                                            setActiveTool(activeTool === t ? null : t)
-                                        }
-                                        title={t}
-                                    >
-                                        <Icon size={14} />
-                                    </button>
+                                    <TooltipComponent key={t} label={t} position="bottom">
+                                        <button
+                                            className={`${styles.filterBtn} ${activeTool === t ? styles.filterBtnActive : ""}`}
+                                            onClick={() =>
+                                                setActiveTool(activeTool === t ? null : t)
+                                            }
+                                        >
+                                            <Icon size={14} />
+                                        </button>
+                                    </TooltipComponent>
                                 );
                             })}
                         </div>
@@ -532,16 +545,16 @@ export default function ModelGrid({
                 {showProviderFilter && allProviders.length >= 2 && (
                     <div className={styles.filterBar}>
                         {allProviders.map((p) => (
-                            <button
-                                key={p}
-                                className={`${styles.filterBtn} ${activeProvider === p ? styles.filterBtnActive : ""}`}
-                                onClick={() =>
-                                    setActiveProvider(activeProvider === p ? null : p)
-                                }
-                                title={PROVIDER_LABELS[p] || p}
-                            >
-                                <ProviderLogo provider={p} size={14} />
-                            </button>
+                            <TooltipComponent key={p} label={PROVIDER_LABELS[p] || p} position="bottom">
+                                <button
+                                    className={`${styles.filterBtn} ${activeProvider === p ? styles.filterBtnActive : ""}`}
+                                    onClick={() =>
+                                        setActiveProvider(activeProvider === p ? null : p)
+                                    }
+                                >
+                                    <ProviderLogo provider={p} size={14} />
+                                </button>
+                            </TooltipComponent>
                         ))}
                     </div>
                 )}

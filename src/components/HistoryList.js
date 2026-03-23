@@ -14,10 +14,14 @@ import {
   Copy,
   Star,
   Wrench,
+  Globe,
+  Terminal,
+  Lightbulb,
 } from "lucide-react";
 import { PROVIDER_LABELS } from "./ProviderLogos";
-import SidebarFilterComponent, { MODALITY_FILTERS } from "./SidebarFilterComponent";
+import SidebarFilterComponent, { MODALITY_FILTERS, TOOL_FILTERS } from "./SidebarFilterComponent";
 import DatePickerComponent from "./DatePickerComponent";
+import TooltipComponent from "./TooltipComponent";
 import { DateTime } from "luxon";
 import styles from "./HistoryList.module.css";
 import { MODALITY_COLORS } from "./WorkflowNodeConstants";
@@ -61,6 +65,7 @@ export default function HistoryList({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeModality, setActiveModality] = useState(null);
+  const [activeTool, setActiveTool] = useState(null);
   const [activeProvider, setActiveProvider] = useState(null);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
@@ -71,10 +76,22 @@ export default function HistoryList({
     for (const item of items) {
       const mod = item.modalities || {};
       for (const { key } of MODALITY_FILTERS) {
-        if (mod[`${key}In`] || mod[`${key}Out`] || mod[`${key}Use`]) set.add(key);
+        if (mod[`${key}In`] || mod[`${key}Out`]) set.add(key);
       }
     }
     return MODALITY_FILTERS.filter(({ key }) => set.has(key));
+  }, [items]);
+
+  // Discover tools across all items
+  const allTools = useMemo(() => {
+    const set = new Set();
+    for (const item of items) {
+      const mod = item.modalities || {};
+      for (const { key } of TOOL_FILTERS) {
+        if (mod[key]) set.add(key);
+      }
+    }
+    return TOOL_FILTERS.filter(({ key }) => set.has(key));
   }, [items]);
 
   // Discover providers
@@ -106,7 +123,11 @@ export default function HistoryList({
       }
       if (activeModality) {
         const mod = item.modalities || {};
-        if (!mod[`${activeModality}In`] && !mod[`${activeModality}Out`] && !mod[`${activeModality}Use`]) return false;
+        if (!mod[`${activeModality}In`] && !mod[`${activeModality}Out`]) return false;
+      }
+      if (activeTool) {
+        const mod = item.modalities || {};
+        if (!mod[activeTool]) return false;
       }
       if (activeProvider) {
         if (!(item.providers || []).includes(activeProvider)) return false;
@@ -118,7 +139,7 @@ export default function HistoryList({
       }
       return true;
     });
-  }, [items, searchQuery, activeModality, activeProvider, showFavoritesOnly, favorites, onToggleFavorite, dateRange]);
+  }, [items, searchQuery, activeModality, activeTool, activeProvider, showFavoritesOnly, favorites, onToggleFavorite, dateRange]);
 
   const hasFavorites = !!onToggleFavorite && favorites.length > 0;
 
@@ -146,10 +167,13 @@ export default function HistoryList({
 
       <SidebarFilterComponent
         modalities={showModalityFilters ? allModalities : []}
+        tools={showModalityFilters ? allTools : []}
         providers={showProviderFilters ? allProviders : []}
         activeModality={activeModality}
+        activeTool={activeTool}
         activeProvider={activeProvider}
         onModalityChange={setActiveModality}
+        onToolChange={setActiveTool}
         onProviderChange={setActiveProvider}
         showFavoritesOnly={showFavoritesOnly}
         onFavoritesToggle={onToggleFavorite ? () => setShowFavoritesOnly((v) => !v) : undefined}
@@ -223,20 +247,41 @@ export default function HistoryList({
                 )}
                 {/* Modality icons */}
                 {Object.keys(mod).length > 0 && (
-                  <div className={styles.modalities}>
-                    {mod.textIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.text }} title="Text input"><Type size={11} /></span>}
-                    {mod.imageIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.image }} title="Image input"><Image size={11} /></span>}
-                    {mod.audioIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.audio }} title="Audio input"><Volume2 size={11} /></span>}
-                    {mod.videoIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.video }} title="Video input"><Video size={11} /></span>}
-                    {mod.docIn && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.pdf }} title="Document input"><DocIcon size={11} /></span>}
-                    {(mod.textIn || mod.imageIn || mod.audioIn || mod.videoIn || mod.docIn) &&
-                      (mod.textOut || mod.imageOut || mod.audioOut) && (
-                        <span className={styles.modalityArrow}>→</span>
-                      )}
-                    {mod.textOut && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.text }} title="Text output"><Type size={11} /></span>}
-                    {mod.imageOut && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.image }} title="Image output"><Image size={11} /></span>}
-                    {mod.audioOut && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.audio }} title="Audio output"><Volume2 size={11} /></span>}
-                    {mod.toolUse && <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.tools }} title="Tool use"><Wrench size={11} /></span>}
+                  <div className={styles.modalitiesRow}>
+                    <div className={styles.modalities}>
+                      {mod.textIn && <TooltipComponent label="Text input" position="top"><span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.text }}><Type size={11} /></span></TooltipComponent>}
+                      {mod.imageIn && <TooltipComponent label="Image input" position="top"><span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.image }}><Image size={11} /></span></TooltipComponent>}
+                      {mod.audioIn && <TooltipComponent label="Audio input" position="top"><span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.audio }}><Volume2 size={11} /></span></TooltipComponent>}
+                      {mod.videoIn && <TooltipComponent label="Video input" position="top"><span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.video }}><Video size={11} /></span></TooltipComponent>}
+                      {mod.docIn && <TooltipComponent label="Document input" position="top"><span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.pdf }}><DocIcon size={11} /></span></TooltipComponent>}
+                      {(mod.textIn || mod.imageIn || mod.audioIn || mod.videoIn || mod.docIn) &&
+                        (mod.textOut || mod.imageOut || mod.audioOut) && (
+                          <span className={styles.modalityArrow}>→</span>
+                        )}
+                      {mod.textOut && <TooltipComponent label="Text output" position="top"><span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.text }}><Type size={11} /></span></TooltipComponent>}
+                      {mod.imageOut && <TooltipComponent label="Image output" position="top"><span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.image }}><Image size={11} /></span></TooltipComponent>}
+                      {mod.audioOut && <TooltipComponent label="Audio output" position="top"><span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.audio }}><Volume2 size={11} /></span></TooltipComponent>}
+                    </div>
+                    {mod.thinking && (
+                      <TooltipComponent label="Thinking" position="top">
+                        <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.thinking }}><Lightbulb size={11} /></span>
+                      </TooltipComponent>
+                    )}
+                    {mod.webSearch && (
+                      <TooltipComponent label="Web search" position="top">
+                        <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.webSearch }}><Globe size={11} /></span>
+                      </TooltipComponent>
+                    )}
+                    {mod.codeExecution && (
+                      <TooltipComponent label="Code execution" position="top">
+                        <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.codeExecution }}><Terminal size={11} /></span>
+                      </TooltipComponent>
+                    )}
+                    {mod.functionCalling && (
+                      <TooltipComponent label="Function calling" position="top">
+                        <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.functionCalling }}><Wrench size={11} /></span>
+                      </TooltipComponent>
+                    )}
                   </div>
                 )}
               </div>

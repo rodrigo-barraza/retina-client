@@ -20,6 +20,11 @@ const BASE_SPEED = 0.2;        // Start at 20% of original GIF speed
 const ACCEL_COEFFICIENT = 0.08; // Quadratic ramp: speedMultiplier = BASE_SPEED + ACCEL × t²
 const DECEL_SMOOTHING = 0.03;  // Exponential decay back to base when stopping
 const SETTLED_THRESHOLD = 0.01; // Speed delta below which we consider fully stopped
+const MAX_SPEED_FOR_FX = 5;    // Speed at which scale/glow effects reach full intensity
+const MAX_SCALE = 1.5;         // Maximum scale multiplier
+const MAX_BRIGHTNESS = 3.0;    // Maximum CSS brightness value
+const MAX_GLOW_RADIUS = 12;    // Maximum glow drop-shadow blur radius (px)
+const MAX_GLOW_OPACITY = 0.9;  // Maximum glow drop-shadow opacity
 
 function renderFrame(canvas, patchCanvas, frames, index) {
   if (!canvas || !patchCanvas || !frames?.length) return;
@@ -138,6 +143,12 @@ export default function SpinningCatComponent({
         s.accelTime = 0;
         s.windingDown = false;
         setVisuallyActive(false);
+        // Reset inline FX styles
+        const wrapper = canvasRef.current?.parentElement;
+        if (wrapper) {
+          wrapper.style.transform = "translate(-50%, -50%)";
+          wrapper.style.filter = "";
+        }
       }
 
       const frame = frames[s.frameIndex];
@@ -159,6 +170,25 @@ export default function SpinningCatComponent({
         }
 
         renderFrame(canvasRef.current, patchRef.current, frames, s.frameIndex);
+      }
+
+      // ── Compute visual FX intensity (0 → 1) ──
+      if (animateRef.current || s.windingDown || s.speedMultiplier > BASE_SPEED + SETTLED_THRESHOLD) {
+        const intensity = Math.min(
+          (s.speedMultiplier - BASE_SPEED) / (MAX_SPEED_FOR_FX - BASE_SPEED),
+          1,
+        );
+        const scale = 1 + intensity * (MAX_SCALE - 1);
+        const brightness = 1 + intensity * (MAX_BRIGHTNESS - 1);
+        const glowRadius = intensity * MAX_GLOW_RADIUS;
+        const glowOpacity = intensity * MAX_GLOW_OPACITY;
+
+        const wrapper = canvasRef.current?.parentElement;
+        if (wrapper) {
+          wrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
+          wrapper.style.filter =
+            `brightness(${brightness}) drop-shadow(0 0 ${glowRadius}px rgba(255,255,255,${glowOpacity}))`;
+        }
       }
 
       rafRef.current = requestAnimationFrame(loop);

@@ -15,8 +15,15 @@ function getModalities(messages) {
     audioOut: false,
     videoIn: false,
     docIn: false,
-    toolUse: false,
+    webSearch: false,
+    codeExecution: false,
+    functionCalling: false,
+    thinking: false,
   };
+
+  const WEB_SEARCH_NAMES = new Set(["web_search", "web_search_preview"]);
+  const CODE_EXEC_NAMES = new Set(["code_execution"]);
+
   for (const m of messages || []) {
     const isUser = m.role === "user";
     const isAssistant = m.role === "assistant";
@@ -58,8 +65,39 @@ function getModalities(messages) {
     if (m.documents?.length > 0) {
       modalities.docIn = true;
     }
-    if (m.role === "tool" || m.toolCalls?.length > 0) {
-      modalities.toolUse = true;
+
+    // Classify tool calls by type
+    if (m.toolCalls?.length > 0) {
+      for (const tc of m.toolCalls) {
+        const name = (tc.name || "").toLowerCase();
+        if (WEB_SEARCH_NAMES.has(name)) {
+          modalities.webSearch = true;
+        } else if (CODE_EXEC_NAMES.has(name)) {
+          modalities.codeExecution = true;
+        } else {
+          modalities.functionCalling = true;
+        }
+      }
+    }
+
+    // Detect inline web search results (from streaming)
+    if (isAssistant && typeof m.content === "string" && m.content.includes("> **Sources:**")) {
+      modalities.webSearch = true;
+    }
+
+    // Detect inline code execution blocks (from streaming)
+    if (isAssistant && typeof m.content === "string" && m.content.includes("```exec-")) {
+      modalities.codeExecution = true;
+    }
+
+    // Tool result messages → function calling
+    if (m.role === "tool") {
+      modalities.functionCalling = true;
+    }
+
+    // Detect thinking / reasoning
+    if (isAssistant && m.thinking) {
+      modalities.thinking = true;
     }
   }
   return modalities;

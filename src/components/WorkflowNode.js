@@ -829,7 +829,7 @@ function ToolNode(props) {
   const inputTypes = node.inputTypes || [];
   const outputTypes = node.outputTypes || [];
   const width = getNodeWidth(node);
-  const accentColor = MODALITY_COLORS.tools;
+  const accentColor = MODALITY_COLORS.functionCalling;
 
   // Count enabled tools
   const builtInTools = node.builtInTools || [];

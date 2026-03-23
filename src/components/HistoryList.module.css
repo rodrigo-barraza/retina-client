@@ -203,6 +203,12 @@
 }
 
 /* ── Modality Icons ── */
+.modalitiesRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .modalities {
   display: flex;
   align-items: center;

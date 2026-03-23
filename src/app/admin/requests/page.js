@@ -9,6 +9,7 @@ import { MODALITY_COLORS } from "../../../components/WorkflowNodeConstants";
 import SortableTableComponent from "../../../components/SortableTableComponent";
 import PaginationComponent from "../../../components/PaginationComponent";
 import DatePickerComponent from "../../../components/DatePickerComponent";
+import TooltipComponent from "../../../components/TooltipComponent";
 import SelectDropdown from "../../../components/SelectDropdown";
 import { ErrorMessage } from "../../../components/StateMessageComponent";
 import { FilterBarComponent, FilterGroupComponent, FilterInputComponent, FilterSelectComponent, FilterClearButton } from "../../../components/FilterBarComponent";
@@ -134,10 +135,14 @@ export default function RequestsPage() {
                 const InIcon = m.inIcon;
                 const OutIcon = m.outIcon;
                 return (
-                    <span className={styles.modalityCell} title={m.label}>
-                        <InIcon size={13} style={{ color: m.inColor }} />
+                    <span className={styles.modalityCell}>
+                        <TooltipComponent label={m.label.split(" → ")[0]} position="top">
+                            <InIcon size={13} style={{ color: m.inColor }} />
+                        </TooltipComponent>
                         <ArrowRight size={10} className={styles.modalityArrow} />
-                        <OutIcon size={13} style={{ color: m.outColor }} />
+                        <TooltipComponent label={m.label.split(" → ")[1]} position="top">
+                            <OutIcon size={13} style={{ color: m.outColor }} />
+                        </TooltipComponent>
                     </span>
                 );
             }
