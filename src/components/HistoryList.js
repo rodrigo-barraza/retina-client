@@ -15,8 +15,8 @@ import {
   Star,
   Wrench,
   Globe,
-  Terminal,
-  Lightbulb,
+  Code,
+  Brain,
 } from "lucide-react";
 import { PROVIDER_LABELS } from "./ProviderLogos";
 import SidebarFilterComponent, { MODALITY_FILTERS, TOOL_FILTERS } from "./SidebarFilterComponent";
@@ -262,25 +262,29 @@ export default function HistoryList({
                       {mod.imageOut && <TooltipComponent label="Image output" position="top"><span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.image }}><Image size={11} /></span></TooltipComponent>}
                       {mod.audioOut && <TooltipComponent label="Audio output" position="top"><span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.audio }}><Volume2 size={11} /></span></TooltipComponent>}
                     </div>
-                    {mod.thinking && (
-                      <TooltipComponent label="Thinking" position="top">
-                        <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.thinking }}><Lightbulb size={11} /></span>
-                      </TooltipComponent>
-                    )}
-                    {mod.webSearch && (
-                      <TooltipComponent label="Web search" position="top">
-                        <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.webSearch }}><Globe size={11} /></span>
-                      </TooltipComponent>
-                    )}
-                    {mod.codeExecution && (
-                      <TooltipComponent label="Code execution" position="top">
-                        <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.codeExecution }}><Terminal size={11} /></span>
-                      </TooltipComponent>
-                    )}
-                    {mod.functionCalling && (
-                      <TooltipComponent label="Function calling" position="top">
-                        <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.functionCalling }}><Wrench size={11} /></span>
-                      </TooltipComponent>
+                    {(mod.thinking || mod.webSearch || mod.codeExecution || mod.functionCalling) && (
+                      <div className={styles.toolIcons}>
+                        {mod.thinking && (
+                          <TooltipComponent label="Thinking" position="top">
+                            <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.thinking }}><Brain size={11} /></span>
+                          </TooltipComponent>
+                        )}
+                        {mod.webSearch && (
+                          <TooltipComponent label="Web search" position="top">
+                            <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.webSearch }}><Globe size={11} /></span>
+                          </TooltipComponent>
+                        )}
+                        {mod.codeExecution && (
+                          <TooltipComponent label="Code execution" position="top">
+                            <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.codeExecution }}><Code size={11} /></span>
+                          </TooltipComponent>
+                        )}
+                        {mod.functionCalling && (
+                          <TooltipComponent label="Function calling" position="top">
+                            <span className={styles.modalityIcon} style={{ color: MODALITY_COLORS.functionCalling }}><Wrench size={11} /></span>
+                          </TooltipComponent>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

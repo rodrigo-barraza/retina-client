@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, Type, Image, Volume2, Video, FileText as DocIcon, Wrench, Globe, Terminal, Lightbulb } from "lucide-react";
+import { Star, Type, Image, Volume2, Video, FileText as DocIcon, Wrench, Globe, Code, Brain } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
 import TooltipComponent from "./TooltipComponent";
 import styles from "./SidebarFilterComponent.module.css";
@@ -14,9 +14,9 @@ const MODALITY_FILTERS = [
 ];
 
 const TOOL_FILTERS = [
-  { key: "thinking", icon: Lightbulb, title: "Thinking" },
+  { key: "thinking", icon: Brain, title: "Thinking" },
   { key: "webSearch", icon: Globe, title: "Web Search" },
-  { key: "codeExecution", icon: Terminal, title: "Code Execution" },
+  { key: "codeExecution", icon: Code, title: "Code Execution" },
   { key: "functionCalling", icon: Wrench, title: "Function Calling" },
 ];
 

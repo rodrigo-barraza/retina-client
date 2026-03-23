@@ -215,6 +215,12 @@
   gap: 4px;
 }
 
+.toolIcons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .modalityIcon {
   display: inline-flex;
   align-items: center;

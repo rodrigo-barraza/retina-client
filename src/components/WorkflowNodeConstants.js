@@ -1,6 +1,6 @@
 "use client";
 
-import { Type, Image, Volume2, Video, FileText, Hash, MessageSquare, Wrench, Globe, Terminal, Lightbulb } from "lucide-react";
+import { Type, Image, Volume2, Video, FileText, Hash, MessageSquare, Wrench, Globe, Code, Brain } from "lucide-react";
 
 // ── Modality Icons (icon, label, color) ──
 export const MODALITY_ICONS = {
@@ -12,9 +12,9 @@ export const MODALITY_ICONS = {
   embedding: { icon: Hash, label: "Embedding", color: "#06b6d4" },
   conversation: { icon: MessageSquare, label: "Conversation", color: "#8b5cf6" },
   webSearch: { icon: Globe, label: "Web Search", color: "#3b82f6" },
-  codeExecution: { icon: Terminal, label: "Code Execution", color: "#8b5cf6" },
+  codeExecution: { icon: Code, label: "Code Execution", color: "#8b5cf6" },
   functionCalling: { icon: Wrench, label: "Function Calling", color: "#f97316" },
-  thinking: { icon: Lightbulb, label: "Thinking", color: "#eab308" },
+  thinking: { icon: Brain, label: "Thinking", color: "#eab308" },
 };
 
 // ── Modality Colors ──
@@ -38,9 +38,9 @@ export const ASSET_ICONS = {
   audio: Volume2,
   conversation: MessageSquare,
   webSearch: Globe,
-  codeExecution: Terminal,
+  codeExecution: Code,
   functionCalling: Wrench,
-  thinking: Lightbulb,
+  thinking: Brain,
 };
 
 // ── Role labels for conversation compound ports ──
