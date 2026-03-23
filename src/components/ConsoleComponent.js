@@ -888,7 +888,7 @@ export default function ConsoleComponent() {
                 <ChatInputButton
                   onClick={() => fileInputRef.current?.click()}
                   label="Attach image"
-                  icon={<Paperclip size={18} />}
+                  icon="paperclip"
                 />
               </>
             )}

@@ -17,7 +17,6 @@ import {
     Terminal,
     AlertCircle,
     LayoutGrid,
-    Pencil,
     X,
     Wrench,
     Clock,
@@ -37,6 +36,7 @@ import styles from "./ChatArea.module.css";
 import consoleStyles from "./ConsoleComponent.module.css";
 import { ALL_CONSOLE_PROMPTS } from "../arrays.js";
 import { useEffect, useRef, useState } from "react";
+import PrismService from "../services/PrismService";
 import ProviderLogo from "./ProviderLogos";
 import ToggleSwitchComponent from "./ToggleSwitch";
 import ChatInputButton from "./ChatInputButton";
@@ -50,57 +50,7 @@ const TYPE_ACCEPT_MAP = {
     pdf: "application/pdf",
 };
 
-const TYPE_ICON_MAP = {
-    paperclip: Paperclip,
-    image: ImageIcon,
-    audio: Volume2,
-    video: Video,
-    pdf: FileText,
-};
 
-function RotatingUploadIcon({ types, size = 18 }) {
-    // Always include paperclip at the start of the cycle
-    const allTypes = ["paperclip", ...types];
-    const [activeIndex, setActiveIndex] = useState(0);
-    const [isTransitioning, setIsTransitioning] = useState(false);
-
-    useEffect(() => {
-        if (allTypes.length <= 1) return;
-        const interval = setInterval(() => {
-            setIsTransitioning(true);
-            setTimeout(() => {
-                setActiveIndex((prev) => (prev + 1) % allTypes.length);
-                setIsTransitioning(false);
-            }, 300);
-        }, 3000);
-        return () => clearInterval(interval);
-    }, [allTypes.length]);
-
-    if (allTypes.length === 1) {
-        const Icon = TYPE_ICON_MAP[allTypes[0]] || Paperclip;
-        return <Icon size={size} />;
-    }
-
-    const currentType = allTypes[activeIndex];
-    const nextType = allTypes[(activeIndex + 1) % allTypes.length];
-    const CurrentIcon = TYPE_ICON_MAP[currentType] || Paperclip;
-    const NextIcon = TYPE_ICON_MAP[nextType] || Paperclip;
-
-    return (
-        <div className={styles.rotatingIconContainer}>
-            <div
-                className={`${styles.rotatingIconTrack} ${isTransitioning ? styles.rotatingIconSlide : ""}`}
-            >
-                <span className={styles.rotatingIconItem}>
-                    <CurrentIcon size={size} />
-                </span>
-                <span className={styles.rotatingIconItem}>
-                    <NextIcon size={size} />
-                </span>
-            </div>
-        </div>
-    );
-}
 
 function getMimeCategory(dataUrl) {
     if (!dataUrl) return "file";
@@ -1042,7 +992,7 @@ export default function ChatArea({
                                 onClick={() => setShowToolsBubble((v) => !v)}
                                 label="Tools"
                                 isActive={showToolsBubble}
-                                icon={<Wrench size={18} />}
+                                icon="wrench"
                                 data-tools-btn
                             />
                         )}
@@ -1059,7 +1009,8 @@ export default function ChatArea({
                                 <ChatInputButton
                                     onClick={() => fileInputRef.current?.click()}
                                     label={imageOnly ? "Attach image" : "Attach file"}
-                                    icon={<RotatingUploadIcon types={nonTextTypes} size={18} />}
+                                    icon="upload"
+                                    uploadTypes={nonTextTypes}
                                 />
                             </>
                         )}
@@ -1067,7 +1018,7 @@ export default function ChatArea({
                             <ChatInputButton
                                 onClick={() => setShowDrawing(true)}
                                 label="Create drawing"
-                                icon={<Pencil size={18} />}
+                                icon="pencil"
                             />
                         )}
                         {hasAudioInput && (

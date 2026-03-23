@@ -27,3 +27,39 @@
   color: var(--accent-color);
   background: var(--bg-tertiary);
 }
+
+/* Rotating modality icon */
+.rotatingIconContainer {
+  width: 18px;
+  height: 18px;
+  overflow: hidden;
+  position: relative;
+}
+
+.rotatingIconTrack {
+  display: flex;
+  flex-direction: column;
+  transition: none;
+}
+
+.rotatingIconTrack.rotatingIconSlide {
+  animation: iconScrollUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.rotatingIconItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+@keyframes iconScrollUp {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-18px);
+  }
+}
