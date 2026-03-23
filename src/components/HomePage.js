@@ -740,10 +740,14 @@ Guidelines:
 
                         streamedText = "";
                         setMessages((prev) => {
-                            const filtered = prev.filter(
-                                (m) => !(m.role === "assistant" && !m.content?.trim() && !m.toolCalls?.length),
-                            );
-                            return [...filtered, assistantMsg];
+                            const updated = [...prev];
+                            const lastIdx = updated.findLastIndex((m) => m.role === "assistant");
+                            if (lastIdx >= 0) {
+                                updated[lastIdx] = assistantMsg;
+                            } else {
+                                updated.push(assistantMsg);
+                            }
+                            return updated;
                         });
                         continue;
                     }
