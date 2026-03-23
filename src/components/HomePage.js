@@ -753,10 +753,13 @@ Guidelines:
                         continue;
                     }
 
+                    // No tool calls — terminal state (text response or empty)
                     if (streamedText) {
                         currentMessages.push({ role: "assistant", content: streamedText });
-                        break;
+                    } else if (iterations > 1) {
+                        console.warn("[FC] Model returned empty response after tool results");
                     }
+                    break;
                 }
 
                 setMessages(
@@ -1289,7 +1292,7 @@ Guidelines:
                                 setMessages((prev) => {
                                     const updated = [...prev];
                                     const lastMsg = updated[updated.length - 1];
-                                    if (lastMsg?.role === "assistant") {
+                                    if (lastMsg?.role === "assistant" && !lastMsg.toolCalls?.length) {
                                         lastMsg.content = streamedText;
                                     } else {
                                         updated.push({ role: "assistant", content: streamedText });
@@ -1394,16 +1397,26 @@ Guidelines:
                         hasCalledTools = true;
 
                         streamedText = "";
-                        setMessages((prev) =>
-                            prev.filter((m) => !(m.role === "assistant" && !m.content?.trim())),
-                        );
+                        setMessages((prev) => {
+                            const updated = [...prev];
+                            const lastIdx = updated.findLastIndex((m) => m.role === "assistant");
+                            if (lastIdx >= 0) {
+                                updated[lastIdx] = assistantMsg;
+                            } else {
+                                updated.push(assistantMsg);
+                            }
+                            return updated;
+                        });
                         continue;
                     }
 
+                    // No tool calls — terminal state (text response or empty)
                     if (streamedText) {
                         currentMessages.push({ role: "assistant", content: streamedText });
-                        break;
+                    } else if (iterations > 1) {
+                        console.warn("[FC] Model returned empty response after tool results");
                     }
+                    break;
                 }
 
                 setMessages(
