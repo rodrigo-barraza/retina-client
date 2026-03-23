@@ -388,13 +388,40 @@ export default function ConsoleComponent() {
             model: settings.model,
             messages: [
               { role: "system", content: SYSTEM_PROMPT },
-              ...currentMessages.map((m) => ({
-                role: m.role,
-                content: m.content,
-                ...(m.images?.length > 0 ? { images: m.images } : {}),
-                ...(m.toolCalls?.length > 0 ? { toolCalls: m.toolCalls } : {}),
-                ...(m.role === "tool" ? { tool_call_id: m.tool_call_id, name: m.name } : {}),
-              })),
+              ...currentMessages.flatMap((m) => {
+                // Expand assistant messages with toolCalls into
+                // [assistant(tool_calls), tool(result1), tool(result2), ...]
+                // per the OpenAI Chat Completions spec
+                if (m.role === "assistant" && m.toolCalls?.length > 0) {
+                  const assistantMsg = {
+                    role: "assistant",
+                    content: m.content?.trim() || null,
+                    toolCalls: m.toolCalls.map((tc) => ({
+                      id: tc.id,
+                      name: tc.name,
+                      args: tc.args,
+                      ...(tc.thoughtSignature ? { thoughtSignature: tc.thoughtSignature } : {}),
+                    })),
+                  };
+                  const toolMsgs = m.toolCalls
+                    .filter((tc) => tc.result !== undefined)
+                    .map((tc) => ({
+                      role: "tool",
+                      name: tc.name,
+                      tool_call_id: tc.id,
+                      content: typeof tc.result === "string" ? tc.result : JSON.stringify(tc.result),
+                    }));
+                  return [assistantMsg, ...toolMsgs];
+                }
+                if (m.role === "tool") {
+                  return [{ role: "tool", tool_call_id: m.tool_call_id, name: m.name, content: m.content }];
+                }
+                return [{
+                  role: m.role,
+                  content: m.content,
+                  ...(m.images?.length > 0 ? { images: m.images } : {}),
+                }];
+              }),
             ],
             // Local models (LM Studio, Ollama) should stop receiving tools
             // after their first tool round to force a text response.
