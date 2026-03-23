@@ -5,13 +5,7 @@
 // execution logic for the Console's tool-calling orchestration.
 // ============================================================
 
-import {
-  WEATHER_API_URL,
-  EVENT_API_URL,
-  PRODUCT_API_URL,
-  TREND_API_URL,
-  MARKET_API_URL,
-} from "../../config.js";
+import { TOOLS_API_URL } from "../../config.js";
 
 // ────────────────────────────────────────────────────────────
 // Tool Definitions — JSON Schema format for AI function calling
@@ -86,8 +80,7 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: "get_twilight",
-    description:
-      "Get sunrise, sunset, and twilight times for today.",
+    description: "Get sunrise, sunset, and twilight times for today.",
     parameters: {
       type: "object",
       properties: {},
@@ -196,8 +189,7 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: "get_commodity_by_category",
-    description:
-      "Get commodity prices filtered by category.",
+    description: "Get commodity prices filtered by category.",
     parameters: {
       type: "object",
       properties: {
@@ -286,36 +278,32 @@ const TOOL_DEFINITIONS = [
 const TOOL_EXECUTORS = {
   // ── Weather / Environment ──
   get_current_weather: async () =>
-    fetchJson(`${WEATHER_API_URL}/weather/current`),
+    fetchJson(`${TOOLS_API_URL}/weather/weather/current`),
 
   get_weather_forecast: async (args) => {
     const days = args.days || 7;
-    return fetchJson(`${WEATHER_API_URL}/weather/forecast?days=${days}`);
+    return fetchJson(`${TOOLS_API_URL}/weather/weather/forecast?days=${days}`);
   },
 
   get_air_quality: async () =>
-    fetchJson(`${WEATHER_API_URL}/weather/air`),
+    fetchJson(`${TOOLS_API_URL}/weather/weather/air`),
 
   get_earthquakes: async () =>
-    fetchJson(`${WEATHER_API_URL}/earthquakes`),
+    fetchJson(`${TOOLS_API_URL}/weather/earthquakes`),
 
   get_solar_activity: async () =>
-    fetchJson(`${WEATHER_API_URL}/space-weather/summary`),
+    fetchJson(`${TOOLS_API_URL}/weather/space-weather/summary`),
 
   get_aurora_forecast: async () =>
-    fetchJson(`${WEATHER_API_URL}/kp/current`),
+    fetchJson(`${TOOLS_API_URL}/weather/kp/current`),
 
-  get_twilight: async () =>
-    fetchJson(`${WEATHER_API_URL}/twilight`),
+  get_twilight: async () => fetchJson(`${TOOLS_API_URL}/weather/twilight`),
 
-  get_tides: async () =>
-    fetchJson(`${WEATHER_API_URL}/tides`),
+  get_tides: async () => fetchJson(`${TOOLS_API_URL}/weather/tides`),
 
-  get_wildfires: async () =>
-    fetchJson(`${WEATHER_API_URL}/wildfires`),
+  get_wildfires: async () => fetchJson(`${TOOLS_API_URL}/weather/wildfires`),
 
-  get_iss_position: async () =>
-    fetchJson(`${WEATHER_API_URL}/iss`),
+  get_iss_position: async () => fetchJson(`${TOOLS_API_URL}/weather/iss`),
 
   // ── Events ──
   search_events: async (args) => {
@@ -327,7 +315,9 @@ const TOOL_EXECUTORS = {
     if (args.startDate) params.set("startDate", args.startDate);
     if (args.endDate) params.set("endDate", args.endDate);
     const qs = params.toString();
-    return fetchJson(`${EVENT_API_URL}/events/search${qs ? `?${qs}` : ""}`);
+    return fetchJson(
+      `${TOOLS_API_URL}/event/search${qs ? `?${qs}` : ""}`,
+    );
   },
 
   get_upcoming_events: async (args) => {
@@ -335,25 +325,33 @@ const TOOL_EXECUTORS = {
     if (args.days) params.set("days", args.days);
     if (args.limit) params.set("limit", args.limit);
     const qs = params.toString();
-    return fetchJson(`${EVENT_API_URL}/events/upcoming${qs ? `?${qs}` : ""}`);
+    return fetchJson(
+      `${TOOLS_API_URL}/event/upcoming${qs ? `?${qs}` : ""}`,
+    );
   },
 
   // ── Commodities / Markets ──
   get_commodities_summary: async () =>
-    fetchJson(`${MARKET_API_URL}/commodities/summary`),
+    fetchJson(`${TOOLS_API_URL}/market/commodities/summary`),
 
   get_commodity_by_category: async (args) =>
-    fetchJson(`${MARKET_API_URL}/commodities/category/${args.category}`),
+    fetchJson(
+      `${TOOLS_API_URL}/market/commodities/category/${args.category}`,
+    ),
 
   get_commodity_ticker: async (args) =>
-    fetchJson(`${MARKET_API_URL}/commodities/ticker/${encodeURIComponent(args.ticker)}`),
+    fetchJson(
+      `${TOOLS_API_URL}/market/commodities/ticker/${encodeURIComponent(args.ticker)}`,
+    ),
 
   // ── Trends ──
   get_trends: async (args) => {
     if (args.source) {
-      return fetchJson(`${TREND_API_URL}/trends/source/${args.source}`);
+      return fetchJson(
+        `${TOOLS_API_URL}/trend/trends/source/${args.source}`,
+      );
     }
-    return fetchJson(`${TREND_API_URL}/trends`);
+    return fetchJson(`${TOOLS_API_URL}/trend/trends`);
   },
 
   // ── Products ──
@@ -363,7 +361,9 @@ const TOOL_EXECUTORS = {
     if (args.category) params.set("category", args.category);
     if (args.limit) params.set("limit", args.limit);
     const qs = params.toString();
-    return fetchJson(`${PRODUCT_API_URL}/products/search${qs ? `?${qs}` : ""}`);
+    return fetchJson(
+      `${TOOLS_API_URL}/product/products/search${qs ? `?${qs}` : ""}`,
+    );
   },
 };
 
@@ -388,23 +388,23 @@ async function fetchJson(url) {
 // ────────────────────────────────────────────────────────────
 
 const TOOL_API_MAP = {
-  get_current_weather: WEATHER_API_URL,
-  get_weather_forecast: WEATHER_API_URL,
-  get_air_quality: WEATHER_API_URL,
-  get_earthquakes: WEATHER_API_URL,
-  get_solar_activity: WEATHER_API_URL,
-  get_aurora_forecast: WEATHER_API_URL,
-  get_twilight: WEATHER_API_URL,
-  get_tides: WEATHER_API_URL,
-  get_wildfires: WEATHER_API_URL,
-  get_iss_position: WEATHER_API_URL,
-  search_events: EVENT_API_URL,
-  get_upcoming_events: EVENT_API_URL,
-  get_commodities_summary: MARKET_API_URL,
-  get_commodity_by_category: MARKET_API_URL,
-  get_commodity_ticker: MARKET_API_URL,
-  get_trends: TREND_API_URL,
-  search_products: PRODUCT_API_URL,
+  get_current_weather: TOOLS_API_URL,
+  get_weather_forecast: TOOLS_API_URL,
+  get_air_quality: TOOLS_API_URL,
+  get_earthquakes: TOOLS_API_URL,
+  get_solar_activity: TOOLS_API_URL,
+  get_aurora_forecast: TOOLS_API_URL,
+  get_twilight: TOOLS_API_URL,
+  get_tides: TOOLS_API_URL,
+  get_wildfires: TOOLS_API_URL,
+  get_iss_position: TOOLS_API_URL,
+  search_events: TOOLS_API_URL,
+  get_upcoming_events: TOOLS_API_URL,
+  get_commodities_summary: TOOLS_API_URL,
+  get_commodity_by_category: TOOLS_API_URL,
+  get_commodity_ticker: TOOLS_API_URL,
+  get_trends: TOOLS_API_URL,
+  search_products: TOOLS_API_URL,
 };
 
 // ────────────────────────────────────────────────────────────
@@ -433,7 +433,9 @@ export default class SunService {
         try {
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 3000);
-          const res = await fetch(`${baseUrl}/health`, { signal: controller.signal });
+          const res = await fetch(`${baseUrl}/health`, {
+            signal: controller.signal,
+          });
           clearTimeout(timeout);
           return { url: baseUrl, online: res.ok };
         } catch {
