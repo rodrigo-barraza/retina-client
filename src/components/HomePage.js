@@ -452,6 +452,7 @@ Guidelines:
                 await PrismService.patchConversation(activeId, {
                     messages: updatedMessages,
                 });
+                loadConversations();
             } catch (err) {
                 console.error("Failed to save after deletion:", err);
             }
