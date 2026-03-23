@@ -26,7 +26,40 @@ import { ALL_CONSOLE_PROMPTS } from "../arrays.js";
 import chatStyles from "./ChatArea.module.css";
 import styles from "./ConsoleComponent.module.css";
 
-const MAX_TOOL_ITERATIONS = 5;
+const MAX_TOOL_ITERATIONS = 25;
+
+/**
+ * Truncate a tool result to avoid blowing up the model's context window.
+ * Caps arrays at 10 items and the serialized JSON at ~8 000 chars.
+ * The full result is still stored in the DB and shown in the UI;
+ * this only affects what gets re-sent to the model.
+ */
+function truncateToolResult(result, maxChars = 8000) {
+    if (!result || typeof result !== "object") return result;
+
+    // If result has a known array wrapper, cap items at 10
+    const trimmed = { ...result };
+    const ARRAY_KEYS = ["events", "products", "trends", "articles", "earnings", "predictions", "commodities"];
+    for (const key of ARRAY_KEYS) {
+        if (Array.isArray(trimmed[key]) && trimmed[key].length > 10) {
+            const total = trimmed[key].length;
+            trimmed[key] = trimmed[key].slice(0, 10);
+            trimmed[`_${key}Truncated`] = `Showing 10 of ${total}`;
+        }
+    }
+
+    // Also handle top-level arrays (e.g. tides, earthquakes)
+    if (Array.isArray(result) && result.length > 10) {
+        const sliced = result.slice(0, 10);
+        sliced.push({ _truncated: `Showing 10 of ${result.length}` });
+        const str = JSON.stringify(sliced);
+        return str.length > maxChars ? str.slice(0, maxChars) + '…}' : sliced;
+    }
+
+    const str = JSON.stringify(trimmed);
+    if (str.length <= maxChars) return trimmed;
+    return str.slice(0, maxChars) + '…}';
+}
 const PROJECT = "retina-console";
 
 const SYSTEM_PROMPT = `You are Sun Console — an intelligent assistant with access to real-time data APIs. You have tools for weather, air quality, earthquakes, solar activity, aurora forecasts, sunrise/sunset times, tides, wildfires, ISS tracking, local events, commodity/market prices, trending topics, and product search.
@@ -491,7 +524,7 @@ export default function ConsoleComponent() {
             currentMessages.push({
               role: "tool",
               name: result.name,
-              content: JSON.stringify(result.result),
+              content: JSON.stringify(truncateToolResult(result.result)),
             });
           }
 
