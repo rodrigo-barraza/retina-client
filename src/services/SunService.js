@@ -269,6 +269,95 @@ const TOOL_DEFINITIONS = [
       required: [],
     },
   },
+
+  // ── Finance / Stocks (Finnhub) ──
+  {
+    name: "get_stock_quote",
+    description:
+      "Get real-time stock quote for one or more symbols. Returns current price, daily change, percent change, day high/low, open, and previous close.",
+    parameters: {
+      type: "object",
+      properties: {
+        symbol: {
+          type: "string",
+          description:
+            "Stock ticker symbol (e.g. AAPL, MSFT, GOOGL). For a single stock lookup.",
+        },
+      },
+      required: ["symbol"],
+    },
+  },
+  {
+    name: "get_company_profile",
+    description:
+      "Get company profile information including name, industry, sector, market capitalization, outstanding shares, logo URL, and website.",
+    parameters: {
+      type: "object",
+      properties: {
+        symbol: {
+          type: "string",
+          description: "Stock ticker symbol (e.g. AAPL)",
+        },
+      },
+      required: ["symbol"],
+    },
+  },
+  {
+    name: "get_market_news",
+    description:
+      "Get latest market news articles. Can optionally filter by company symbol for company-specific news.",
+    parameters: {
+      type: "object",
+      properties: {
+        symbol: {
+          type: "string",
+          description:
+            "Optional stock symbol to get company-specific news instead of general market news",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_earnings_calendar",
+    description:
+      "Get upcoming earnings calendar showing which companies are reporting earnings in the next 2 weeks, with estimated and actual EPS.",
+    parameters: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "get_stock_recommendation",
+    description:
+      "Get analyst recommendation trends for a stock, including buy/sell/hold counts and period-over-period changes.",
+    parameters: {
+      type: "object",
+      properties: {
+        symbol: {
+          type: "string",
+          description: "Stock ticker symbol (e.g. AAPL)",
+        },
+      },
+      required: ["symbol"],
+    },
+  },
+  {
+    name: "get_stock_financials",
+    description:
+      "Get basic financial metrics for a stock including P/E ratio, EPS, 52-week high/low, beta, dividend yield, market cap, revenue, and profit margins.",
+    parameters: {
+      type: "object",
+      properties: {
+        symbol: {
+          type: "string",
+          description: "Stock ticker symbol (e.g. AAPL)",
+        },
+      },
+      required: ["symbol"],
+    },
+  },
 ];
 
 // ────────────────────────────────────────────────────────────
@@ -365,6 +454,39 @@ const TOOL_EXECUTORS = {
       `${TOOLS_API_URL}/product/products/search${qs ? `?${qs}` : ""}`,
     );
   },
+
+  // ── Finance / Stocks (Finnhub) ──
+  get_stock_quote: async (args) =>
+    fetchJson(
+      `${TOOLS_API_URL}/finance/quote/${encodeURIComponent(args.symbol)}`,
+    ),
+
+  get_company_profile: async (args) =>
+    fetchJson(
+      `${TOOLS_API_URL}/finance/profile/${encodeURIComponent(args.symbol)}`,
+    ),
+
+  get_market_news: async (args) => {
+    const params = new URLSearchParams();
+    if (args.symbol) params.set("symbol", args.symbol);
+    const qs = params.toString();
+    return fetchJson(
+      `${TOOLS_API_URL}/finance/news${qs ? `?${qs}` : ""}`,
+    );
+  },
+
+  get_earnings_calendar: async () =>
+    fetchJson(`${TOOLS_API_URL}/finance/earnings`),
+
+  get_stock_recommendation: async (args) =>
+    fetchJson(
+      `${TOOLS_API_URL}/finance/recommendation/${encodeURIComponent(args.symbol)}`,
+    ),
+
+  get_stock_financials: async (args) =>
+    fetchJson(
+      `${TOOLS_API_URL}/finance/financials/${encodeURIComponent(args.symbol)}`,
+    ),
 };
 
 // ────────────────────────────────────────────────────────────
@@ -405,6 +527,12 @@ const TOOL_API_MAP = {
   get_commodity_ticker: TOOLS_API_URL,
   get_trends: TOOLS_API_URL,
   search_products: TOOLS_API_URL,
+  get_stock_quote: TOOLS_API_URL,
+  get_company_profile: TOOLS_API_URL,
+  get_market_news: TOOLS_API_URL,
+  get_earnings_calendar: TOOLS_API_URL,
+  get_stock_recommendation: TOOLS_API_URL,
+  get_stock_financials: TOOLS_API_URL,
 };
 
 // ────────────────────────────────────────────────────────────
