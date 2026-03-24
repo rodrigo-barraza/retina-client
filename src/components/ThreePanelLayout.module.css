@@ -38,6 +38,7 @@
   flex-shrink: 0;
   gap: 8px;
   z-index: 10;
+  position: relative;
 }
 
 .headerTitle {
@@ -45,6 +46,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.headerCenter {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  z-index: 1;
 }
 
 /* ── Header Toggle Buttons ─────────────────────────── */

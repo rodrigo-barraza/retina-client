@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { Eye, Type, Volume2, X, Maximize2, Search, ChevronDown, ChevronRight, Paperclip, Code, BookOpen, Wrench } from "lucide-react";
+import { Eye, Type, Volume2, X, Maximize2, Search, ChevronDown, ChevronRight, Paperclip, Code, BookOpen, Parentheses } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
 import { MODALITY_ICONS } from "./WorkflowNodeConstants";
 import MarkdownContent from "./MarkdownContent";
@@ -202,7 +202,7 @@ export default function WorkflowInspector({
                     )}
                     {isTools && (
                         <div className={styles.typeIcon} style={{ color: "#f97316" }}>
-                            <Wrench size={16} />
+                            <Parentheses size={16} />
                         </div>
                     )}
                     <div className={styles.headerInfo}>

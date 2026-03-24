@@ -16,6 +16,7 @@ import styles from "./ThreePanelLayout.module.css";
  *   headerTitle    — Title displayed in the header
  *   headerMeta     — React node for meta info in the header (badges, counts)
  *   headerControls — React node for extra controls in the header (theme toggle, etc.)
+ *   headerCenter   — React node absolutely centered in the header (over the chat area)
  *   children       — Main content area (chat, viewer, etc.)
  */
 export default function ThreePanelLayout({
@@ -27,6 +28,7 @@ export default function ThreePanelLayout({
     headerTitle = "",
     headerMeta = null,
     headerControls = null,
+    headerCenter = null,
     children,
 }) {
     // Start with panels visible (matches SSR), then sync from localStorage after mount
@@ -135,6 +137,11 @@ export default function ThreePanelLayout({
                     </button>
                     <span className={styles.headerTitle}>{headerTitle}</span>
                     {!isMobile && headerMeta}
+                    {headerCenter && (
+                        <div className={styles.headerCenter}>
+                            {headerCenter}
+                        </div>
+                    )}
                     {headerControls}
                     {rightPanel && (
                         <button

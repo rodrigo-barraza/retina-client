@@ -11,7 +11,7 @@ import {
   Paperclip,
   Eye,
   Workflow,
-  Wrench,
+  Parentheses,
 } from "lucide-react";
 import HistoryList from "./HistoryList";
 import styles from "./WorkflowSidebar.module.css";
@@ -147,7 +147,7 @@ export default function WorkflowSidebar({
               onClick={() => onAddAsset("tools", "tools")}
               title="Add Function Calling Tools"
             >
-              <Wrench size={12} style={{ color: "#f97316" }} />
+              <Parentheses size={12} style={{ color: "#f97316" }} />
               <span>Tools</span>
             </button>
           </div>

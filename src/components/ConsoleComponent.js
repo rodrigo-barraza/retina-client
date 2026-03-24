@@ -716,7 +716,7 @@ export default function ConsoleComponent() {
           className={`${styles.tab} ${leftTab === "tools" ? styles.tabActive : ""}`}
           onClick={() => setLeftTab("tools")}
         >
-          Tools
+          Function Calling
           <span className={styles.tabBadge}>{allToolSchemas.length}</span>
         </button>
       </div>

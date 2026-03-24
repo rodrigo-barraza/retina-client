@@ -64,9 +64,9 @@ export default function HistoryList({
   onToggleFavorite,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeModality, setActiveModality] = useState(null);
-  const [activeTool, setActiveTool] = useState(null);
-  const [activeProvider, setActiveProvider] = useState(null);
+  const [activeModalities, setActiveModalities] = useState(new Set());
+  const [activeTools, setActiveTools] = useState(new Set());
+  const [activeProviders, setActiveProviders] = useState(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
 
@@ -121,16 +121,20 @@ export default function HistoryList({
           (item.searchText || "").toLowerCase().includes(q);
         if (!matchesSearch) return false;
       }
-      if (activeModality) {
+      if (activeModalities.size > 0) {
         const mod = item.modalities || {};
-        if (!mod[`${activeModality}In`] && !mod[`${activeModality}Out`]) return false;
+        const matches = [...activeModalities].some((key) => mod[`${key}In`] || mod[`${key}Out`]);
+        if (!matches) return false;
       }
-      if (activeTool) {
+      if (activeTools.size > 0) {
         const mod = item.modalities || {};
-        if (!mod[activeTool]) return false;
+        const matches = [...activeTools].some((key) => mod[key]);
+        if (!matches) return false;
       }
-      if (activeProvider) {
-        if (!(item.providers || []).includes(activeProvider)) return false;
+      if (activeProviders.size > 0) {
+        const itemProviders = item.providers || [];
+        const matches = [...activeProviders].some((p) => itemProviders.includes(p));
+        if (!matches) return false;
       }
       if (dateRange.from || dateRange.to) {
         const itemDate = new Date(item.updatedAt || item.createdAt);
@@ -139,7 +143,7 @@ export default function HistoryList({
       }
       return true;
     });
-  }, [items, searchQuery, activeModality, activeTool, activeProvider, showFavoritesOnly, favorites, onToggleFavorite, dateRange]);
+  }, [items, searchQuery, activeModalities, activeTools, activeProviders, showFavoritesOnly, favorites, onToggleFavorite, dateRange]);
 
   const hasFavorites = !!onToggleFavorite && favorites.length > 0;
 
@@ -169,12 +173,12 @@ export default function HistoryList({
         modalities={showModalityFilters ? allModalities : []}
         tools={showModalityFilters ? allTools : []}
         providers={showProviderFilters ? allProviders : []}
-        activeModality={activeModality}
-        activeTool={activeTool}
-        activeProvider={activeProvider}
-        onModalityChange={setActiveModality}
-        onToolChange={setActiveTool}
-        onProviderChange={setActiveProvider}
+        activeModalities={activeModalities}
+        activeTools={activeTools}
+        activeProviders={activeProviders}
+        onModalityChange={setActiveModalities}
+        onToolChange={setActiveTools}
+        onProviderChange={setActiveProviders}
         showFavoritesOnly={showFavoritesOnly}
         onFavoritesToggle={onToggleFavorite ? () => setShowFavoritesOnly((v) => !v) : undefined}
         hasFavorites={hasFavorites}

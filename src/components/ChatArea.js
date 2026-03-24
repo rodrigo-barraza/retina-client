@@ -18,7 +18,7 @@ import {
     AlertCircle,
     LayoutGrid,
     X,
-    Wrench,
+    Parentheses,
     Clock,
     Globe,
     Code,
@@ -288,7 +288,7 @@ export default function ChatArea({
         "Web Search": <Globe size={14} />,
         "Google Search": <Globe size={14} />,
         "Web Fetch": <Globe size={14} />,
-        "Function Calling": <Wrench size={14} />,
+        "Function Calling": <Parentheses size={14} />,
         "Code Execution": <Code size={14} />,
         "Computer Use": <Monitor size={14} />,
         "File Search": <Search size={14} />,
@@ -576,7 +576,7 @@ export default function ChatArea({
                 {messages.length === 0 && functionCallingEnabled && (
                     <div className={consoleStyles.emptyState}>
                         <div className={consoleStyles.emptyIcon}>
-                            <Wrench size={40} />
+                            <Parentheses size={40} />
                         </div>
                         <h2 className={consoleStyles.emptyTitle}>Function Calling</h2>
                         <p className={consoleStyles.emptySubtitle}>
@@ -912,19 +912,30 @@ export default function ChatArea({
                                 const toggle = getToolToggle(tool);
                                 if (!toggle) return null;
                                 return (
-                                    <div key={tool} className={styles.toolsBubbleItem}>
+                                    <div 
+                                        key={tool} 
+                                        className={styles.toolsBubbleItem}
+                                        onClick={() => {
+                                            if (!toggle.disabled) {
+                                                toggle.onChange(!toggle.checked);
+                                            }
+                                        }}
+                                        style={{ cursor: toggle.disabled ? "default" : "pointer" }}
+                                    >
                                         <div className={styles.toolsBubbleItemInfo}>
                                             <span style={{ display: 'flex', alignItems: 'center', opacity: 0.7 }}>
-                                                {TOOL_ICONS[tool] || <Wrench size={14} />}
+                                                {TOOL_ICONS[tool] || <Parentheses size={14} />}
                                             </span>
                                             <span className={styles.toolsBubbleItemName}>{tool}</span>
                                         </div>
-                                        <ToggleSwitchComponent
-                                            checked={toggle.checked}
-                                            onChange={toggle.onChange}
-                                            size="small"
-                                            disabled={toggle.disabled}
-                                        />
+                                        <div style={{ pointerEvents: "none" }}>
+                                            <ToggleSwitchComponent
+                                                checked={toggle.checked}
+                                                onChange={() => {}}
+                                                size="small"
+                                                disabled={toggle.disabled}
+                                            />
+                                        </div>
                                     </div>
                                 );
                             })}

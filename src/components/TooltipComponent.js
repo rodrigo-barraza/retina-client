@@ -26,10 +26,13 @@ export default function TooltipComponent({
   children,
   className = "",
 }) {
+  const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const wrapperRef = useRef(null);
   const timerRef = useRef(null);
+  const showTimerRef = useRef(null);
+  const unmountTimerRef = useRef(null);
 
   /** Calculate fixed position based on wrapper rect + desired position */
   const updateCoords = useCallback(() => {
@@ -61,30 +64,48 @@ export default function TooltipComponent({
     setCoords({ top, left });
   }, [position]);
 
+  const showTooltip = useCallback(() => {
+    clearTimeout(unmountTimerRef.current);
+    clearTimeout(showTimerRef.current);
+    updateCoords();
+    setMounted(true);
+    showTimerRef.current = setTimeout(() => {
+      setVisible(true);
+    }, 10);
+  }, [updateCoords]);
+
+  const hideTooltip = useCallback(() => {
+    clearTimeout(showTimerRef.current);
+    setVisible(false);
+    unmountTimerRef.current = setTimeout(() => {
+      setMounted(false);
+    }, 200); // duration matches CSS transition
+  }, []);
+
   // ── Click trigger ──
   const show = useCallback(() => {
     if (trigger !== "click") return;
     clearTimeout(timerRef.current);
-    updateCoords();
-    setVisible(true);
-    timerRef.current = setTimeout(() => setVisible(false), 1600);
-  }, [trigger, updateCoords]);
+    showTooltip();
+    timerRef.current = setTimeout(() => {
+      hideTooltip();
+    }, 1600);
+  }, [trigger, showTooltip, hideTooltip]);
 
   // ── Hover trigger ──
   const handleMouseEnter = useCallback(() => {
     if (trigger !== "hover") return;
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      updateCoords();
-      setVisible(true);
+      showTooltip();
     }, delay);
-  }, [trigger, delay, updateCoords]);
+  }, [trigger, delay, showTooltip]);
 
   const handleMouseLeave = useCallback(() => {
     if (trigger !== "hover") return;
     clearTimeout(timerRef.current);
-    setVisible(false);
-  }, [trigger]);
+    hideTooltip();
+  }, [trigger, hideTooltip]);
 
   /* Dismiss when clicking outside (click trigger) */
   useEffect(() => {
@@ -92,23 +113,27 @@ export default function TooltipComponent({
     function handleClickOutside(e) {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
         clearTimeout(timerRef.current);
-        setVisible(false);
+        hideTooltip();
       }
     }
     document.addEventListener("pointerdown", handleClickOutside);
     return () => document.removeEventListener("pointerdown", handleClickOutside);
-  }, [visible, trigger]);
+  }, [visible, trigger, hideTooltip]);
 
   useEffect(() => {
-    return () => clearTimeout(timerRef.current);
+    return () => {
+      clearTimeout(timerRef.current);
+      clearTimeout(showTimerRef.current);
+      clearTimeout(unmountTimerRef.current);
+    };
   }, []);
 
   if (!label) return children;
 
-  const bubble = visible
+  const bubble = mounted
     ? createPortal(
         <span
-          className={`${styles.bubble} ${styles[position]} ${styles.visible}`}
+          className={`${styles.bubble} ${styles[position]} ${visible ? styles.visible : ""}`}
           style={{ top: coords.top, left: coords.left }}
         >
           {label}

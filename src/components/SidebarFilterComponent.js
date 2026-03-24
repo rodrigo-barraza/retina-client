@@ -29,12 +29,12 @@ const TOOL_FILTERS = [
  *   modalities           — array of { key, icon, title } objects to show (auto-detected or all)
  *   tools                — array of { key, icon, title } objects to show (auto-detected or all)
  *   providers            — array of provider name strings
- *   activeModality       — currently selected modality key (null = all)
- *   activeTool           — currently selected tool key (null = all)
- *   activeProvider       — currently selected provider (null = all)
- *   onModalityChange     — (key | null) => void
- *   onToolChange         — (key | null) => void
- *   onProviderChange     — (provider | null) => void
+ *   activeModalities     — Set of active modality keys (empty Set = all)
+ *   activeTools          — Set of active tool keys (empty Set = all)
+ *   activeProviders      — Set of active provider strings (empty Set = all)
+ *   onModalityChange     — (Set) => void
+ *   onToolChange         — (Set) => void
+ *   onProviderChange     — (Set) => void
  *   showFavoritesOnly    — boolean
  *   onFavoritesToggle    — () => void  (omit to hide favorite filter)
  *   hasFavorites         — boolean, whether any favorites exist
@@ -43,9 +43,9 @@ export default function SidebarFilterComponent({
   modalities = [],
   tools = [],
   providers = [],
-  activeModality = null,
-  activeTool = null,
-  activeProvider = null,
+  activeModalities = new Set(),
+  activeTools = new Set(),
+  activeProviders = new Set(),
   onModalityChange,
   onToolChange,
   onProviderChange,
@@ -85,8 +85,12 @@ export default function SidebarFilterComponent({
             {modalities.map(({ key, icon: Icon, title }) => (
               <TooltipComponent key={key} label={title} position="bottom">
                 <button
-                  className={`${styles.filterBtn} ${activeModality === key ? styles.filterBtnActive : ""}`}
-                  onClick={() => onModalityChange(activeModality === key ? null : key)}
+                  className={`${styles.filterBtn} ${activeModalities.has(key) ? styles.filterBtnActive : ""}`}
+                  onClick={() => {
+                    const next = new Set(activeModalities);
+                    next.has(key) ? next.delete(key) : next.add(key);
+                    onModalityChange(next);
+                  }}
                 >
                   <Icon size={13} />
                 </button>
@@ -103,8 +107,12 @@ export default function SidebarFilterComponent({
             {tools.map(({ key, icon: Icon, title }) => (
               <TooltipComponent key={key} label={title} position="bottom">
                 <button
-                  className={`${styles.filterBtn} ${activeTool === key ? styles.filterBtnActive : ""}`}
-                  onClick={() => onToolChange(activeTool === key ? null : key)}
+                  className={`${styles.filterBtn} ${activeTools.has(key) ? styles.filterBtnActive : ""}`}
+                  onClick={() => {
+                    const next = new Set(activeTools);
+                    next.has(key) ? next.delete(key) : next.add(key);
+                    onToolChange(next);
+                  }}
                 >
                   <Icon size={13} />
                 </button>
@@ -121,8 +129,12 @@ export default function SidebarFilterComponent({
             {providers.map((p) => (
               <TooltipComponent key={p} label={p} position="bottom">
                 <button
-                  className={`${styles.filterBtn} ${activeProvider === p ? styles.filterBtnActive : ""}`}
-                  onClick={() => onProviderChange(activeProvider === p ? null : p)}
+                  className={`${styles.filterBtn} ${activeProviders.has(p) ? styles.filterBtnActive : ""}`}
+                  onClick={() => {
+                    const next = new Set(activeProviders);
+                    next.has(p) ? next.delete(p) : next.add(p);
+                    onProviderChange(next);
+                  }}
                 >
                   <ProviderLogo provider={p} size={13} />
                 </button>

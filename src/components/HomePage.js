@@ -15,6 +15,9 @@ import {
     CheckCircle2,
     AlertCircle,
     Loader2,
+    Settings,
+    Wrench,
+    SlidersHorizontal,
 } from "lucide-react";
 import NavigationSidebarComponent from "../components/NavigationSidebarComponent";
 import SettingsPanel from "../components/SettingsPanel";
@@ -24,6 +27,8 @@ import ChatArea from "../components/ChatArea";
 import HistoryPanel from "../components/HistoryPanel";
 import ThreePanelLayout from "../components/ThreePanelLayout";
 import consoleStyles from "../components/ConsoleComponent.module.css";
+import SelectDropdown from "../components/SelectDropdown";
+import ProviderLogo, { PROVIDER_LABELS } from "../components/ProviderLogos";
 
 export default function HomePage({ initialConversationId = null }) {
     const router = useRouter();
@@ -1768,14 +1773,16 @@ Guidelines:
                             <button
                                 className={`${consoleStyles.tab} ${leftTab === "settings" ? consoleStyles.tabActive : ""}`}
                                 onClick={() => setLeftTab("settings")}
+                                title="Settings"
                             >
-                                Settings
+                                <Settings size={14} />
                             </button>
                             <button
                                 className={`${consoleStyles.tab} ${leftTab === "tools" ? consoleStyles.tabActive : ""}${!selectedModelSupportsFc ? ` ${consoleStyles.tabDisabled}` : ""}`}
                                 onClick={() => setLeftTab("tools")}
+                                title="Function Calling"
                             >
-                                Tools
+                                <Wrench size={14} />
                                 {settings.functionCallingEnabled && (
                                     <span className={consoleStyles.tabBadge}>{allToolSchemas.length}</span>
                                 )}
@@ -1783,8 +1790,9 @@ Guidelines:
                             <button
                                 className={`${consoleStyles.tab} ${leftTab === "params" ? consoleStyles.tabActive : ""}`}
                                 onClick={() => setLeftTab("params")}
+                                title="Params"
                             >
-                                Params
+                                <SlidersHorizontal size={14} />
                             </button>
                         </div>
                         {leftTab === "settings" && (
@@ -1845,6 +1853,83 @@ Guidelines:
                 }
                 headerTitle={title}
                 navSidebar={<NavigationSidebarComponent mode="user" isGenerating={isGenerating} isGeneratingImage={isGeneratingImage} />}
+                headerCenter={(() => {
+                    // Build provider options
+                    const textToText = config?.textToText || {};
+                    const textModelsMap = textToText.models || {};
+                    const imageModelsMap = config?.textToImage?.models || {};
+                    const audioToTextModelsMap = config?.audioToText?.models || {};
+                    const ttsModelsMap = config?.textToSpeech?.models || {};
+                    const allProviderKeys = new Set([
+                        ...Object.keys(textModelsMap),
+                        ...Object.keys(imageModelsMap),
+                        ...Object.keys(audioToTextModelsMap),
+                        ...Object.keys(ttsModelsMap),
+                    ]);
+                    const modelsMap = {};
+                    for (const p of allProviderKeys) {
+                        const seen = new Set();
+                        const merged = [];
+                        for (const m of [
+                            ...(textModelsMap[p] || []),
+                            ...(imageModelsMap[p] || []),
+                            ...(audioToTextModelsMap[p] || []),
+                            ...(ttsModelsMap[p] || []),
+                        ]) {
+                            if (!seen.has(m.name)) {
+                                seen.add(m.name);
+                                merged.push(m);
+                            }
+                        }
+                        modelsMap[p] = merged;
+                    }
+                    const providerList = config?.providerList || [];
+                    const providerOptions = providerList
+                        .filter((p) => modelsMap[p])
+                        .map((p) => ({
+                            value: p,
+                            label: PROVIDER_LABELS[p] || p.toUpperCase(),
+                            icon: <ProviderLogo provider={p} size={16} />,
+                        }));
+                    const currentProviderModels = modelsMap[settings.provider] || [];
+                    const modelOptions = currentProviderModels.map((m) => ({
+                        value: m.name,
+                        label: m.label,
+                        icon: <ProviderLogo provider={settings.provider} size={16} />,
+                    }));
+                    const handleProviderChange = (pv) => {
+                        const defaultMod = textToText.defaults?.[pv] || modelsMap[pv]?.[0]?.name || "";
+                        const modelDef = (modelsMap[pv] || []).find((m) => m.name === defaultMod);
+                        const temp = modelDef?.defaultTemperature ?? 1.0;
+                        setSettings((s) => ({ ...s, provider: pv, model: defaultMod, temperature: temp }));
+                    };
+                    const handleModelChange = (modelName) => {
+                        const modelDef = currentProviderModels.find((m) => m.name === modelName);
+                        const temp = modelDef?.defaultTemperature ?? 1.0;
+                        setSettings((s) => ({ ...s, model: modelName, temperature: temp }));
+                    };
+                    if (providerOptions.length === 0) return null;
+                    return (
+                        <>
+                            <SelectDropdown
+                                value={settings.provider || ""}
+                                options={providerOptions}
+                                onChange={handleProviderChange}
+                                placeholder="Provider"
+                                icon={<ProviderLogo provider={settings.provider} size={16} />}
+                            />
+                            {settings.provider && modelOptions.length > 0 && (
+                                <SelectDropdown
+                                    value={settings.model || ""}
+                                    options={modelOptions}
+                                    onChange={handleModelChange}
+                                    placeholder="Model"
+                                    icon={<ProviderLogo provider={settings.provider} size={16} />}
+                                />
+                            )}
+                        </>
+                    );
+                })()}
                 headerMeta={
                     messages.length > 0 ? (
                         <div className={styles.headerMeta}>

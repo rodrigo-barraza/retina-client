@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Download, MessageSquare, GitBranch, Type, Image as ImageIcon, Volume2, Hash, ArrowRight, Wrench } from "lucide-react";
+import { Download, MessageSquare, GitBranch, Type, Image as ImageIcon, Volume2, Hash, ArrowRight, Parentheses } from "lucide-react";
 import Link from "next/link";
 import IrisService from "../../../services/IrisService";
 import { formatNumber, formatCost, formatLatency } from "../../../utils/utilities";
@@ -161,7 +161,7 @@ export default function RequestsPage() {
         {
             key: "toolsUsed", label: "Tools", sortable: true, render: (r) => (
                 r.toolsUsed
-                    ? <Wrench size={13} style={{ color: "var(--accent)" }} />
+                    ? <Parentheses size={13} style={{ color: "var(--accent)" }} />
                     : <span style={{ color: "var(--text-muted)" }}>—</span>
             )
         },
