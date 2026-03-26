@@ -53,17 +53,29 @@ export default function ModelPickerPopoverComponent({
       })
     : allModels;
 
-  // ── Position the popover below the trigger ───────────────────────────
+  // ── Position the popover below the trigger, centered on the ChatArea ─
   const positionPopover = useCallback(() => {
     if (!triggerRef.current) return;
-    const rect = triggerRef.current.getBoundingClientRect();
+    const triggerRect = triggerRef.current.getBoundingClientRect();
     const viewportW = window.innerWidth;
     const popoverW = Math.min(860, viewportW - 32);
-    let left = rect.left + rect.width / 2 - popoverW / 2;
+
+    // Center horizontally relative to the ChatArea (the main content section)
+    const chatArea = document.querySelector("[data-chat-area]");
+    let left;
+    if (chatArea) {
+      const areaRect = chatArea.getBoundingClientRect();
+      left = areaRect.left + areaRect.width / 2 - popoverW / 2;
+    } else {
+      left = viewportW / 2 - popoverW / 2;
+    }
+
+    // Clamp to viewport edges
     if (left < 16) left = 16;
     if (left + popoverW > viewportW - 16) left = viewportW - 16 - popoverW;
+
     setPopoverStyle({
-      top: rect.bottom + 8,
+      top: triggerRect.bottom + 8,
       left,
       width: popoverW,
     });
@@ -107,7 +119,7 @@ export default function ModelPickerPopoverComponent({
     return () => document.removeEventListener("keydown", handler);
   }, [open]);
 
-  // Re-position on scroll / resize
+  // Re-position on scroll / resize / ChatArea resize (sidebar transitions)
   useEffect(() => {
     if (!open) return;
     const reposition = () => positionPopover();
@@ -116,9 +128,19 @@ export default function ModelPickerPopoverComponent({
       passive: true,
       capture: true,
     });
+
+    // Watch the ChatArea for size changes (sidebar open/close transitions)
+    const chatArea = document.querySelector("[data-chat-area]");
+    let ro;
+    if (chatArea) {
+      ro = new ResizeObserver(reposition);
+      ro.observe(chatArea);
+    }
+
     return () => {
       window.removeEventListener("resize", reposition);
       window.removeEventListener("scroll", reposition, { capture: true });
+      ro?.disconnect();
     };
   }, [open, positionPopover]);
 

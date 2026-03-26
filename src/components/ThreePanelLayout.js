@@ -146,7 +146,15 @@ export default function ThreePanelLayout({
           <span className={styles.headerTitle}>{headerTitle}</span>
           {!isMobile && headerMeta}
           {headerCenter && (
-            <div className={styles.headerCenter}>{headerCenter}</div>
+            <div
+              className={styles.headerCenter}
+              style={{
+                left: showLeft ? 320 : 0,
+                right: rightPanel && showRight ? 320 : 0,
+              }}
+            >
+              {headerCenter}
+            </div>
           )}
           {headerControls}
           {rightPanel && (
@@ -196,7 +204,7 @@ export default function ThreePanelLayout({
           )}
 
           {/* Main Center */}
-          <section className={styles.main}>{children}</section>
+          <section className={styles.main} data-chat-area>{children}</section>
 
           {/* Mobile slit: visible strip behind right sidebar (history) — appears on left edge */}
           {rightPanel && isMobile && showRight && (
