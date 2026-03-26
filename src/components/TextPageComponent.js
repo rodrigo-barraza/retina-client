@@ -127,8 +127,8 @@ export default function TextPageComponent({ mode = "user" }) {
         <FilterGroupComponent label="Favorites">
           <FilterPillsComponent
             options={[
-              { value: "all", label: "All" },
-              { value: "favorites", label: "★ Favorites" },
+              { key: "all", label: "All" },
+              { key: "favorites", label: "★ Favorites" },
             ]}
             value={showFavoritesOnly ? "favorites" : "all"}
             onChange={(v) => setShowFavoritesOnly(v === "favorites")}

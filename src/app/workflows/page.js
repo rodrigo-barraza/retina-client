@@ -27,6 +27,7 @@ import { executeWorkflow } from "../../services/WorkflowExecutor";
 import WorkflowCanvas from "../../components/WorkflowCanvas";
 import WorkflowInspector from "../../components/WorkflowInspector";
 import WorkflowHeaderStatsComponent from "../../components/WorkflowHeaderStatsComponent";
+import ModelPickerPopoverComponent from "../../components/ModelPickerPopoverComponent";
 import HistoryList from "../../components/HistoryList";
 import ThreePanelLayout from "../../components/ThreePanelLayout";
 import NavigationSidebarComponent from "../../components/NavigationSidebarComponent";
@@ -134,6 +135,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
   const [savedWorkflows, setSavedWorkflows] = useState([]);
   const [toastElement, showToast] = useToast();
   const [wfFavoriteKeys, setWfFavoriteKeys] = useState([]);
+  const [modelFavoriteKeys, setModelFavoriteKeys] = useState([]);
 
   // Update URL without Next.js navigation (avoids re-mount)
   const updateUrl = (path) => {
@@ -186,6 +188,10 @@ export default function WorkflowsPage({ initialWorkflowId }) {
 
     PrismService.getFavorites("workflow")
       .then((favs) => setWfFavoriteKeys(favs.map((f) => f.key)))
+      .catch(() => {});
+
+    PrismService.getFavorites("model")
+      .then((favs) => setModelFavoriteKeys(favs.map((f) => f.key)))
       .catch(() => {});
   }, []);
 
@@ -1156,6 +1162,34 @@ export default function WorkflowsPage({ initialWorkflowId }) {
         </div>
       }
       headerTitle="Workflows"
+      headerCenter={
+        selectedNode && !selectedNode.nodeType ? (
+          <ModelPickerPopoverComponent
+            config={_config}
+            settings={{ provider: selectedNode.provider, model: selectedNode.modelName }}
+            onSelectModel={(provider, modelName) => {
+              const model = modelsWithModalities.find(
+                (m) => m.provider === provider && m.name === modelName,
+              );
+              if (model) handleChangeModel(selectedNode.id, model);
+            }}
+            favorites={modelFavoriteKeys}
+            onToggleFavorite={async (key) => {
+              if (modelFavoriteKeys.includes(key)) {
+                setModelFavoriteKeys((prev) => prev.filter((k) => k !== key));
+                PrismService.removeFavorite("model", key).catch(() => {});
+              } else {
+                setModelFavoriteKeys((prev) => [...prev, key]);
+                const [provider, ...rest] = key.split(":");
+                PrismService.addFavorite("model", key, {
+                  provider,
+                  name: rest.join(":"),
+                }).catch(() => {});
+              }
+            }}
+          />
+        ) : null
+      }
       headerMeta={
         <WorkflowHeaderStatsComponent
           nodes={nodes}
