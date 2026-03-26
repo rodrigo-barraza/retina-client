@@ -1,4 +1,5 @@
-import React from "react";
+"use client";
+
 import styles from "./PaginationComponent.module.css";
 
 export default function PaginationComponent({

@@ -550,30 +550,30 @@ export default function MessageList({
                             }
                             disabled={isGenerating}
                             tooltip="Edit message"
-                            hoverReveal
+                            className={styles.actionBtn}
                           />
                           <IconButtonComponent
                             icon={<RotateCcw size={14} />}
                             onClick={() => onRerun?.(i)}
                             disabled={isGenerating}
                             tooltip="Rerun this turn"
-                            hoverReveal
+                            className={styles.actionBtn}
                           />
                         </>
                       )}
-                      {msg.content && <CopyButtonComponent text={msg.content} tooltip="Copy raw text" />}
+                      {msg.content && <CopyButtonComponent text={msg.content} tooltip="Copy raw text" className={styles.actionBtn} />}
                       <IconButtonComponent
                         icon={<Trash2 size={14} />}
                         onClick={() => onDelete?.(i)}
                         tooltip="Delete message"
                         variant="danger"
-                        hoverReveal
+                        className={styles.actionBtn}
                       />
                     </div>
                   )}
                   {readOnly && msg.content && (
                     <div className={styles.messageActions}>
-                      <CopyButtonComponent text={msg.content} tooltip="Copy raw text" />
+                      <CopyButtonComponent text={msg.content} tooltip="Copy raw text" className={styles.actionBtn} />
                     </div>
                   )}
                 </div>
