@@ -23,7 +23,8 @@
   }
 
   &:disabled {
-    opacity: 0.3;
+    color: var(--text-secondary);
+    background: transparent;
     cursor: not-allowed;
   }
 }
@@ -48,7 +49,8 @@
   }
 
   &:disabled {
-    opacity: 0.4;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
     cursor: not-allowed;
     filter: none;
     box-shadow: none;
@@ -159,20 +161,10 @@
   height: var(--button-height);
   min-height: var(--button-height);
   flex-shrink: 0;
-  padding: 0 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--accent-color);
-  color: #fff;
   border-radius: var(--border-radius-md);
-  font-weight: 500;
-  transition: all 0.2s;
   box-shadow: 0 4px 12px var(--accent-glow);
 
   &:hover {
-    background: var(--accent-hover);
     transform: translateY(-1px);
   }
 }
@@ -227,25 +219,8 @@
 }
 
 .saveBtn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 0 16px;
   height: 36px;
   flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: #fff;
-  background: var(--accent-color);
-  border: none;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: var(--accent-hover);
-    transform: translateY(-1px);
-  }
 }
 
 /* ── Center Canvas ── */

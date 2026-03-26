@@ -14,8 +14,11 @@
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* Sizes */

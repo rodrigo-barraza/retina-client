@@ -19,7 +19,8 @@
 }
 
 .chatInputBtn:disabled {
-  opacity: 0.5;
+  color: var(--text-secondary);
+  background: transparent;
   cursor: not-allowed;
 }
 

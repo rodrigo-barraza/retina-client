@@ -31,6 +31,7 @@ import HistoryList from "../../components/HistoryList";
 import ThreePanelLayout from "../../components/ThreePanelLayout";
 import NavigationSidebarComponent from "../../components/NavigationSidebarComponent";
 import { useToast } from "../../components/ToastComponent";
+import ButtonComponent from "../../components/ButtonComponent";
 import styles from "./page.module.css";
 
 const MODEL_SECTIONS = [
@@ -156,6 +157,10 @@ export default function WorkflowsPage({ initialWorkflowId }) {
   const [nodeResults, setNodeResults] = useState({}); // nodeId → { text?, image?, audio? }
   const abortRef = useRef(false);
 
+  // Dirty-tracking: snapshot of the last saved/loaded state
+  const savedSnapshotRef = useRef(null);
+  const [savedSnapshotVersion, setSavedSnapshotVersion] = useState(0);
+
   // Undo history (100 states max)
   const undoStackRef = useRef([]);
   const [undoCount, setUndoCount] = useState(0); // trigger re-render when stack changes
@@ -191,12 +196,17 @@ export default function WorkflowsPage({ initialWorkflowId }) {
     WorkflowService.getWorkflow(initialWorkflowId)
       .then((wf) => {
         if (!wf) return;
+        const loadedName = wf.name || wf.title || (wf.userContent ? wf.userContent.substring(0, 80) : "") || "Untitled Workflow";
+        const loadedNodes = wf.nodes || [];
+        const loadedEdges = wf.edges || wf.connections || [];
         setWorkflowId(wf._id || wf.id);
-        setWorkflowName(wf.name || "Untitled Workflow");
-        setNodes(wf.nodes || []);
-        setEdges(wf.edges || wf.connections || []);
+        setWorkflowName(loadedName);
+        setNodes(loadedNodes);
+        setEdges(loadedEdges);
         setNodeResults(wf.nodeResults || {});
         setNodeStatuses(wf.nodeStatuses || {});
+        savedSnapshotRef.current = JSON.stringify({ workflowName: loadedName, nodes: loadedNodes, edges: loadedEdges });
+        setSavedSnapshotVersion((v) => v + 1);
       })
       .catch(console.error)
       .finally(() => setIsLoadingWorkflow(false));
@@ -337,6 +347,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
           },
         };
         setNodes((prev) => [...prev, newNode]);
+        setSelectedNodeId(newNode.id);
         return;
       }
 
@@ -367,6 +378,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
           })
           .catch(() => {});
         setNodes((prev) => [...prev, newNode]);
+        setSelectedNodeId(newNode.id);
         return;
       }
 
@@ -412,6 +424,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
         },
       };
       setNodes((prev) => [...prev, newNode]);
+      setSelectedNodeId(newNode.id);
     },
     [nodes.length, modelsWithModalities],
   );
@@ -798,6 +811,9 @@ export default function WorkflowsPage({ initialWorkflowId }) {
       const newId = saved.id || saved._id;
       setWorkflowId(newId);
       updateUrl(`/workflows/${newId}`);
+      // Update saved snapshot after successful save
+      savedSnapshotRef.current = JSON.stringify({ workflowName: workflowName || "Untitled Workflow", nodes, edges });
+      setSavedSnapshotVersion((v) => v + 1);
       const wfs = await WorkflowService.getWorkflows();
       setSavedWorkflows(wfs.map((w) => ({ ...w, id: w._id || w.id })));
       showToast("Workflow saved");
@@ -816,11 +832,17 @@ export default function WorkflowsPage({ initialWorkflowId }) {
       const loadedId = wf._id || wf.id;
       // React 18 batches all these into a single render — no flash
       setWorkflowId(loadedId);
-      setWorkflowName(wf.name || "Untitled Workflow");
-      setNodes(wf.nodes || []);
-      setEdges(wf.edges || wf.connections || []);
+      const loadedName = wf.name || wf.title || (wf.userContent ? wf.userContent.substring(0, 80) : "") || "Untitled Workflow";
+      const loadedNodes = wf.nodes || [];
+      const loadedEdges = wf.edges || wf.connections || [];
+      setWorkflowName(loadedName);
+      setNodes(loadedNodes);
+      setEdges(loadedEdges);
       setNodeResults(wf.nodeResults || {});
       setNodeStatuses(wf.nodeStatuses || {});
+      // Snapshot the loaded state for dirty-tracking
+      savedSnapshotRef.current = JSON.stringify({ workflowName: loadedName, nodes: loadedNodes, edges: loadedEdges });
+      setSavedSnapshotVersion((v) => v + 1);
       updateUrl(`/workflows/${loadedId}`);
       showToast("Workflow loaded");
     } catch (err) {
@@ -902,6 +924,9 @@ export default function WorkflowsPage({ initialWorkflowId }) {
     setNodeResults({});
     setNodeStatuses({});
     setSelectedNodeId(null);
+    // Reset snapshot — blank workflow has nothing to save
+    savedSnapshotRef.current = null;
+    setSavedSnapshotVersion((v) => v + 1);
   }, [pushUndo]);
 
   // Duplicate a node (copy-paste)
@@ -920,6 +945,17 @@ export default function WorkflowsPage({ initialWorkflowId }) {
     setNodes((prev) => [...prev, newNode]);
     setSelectedNodeId(newNode.id);
   }, []);
+
+  // ── Dirty-tracking: is the current state different from last saved? ──
+  const hasUnsavedChanges = useMemo(() => {
+    // Blank workflow (no nodes) is never saveable
+    if (nodes.length === 0) return false;
+    // Never been saved and has content → saveable
+    if (!savedSnapshotRef.current) return true;
+    const current = JSON.stringify({ workflowName, nodes, edges });
+    return current !== savedSnapshotRef.current;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workflowName, nodes, edges, savedSnapshotVersion]);
 
   // ── Memos for ThreePanelLayout panels ──
 
@@ -1091,12 +1127,16 @@ export default function WorkflowsPage({ initialWorkflowId }) {
       rightPanel={
         <div className={styles.rightPanel}>
           {/* New Workflow button */}
-          <button
-            className={styles.newWorkflowBtn}
+          <ButtonComponent
+            variant="primary"
+            size="sm"
+            icon={Plus}
             onClick={handleNewWorkflow}
+            fullWidth
+            className={styles.newWorkflowBtn}
           >
-            <Plus size={16} /> New Workflow
-          </button>
+            New Workflow
+          </ButtonComponent>
 
           {/* Workflow history list */}
           <HistoryList
@@ -1124,8 +1164,10 @@ export default function WorkflowsPage({ initialWorkflowId }) {
       }
       headerControls={
         <div className={styles.headerControls}>
-          <button
-            className={styles.headerActionBtn}
+          <ButtonComponent
+            variant="ghost"
+            size="xs"
+            icon={Download}
             onClick={() => {
               const data = JSON.stringify({ nodes, edges }, null, 2);
               const blob = new Blob([data], { type: "application/json" });
@@ -1137,32 +1179,34 @@ export default function WorkflowsPage({ initialWorkflowId }) {
               URL.revokeObjectURL(url);
             }}
             title="Export workflow"
-          >
-            <Download size={14} />
-          </button>
-          <button
             className={styles.headerActionBtn}
+          />
+          <ButtonComponent
+            variant="ghost"
+            size="xs"
+            icon={Upload}
             onClick={() => importRef.current?.click()}
             title="Import workflow"
-          >
-            <Upload size={14} />
-          </button>
-          <button
             className={styles.headerActionBtn}
+          />
+          <ButtonComponent
+            variant="ghost"
+            size="xs"
+            icon={Undo2}
             onClick={handleUndo}
             disabled={undoCount === 0}
             title={`Undo (Ctrl+Z) · ${undoCount} states`}
-          >
-            <Undo2 size={14} />
-          </button>
-          <button
             className={styles.headerActionBtn}
+          />
+          <ButtonComponent
+            variant="ghost"
+            size="xs"
+            icon={RotateCcw}
             onClick={handleResetWorkflow}
             disabled={isRunning || Object.keys(nodeStatuses).length === 0}
             title="Reset execution state"
-          >
-            <RotateCcw size={14} />
-          </button>
+            className={styles.headerActionBtn}
+          />
           <input
             ref={importRef}
             type="file"
@@ -1249,13 +1293,15 @@ export default function WorkflowsPage({ initialWorkflowId }) {
               if (e.key === "Enter") handleSaveWorkflow();
             }}
           />
-          <button
-            className={styles.saveBtn}
+          <ButtonComponent
+            variant="primary"
+            size="sm"
+            icon={Save}
             onClick={handleSaveWorkflow}
+            disabled={!hasUnsavedChanges}
             title="Save Workflow"
-          >
-            <Save size={14} />
-          </button>
+            className={styles.saveBtn}
+          />
         </div>
       </div>
 
