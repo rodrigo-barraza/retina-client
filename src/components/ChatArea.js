@@ -17,7 +17,7 @@ import AudioRecorderComponent from "./AudioRecorderComponent";
 import ImagePreviewComponent from "./ImagePreviewComponent";
 import DrawingCanvas from "./DrawingCanvas";
 import DocumentViewer from "./DocumentViewer";
-import EmptyStateComponent from "./EmptyStateComponent";
+import ToolCardComponent from "./ToolCardComponent";
 import MessageList from "./MessageList";
 
 import styles from "./ChatArea.module.css";
@@ -33,7 +33,19 @@ import {
   TOOL_COLORS,
   TOOL_ICON_MAP,
   TOGGLEABLE_TOOLS,
+
 } from "./WorkflowNodeConstants";
+
+// ── Tool descriptions for empty-state cards ──
+const TOOL_DESCRIPTIONS = {
+  Thinking: "Extended reasoning for complex problems and multi-step analysis.",
+  "Web Search": "Search the web for real-time information and cite sources.",
+  "Google Search": "Search the web for real-time information and cite sources.",
+  "Web Fetch": "Fetch and read content from any URL on the web.",
+  "Code Execution": "Run code in a sandboxed environment and return results.",
+  "URL Context": "Extract and analyze content from provided URLs.",
+  "Function Calling": "Ask about weather, events, commodities, trends, and more.",
+};
 
 // Map model input types to file accept strings
 const TYPE_ACCEPT_MAP = {
@@ -280,6 +292,12 @@ export default function ChatArea({
     }
   }
 
+  // Whether any tool toggle is currently checked
+  const hasEnabledTools = activeTools.some((tool) => {
+    const toggle = getToolToggle(tool);
+    return toggle?.checked;
+  });
+
   useEffect(() => {
     if (!showToolsBubble) return;
     const handleClickOutside = (e) => {
@@ -494,29 +512,48 @@ export default function ChatArea({
             </div>
           )}
 
-        {messages.length === 0 && functionCallingEnabled && (
-          <EmptyStateComponent
-            icon={<Parentheses size={40} />}
-            title="Function Calling"
-            subtitle="Ask about weather, events, commodities, trends, and more."
-          >
-            {fcRandomPrompts.map((prompt) => (
-              <button
-                key={prompt}
-                className={consoleStyles.quickPrompt}
-                onClick={() => {
-                  setInput(prompt);
-                  textareaRef.current?.focus();
-                }}
-              >
-                {prompt}
-              </button>
-            ))}
-          </EmptyStateComponent>
-        )}
+        {messages.length === 0 && activeTools.length > 0 && (() => {
+          const enabledTools = activeTools.filter((tool) => {
+            const toggle = getToolToggle(tool);
+            return toggle?.checked;
+          });
+          if (enabledTools.length === 0) return null;
+          return (
+            <div className={styles.toolCardsStack}>
+              {enabledTools.map((tool) => {
+                const ToolIcon = TOOL_ICON_MAP[tool];
+                return (
+                  <ToolCardComponent
+                    key={tool}
+                    icon={ToolIcon ? <ToolIcon size={20} /> : null}
+                    title={tool}
+                    subtitle={TOOL_DESCRIPTIONS[tool] || ""}
+                    color={TOOL_COLORS[tool]}
+                  />
+                );
+              })}
+              {functionCallingEnabled && fcRandomPrompts.length > 0 && (
+                <div className={styles.toolCardsPrompts}>
+                  {fcRandomPrompts.map((prompt) => (
+                    <button
+                      key={prompt}
+                      className={consoleStyles.quickPrompt}
+                      onClick={() => {
+                        setInput(prompt);
+                        textareaRef.current?.focus();
+                      }}
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {messages.length === 0 &&
-          !functionCallingEnabled &&
+          !hasEnabledTools &&
           config?.availableProviders?.length === 0 && (
             <div className={styles.welcome}>
               <div
@@ -582,7 +619,7 @@ export default function ChatArea({
           )}
 
         {messages.length === 0 &&
-          !functionCallingEnabled &&
+          !hasEnabledTools &&
           config?.availableProviders?.length > 0 && (
             <div className={styles.readyPrompt}>
               <h3>You&apos;re all set! 🎉</h3>

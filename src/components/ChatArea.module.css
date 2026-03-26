@@ -1150,3 +1150,32 @@
   background: var(--accent-glow) !important;
 }
 
+/* ── Tool Cards Stack (empty state) ──────────────────────── */
+
+.toolCardsStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 480px;
+  width: 100%;
+  margin: auto;
+  padding: 40px 20px;
+}
+
+.toolCardsStack > *:nth-child(1) { animation-delay: 0s; }
+.toolCardsStack > *:nth-child(2) { animation-delay: 0.06s; }
+.toolCardsStack > *:nth-child(3) { animation-delay: 0.12s; }
+.toolCardsStack > *:nth-child(4) { animation-delay: 0.18s; }
+.toolCardsStack > *:nth-child(5) { animation-delay: 0.24s; }
+.toolCardsStack > *:nth-child(6) { animation-delay: 0.30s; }
+.toolCardsStack > *:nth-child(7) { animation-delay: 0.36s; }
+
+.toolCardsPrompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  padding-top: 12px;
+  animation: fadeIn 0.4s ease-out 0.3s both;
+}
+
