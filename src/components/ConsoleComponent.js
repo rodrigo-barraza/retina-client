@@ -505,7 +505,6 @@ export default function ConsoleComponent() {
                   timestamp: Date.now(),
                 },
               ]);
-              setShowToolPanel(true);
             },
             onDone: () => resolve(),
             onError: (err) => reject(err),
@@ -710,7 +709,6 @@ export default function ConsoleComponent() {
     if (isGenerating) return;
     setMessages([]);
     setToolActivity([]);
-    setShowToolPanel(false);
     setPendingImages([]);
     setConversationId(crypto.randomUUID());
     setActiveId(null);
@@ -732,7 +730,6 @@ export default function ConsoleComponent() {
         setActiveId(conv.id);
         setTitle(full.title || "Console");
         setToolActivity([]);
-        setShowToolPanel(false);
       } catch (err) {
         console.error("Failed to load conversation:", err);
       }

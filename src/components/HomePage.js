@@ -421,7 +421,6 @@ Guidelines:
     setOriginalMessageCount(0);
     setOriginalTotalCost(0);
     setToolActivity([]);
-    setShowToolPanel(false);
     skipSystemPromptSave.current = true;
     setSettings((s) => ({
       ...s,
@@ -781,7 +780,6 @@ Guidelines:
                     timestamp: Date.now(),
                   },
                 ]);
-                setShowToolPanel(true);
               },
               onDone: () => resolve(),
               onError: (err) => reject(err),
@@ -1508,7 +1506,6 @@ Guidelines:
                     timestamp: Date.now(),
                   },
                 ]);
-                setShowToolPanel(true);
               },
               onDone: () => resolve(),
               onError: (err) => reject(err),

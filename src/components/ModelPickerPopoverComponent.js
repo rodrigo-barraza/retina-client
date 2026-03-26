@@ -149,7 +149,14 @@ export default function ModelPickerPopoverComponent({
   const currentModel = allModels.find(
     (m) => m.provider === settings?.provider && m.name === settings?.model,
   );
-  const displayLabel = currentModel?.label || settings?.model || "Select Model";
+  const LOCAL_PROVIDERS = new Set(["lm-studio", "ollama", "vllm"]);
+  const rawLabel = currentModel?.label || settings?.model || "Select Model";
+  const displayLabel = (() => {
+    const provider = currentModel?.provider || settings?.provider;
+    if (!provider || LOCAL_PROVIDERS.has(provider)) return rawLabel;
+    const providerName = PROVIDER_LABELS[provider] || provider;
+    return `${providerName}'s ${rawLabel}`;
+  })();
 
   // ── Handle model selection ─────────────────────────────────────────────
   const handleSelect = useCallback(
