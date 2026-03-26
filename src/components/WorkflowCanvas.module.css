@@ -5,6 +5,18 @@
   cursor: grab;
   user-select: none;
   touch-action: none;
+  background: var(--bg-primary);
+  transition: background var(--transition-normal);
+}
+
+:global([data-theme="light"]) .canvas {
+  background: radial-gradient(
+    circle at 50% 30%,
+    #ffffff 0%,
+    #e0f2fe 20%,
+    #bae6fd 50%,
+    #7dd3fc 100%
+  );
 }
 
 .canvas.panning {
@@ -16,6 +28,12 @@
   inset: 0;
   pointer-events: none;
   z-index: 0;
+  transition: opacity var(--transition-normal);
+}
+
+:global([data-theme="light"]) .starfield {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .svg {
