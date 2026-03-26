@@ -64,16 +64,7 @@
     content: "";
     position: absolute;
     inset: -50%;
-    background: conic-gradient(
-      #ff0000,
-      #ff8800,
-      #ffff00,
-      #00ff88,
-      #0088ff,
-      #8800ff,
-      #ff0088,
-      #ff0000
-    );
+    background: var(--prism-conic);
     animation: prismSpin 2s linear infinite;
     z-index: -1;
   }
@@ -553,7 +544,7 @@
   padding: 2px 6px;
   border-radius: 2px;
   font-size: 13px;
-  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
 }
 
 .codeBlockWrapper {
@@ -659,16 +650,7 @@
   height: 1.15em;
   vertical-align: text-bottom;
   border-radius: 1px;
-  background: conic-gradient(
-    #ff0000,
-    #ff8800,
-    #ffff00,
-    #00ff88,
-    #0088ff,
-    #8800ff,
-    #ff0088,
-    #ff0000
-  );
+  background: var(--prism-conic);
   background-size: 100% 100%;
   animation: caretBlink 0.8s step-end infinite;
   will-change: opacity;
@@ -691,16 +673,7 @@
     font-size: 1.1em;
     color: transparent;
     animation: caretBlink 0.8s step-end infinite;
-    background: conic-gradient(
-      #ff0000,
-      #ff8800,
-      #ffff00,
-      #00ff88,
-      #0088ff,
-      #8800ff,
-      #ff0088,
-      #ff0000
-    );
+    background: var(--prism-conic);
     -webkit-background-clip: text;
     background-clip: text;
   }

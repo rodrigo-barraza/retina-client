@@ -10,8 +10,8 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(128, 128, 128, 0.4) transparent;
+
+
 }
 
 /* ── Section Headers ───────────────────────────────────────── */
@@ -198,7 +198,7 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
-  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -272,7 +272,7 @@
   color: var(--text-tertiary);
 
   & code {
-    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -297,7 +297,7 @@
   font-size: 10px;
 
   & code {
-    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     font-weight: 600;
     color: var(--text-primary);
@@ -509,7 +509,7 @@
   font-size: 10px;
   font-weight: 700;
   color: var(--text-tertiary);
-  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
 }
 
 .paramRemoveBtn {

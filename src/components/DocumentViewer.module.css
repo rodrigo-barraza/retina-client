@@ -79,7 +79,7 @@
   font-size: 13px;
   line-height: 1.65;
   color: var(--text-primary);
-  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   white-space: pre-wrap;
   word-break: break-word;
   tab-size: 2;
