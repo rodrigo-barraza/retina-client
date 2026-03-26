@@ -93,6 +93,15 @@ export default function HomePage({ initialConversationId = null }) {
 
   const abortRef = useRef(null);
 
+  const handleStop = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current();
+      abortRef.current = null;
+    }
+    setIsGenerating(false);
+    setIsGeneratingImage(false);
+  }, []);
+
   // Helper to update URL bar without triggering Next.js navigation.
   // Uses History.prototype.replaceState to bypass Next.js's patching of window.history.
   const updateUrl = (id) => {
@@ -1006,7 +1015,7 @@ Guidelines:
           return updated;
         });
 
-        PrismService.streamText(payload, {
+        abortRef.current = PrismService.streamText(payload, {
           onStatus: (message) => {
             setMessages((prev) => {
               const updated = [...prev];
@@ -1741,7 +1750,7 @@ Guidelines:
         const msgsWithPlaceholder = [...newMessages, placeholderMsg];
         setMessages(msgsWithPlaceholder);
 
-        PrismService.streamText(payload, {
+        abortRef.current = PrismService.streamText(payload, {
           onStatus: (message) => {
             setMessages((prev) => {
               const updated = [...prev];
@@ -2113,6 +2122,7 @@ Guidelines:
         <ChatArea
           messages={messages}
           isGenerating={isGenerating}
+          onStop={handleStop}
           newChatKey={newChatKey}
           onSend={handleSend}
           onDelete={handleDeleteMessage}

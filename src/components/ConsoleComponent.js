@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   Send,
-  Loader2,
+  Square,
   Terminal,
   Paperclip,
   X,
@@ -131,6 +131,14 @@ export default function ConsoleComponent() {
   const endRef = useRef(null);
   const abortRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  const handleStop = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current();
+      abortRef.current = null;
+    }
+    setIsGenerating(false);
+  }, []);
 
   // ── Filtered config: only function-calling models ────────────
   const filteredConfig = useMemo(() => {
@@ -625,8 +633,12 @@ export default function ConsoleComponent() {
   const handleSend = useCallback(
     async (e) => {
       if (e) e.preventDefault();
+      if (isGenerating) {
+        handleStop();
+        return;
+      }
       const text = inputValue.trim();
-      if ((!text && pendingImages.length === 0) || isGenerating) return;
+      if (!text && pendingImages.length === 0) return;
 
       const currentImages = [...pendingImages];
       setInputValue("");
@@ -684,6 +696,7 @@ export default function ConsoleComponent() {
       }
     },
     [
+      handleStop,
       inputValue,
       pendingImages,
       isGenerating,
@@ -844,7 +857,7 @@ export default function ConsoleComponent() {
       <div className={chatStyles.inputWrapper}>
         <form
           onSubmit={handleSend}
-          className={`${chatStyles.inputBox} ${isDragging ? chatStyles.inputBoxDragActive : ""}`}
+          className={`${chatStyles.inputBox} ${isDragging ? chatStyles.inputBoxDragActive : ""} ${isGenerating ? chatStyles.inputBoxGenerating : ""}`}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
@@ -909,12 +922,13 @@ export default function ConsoleComponent() {
               type="submit"
               className={isGenerating ? chatStyles.submitGenerating : ""}
               disabled={
-                (!inputValue.trim() && pendingImages.length === 0) ||
                 isGenerating
+                  ? false
+                  : !inputValue.trim() && pendingImages.length === 0
               }
             >
               {isGenerating ? (
-                <Loader2 size={18} className={chatStyles.spin} />
+                <Square size={14} fill="currentColor" />
               ) : (
                 <Send size={18} />
               )}

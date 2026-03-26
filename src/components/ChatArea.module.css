@@ -670,6 +670,8 @@
   color: white !important;
   border: none;
   z-index: 0;
+  cursor: pointer;
+  transition: transform 0.15s ease;
 
   &::before {
     content: "";
@@ -678,6 +680,10 @@
     background: var(--prism-conic);
     animation: spin 2s linear infinite;
     z-index: -1;
+  }
+
+  &:hover {
+    transform: scale(1.08);
   }
 
   svg {

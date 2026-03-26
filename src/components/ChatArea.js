@@ -2,7 +2,6 @@
 
 import {
   Send,
-  Loader2,
   ChevronDown,
   ChevronRight,
   Paperclip,
@@ -12,6 +11,7 @@ import {
   AlertCircle,
   X,
   Parentheses,
+  Square,
 } from "lucide-react";
 import AudioRecorderComponent from "./AudioRecorderComponent";
 import ImagePreviewComponent from "./ImagePreviewComponent";
@@ -181,6 +181,7 @@ export default function ChatArea({
   messages,
   isGenerating,
   onSend,
+  onStop,
   onDelete,
   onEdit,
   onRerun,
@@ -416,10 +417,14 @@ export default function ChatArea({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (isGenerating) {
+      onStop?.();
+      return;
+    }
     if (isTranscriptionModel) {
-      if (pendingImages.length === 0 || isGenerating) return;
+      if (pendingImages.length === 0) return;
     } else {
-      if ((!input.trim() && pendingImages.length === 0) || isGenerating) return;
+      if (!input.trim() && pendingImages.length === 0) return;
     }
     onSend(input, pendingImages);
     setInput("");
@@ -684,7 +689,7 @@ export default function ChatArea({
         )}
         <form
           onSubmit={handleSubmit}
-          className={`${styles.inputBox} ${isDragging ? styles.inputBoxDragActive : ""}`}
+          className={`${styles.inputBox} ${isDragging ? styles.inputBoxDragActive : ""} ${isGenerating ? styles.inputBoxGenerating : ""}`}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
@@ -798,14 +803,15 @@ export default function ChatArea({
               type="submit"
               className={isGenerating ? styles.submitGenerating : ""}
               disabled={
-                isTranscriptionModel
-                  ? pendingImages.length === 0 || isGenerating
-                  : (!input.trim() && pendingImages.length === 0) ||
-                    isGenerating
+                isGenerating
+                  ? false
+                  : isTranscriptionModel
+                    ? pendingImages.length === 0
+                    : !input.trim() && pendingImages.length === 0
               }
             >
               {isGenerating ? (
-                <Loader2 size={18} className={styles.spin} />
+                <Square size={14} fill="currentColor" />
               ) : (
                 <Send size={18} />
               )}
