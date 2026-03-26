@@ -230,13 +230,23 @@ export default function NavigationSidebarComponent({
   if (isMobile) {
     return (
       <>
-        {/* Floating hamburger trigger */}
+        {/* Floating triangle trigger */}
         <button
           className={styles.mobileHamburger}
           onClick={() => setMobileOpen((v) => !v)}
           title={mobileOpen ? "Close navigation" : "Open navigation"}
         >
-          {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+          {/* Spinning triangle with rainbow edge */}
+          <span className={styles.triangleSpin}>
+            <span className={styles.triangleOuter}>
+              <RainbowCanvas turbo={isGenerating} />
+            </span>
+            <span className={styles.triangleInner} />
+          </span>
+          {/* Icon stays centered, doesn't spin */}
+          <span className={styles.triangleIcon}>
+            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+          </span>
         </button>
 
         {/* Popover card */}

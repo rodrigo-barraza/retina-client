@@ -260,30 +260,81 @@
   }
 }
 
-/* Floating hamburger button — bottom-left, above Next.js dev indicator */
+/* Floating triangle button — bottom-left, moved up */
 .mobileHamburger {
   display: none;
   position: fixed;
-  bottom: 72px;
+  bottom: 132px;
   left: 16px;
   z-index: 10000;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
+  width: 56px;
+  height: 56px;
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
 
-  &:active {
+  &:active .triangleSpin {
     transform: scale(0.92);
   }
+}
+
+/* Spinning wrapper — contains both outer (rainbow) and inner (fill) triangles */
+.triangleSpin {
+  position: absolute;
+  inset: 0;
+  animation: triangleRotate 20s linear infinite;
+  will-change: transform;
+  transition: transform 0.15s ease;
+}
+
+/* Outer triangle — the rainbow canvas clipped to triangle shape */
+.triangleOuter {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  overflow: hidden;
+
+  & canvas {
+    position: absolute;
+    inset: -20px;
+    width: calc(100% + 40px) !important;
+    height: calc(100% + 40px) !important;
+  }
+}
+
+/* Inner triangle — solid fill, inset to create the rainbow "border" */
+.triangleInner {
+  position: absolute;
+  inset: 3px;
+  clip-path: polygon(50% 6%, 4% 98%, 96% 98%);
+  background: var(--bg-secondary);
+}
+
+/* Icon — centered, counter-rotates to stay upright */
+.triangleIcon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: triangleRotateReverse 20s linear infinite;
+  will-change: transform;
+  color: var(--text-primary);
+  z-index: 1;
+  padding-top: 6px;
+}
+
+@keyframes triangleRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes triangleRotateReverse {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
 }
 
 @media (max-width: 1200px) {

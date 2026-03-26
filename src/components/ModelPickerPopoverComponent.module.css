@@ -24,6 +24,7 @@
   text-transform: none;
   letter-spacing: 0;
   user-select: none;
+  min-width: 0;
 }
 
 .trigger:hover {
@@ -43,7 +44,7 @@
   align-items: center;
   gap: 7px;
   overflow: hidden;
-  max-width: 280px;
+  min-width: 0;
 }
 
 .triggerLabel {

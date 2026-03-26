@@ -31,7 +31,7 @@ export default function SettingsPanel({
   config,
   settings,
   onChange,
-  hasAssistantImages,
+  _hasAssistantImages,
   _inferenceMode,
   readOnly = false,
   onSystemPromptClick,
@@ -82,21 +82,9 @@ export default function SettingsPanel({
     modelsMap[p] = merged;
   }
 
-  const providerList = config?.providerList || [];
 
-  const handleProviderChange = (pv) => {
-    const defaultMod =
-      textToText.defaults?.[pv] || modelsMap[pv]?.[0]?.name || "";
-    const modelDef = (modelsMap[pv] || []).find((m) => m.name === defaultMod);
-    const temp = modelDef?.defaultTemperature ?? 1.0;
-    onChange({ provider: pv, model: defaultMod, temperature: temp });
-  };
 
-  const handleModelChange = (modelName) => {
-    const modelDef = currentProviderModels.find((m) => m.name === modelName);
-    const temp = modelDef?.defaultTemperature ?? 1.0;
-    onChange({ model: modelName, temperature: temp });
-  };
+
   const _handleSystemPromptChange = (e) =>
     onChange({ systemPrompt: e.target.value });
   const handleThinkingEnabledChange = (val) =>
@@ -119,41 +107,7 @@ export default function SettingsPanel({
   const providerToolLabels = TOOL_LABELS[settings.provider] || {};
   const getToolLabel = (tool) => providerToolLabels[tool] || tool;
 
-  const fcEnabled = settings.functionCallingEnabled;
 
-  // Build options for provider dropdown
-  const providerOptions = providerList
-    .filter((p) => modelsMap[p])
-    .map((p) => {
-      const allImgDisabled =
-        hasAssistantImages &&
-        modelsMap[p]?.every((m) => m.assistantImages === false);
-      const allFcDisabled =
-        fcEnabled &&
-        modelsMap[p]?.every((m) => !m.tools?.includes("Function Calling"));
-      const disabled = allImgDisabled || allFcDisabled;
-      const suffix = allImgDisabled ? " (no image context)" : "";
-      return {
-        value: p,
-        label: (PROVIDER_LABELS[p] || p.toUpperCase()) + suffix,
-        icon: <ProviderLogo provider={p} size={18} />,
-        disabled,
-      };
-    });
-
-  // Build options for model dropdown
-  const modelOptions = currentProviderModels.map((m) => {
-    const imgDisabled = hasAssistantImages && m.assistantImages === false;
-    const fcDisabled = fcEnabled && !m.tools?.includes("Function Calling");
-    const disabled = imgDisabled || fcDisabled;
-    const suffix = imgDisabled ? " (no image context)" : "";
-    return {
-      value: m.name,
-      label: m.label + suffix,
-      icon: <ProviderLogo provider={settings.provider} size={18} />,
-      disabled,
-    };
-  });
 
   // Tools that have toggle switches
   const TOGGLEABLE_TOOLS = new Set([
@@ -272,79 +226,66 @@ export default function SettingsPanel({
           </div>
         )}
 
-        <div className={styles.sectionTitle}>
-          <Cpu size={16} /> Model Settings
-        </div>
+        {readOnly && (
+          <div className={styles.sectionTitle}>
+            <Cpu size={16} /> Model Settings
+          </div>
+        )}
 
-        <div className={styles.formGroup}>
-          <label>Provider</label>
-          {readOnly ? (
+        {readOnly && (
+          <div className={styles.formGroup}>
+            <label>Provider</label>
             <div className={styles.readOnlyValue}>
               <ProviderLogo provider={settings.provider} size={16} />
               {PROVIDER_LABELS[settings.provider] || settings.provider || "-"}
             </div>
-          ) : (
-            <SelectDropdown
-              value={settings.provider || ""}
-              options={providerOptions}
-              onChange={handleProviderChange}
-              placeholder="Select Provider"
-              icon={<ProviderLogo provider={settings.provider} size={18} />}
-            />
-          )}
-        </div>
+          </div>
+        )}
 
-        {(readOnly || (settings.provider && modelsMap[settings.provider])) && (
+        {readOnly && settings.provider && (
           <div className={styles.formGroup}>
             <label>Model</label>
-            {readOnly ? (
-              <div
-                className={styles.readOnlyValue}
-                style={{
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  justifyContent: "center",
-                  height: "auto",
-                  padding: "8px 10px",
-                  gap: 2,
-                }}
-              >
-                <span>{selectedModelDef?.label || settings.model || "-"}</span>
-                {selectedModelDef?.label &&
-                  selectedModelDef.label !== settings.model && (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: "var(--text-muted)",
-                        fontWeight: 400,
-                      }}
-                    >
-                      {settings.model}
-                    </span>
-                  )}
-              </div>
-            ) : (
-              <SelectDropdown
-                value={settings.model || ""}
-                options={modelOptions}
-                onChange={handleModelChange}
-                placeholder="Select Model"
-                icon={<ProviderLogo provider={settings.provider} size={18} />}
-              />
-            )}
-            {selectedModelDef?.modelType && (
-              <div className={styles.modelTypeBadge}>
-                {selectedModelDef.modelType === "conversation" && (
-                  <Type size={12} />
+            <div
+              className={styles.readOnlyValue}
+              style={{
+                flexDirection: "column",
+                alignItems: "flex-start",
+                justifyContent: "center",
+                height: "auto",
+                padding: "8px 10px",
+                gap: 2,
+              }}
+            >
+              <span>{selectedModelDef?.label || settings.model || "-"}</span>
+              {selectedModelDef?.label &&
+                selectedModelDef.label !== settings.model && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: "var(--text-muted)",
+                      fontWeight: 400,
+                    }}
+                  >
+                    {settings.model}
+                  </span>
                 )}
-                {selectedModelDef.modelType === "audio" && (
-                  <Volume2 size={12} />
-                )}
-                {selectedModelDef.modelType === "embed" && <Cpu size={12} />}
-                {selectedModelDef.modelType} model
-              </div>
+            </div>
+          </div>
+        )}
+
+        {selectedModelDef?.modelType && (
+          <div className={styles.modelTypeBadge}>
+            {selectedModelDef.modelType === "conversation" && (
+              <Type size={12} />
             )}
-            {selectedModelDef &&
+            {selectedModelDef.modelType === "audio" && (
+              <Volume2 size={12} />
+            )}
+            {selectedModelDef.modelType === "embed" && <Cpu size={12} />}
+            {selectedModelDef.modelType} model
+          </div>
+        )}
+        {selectedModelDef &&
               (() => {
                 const allTypes = ["text", "image", "audio", "video", "pdf"];
                 const inputs = selectedModelDef.inputTypes || [];
@@ -549,8 +490,6 @@ export default function SettingsPanel({
                 })}
               </div>
             )}
-          </div>
-        )}
 
         {isTTS &&
           (() => {
