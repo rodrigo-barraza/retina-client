@@ -331,7 +331,6 @@ export default class PrismService {
 
             try {
               const data = JSON.parse(json);
-              console.log("[PrismService] SSE event:", data.type, data);
               if (data.type === "chunk" && onChunk) {
                 onChunk(data.content);
               } else if (data.type === "thinking" && onThinking) {

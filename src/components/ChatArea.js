@@ -526,7 +526,7 @@ export default function ChatArea({
                 const ToolIcon = TOOL_ICON_MAP[tool];
                 const toggle = getToolToggle(tool);
                 const isEnabled = toggle?.checked || false;
-                const isLocked = toggle?.disabled || false;
+                const isLocked = (toggle?.disabled && toggle?.checked) || false;
                 return (
                   <ToolCardComponent
                     key={tool}
