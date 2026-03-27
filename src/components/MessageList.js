@@ -509,7 +509,8 @@ export default function MessageList({
               ? styles.systemNode
               : styles.aiNode;
         const isStreaming =
-          isGenerating && msg.role === "assistant" && i === messages.length - 1;
+          (isGenerating && msg.role === "assistant" && i === messages.length - 1)
+          || (msg.role === "assistant" && msg._liveStreaming === true);
 
         // Detect model swap: show divider above user message when the next
         // assistant's model differs from the previous assistant's model
