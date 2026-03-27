@@ -72,6 +72,9 @@ export default function HomePage({ initialConversationId = null }) {
   // ── Function Calling state ──────────────────────────────────
   const [leftTab, setLeftTab] = useState("settings");
 
+  // Bidirectional glow link: FC ToolCard <-> Tools tab
+  const [hoveredLink, setHoveredLink] = useState(null);
+
   // Determine if the selected model supports Function Calling
   const selectedModelSupportsFc = useMemo(() => {
     const providerModels =
@@ -1907,6 +1910,8 @@ Guidelines:
               ]}
               activeTab={leftTab}
               onChange={setLeftTab}
+              glowingTabs={hoveredLink === "fc-card" ? ["tools"] : []}
+              onTabHover={(key) => setHoveredLink(key === "tools" ? "tools-tab" : null)}
             />
             {leftTab === "settings" && (
               <SettingsPanel
@@ -2169,6 +2174,8 @@ Guidelines:
           onSystemPromptClick={() => setShowSystemPromptModal(true)}
           functionCallingEnabled={!!settings.functionCallingEnabled}
           toolCount={allToolSchemas.length}
+          fcCardGlowing={hoveredLink === "tools-tab"}
+          onFcCardHover={(hovering) => setHoveredLink(hovering ? "fc-card" : null)}
           toolActivitySlot={
             settings.functionCallingEnabled && toolActivity.length > 0 ? (
               <ToolActivityPanelComponent activities={toolActivity} />

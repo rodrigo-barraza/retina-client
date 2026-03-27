@@ -210,6 +210,8 @@ export default function ChatArea({
   toolActivitySlot = null,
   functionCallingEnabled = false,
   toolCount = 0,
+  fcCardGlowing = false,
+  onFcCardHover,
   settings = {},
   onUpdateSettings,
 }) {
@@ -531,6 +533,8 @@ export default function ChatArea({
                     count={tool === "Function Calling" ? toolCount : undefined}
                     enabled={isEnabled}
                     onClick={toggle ? () => toggle.onChange(!isEnabled) : undefined}
+                    glowing={tool === "Function Calling" && fcCardGlowing}
+                    onHover={tool === "Function Calling" ? (h) => onFcCardHover?.(h) : undefined}
                   />
                 );
               })}

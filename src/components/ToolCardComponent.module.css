@@ -21,6 +21,26 @@
   }
 }
 
+/* ── Glow — cross-component hover linking ───────────────────── */
+
+.cardGlow {
+  border-color: color-mix(in srgb, var(--tool-color) 35%, transparent);
+  animation: cardGlowPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes cardGlowPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 8px color-mix(in srgb, var(--tool-color) 15%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--tool-color) 12%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 18px color-mix(in srgb, var(--tool-color) 30%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--tool-color) 20%, transparent);
+  }
+}
+
 /* ── Disabled card ─────────────────────────────────────────── */
 
 .cardDisabled {

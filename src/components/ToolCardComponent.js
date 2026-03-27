@@ -14,6 +14,8 @@ import styles from "./ToolCardComponent.module.css";
  * @param {number} [count] — Optional count badge (e.g. number of functions)
  * @param {boolean} [enabled=true] — Whether the tool is currently enabled
  * @param {Function} [onClick] — Click handler to toggle the tool
+ * @param {boolean} [glowing=false] — Whether to show a cross-component glow effect
+ * @param {Function} [onHover] — (hovering: boolean) => void
  */
 export default function ToolCardComponent({
   icon,
@@ -23,15 +25,19 @@ export default function ToolCardComponent({
   count,
   enabled = true,
   onClick,
+  glowing = false,
+  onHover,
 }) {
   return (
     <div
-      className={`${styles.card}${!enabled ? ` ${styles.cardDisabled}` : ""}`}
+      className={`${styles.card}${!enabled ? ` ${styles.cardDisabled}` : ""}${glowing ? ` ${styles.cardGlow}` : ""}`}
       style={{ "--tool-color": color }}
       onClick={onClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
+      onMouseEnter={() => onHover?.(true)}
+      onMouseLeave={() => onHover?.(false)}
     >
       <div className={styles.icon}>{icon}</div>
       <div className={styles.info}>

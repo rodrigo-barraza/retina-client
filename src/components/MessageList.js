@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -86,22 +86,50 @@ function getMimeCategory(ref) {
 
 
 
-function ThinkingBlock({ thinking }) {
-  const [collapsed, setCollapsed] = useState(true);
+function ThinkingBlock({ thinking, isStreaming }) {
+  // Manual user override: null = no override (use auto behavior)
+  const [manualCollapse, setManualCollapse] = useState(null);
+  const wasStreamingRef = useRef(false);
+  const contentRef = useRef(null);
+
+  // Reset manual override on streaming transitions
+  if (isStreaming && !wasStreamingRef.current) {
+    // Streaming just started → clear override so auto-expand kicks in
+    if (manualCollapse !== null) setManualCollapse(null);
+  } else if (!isStreaming && wasStreamingRef.current) {
+    // Streaming just ended → clear override so auto-collapse kicks in
+    if (manualCollapse !== null) setManualCollapse(null);
+  }
+  wasStreamingRef.current = isStreaming;
+
+  // Derive effective collapsed state:
+  // - If user has manually toggled, respect that
+  // - Otherwise: expanded while streaming, collapsed when not
+  const collapsed = manualCollapse !== null
+    ? manualCollapse
+    : !isStreaming;
+
+  // Auto-scroll to bottom of thinking content while streaming
+  useEffect(() => {
+    if (isStreaming && contentRef.current) {
+      contentRef.current.scrollTop = contentRef.current.scrollHeight;
+    }
+  }, [thinking, isStreaming]);
+
   if (!thinking) return null;
 
   return (
-    <div className={styles.thinkingBlock}>
+    <div className={`${styles.thinkingBlock}${isStreaming ? ` ${styles.thinkingStreaming}` : ""}`}>
       <button
         className={styles.thinkingToggle}
-        onClick={() => setCollapsed((c) => !c)}
+        onClick={() => setManualCollapse(!collapsed)}
       >
         <Brain size={14} />
         <span>Thoughts</span>
         {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
       </button>
       {!collapsed && (
-        <div className={styles.thinkingContent}>
+        <div className={styles.thinkingContent} ref={contentRef}>
           <MarkdownContent content={thinking} />
         </div>
       )}
@@ -579,7 +607,12 @@ export default function MessageList({
                 </div>
 
                 {/* Thinking block */}
-                {msg.thinking && <ThinkingBlock thinking={msg.thinking} />}
+                {msg.thinking && (
+                  <ThinkingBlock
+                    thinking={msg.thinking}
+                    isStreaming={isStreaming && !!msg.thinking && !msg.content}
+                  />
+                )}
 
                 {/* Tool calls indicator */}
                 {msg.toolCalls && msg.toolCalls.length > 0 && (
