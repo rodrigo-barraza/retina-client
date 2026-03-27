@@ -35,6 +35,7 @@ export default function ModelPickerPopoverComponent({
   const [popoverStyle, setPopoverStyle] = useState({});
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const triggerRef = useRef(null);
+  const bodyRef = useRef(null);
   const searchRef = useRef(null);
   const highlightedRowRef = useCallback((el) => {
     if (el) {
@@ -198,6 +199,31 @@ export default function ModelPickerPopoverComponent({
     };
   }, [open, positionPopover]);
 
+  // ── Measure FilterBar height for sticky <thead> offset ────────────────
+  useEffect(() => {
+    if (!open) return;
+    const body = bodyRef.current;
+    if (!body) return;
+    // Target the FilterBar: first child div of the ModelGrid container
+    const getFilterBar = () => body.querySelector(":scope > div > div:first-child");
+    const measure = () => {
+      const filterBar = getFilterBar();
+      if (filterBar) {
+        body.style.setProperty("--toolbar-h", `${filterBar.offsetHeight}px`);
+      }
+    };
+    // Initial measure after paint
+    const raf = requestAnimationFrame(measure);
+    // Re-measure on resize (e.g. filter wrap changes)
+    const ro = new ResizeObserver(measure);
+    const filterBar = getFilterBar();
+    if (filterBar) ro.observe(filterBar);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [open]);
+
   // ── Current selection display ─────────────────────────────────────────
   const currentModel = allModels.find(
     (m) => m.provider === settings?.provider && m.name === settings?.model,
@@ -274,7 +300,7 @@ export default function ModelPickerPopoverComponent({
             </div>
 
             {/* Body: ModelGrid with search disabled (hoisted above) */}
-            <div className={styles.popoverBody}>
+            <div ref={bodyRef} className={styles.popoverBody}>
               <ModelGrid
                 models={filteredModels}
                 onSelect={handleSelect}

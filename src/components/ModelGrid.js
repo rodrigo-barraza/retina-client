@@ -220,6 +220,7 @@ export default function ModelGrid({
   const [activeProvider, setActiveProvider] = useState(null);
   const [activeModality, setActiveModality] = useState(null);
   const [activeTool, setActiveTool] = useState(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   // Discover all providers from models (ordered by PROVIDER_LABELS definition)
   const allProviders = useMemo(() => {
@@ -265,14 +266,21 @@ export default function ModelGrid({
     });
   }, [models]);
 
-  // Apply modality filter → tool filter → provider filter → search
+  // Apply favorites filter → modality filter → tool filter → provider filter → search
+  const favFiltered = showFavoritesOnly
+    ? models.filter((m) => {
+        const key = `${normalizeModel(m).provider}:${normalizeModel(m).key}`;
+        return favorites.includes(key);
+      })
+    : models;
+
   const modalityFiltered = activeModality
-    ? models.filter(
+    ? favFiltered.filter(
         (m) =>
           (m.inputTypes || []).includes(activeModality) ||
           (m.outputTypes || []).includes(activeModality),
       )
-    : models;
+    : favFiltered;
 
   const toolFiltered = activeTool
     ? modalityFiltered.filter((m) => (m.tools || []).includes(activeTool))
@@ -562,6 +570,24 @@ export default function ModelGrid({
             placeholder="Search models…"
             className={styles.searchWrapper}
           />
+        )}
+        {onToggleFavorite && favorites.length > 0 && (
+          <>
+            <FilterIconButtonGroupComponent
+              options={[
+                {
+                  key: "favorites",
+                  icon: Star,
+                  color: showFavoritesOnly ? "#f59e0b" : undefined,
+                  label: "Favorites only",
+                },
+              ]}
+              activeKeys={showFavoritesOnly ? "favorites" : null}
+              isSingleSelect={true}
+              onChange={() => setShowFavoritesOnly((prev) => !prev)}
+            />
+            <div className={styles.filterDivider} />
+          </>
         )}
         {allModalities.length >= 2 && (
           <FilterIconButtonGroupComponent

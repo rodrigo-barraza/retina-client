@@ -258,6 +258,13 @@
   }
 }
 
+/* ── Favorites filter override ─────────────────────── */
+/* Tint the star filter button amber when active, matching row-level fav stars */
+
+.toolbar [class*="discreteBtnActive"] svg[style*="#f59e0b"] {
+  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.5));
+}
+
 /* ── Tool pills ────────────────────────────────────── */
 
 .toolPills {

@@ -192,19 +192,48 @@
   font-size: 10px;
 }
 
+/* Remove gap from ModelGrid .container so sticky elements stack tightly */
+.popoverBody > div {
+  border-radius: 0;
+  gap: 0;
+}
+
+/* Pin the FilterBar (first child of ModelGrid container) at the top of the
+   scroll area. Use > div > div:first-child to target only the FilterBar wrapper,
+   not its internal icon buttons which also contain "FilterBarComponent-module"
+   in their hashed class names. */
+.popoverBody > div > div:first-child {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg-secondary);
+  margin-bottom: 0;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 0;
+  padding: 10px 14px;
+}
+
 /*
- * SortableTableComponent wraps its table in a div[data-table-scroll].
- * Setting overflow-y:visible hands vertical scroll ownership back to
- * .popoverBody, so position:sticky on <thead> works correctly.
+ * SortableTableComponent wraps its table in a div[data-table-scroll]
+ * which has overflow-x: auto. Per CSS spec, if one axis is non-visible
+ * the other auto-promotes to auto — trapping the sticky context.
+ * Force both axes to visible so <thead> sticks to .popoverBody instead.
  */
 .popoverBody [data-table-scroll] {
-  overflow-y: visible;
-  border-left: none;
-  border-right: none;
+  overflow: visible;
+  border: none;
   border-radius: 0;
 }
 
-/* Tighten ModelGrid internals inside the popover */
-.popoverBody > div {
-  border-radius: 0;
+/* Offset <thead> th sticky top to sit below the pinned FilterBar.
+   --toolbar-h is measured dynamically via ResizeObserver in the component */
+.popoverBody [data-table-scroll] thead th {
+  top: var(--toolbar-h, 49px);
+  z-index: 4;
+}
+
+/* First th in thead needs higher z-index (it's also sticky-left) */
+.popoverBody [data-table-scroll] thead th:first-child {
+  z-index: 5;
 }
