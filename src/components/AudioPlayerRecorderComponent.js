@@ -12,9 +12,10 @@ import {
   X,
 } from "lucide-react";
 import TooltipComponent from "./TooltipComponent";
-import styles from "./AudioRecorderComponent.module.css";
+import styles from "./AudioPlayerRecorderComponent.module.css";
 
 function formatTime(totalSeconds) {
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return "0:00";
   const mins = Math.floor(totalSeconds / 60);
   const secs = Math.floor(totalSeconds % 60);
   return `${mins}:${secs.toString().padStart(2, "0")}`;
@@ -43,7 +44,7 @@ function drawBars(canvas, peaks, progress, playedColor, unplayedColor) {
   }
 }
 
-/* ── Decode audio src into peaks ── */
+/* ── Decode audio src into peaks + true duration ── */
 async function decodePeaks(src, numPeaks = 200) {
   try {
     const resp = await fetch(src);
@@ -52,6 +53,7 @@ async function decodePeaks(src, numPeaks = 200) {
     const decoded = await audioCtx.decodeAudioData(buffer);
     audioCtx.close();
 
+    const trueDuration = decoded.duration;
     const raw = decoded.getChannelData(0);
     const blockSize = Math.floor(raw.length / numPeaks);
     const peaks = [];
@@ -63,9 +65,9 @@ async function decodePeaks(src, numPeaks = 200) {
       peaks.push(sum / blockSize);
     }
     const max = Math.max(...peaks, 0.01);
-    return peaks.map((p) => p / max);
+    return { peaks: peaks.map((p) => p / max), duration: trueDuration };
   } catch {
-    return new Array(numPeaks).fill(0.15);
+    return { peaks: new Array(numPeaks).fill(0.15), duration: null };
   }
 }
 
@@ -74,7 +76,7 @@ async function decodePeaks(src, numPeaks = 200) {
  * - Playback: pass `src` → custom waveform player
  * - Recorder: pass `onRecordingComplete` → mic button / recording UI
  */
-export default function AudioRecorderComponent({
+export default function AudioPlayerRecorderComponent({
   src,
   onRecordingComplete,
   onRemove,
@@ -104,12 +106,15 @@ export default function AudioRecorderComponent({
   const [peaks, setPeaks] = useState(null);
   const playAnimRef = useRef(null);
 
-  // ── Decode audio for playback waveform ──
+  // ── Decode audio for playback waveform + true duration ──
   useEffect(() => {
     if (!src) return;
     let cancelled = false;
-    decodePeaks(src).then((p) => {
-      if (!cancelled) setPeaks(p);
+    decodePeaks(src).then(({ peaks: p, duration: d }) => {
+      if (cancelled) return;
+      setPeaks(p);
+      // Use decoded duration as source of truth (WebM metadata often reports Infinity)
+      if (d != null && Number.isFinite(d) && d > 0) setDuration(d);
     });
     return () => {
       cancelled = true;
@@ -334,7 +339,8 @@ export default function AudioRecorderComponent({
             ref={audioRef}
             src={src}
             preload="metadata"
-            onLoadedMetadata={(e) => setDuration(e.target.duration)}
+            onLoadedMetadata={(e) => { if (Number.isFinite(e.target.duration)) setDuration(e.target.duration); }}
+            onDurationChange={(e) => { if (Number.isFinite(e.target.duration)) setDuration(e.target.duration); }}
             onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
@@ -383,7 +389,8 @@ export default function AudioRecorderComponent({
           ref={audioRef}
           src={src}
           preload="metadata"
-          onLoadedMetadata={(e) => setDuration(e.target.duration)}
+          onLoadedMetadata={(e) => { if (Number.isFinite(e.target.duration)) setDuration(e.target.duration); }}
+          onDurationChange={(e) => { if (Number.isFinite(e.target.duration)) setDuration(e.target.duration); }}
           onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}

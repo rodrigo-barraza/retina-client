@@ -6,7 +6,7 @@ import {
   ChevronRight,
   Brain,
   Check,
-  Volume2,
+
   FileText,
   Trash2,
   Pencil,
@@ -21,6 +21,7 @@ import MarkdownContent from "./MarkdownContent";
 import StreamingCursorComponent from "./StreamingCursorComponent";
 import IconButtonComponent from "./IconButtonComponent";
 import CopyButtonComponent from "./CopyButtonComponent";
+import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import styles from "./MessageList.module.css";
 import { DateTime } from "luxon";
 import PrismService from "../services/PrismService";
@@ -293,24 +294,7 @@ function MediaPreview({ dataUrl: rawUrl, onClick }) {
   if (cat === "audio") {
     return (
       <div className={styles.audioCard}>
-        <div className={styles.audioCardHeader}>
-          <Volume2 size={16} className={styles.audioCardIcon} />
-          <span className={styles.audioCardLabel}>Audio</span>
-          <a
-            href={src}
-            download
-            className={styles.audioCardDownload}
-            title="Download audio"
-          >
-            ↓
-          </a>
-        </div>
-        <audio
-          controls
-          src={src}
-          preload="metadata"
-          className={styles.audioCardPlayer}
-        />
+        <AudioPlayerRecorderComponent src={src} compact />
       </div>
     );
   }

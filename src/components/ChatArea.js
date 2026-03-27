@@ -16,7 +16,7 @@ import {
   Mic,
   MicOff,
 } from "lucide-react";
-import AudioRecorderComponent from "./AudioRecorderComponent";
+import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import ImagePreviewComponent from "./ImagePreviewComponent";
 import DrawingCanvas from "./DrawingCanvas";
 import DocumentViewer from "./DocumentViewer";
@@ -97,7 +97,7 @@ function MediaPreview({ dataUrl: rawDataUrl, onClick, compact = false }) {
   }
 
   if (category === "audio") {
-    return <AudioRecorderComponent src={dataUrl} compact={compact} />;
+    return <AudioPlayerRecorderComponent src={dataUrl} compact={compact} />;
   }
 
   if (category === "video") {
@@ -903,7 +903,7 @@ export default function ChatArea({
                 return (
                   <div key={i} className={styles.pendingAttachmentWrap}>
                     {isAudio ? (
-                      <AudioRecorderComponent
+                      <AudioPlayerRecorderComponent
                         src={resolvedUrl}
                         compact
                         onRemove={() => removeImage(i)}
@@ -971,7 +971,7 @@ export default function ChatArea({
               />
             )}
             {hasAudioInput && !isLiveModel && (
-              <AudioRecorderComponent
+              <AudioPlayerRecorderComponent
                 onRecordingComplete={(dataUrl) =>
                   setPendingImages((prev) => [...prev, dataUrl])
                 }

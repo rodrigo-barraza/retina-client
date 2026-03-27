@@ -18,7 +18,7 @@ import IrisService from "../services/IrisService";
 import PrismService from "../services/PrismService";
 import ComboboxFilter from "./ComboboxFilter";
 import ImagePreviewComponent from "./ImagePreviewComponent";
-import AudioRecorderComponent from "./AudioRecorderComponent";
+import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import PaginationComponent from "./PaginationComponent";
 import SortableTableComponent from "./SortableTableComponent";
 import PageHeaderComponent from "./PageHeaderComponent";
@@ -216,7 +216,7 @@ export default function MediaPageComponent({
                 className={styles.listThumbAudio}
                 onClick={(e) => e.stopPropagation()}
               >
-                <AudioRecorderComponent src={resolvedUrl} compact />
+                <AudioPlayerRecorderComponent src={resolvedUrl} compact />
               </div>
             ) : m.mediaType === "pdf" && resolvedUrl ? (
               <iframe
@@ -497,7 +497,7 @@ export default function MediaPageComponent({
                         className={styles.mediaAudioPreview}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <AudioRecorderComponent src={resolvedUrl} square />
+                        <AudioPlayerRecorderComponent src={resolvedUrl} square />
                       </div>
                     ) : m.mediaType === "pdf" && resolvedUrl ? (
                       <iframe

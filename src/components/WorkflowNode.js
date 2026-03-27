@@ -14,7 +14,7 @@ import {
   Wrench,
 } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
-import AudioRecorderComponent from "./AudioRecorderComponent";
+import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import AssetInputOptions from "./AssetInputOptions";
 import PrismService from "../services/PrismService";
 import { MODALITY_ICONS } from "./WorkflowNodeConstants";
@@ -915,13 +915,11 @@ function AssetNode(props) {
                           </div>
                         )}
                         {node.receivedOutputs.audio && (
-                          <audio
-                            controls
+                          <AudioPlayerRecorderComponent
                             src={PrismService.getFileUrl(
                               node.receivedOutputs.audio,
                             )}
-                            style={{ width: "100%", height: 28 }}
-                            onMouseDown={(e) => e.stopPropagation()}
+                            compact
                           />
                         )}
                         {node.receivedOutputs.embedding && (
@@ -996,7 +994,7 @@ function AssetNode(props) {
                             className={styles.assetPreviewImg}
                           />
                         ) : node.modality === "audio" ? (
-                          <AudioRecorderComponent
+                          <AudioPlayerRecorderComponent
                             src={PrismService.getFileUrl(node.content)}
                             square
                           />

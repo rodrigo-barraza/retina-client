@@ -20,7 +20,7 @@ import { MODALITY_ICONS } from "./WorkflowNodeConstants";
 import MarkdownContent from "./MarkdownContent";
 import TextContentComponent from "./TextContentComponent";
 import MessageList from "./MessageList";
-import AudioRecorderComponent from "./AudioRecorderComponent";
+import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import AssetInputOptions from "./AssetInputOptions";
 import ToggleSwitchComponent from "./ToggleSwitch";
 import PrismService from "../services/PrismService";
@@ -528,7 +528,7 @@ export default function WorkflowInspector({
                       className={styles.previewImage}
                     />
                   ) : node.modality === "audio" ? (
-                    <AudioRecorderComponent
+                    <AudioPlayerRecorderComponent
                       src={PrismService.getFileUrl(node.content)}
                       compact
                     />
@@ -824,10 +824,9 @@ export default function WorkflowInspector({
             {results.audio && (
               <div className={styles.resultBlock}>
                 <span className={styles.resultType}>Audio</span>
-                <audio
-                  controls
+                <AudioPlayerRecorderComponent
                   src={PrismService.getFileUrl(results.audio)}
-                  className={styles.resultAudio}
+                  compact
                 />
               </div>
             )}
@@ -911,10 +910,9 @@ export default function WorkflowInspector({
               {node.receivedOutputs.audio && (
                 <div className={styles.resultBlock}>
                   <span className={styles.resultType}>Audio Content</span>
-                  <audio
-                    controls
+                  <AudioPlayerRecorderComponent
                     src={PrismService.getFileUrl(node.receivedOutputs.audio)}
-                    className={styles.resultAudio}
+                    compact
                   />
                 </div>
               )}

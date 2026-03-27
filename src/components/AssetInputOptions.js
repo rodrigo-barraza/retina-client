@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback } from "react";
 import { Paperclip, ImageIcon, Mic2, Video } from "lucide-react";
 import DrawingCanvas from "./DrawingCanvas";
-import AudioRecorderComponent from "./AudioRecorderComponent";
+import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import styles from "./AssetInputOptions.module.css";
 
 /**
@@ -136,7 +136,7 @@ export default function AssetInputOptions({ onFile, compact = false }) {
         onDrop={handleDrop}
       >
         <div className={styles.audioRecWrap}>
-          <AudioRecorderComponent
+          <AudioPlayerRecorderComponent
             onRecordingComplete={(dataUrl) => {
               onFile?.(dataUrl, "audio/webm");
               setShowAudioRec(false);
