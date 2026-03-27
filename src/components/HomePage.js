@@ -107,8 +107,8 @@ export default function HomePage({ initialConversationId = null }) {
   const getAudioPlayer = useCallback(() => {
     if (!audioPlayerRef.current) {
       audioPlayerRef.current = new AudioPlayerService();
+      audioPlayerRef.current.init();
     }
-    audioPlayerRef.current.init();
     return audioPlayerRef.current;
   }, []);
 
