@@ -822,6 +822,7 @@ Guidelines:
             const assistantMsg = {
               role: "assistant",
               content: streamedText || "",
+              thinking: streamedThinking || undefined,
               timestamp: new Date().toISOString(),
               toolCalls: pendingToolCalls.map((tc) => {
                 const match = results.find((r) => r.id === tc.id);
@@ -865,7 +866,7 @@ Guidelines:
 
           // No tool calls — terminal state (text response or empty)
           if (streamedText) {
-            currentMessages.push({ role: "assistant", content: streamedText, timestamp: new Date().toISOString() });
+            currentMessages.push({ role: "assistant", content: streamedText, thinking: streamedThinking || undefined, timestamp: new Date().toISOString() });
           } else if (iterations > 1) {
             console.warn(
               "[FC] Model returned empty response after tool results",
@@ -1534,6 +1535,7 @@ Guidelines:
             const assistantMsg = {
               role: "assistant",
               content: streamedText || "",
+              thinking: streamedThinking || undefined,
               timestamp: new Date().toISOString(),
               toolCalls: pendingToolCalls.map((tc) => {
                 const match = results.find((r) => r.id === tc.id);
@@ -1577,7 +1579,7 @@ Guidelines:
 
           // No tool calls — terminal state (text response or empty)
           if (streamedText) {
-            currentMessages.push({ role: "assistant", content: streamedText, timestamp: new Date().toISOString() });
+            currentMessages.push({ role: "assistant", content: streamedText, thinking: streamedThinking || undefined, timestamp: new Date().toISOString() });
           } else if (iterations > 1) {
             console.warn(
               "[FC] Model returned empty response after tool results",
