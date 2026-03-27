@@ -7,7 +7,6 @@ import {
   Volume2,
   Video,
   FileText as DocIcon,
-  Wrench,
   Globe,
   Code,
   Brain,
@@ -46,9 +45,21 @@ const TOOL_FILTERS = [
   },
   {
     key: "functionCalling",
-    icon: Wrench,
     title: "Function Calling",
     color: TOOL_COLORS["Function Calling"],
+    customRender: () => (
+      <span
+        style={{
+          fontSize: 13,
+          fontWeight: 700,
+          fontFamily: "monospace",
+          lineHeight: 1,
+          color: "inherit",
+        }}
+      >
+        ƒ()
+      </span>
+    ),
   },
 ];
 
@@ -123,6 +134,7 @@ export default function SidebarFilterComponent({
             icon: t.icon,
             label: t.title,
             color: t.color,
+            customRender: t.customRender,
           }))}
           activeKeys={activeTools}
           onChange={onToolChange}

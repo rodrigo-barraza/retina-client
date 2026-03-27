@@ -9,6 +9,8 @@
   border-left: 3px solid var(--tool-color);
   transition: all 0.25s ease;
   animation: fadeIn 0.4s ease-out both;
+  cursor: pointer;
+  user-select: none;
 
   &:hover {
     background: color-mix(in srgb, var(--tool-color) 10%, var(--bg-card));
@@ -18,6 +20,36 @@
     box-shadow: 0 4px 16px color-mix(in srgb, var(--tool-color) 12%, transparent);
   }
 }
+
+/* ── Disabled card ─────────────────────────────────────────── */
+
+.cardDisabled {
+  --tool-color-muted: var(--text-tertiary);
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  border-left-color: var(--border-color);
+  opacity: 0.55;
+
+  &:hover {
+    opacity: 0.8;
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    border-left-color: var(--text-tertiary);
+    box-shadow: none;
+  }
+
+  .icon {
+    background: color-mix(in srgb, var(--text-tertiary) 8%, transparent);
+    color: var(--text-tertiary);
+  }
+
+  .count {
+    background: color-mix(in srgb, var(--text-tertiary) 10%, transparent);
+    color: var(--text-tertiary);
+  }
+}
+
+/* ── Icon ──────────────────────────────────────────────────── */
 
 .icon {
   display: flex;
@@ -29,7 +61,10 @@
   background: color-mix(in srgb, var(--tool-color) 12%, transparent);
   color: var(--tool-color);
   flex-shrink: 0;
+  transition: all 0.25s ease;
 }
+
+/* ── Info ──────────────────────────────────────────────────── */
 
 .info {
   display: flex;
@@ -40,10 +75,28 @@
 }
 
 .title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   font-weight: 650;
   color: var(--text-primary);
   letter-spacing: -0.01em;
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tool-color) 15%, transparent);
+  color: var(--tool-color);
+  transition: all 0.25s ease;
 }
 
 .subtitle {
@@ -51,6 +104,8 @@
   color: var(--text-secondary);
   line-height: 1.4;
 }
+
+/* ── Badge ─────────────────────────────────────────────────── */
 
 .badge {
   display: inline-flex;
@@ -67,4 +122,11 @@
   border: 1px solid color-mix(in srgb, #22c55e 20%, transparent);
   flex-shrink: 0;
   white-space: nowrap;
+  transition: all 0.25s ease;
+}
+
+.badgeDisabled {
+  background: color-mix(in srgb, var(--text-tertiary) 8%, transparent);
+  color: var(--text-tertiary);
+  border-color: color-mix(in srgb, var(--text-tertiary) 12%, transparent);
 }

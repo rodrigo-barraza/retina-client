@@ -209,6 +209,7 @@ export default function ChatArea({
   newChatKey = 0,
   toolActivitySlot = null,
   functionCallingEnabled = false,
+  toolCount = 0,
   settings = {},
   onUpdateSettings,
 }) {
@@ -292,12 +293,6 @@ export default function ChatArea({
       }
     }
   }
-
-  // Whether any tool toggle is currently checked
-  const hasEnabledTools = activeTools.some((tool) => {
-    const toggle = getToolToggle(tool);
-    return toggle?.checked;
-  });
 
   useEffect(() => {
     if (!showToolsBubble) return;
@@ -513,21 +508,19 @@ export default function ChatArea({
             </div>
           )}
 
-        {messages.length === 0 && activeTools.length > 0 && (() => {
-          const enabledTools = activeTools.filter((tool) => {
-            const toggle = getToolToggle(tool);
-            return toggle?.checked;
-          });
-          if (enabledTools.length === 0) return null;
-          return (
+        {messages.length === 0 && activeTools.length > 0 && (
             <div className={styles.toolCardsStack}>
               <div className={styles.toolCardsHeader}>
                 <Zap size={14} />
-                <span>Active Tools</span>
-                <span className={styles.toolCardsCount}>{enabledTools.length}</span>
+                <span>Tools</span>
+                <span className={styles.toolCardsCount}>
+                  {activeTools.filter((t) => getToolToggle(t)?.checked).length}
+                </span>
               </div>
-              {enabledTools.map((tool) => {
+              {activeTools.map((tool) => {
                 const ToolIcon = TOOL_ICON_MAP[tool];
+                const toggle = getToolToggle(tool);
+                const isEnabled = toggle?.checked || false;
                 return (
                   <ToolCardComponent
                     key={tool}
@@ -535,6 +528,9 @@ export default function ChatArea({
                     title={tool}
                     subtitle={TOOL_DESCRIPTIONS[tool] || ""}
                     color={TOOL_COLORS[tool]}
+                    count={tool === "Function Calling" ? toolCount : undefined}
+                    enabled={isEnabled}
+                    onClick={toggle ? () => toggle.onChange(!isEnabled) : undefined}
                   />
                 );
               })}
@@ -555,11 +551,10 @@ export default function ChatArea({
                 </div>
               )}
             </div>
-          );
-        })()}
+        )}
 
         {messages.length === 0 &&
-          !hasEnabledTools &&
+          activeTools.length === 0 &&
           config?.availableProviders?.length === 0 && (
             <div className={styles.welcome}>
               <div
@@ -625,7 +620,7 @@ export default function ChatArea({
           )}
 
         {messages.length === 0 &&
-          !hasEnabledTools &&
+          activeTools.length === 0 &&
           config?.availableProviders?.length > 0 && (
             <div className={styles.readyPrompt}>
               <h3>You&apos;re all set! 🎉</h3>

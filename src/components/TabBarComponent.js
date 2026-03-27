@@ -23,13 +23,13 @@ export default function TabBarComponent({
       {tabs.map((tab) => (
         <button
           key={tab.key}
-          className={`${styles.tab}${activeTab === tab.key ? ` ${styles.tabActive}` : ""}${tab.disabled ? ` ${styles.tabDisabled}` : ""}`}
+          className={`${styles.tab}${activeTab === tab.key ? ` ${styles.tabActive}` : ""}${tab.disabled ? ` ${styles.tabDisabled}` : ""}${tab.badgeDisabled ? ` ${styles.tabDimmed}` : ""}`}
           onClick={() => !tab.disabled && onChange(tab.key)}
         >
           {tab.icon}
           {tab.label}
           {tab.badge != null && (
-            <span className={styles.tabBadge}>{tab.badge}</span>
+            <span className={`${styles.tabBadge}${tab.badgeDisabled ? ` ${styles.tabBadgeDisabled}` : ""}`}>{tab.badge}</span>
           )}
         </button>
       ))}

@@ -44,9 +44,21 @@
   padding: 0 4px;
   font-size: 9px;
   font-weight: 700;
-  color: #fff;
-  background: var(--accent-color);
+  color: #f97316;
+  background: color-mix(in srgb, #f97316 15%, transparent);
   border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+.tabBadgeDisabled {
+  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--text-tertiary) 12%, transparent);
+  opacity: 0.5;
+}
+
+.tabDimmed > svg {
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
 }
 
 .tabDisabled {

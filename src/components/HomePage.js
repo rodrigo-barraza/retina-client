@@ -683,6 +683,7 @@ Guidelines:
               {
                 role: "assistant",
                 content: "",
+                timestamp: new Date().toISOString(),
                 provider: settings.provider,
                 model: settings.model,
               },
@@ -853,6 +854,7 @@ Guidelines:
             const assistantMsg = {
               role: "assistant",
               content: streamedText || "",
+              timestamp: new Date().toISOString(),
               toolCalls: pendingToolCalls.map((tc) => {
                 const match = results.find((r) => r.id === tc.id);
                 return {
@@ -895,7 +897,7 @@ Guidelines:
 
           // No tool calls — terminal state (text response or empty)
           if (streamedText) {
-            currentMessages.push({ role: "assistant", content: streamedText });
+            currentMessages.push({ role: "assistant", content: streamedText, timestamp: new Date().toISOString() });
           } else if (iterations > 1) {
             console.warn(
               "[FC] Model returned empty response after tool results",
@@ -1402,6 +1404,7 @@ Guidelines:
               {
                 role: "assistant",
                 content: "",
+                timestamp: new Date().toISOString(),
                 provider: settings.provider,
                 model: settings.model,
               },
@@ -1579,6 +1582,7 @@ Guidelines:
             const assistantMsg = {
               role: "assistant",
               content: streamedText || "",
+              timestamp: new Date().toISOString(),
               toolCalls: pendingToolCalls.map((tc) => {
                 const match = results.find((r) => r.id === tc.id);
                 return {
@@ -1621,7 +1625,7 @@ Guidelines:
 
           // No tool calls — terminal state (text response or empty)
           if (streamedText) {
-            currentMessages.push({ role: "assistant", content: streamedText });
+            currentMessages.push({ role: "assistant", content: streamedText, timestamp: new Date().toISOString() });
           } else if (iterations > 1) {
             console.warn(
               "[FC] Model returned empty response after tool results",
@@ -1890,9 +1894,10 @@ Guidelines:
                 {
                   key: "tools",
                   icon: <Parentheses size={14} />,
-                  badge: settings.functionCallingEnabled
+                  badge: selectedModelSupportsFc
                     ? allToolSchemas.length
                     : undefined,
+                  badgeDisabled: !settings.functionCallingEnabled,
                   disabled: !selectedModelSupportsFc,
                 },
                 {
@@ -2163,6 +2168,7 @@ Guidelines:
           systemPrompt={settings.systemPrompt}
           onSystemPromptClick={() => setShowSystemPromptModal(true)}
           functionCallingEnabled={!!settings.functionCallingEnabled}
+          toolCount={allToolSchemas.length}
           toolActivitySlot={
             settings.functionCallingEnabled && toolActivity.length > 0 ? (
               <ToolActivityPanelComponent activities={toolActivity} />
