@@ -672,6 +672,7 @@ Guidelines:
         while (iterations < MAX_TOOL_ITERATIONS) {
           iterations++;
           let streamedText = "";
+          let streamedThinking = "";
           const pendingToolCalls = [];
 
           // Insert placeholder so the blinking cursor shows immediately
@@ -750,7 +751,17 @@ Guidelines:
               },
               onDone: () => resolve(),
               onError: (err) => reject(err),
-              onThinking: () => {},
+              onThinking: (content) => {
+                streamedThinking += content;
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastMsg = updated[updated.length - 1];
+                  if (lastMsg?.role === "assistant") {
+                    lastMsg.thinking = streamedThinking;
+                  }
+                  return updated;
+                });
+              },
             });
           });
 
@@ -1366,6 +1377,7 @@ Guidelines:
         while (iterations < MAX_TOOL_ITERATIONS) {
           iterations++;
           let streamedText = "";
+          let streamedThinking = "";
           const pendingToolCalls = [];
 
           // Insert placeholder so the blinking cursor shows immediately
@@ -1451,7 +1463,17 @@ Guidelines:
               },
               onDone: () => resolve(),
               onError: (err) => reject(err),
-              onThinking: () => {},
+              onThinking: (content) => {
+                streamedThinking += content;
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastMsg = updated[updated.length - 1];
+                  if (lastMsg?.role === "assistant") {
+                    lastMsg.thinking = streamedThinking;
+                  }
+                  return updated;
+                });
+              },
             });
           });
 

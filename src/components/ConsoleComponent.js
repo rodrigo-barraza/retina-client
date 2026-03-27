@@ -367,6 +367,7 @@ export default function ConsoleComponent() {
       while (iterations < MAX_TOOL_ITERATIONS) {
         iterations++;
         let streamedText = "";
+        let streamedThinking = "";
         const pendingToolCalls = [];
 
         // Clean up any stale empty assistant placeholders
@@ -433,7 +434,17 @@ export default function ConsoleComponent() {
             },
             onDone: () => resolve(),
             onError: (err) => reject(err),
-            onThinking: () => {},
+            onThinking: (content) => {
+              streamedThinking += content;
+              setMessages((prev) => {
+                const updated = [...prev];
+                const lastMsg = updated[updated.length - 1];
+                if (lastMsg?.role === "assistant") {
+                  lastMsg.thinking = streamedThinking;
+                }
+                return updated;
+              });
+            },
           });
         });
 
