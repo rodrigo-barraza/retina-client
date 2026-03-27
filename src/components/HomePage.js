@@ -41,6 +41,8 @@ export default function HomePage({ initialConversationId = null }) {
   const [activeId, setActiveId] = useState(initialConversationId || null);
   const [title, setTitle] = useState("New Conversation");
   const [messages, setMessages] = useState([]);
+  // Ref to synchronously track live conversation ID (avoids stale closure in setMessages updater)
+  const liveConvIdRef = useRef(null);
 
   const [settings, setSettings] = useState({
     provider: "",
@@ -409,6 +411,7 @@ Guidelines:
 
   const handleNewChat = () => {
     setActiveId(null);
+    liveConvIdRef.current = null;
     updateUrl(null);
     setTitle("New Conversation");
     setMessages([]);
@@ -2219,7 +2222,6 @@ Guidelines:
                   if (turnData.audioRef) rest.audio = turnData.audioRef;
                   if (turnData.usage) {
                     rest.usage = turnData.usage;
-                    // Estimate cost using the model pricing from config
                     const pricing = (() => {
                       const models = config?.textToText?.models?.[settings.provider] || [];
                       const md = models.find((x) => x.name === settings.model);
@@ -2235,13 +2237,30 @@ Guidelines:
                 return rest;
               });
 
-              // Persist to DB asynchronously
-              const currentId = activeId;
-              const currentTitle = title;
-              if (currentId) {
-                const { systemPrompt, ...modelSettings } = settings;
+              // Persist to DB — use ref to avoid stale closure
+              let currentId = liveConvIdRef.current || activeId;
+              const { systemPrompt, ...modelSettings } = settings;
+
+              if (!currentId) {
+                // First turn — create the conversation via appendMessages (auto-creates doc)
+                const firstUserMsg = finalized.find((m) => m.role === "user");
+                const liveTitle = firstUserMsg?.content?.slice(0, 40) || "Live Conversation";
+                currentId = crypto.randomUUID();
+                liveConvIdRef.current = currentId;
+                setActiveId(currentId);
+                setTitle(liveTitle);
+                updateUrl(currentId);
+
+                PrismService.appendMessages(currentId, finalized, null, {
+                  title: liveTitle,
+                  systemPrompt,
+                  settings: modelSettings,
+                }).then(() => loadConversations()).catch((err) =>
+                  console.error("[Live] Failed to create conversation:", err),
+                );
+              } else {
+                // Subsequent turns — update messages only (title already set on creation)
                 PrismService.patchConversation(currentId, {
-                  title: currentTitle,
                   messages: finalized,
                   systemPrompt,
                   settings: modelSettings,

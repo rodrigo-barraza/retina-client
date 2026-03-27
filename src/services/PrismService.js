@@ -161,16 +161,19 @@ export default class PrismService {
   }
 
   /**
-   * Append messages to an existing conversation (e.g. tool results after execution).
+   * Append messages to a conversation, auto-creating it if it doesn't exist.
    * @param {string} id - Conversation ID
    * @param {Array} messages - Messages to append
    * @param {string} [project] - Project identifier
+   * @param {object} [conversationMeta] - Optional metadata ({ title, systemPrompt, settings })
    * @returns {Promise<object>}
    */
-  static async appendMessages(id, messages, project) {
+  static async appendMessages(id, messages, project, conversationMeta) {
     const qs = project ? `?project=${encodeURIComponent(project)}` : "";
+    const body = { messages };
+    if (conversationMeta) body.conversationMeta = conversationMeta;
     return PrismService._request(`/conversations/${id}/messages${qs}`, {
-      body: { messages },
+      body,
     });
   }
 
