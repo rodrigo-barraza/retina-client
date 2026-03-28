@@ -789,9 +789,19 @@ export default function MessageList({
                         {msg.voice ? `🔊 ${msg.voice}` : ""}
                         {msg.usage?.inputTokens != null &&
                         msg.usage?.outputTokens != null
-                          ? `${msg.voice ? " • " : ""}${msg.usage.inputTokens} in · ${msg.usage.outputTokens} out tokens`
+                          ? (() => {
+                              const cached =
+                                (msg.usage.cacheReadInputTokens || 0) +
+                                (msg.usage.cacheCreationInputTokens || 0);
+                              const totalIn =
+                                msg.usage.inputTokens + cached;
+                              const inLabel = cached
+                                ? `${totalIn.toLocaleString()} in (cached)`
+                                : `${msg.usage.inputTokens.toLocaleString()} in`;
+                              return `${msg.voice ? " • " : ""}${inLabel} · ${msg.usage.outputTokens.toLocaleString()} out tokens`;
+                            })()
                           : msg.usage?.outputTokens != null
-                            ? `${msg.voice ? " • " : ""}${msg.usage.outputTokens} tokens`
+                            ? `${msg.voice ? " • " : ""}${msg.usage.outputTokens.toLocaleString()} tokens`
                             : ""}
                         {msg.content
                           ? ` • ${msg.content.trim().split(/\s+/).filter(Boolean).length} words`
