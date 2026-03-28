@@ -171,6 +171,138 @@ const FIELDS = {
     "lastAstrosFetch",
   ],
 
+  // NEO: from NeoCache.getNeoSummary()
+  NEO: [
+    "total",
+    "hazardousCount",
+    "closest.name",
+    "closest.missDistanceKm",
+    "closest.missDistanceLunar",
+    "closest.isPotentiallyHazardous",
+    "closest.estimatedDiameterMaxKm",
+    "closest.relativeVelocityKmPerSec",
+    "largest.name",
+    "largest.estimatedDiameterMaxKm",
+    "lastFetch",
+  ],
+
+  // Solar Wind: from SolarWindCache.getSolarWindLatest()
+  SOLAR_WIND: [
+    "time",
+    "speed",
+    "density",
+    "temperature",
+    "bz",
+    "bt",
+    "bx",
+    "by",
+    "lastFetch",
+  ],
+
+  // Pollen: from PollenCache.getPollenToday()
+  POLLEN: [
+    "date",
+    "grass.displayName",
+    "grass.indexInfo.value",
+    "grass.indexInfo.category",
+    "grass.inSeason",
+    "tree.displayName",
+    "tree.indexInfo.value",
+    "tree.indexInfo.category",
+    "tree.inSeason",
+    "weed.displayName",
+    "weed.indexInfo.value",
+    "weed.indexInfo.category",
+    "weed.inSeason",
+    "regionCode",
+    "lastFetch",
+  ],
+
+  // APOD: from ApodCache.getApod()
+  APOD: [
+    "title",
+    "explanation",
+    "date",
+    "url",
+    "hdUrl",
+    "mediaType",
+    "copyright",
+    "lastFetch",
+  ],
+
+  // Launches: from LaunchCache.getLaunchSummary()
+  LAUNCHES: [
+    "count",
+    "upcomingCount",
+    "next.name",
+    "next.status",
+    "next.net",
+    "next.provider",
+    "next.rocket",
+    "next.mission",
+    "next.missionType",
+    "next.missionDescription",
+    "next.padName",
+    "next.padLocation",
+    "next.imageUrl",
+    "providers",
+    "lastFetch",
+  ],
+
+  // Weather Warnings: from EnvironmentCanadaCache.getWarnings()
+  WEATHER_WARNINGS: [
+    "count",
+    "warnings",
+    "lastFetch",
+  ],
+
+  // Avalanche: from AvalancheCache.getAvalanche()
+  AVALANCHE: [
+    "count",
+    "forecasts",
+    "lastFetch",
+  ],
+
+  // Google Air Quality: from GoogleAirQualityCache.getGoogleAirQuality()
+  GOOGLE_AIR_QUALITY: [
+    "universalAqi",
+    "universalAqiCategory",
+    "universalAqiDominantPollutant",
+    "usEpaAqi",
+    "usEpaCategory",
+    "usEpaDominantPollutant",
+    "pollutants",
+    "healthRecommendations",
+    "regionCode",
+    "lastFetch",
+  ],
+
+  // Event Summary: from EventCache.getEventSummary()
+  EVENT_SUMMARY: [
+    "total",
+    "today",
+    "upcoming",
+    "byCategory",
+    "bySource",
+    "lastFetch",
+  ],
+
+  // Product Availability: from BestBuyCAAvailabilityCache
+  PRODUCT_AVAILABILITY: [
+    "count",
+    "lastCheck",
+    "inStockCount",
+    "results",
+  ],
+
+  // Commodity History: from CommoditySnapshot model
+  COMMODITY_HISTORY: [
+    "ticker",
+    "hours",
+    "count",
+    "snapshots",
+  ],
+
   // Events: from TicketmasterFetcher normalized schema (all sources share this)
   EVENTS: [
     "name",
@@ -482,6 +614,102 @@ const TOOL_DEFINITIONS = [
       required: ["fields"],
     },
   },
+  {
+    name: "get_near_earth_objects",
+    description:
+      "Get today's near-Earth objects (asteroids) summary including total count, hazardous count, closest approach, and largest object.",
+    parameters: {
+      type: "object",
+      properties: {
+        ...fieldsParam(FIELDS.NEO),
+      },
+      required: ["fields"],
+    },
+  },
+  {
+    name: "get_solar_wind",
+    description:
+      "Get latest solar wind conditions including plasma speed, density, temperature, and interplanetary magnetic field (Bz, Bt). Important for aurora and space weather assessment.",
+    parameters: {
+      type: "object",
+      properties: {
+        ...fieldsParam(FIELDS.SOLAR_WIND),
+      },
+      required: ["fields"],
+    },
+  },
+  {
+    name: "get_pollen",
+    description:
+      "Get today's pollen forecast including grass, tree, and weed pollen index values, categories, and whether each type is in season.",
+    parameters: {
+      type: "object",
+      properties: {
+        ...fieldsParam(FIELDS.POLLEN),
+      },
+      required: ["fields"],
+    },
+  },
+  {
+    name: "get_apod",
+    description:
+      "Get NASA's Astronomy Picture of the Day including title, explanation, image URL, and copyright information.",
+    parameters: {
+      type: "object",
+      properties: {
+        ...fieldsParam(FIELDS.APOD),
+      },
+      required: ["fields"],
+    },
+  },
+  {
+    name: "get_launches",
+    description:
+      "Get upcoming rocket launch summary including next launch details, provider, rocket, mission, pad location, and launch window.",
+    parameters: {
+      type: "object",
+      properties: {
+        ...fieldsParam(FIELDS.LAUNCHES),
+      },
+      required: ["fields"],
+    },
+  },
+  {
+    name: "get_weather_warnings",
+    description:
+      "Get active Environment Canada weather warnings, watches, advisories, and special weather statements for Metro Vancouver.",
+    parameters: {
+      type: "object",
+      properties: {
+        ...fieldsParam(FIELDS.WEATHER_WARNINGS),
+      },
+      required: ["fields"],
+    },
+  },
+  {
+    name: "get_avalanche_forecast",
+    description:
+      "Get Avalanche Canada forecast for BC regions including danger ratings (alpine/treeline/below treeline), problems, and highlights.",
+    parameters: {
+      type: "object",
+      properties: {
+        ...fieldsParam(FIELDS.AVALANCHE),
+      },
+      required: ["fields"],
+    },
+  },
+  {
+    name: "get_google_air_quality",
+    description:
+      "Get detailed air quality from Google's Air Quality API including universal AQI, US EPA AQI, dominant pollutant, pollutant concentrations, and health recommendations.",
+    parameters: {
+      type: "object",
+      properties: {
+        ...fieldsParam(FIELDS.GOOGLE_AIR_QUALITY),
+      },
+      required: ["fields"],
+    },
+  },
 
   // ── Events ──
   {
@@ -530,6 +758,30 @@ const TOOL_DEFINITIONS = [
           description: "Maximum number of events to return (default: 20)",
         },
         ...fieldsParam(FIELDS.EVENTS),
+      },
+      required: ["fields"],
+    },
+  },
+  {
+    name: "get_events_today",
+    description:
+      "Get all events happening today. Returns events with venue, category, and timing information.",
+    parameters: {
+      type: "object",
+      properties: {
+        ...fieldsParam(FIELDS.EVENTS),
+      },
+      required: ["fields"],
+    },
+  },
+  {
+    name: "get_event_summary",
+    description:
+      "Get a statistical summary of all cached events: total count, today's count, upcoming count, breakdown by category and source.",
+    parameters: {
+      type: "object",
+      properties: {
+        ...fieldsParam(FIELDS.EVENT_SUMMARY),
       },
       required: ["fields"],
     },
@@ -616,6 +868,38 @@ const TOOL_DEFINITIONS = [
       required: ["fields"],
     },
   },
+  {
+    name: "get_hot_trends",
+    description:
+      "Get cross-platform correlated trending topics — topics appearing in 2+ sources simultaneously. Shows which topics are truly viral across Google, Reddit, X, news, etc.",
+    parameters: {
+      type: "object",
+      properties: {
+        ...fieldsParam(FIELDS.TRENDS),
+      },
+      required: ["fields"],
+    },
+  },
+  {
+    name: "get_top_trends",
+    description:
+      "Get the highest-volume trending topics from the database over a configurable time window. Aggregated across all sources.",
+    parameters: {
+      type: "object",
+      properties: {
+        hours: {
+          type: "number",
+          description: "Time window in hours (default: 24)",
+        },
+        limit: {
+          type: "number",
+          description: "Maximum number of trends to return (default: 20)",
+        },
+        ...fieldsParam(FIELDS.TRENDS),
+      },
+      required: ["fields"],
+    },
+  },
 
   // ── Products ──
   {
@@ -640,6 +924,81 @@ const TOOL_DEFINITIONS = [
         ...fieldsParam(FIELDS.PRODUCTS),
       },
       required: ["fields"],
+    },
+  },
+  {
+    name: "get_trending_products",
+    description:
+      "Get currently trending products ranked by trending score. Shows top deals and popular items.",
+    parameters: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "number",
+          description: "Maximum number of products to return (default: 50)",
+        },
+        ...fieldsParam(FIELDS.PRODUCTS),
+      },
+      required: ["fields"],
+    },
+  },
+  {
+    name: "get_product_availability",
+    description:
+      "Get Best Buy Canada product availability for all monitored watchlist items. Shows in-stock/out-of-stock status.",
+    parameters: {
+      type: "object",
+      properties: {
+        ...fieldsParam(FIELDS.PRODUCT_AVAILABILITY),
+      },
+      required: ["fields"],
+    },
+  },
+  {
+    name: "check_product_availability",
+    description:
+      "Check Best Buy Canada availability for specific SKUs on demand. Useful for checking arbitrary products not on the watchlist.",
+    parameters: {
+      type: "object",
+      properties: {
+        skus: {
+          type: "string",
+          description: "Comma-separated list of Best Buy SKU numbers to check",
+        },
+        ...fieldsParam(FIELDS.PRODUCT_AVAILABILITY),
+      },
+      required: ["skus", "fields"],
+    },
+  },
+
+  // ── Market ──
+  {
+    name: "get_commodity_categories",
+    description:
+      "Get a list of all available commodity categories (energy, precious_metals, crypto, forex, etc.).",
+    parameters: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "get_commodity_history",
+    description:
+      "Get price history snapshots for a specific commodity ticker over a time window.",
+    parameters: {
+      type: "object",
+      properties: {
+        ticker: {
+          type: "string",
+          description: "Ticker symbol (e.g. GC=F for gold, BTC-USD for Bitcoin)",
+        },
+        hours: {
+          type: "number",
+          description: "Time window in hours (default: 24)",
+        },
+        ...fieldsParam(FIELDS.COMMODITY_HISTORY),
+      },
+      required: ["ticker", "fields"],
     },
   },
 
@@ -808,6 +1167,30 @@ const TOOL_EXECUTORS = {
   get_iss_position: async (args) =>
     fetchJson(buildUrl("/weather/iss", {}, args)),
 
+  get_near_earth_objects: async (args) =>
+    fetchJson(buildUrl("/weather/neo/summary", {}, args)),
+
+  get_solar_wind: async (args) =>
+    fetchJson(buildUrl("/weather/solar-wind/latest", {}, args)),
+
+  get_pollen: async (args) =>
+    fetchJson(buildUrl("/weather/pollen/today", {}, args)),
+
+  get_apod: async (args) =>
+    fetchJson(buildUrl("/weather/apod", {}, args)),
+
+  get_launches: async (args) =>
+    fetchJson(buildUrl("/weather/launches/summary", {}, args)),
+
+  get_weather_warnings: async (args) =>
+    fetchJson(buildUrl("/weather/warnings", {}, args)),
+
+  get_avalanche_forecast: async (args) =>
+    fetchJson(buildUrl("/weather/avalanche", {}, args)),
+
+  get_google_air_quality: async (args) =>
+    fetchJson(buildUrl("/weather/airquality/google", {}, args)),
+
   // ── Events ──
   search_events: async (args) =>
     fetchJson(
@@ -827,6 +1210,12 @@ const TOOL_EXECUTORS = {
     fetchJson(
       buildUrl("/event/upcoming", { days: args.days, limit: args.limit }, args),
     ),
+
+  get_events_today: async (args) =>
+    fetchJson(buildUrl("/event/today", {}, args)),
+
+  get_event_summary: async (args) =>
+    fetchJson(buildUrl("/event/summary", {}, args)),
 
   // ── Commodities / Markets ──
   get_commodities_summary: async (args) =>
@@ -856,12 +1245,50 @@ const TOOL_EXECUTORS = {
     return fetchJson(buildUrl("/trend/trends", {}, args));
   },
 
+  get_hot_trends: async (args) =>
+    fetchJson(buildUrl("/trend/trends/hot", {}, args)),
+
+  get_top_trends: async (args) =>
+    fetchJson(
+      buildUrl(
+        "/trend/trends/top",
+        { hours: args.hours, limit: args.limit },
+        args,
+      ),
+    ),
+
   // ── Products ──
   search_products: async (args) =>
     fetchJson(
       buildUrl(
         "/product/products/search",
         { q: args.query, category: args.category, limit: args.limit },
+        args,
+      ),
+    ),
+
+  get_trending_products: async (args) =>
+    fetchJson(
+      buildUrl("/product/products/trending", { limit: args.limit }, args),
+    ),
+
+  get_product_availability: async (args) =>
+    fetchJson(buildUrl("/product/products/availability", {}, args)),
+
+  check_product_availability: async (args) =>
+    fetchJson(
+      buildUrl("/product/products/availability/check", { skus: args.skus }, args),
+    ),
+
+  // ── Market (extended) ──
+  get_commodity_categories: async () =>
+    fetchJson(`${TOOLS_API_URL}/market/commodities/categories`),
+
+  get_commodity_history: async (args) =>
+    fetchJson(
+      buildUrl(
+        `/market/commodities/history/${encodeURIComponent(args.ticker)}`,
+        { hours: args.hours },
         args,
       ),
     ),
@@ -935,11 +1362,28 @@ const TOOL_API_MAP = {
   get_iss_position: TOOLS_API_URL,
   search_events: TOOLS_API_URL,
   get_upcoming_events: TOOLS_API_URL,
+  get_events_today: TOOLS_API_URL,
+  get_event_summary: TOOLS_API_URL,
   get_commodities_summary: TOOLS_API_URL,
   get_commodity_by_category: TOOLS_API_URL,
   get_commodity_ticker: TOOLS_API_URL,
+  get_commodity_categories: TOOLS_API_URL,
+  get_commodity_history: TOOLS_API_URL,
   get_trends: TOOLS_API_URL,
+  get_hot_trends: TOOLS_API_URL,
+  get_top_trends: TOOLS_API_URL,
   search_products: TOOLS_API_URL,
+  get_trending_products: TOOLS_API_URL,
+  get_product_availability: TOOLS_API_URL,
+  check_product_availability: TOOLS_API_URL,
+  get_near_earth_objects: TOOLS_API_URL,
+  get_solar_wind: TOOLS_API_URL,
+  get_pollen: TOOLS_API_URL,
+  get_apod: TOOLS_API_URL,
+  get_launches: TOOLS_API_URL,
+  get_weather_warnings: TOOLS_API_URL,
+  get_avalanche_forecast: TOOLS_API_URL,
+  get_google_air_quality: TOOLS_API_URL,
   get_stock_quote: TOOLS_API_URL,
   get_company_profile: TOOLS_API_URL,
   get_market_news: TOOLS_API_URL,
