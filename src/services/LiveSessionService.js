@@ -23,14 +23,13 @@ const LIVE_WS_URL = `${PRISM_WS_URL}/ws/live?project=retina&username=default`;
 export default class LiveSessionService {
   constructor() {
     this.ws = null;
-    this.audioContext = null;      // Capture context (16kHz)
-    this.playbackContext = null;   // Playback context (24kHz)
+    this.audioContext = null;          // Capture context (16kHz)
+    this.playbackContext = null;       // Playback context (24kHz)
+    this.playbackWorkletNode = null;   // Persistent playback worklet
     this.mediaStream = null;
     this.audioWorkletNode = null;
     this.isRecording = false;
     this.callbacks = {};
-    this.nextPlayTime = 0;
-    this.scheduledSources = [];
     this.connected = false;
   }
 
@@ -158,10 +157,16 @@ export default class LiveSessionService {
       this.audioContext.close();
       this.audioContext = null;
     }
+    if (this.playbackWorkletNode) {
+      this.playbackWorkletNode.disconnect();
+      this.playbackWorkletNode.port.close();
+      this.playbackWorkletNode = null;
+    }
     if (this.playbackContext) {
       this.playbackContext.close();
       this.playbackContext = null;
     }
+    this._playbackInitPromise = null;
     this.connected = false;
   }
 
@@ -261,25 +266,36 @@ export default class LiveSessionService {
 
   // ── Audio Playback ─────────────────────────────────────────
 
-  // Lazily create a dedicated 24kHz playback context.
-  // Separate from the 16kHz capture context to avoid resampling
-  // the model's 24kHz output audio through a 16kHz context.
+  // Lazily create a dedicated 24kHz playback context with a persistent
+  // AudioWorklet. The worklet maintains a ring buffer queue on the audio
+  // thread — zero GC pressure, instant interrupt via single message.
+  // Uses a memoized promise to prevent race conditions during init.
   _ensurePlaybackContext() {
-    if (!this.playbackContext) {
-      this.playbackContext = new (window.AudioContext || window.webkitAudioContext)({
-        sampleRate: 24000,
-      });
+    if (!this._playbackInitPromise) {
+      this._playbackInitPromise = (async () => {
+        this.playbackContext = new (window.AudioContext || window.webkitAudioContext)({
+          sampleRate: 24000,
+        });
+        await this.playbackContext.audioWorklet.addModule("/playback-processor.js");
+        this.playbackWorkletNode = new AudioWorkletNode(
+          this.playbackContext,
+          "playback-processor",
+        );
+        this.playbackWorkletNode.connect(this.playbackContext.destination);
+      })();
     }
-    if (this.playbackContext.state === "suspended") {
-      this.playbackContext.resume();
-    }
+    return this._playbackInitPromise;
   }
 
-  _playAudioChunk(base64Data) {
-    this._ensurePlaybackContext();
+  async _playAudioChunk(base64Data) {
+    await this._ensurePlaybackContext();
+
+    if (this.playbackContext.state === "suspended") {
+      await this.playbackContext.resume();
+    }
 
     try {
-      // Decode base64 → ArrayBuffer → Int16 → Float32
+      // Decode base64 → Int16 PCM → Float32
       const binaryStr = atob(base64Data);
       const bytes = new Uint8Array(binaryStr.length);
       for (let i = 0; i < binaryStr.length; i++) {
@@ -292,36 +308,16 @@ export default class LiveSessionService {
         float32[i] = pcmData[i] / 32768.0;
       }
 
-      // Playback context runs at 24kHz — matches Gemini's output rate natively
-      const buffer = this.playbackContext.createBuffer(1, float32.length, 24000);
-      buffer.getChannelData(0).set(float32);
-
-      const source = this.playbackContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(this.playbackContext.destination);
-
-      const now = this.playbackContext.currentTime;
-      this.nextPlayTime = Math.max(now, this.nextPlayTime);
-      source.start(this.nextPlayTime);
-      this.nextPlayTime += buffer.duration;
-
-      this.scheduledSources.push(source);
-      source.onended = () => {
-        const idx = this.scheduledSources.indexOf(source);
-        if (idx > -1) this.scheduledSources.splice(idx, 1);
-      };
+      // Post directly to the worklet's ring buffer queue
+      this.playbackWorkletNode.port.postMessage(float32);
     } catch (err) {
       console.error("[LiveSession] Audio playback error:", err);
     }
   }
 
   stopAudioPlayback() {
-    this.scheduledSources.forEach((s) => {
-      try { s.stop(); } catch { /* already stopped */ }
-    });
-    this.scheduledSources = [];
-    if (this.playbackContext) {
-      this.nextPlayTime = this.playbackContext.currentTime;
+    if (this.playbackWorkletNode) {
+      this.playbackWorkletNode.port.postMessage("interrupt");
     }
   }
 
