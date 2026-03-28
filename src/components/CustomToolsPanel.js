@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   Plus,
   Trash2,
@@ -16,6 +16,7 @@ import {
 import PrismService from "../services/PrismService.js";
 import ButtonComponent from "./ButtonComponent.js";
 import ToggleSwitchComponent from "./ToggleSwitch.js";
+import SearchInputComponent from "./SearchInputComponent.js";
 import { renderToolName } from "../utils/utilities";
 import styles from "./CustomToolsPanel.module.css";
 
@@ -59,6 +60,7 @@ export default function CustomToolsPanel({
   builtInTools = [],
   disabledBuiltIns = new Set(),
   onToggleBuiltIn,
+  onToggleAllBuiltIn,
   offlineTools = new Set(),
 }) {
   const [editingTool, setEditingTool] = useState(null);
@@ -67,6 +69,7 @@ export default function CustomToolsPanel({
   const [saving, setSaving] = useState(false);
   const [builtInOpen, setBuiltInOpen] = useState(true);
   const [customOpen, setCustomOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
 
   // ── CRUD ─────────────────────────────────────────────────────
@@ -191,6 +194,59 @@ export default function CustomToolsPanel({
       parameters: t.parameters.filter((_, i) => i !== index),
     }));
   }, []);
+
+  // ── Tool list ────────────────────────────────────────────────
+
+  const enabledBuiltIn = builtInTools.length - disabledBuiltIns.size;
+
+  // ── Search filtering ────────────────────────────────────────
+  const query = searchQuery.toLowerCase().trim();
+
+  const filteredCustomTools = useMemo(() => {
+    if (!query) return tools;
+    return tools.filter(
+      (t) =>
+        t.name?.toLowerCase().includes(query) ||
+        t.description?.toLowerCase().includes(query),
+    );
+  }, [tools, query]);
+
+  const filteredBuiltInTools = useMemo(() => {
+    if (!query) return builtInTools;
+    return builtInTools.filter(
+      (t) =>
+        t.name?.toLowerCase().includes(query) ||
+        renderToolName(t.name)?.toLowerCase().includes(query) ||
+        t.description?.toLowerCase().includes(query),
+    );
+  }, [builtInTools, query]);
+
+  // ── Toggle-all states ───────────────────────────────────────
+  const onlineBuiltInTools = builtInTools.filter(
+    (t) => !offlineTools.has(t.name),
+  );
+  const allBuiltInEnabled =
+    onlineBuiltInTools.length > 0 &&
+    onlineBuiltInTools.every((t) => !disabledBuiltIns.has(t.name));
+
+  const enabledCustomCount = tools.filter((t) => t.enabled).length;
+  const allCustomEnabled = tools.length > 0 && enabledCustomCount === tools.length;
+
+  const handleToggleAllCustom = useCallback(async () => {
+    const newEnabled = !allCustomEnabled;
+    try {
+      await Promise.all(
+        tools.map((t) =>
+          PrismService.updateCustomTool(t.id || t._id, {
+            enabled: newEnabled,
+          }),
+        ),
+      );
+      onToolsChange();
+    } catch (err) {
+      console.error("Failed to toggle all custom tools:", err);
+    }
+  }, [allCustomEnabled, tools, onToolsChange]);
 
   // ── Edit form ────────────────────────────────────────────────
 
@@ -409,12 +465,16 @@ export default function CustomToolsPanel({
     );
   }
 
-  // ── Tool list ────────────────────────────────────────────────
-
-  const enabledBuiltIn = builtInTools.length - disabledBuiltIns.size;
-
   return (
     <div className={styles.container}>
+      {/* ── Search ── */}
+      <SearchInputComponent
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Filter tools…"
+        className={styles.searchBar}
+      />
+
       {/* ── Custom tools ── */}
       <div
         className={styles.sectionHeader}
@@ -422,29 +482,40 @@ export default function CustomToolsPanel({
       >
         {customOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         <Globe size={12} />
-        <span>Custom ({tools.length})</span>
-        <ButtonComponent
-          variant="primary"
-          size="xs"
-          icon={Plus}
-          style={{ marginLeft: "auto" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleCreate();
-          }}
-        >
-          New Tool
-        </ButtonComponent>
+        <span>Custom ({enabledCustomCount}/{tools.length})</span>
+        <div className={styles.sectionActions} onClick={(e) => e.stopPropagation()}>
+          {tools.length > 0 && (
+            <ToggleSwitchComponent
+              checked={allCustomEnabled}
+              onChange={() => handleToggleAllCustom()}
+              size="small"
+            />
+          )}
+          <ButtonComponent
+            variant="primary"
+            size="xs"
+            icon={Plus}
+            onClick={handleCreate}
+          >
+            New Tool
+          </ButtonComponent>
+        </div>
       </div>
 
-      {customOpen && tools.length === 0 && (
+      {customOpen && filteredCustomTools.length === 0 && tools.length === 0 && (
         <div className={styles.emptyCustom}>
           Create a tool to connect any API.
         </div>
       )}
 
+      {customOpen && filteredCustomTools.length === 0 && tools.length > 0 && query && (
+        <div className={styles.emptyCustom}>
+          No custom tools match &ldquo;{searchQuery}&rdquo;
+        </div>
+      )}
+
       {customOpen &&
-        tools.map((tool) => {
+        filteredCustomTools.map((tool) => {
           const id = tool.id || tool._id;
           const isExpanded = expandedId === id;
           return (
@@ -575,10 +646,25 @@ export default function CustomToolsPanel({
         <span>
           Built-in ({enabledBuiltIn}/{builtInTools.length})
         </span>
+        {onlineBuiltInTools.length > 0 && (
+          <div className={styles.sectionActions} onClick={(e) => e.stopPropagation()}>
+            <ToggleSwitchComponent
+              checked={allBuiltInEnabled}
+              onChange={() => onToggleAllBuiltIn?.(!allBuiltInEnabled)}
+              size="small"
+            />
+          </div>
+        )}
       </div>
 
+      {builtInOpen && filteredBuiltInTools.length === 0 && query && (
+        <div className={styles.emptyCustom}>
+          No built-in tools match &ldquo;{searchQuery}&rdquo;
+        </div>
+      )}
+
       {builtInOpen &&
-        builtInTools.map((tool) => {
+        filteredBuiltInTools.map((tool) => {
           const isDisabled = disabledBuiltIns.has(tool.name);
           const isOffline = offlineTools.has(tool.name);
           const isExpanded = expandedId === `builtin-${tool.name}`;

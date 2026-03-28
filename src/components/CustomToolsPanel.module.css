@@ -16,6 +16,11 @@
 
 /* ── Section Headers ───────────────────────────────────────── */
 
+.searchBar {
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
 .sectionHeader {
   display: flex;
   align-items: center;
@@ -33,6 +38,13 @@
   &:hover {
     color: var(--text-secondary);
   }
+}
+
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
 }
 
 .emptyCustom {

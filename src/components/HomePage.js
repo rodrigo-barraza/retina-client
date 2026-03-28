@@ -308,6 +308,25 @@ export default function HomePage({ initialConversationId = null }) {
     });
   }, []);
 
+  const handleToggleAllBuiltIn = useCallback(
+    (enableAll) => {
+      setDisabledBuiltIns((prev) => {
+        const next = new Set(prev);
+        const allSchemas = SunService.getToolSchemas();
+        for (const tool of allSchemas) {
+          if (offlineTools.has(tool.name)) continue;
+          if (enableAll) {
+            next.delete(tool.name);
+          } else {
+            next.add(tool.name);
+          }
+        }
+        return next;
+      });
+    },
+    [offlineTools],
+  );
+
   const handleToggleCustomTool = useCallback(
     async (tool) => {
       try {
@@ -1911,6 +1930,7 @@ export default function HomePage({ initialConversationId = null }) {
                 builtInTools={SunService.getToolSchemas()}
                 disabledBuiltIns={disabledBuiltIns}
                 onToggleBuiltIn={handleToggleBuiltIn}
+                onToggleAllBuiltIn={handleToggleAllBuiltIn}
                 offlineTools={offlineTools}
               />
             )}

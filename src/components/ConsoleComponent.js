@@ -682,6 +682,25 @@ export default function ConsoleComponent() {
     });
   }, []);
 
+  const handleToggleAllBuiltIn = useCallback(
+    (enableAll) => {
+      setDisabledBuiltIns((prev) => {
+        const next = new Set(prev);
+        const allSchemas = SunService.getToolSchemas();
+        for (const tool of allSchemas) {
+          if (offlineTools.has(tool.name)) continue;
+          if (enableAll) {
+            next.delete(tool.name);
+          } else {
+            next.add(tool.name);
+          }
+        }
+        return next;
+      });
+    },
+    [offlineTools],
+  );
+
   const leftPanel = (
     <>
       <TabBarComponent
@@ -713,6 +732,7 @@ export default function ConsoleComponent() {
           builtInTools={SunService.getToolSchemas()}
           disabledBuiltIns={disabledBuiltIns}
           onToggleBuiltIn={handleToggleBuiltIn}
+          onToggleAllBuiltIn={handleToggleAllBuiltIn}
           offlineTools={offlineTools}
         />
       )}
