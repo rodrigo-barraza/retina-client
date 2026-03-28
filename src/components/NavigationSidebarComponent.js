@@ -31,9 +31,10 @@ import { LS_PANEL_NAV } from "../constants";
 import RainbowCanvasComponent from "./RainbowCanvasComponent";
 
 function RainbowCanvas({ turbo = false }) {
-  return <RainbowCanvasComponent turbo={turbo} className={styles.rainbowCanvas} />;
+  return (
+    <RainbowCanvasComponent turbo={turbo} className={styles.rainbowCanvas} />
+  );
 }
-
 
 const USER_NAV_ITEMS = [
   { href: "/", label: "Conversations", icon: MessageSquare, exact: true },

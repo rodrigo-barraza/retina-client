@@ -17,7 +17,8 @@
     border-color: color-mix(in srgb, var(--tool-color) 30%, transparent);
     border-left-color: var(--tool-color);
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px color-mix(in srgb, var(--tool-color) 12%, transparent);
+    box-shadow: 0 4px 16px
+      color-mix(in srgb, var(--tool-color) 12%, transparent);
   }
 }
 
@@ -29,7 +30,8 @@
 }
 
 @keyframes cardGlowPulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow:
       0 0 8px color-mix(in srgb, var(--tool-color) 15%, transparent),
       0 0 0 1px color-mix(in srgb, var(--tool-color) 12%, transparent);

@@ -217,37 +217,36 @@ export default function ModelsPageComponent({ mode = "user" }) {
   return (
     <>
       <PageHeaderComponent
-          title="Models"
-          subtitle={`${allModels.length} models across ${providerSet.size} providers`}
+        title="Models"
+        subtitle={`${allModels.length} models across ${providerSet.size} providers`}
+      >
+        <button
+          className={styles.refreshBtn}
+          onClick={handleRefresh}
+          disabled={loading}
         >
-          <button
-            className={styles.refreshBtn}
-            onClick={handleRefresh}
-            disabled={loading}
-          >
-            <RefreshCw size={16} className={loading ? styles.spinning : ""} />
-            Refresh
-          </button>
-        </PageHeaderComponent>
+          <RefreshCw size={16} className={loading ? styles.spinning : ""} />
+          Refresh
+        </button>
+      </PageHeaderComponent>
       <div className={styles.content}>
+        <ErrorMessage message={error} />
 
-      <ErrorMessage message={error} />
+        {toastElement}
 
-      {toastElement}
-
-      {loading && allModels.length === 0 ? (
-        <div className={styles.loadingState}>
-          <Loader2 size={24} className={styles.spinning} />
-          <span>Loading models...</span>
-        </div>
-      ) : (
-        <ModelGrid
-          models={allModels}
-          renderActions={renderActions}
-          favorites={favoriteKeys}
-          onToggleFavorite={handleToggleFavorite}
-        />
-      )}
+        {loading && allModels.length === 0 ? (
+          <div className={styles.loadingState}>
+            <Loader2 size={24} className={styles.spinning} />
+            <span>Loading models...</span>
+          </div>
+        ) : (
+          <ModelGrid
+            models={allModels}
+            renderActions={renderActions}
+            favorites={favoriteKeys}
+            onToggleFavorite={handleToggleFavorite}
+          />
+        )}
       </div>
     </>
   );

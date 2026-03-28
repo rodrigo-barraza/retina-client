@@ -14,13 +14,13 @@ import {
   sanitizeToolName,
 } from "../utils/FunctionCallingUtilities";
 import { buildFCSystemPrompt, formatCost } from "../utils/utilities";
-import { SK_LAST_PROVIDER, SK_LAST_MODEL, SK_INFERENCE_MODE, MAX_TOOL_ITERATIONS } from "../constants";
 import {
-  Send,
-  Settings,
-  Parentheses,
-  SlidersHorizontal,
-} from "lucide-react";
+  SK_LAST_PROVIDER,
+  SK_LAST_MODEL,
+  SK_INFERENCE_MODE,
+  MAX_TOOL_ITERATIONS,
+} from "../constants";
+import { Send, Settings, Parentheses, SlidersHorizontal } from "lucide-react";
 import NavigationSidebarComponent from "../components/NavigationSidebarComponent";
 import SettingsPanel from "../components/SettingsPanel";
 import ParametersPanelComponent from "../components/ParametersPanelComponent";
@@ -349,8 +349,6 @@ export default function HomePage({ initialConversationId = null }) {
     },
     [loadCustomTools],
   );
-
-
 
   // Load conversation from URL path on mount
   const urlLoadedRef = useRef(false);
@@ -890,7 +888,12 @@ export default function HomePage({ initialConversationId = null }) {
 
           // No tool calls — terminal state (text response or empty)
           if (streamedText) {
-            currentMessages.push({ role: "assistant", content: streamedText, thinking: streamedThinking || undefined, timestamp: new Date().toISOString() });
+            currentMessages.push({
+              role: "assistant",
+              content: streamedText,
+              thinking: streamedThinking || undefined,
+              timestamp: new Date().toISOString(),
+            });
           } else if (iterations > 1) {
             console.warn(
               "[FC] Model returned empty response after tool results",
@@ -953,7 +956,6 @@ export default function HomePage({ initialConversationId = null }) {
         (m) => m.name === settings.model,
       );
 
-
       const payload = {
         provider: settings.provider,
         model: settings.model,
@@ -973,7 +975,8 @@ export default function HomePage({ initialConversationId = null }) {
                 : {}),
             }
           : {}),
-        ...(!selectedModelDef?.responsesAPI && (settings.thinkingEnabled || settings.provider === "lm-studio")
+        ...(!selectedModelDef?.responsesAPI &&
+        (settings.thinkingEnabled || settings.provider === "lm-studio")
           ? {
               thinkingEnabled: true,
               reasoningEffort: settings.reasoningEffort,
@@ -1605,7 +1608,12 @@ export default function HomePage({ initialConversationId = null }) {
 
           // No tool calls — terminal state (text response or empty)
           if (streamedText) {
-            currentMessages.push({ role: "assistant", content: streamedText, thinking: streamedThinking || undefined, timestamp: new Date().toISOString() });
+            currentMessages.push({
+              role: "assistant",
+              content: streamedText,
+              thinking: streamedThinking || undefined,
+              timestamp: new Date().toISOString(),
+            });
           } else if (iterations > 1) {
             console.warn(
               "[FC] Model returned empty response after tool results",
@@ -1661,10 +1669,10 @@ export default function HomePage({ initialConversationId = null }) {
       const payloadMessages = [...systemMsg, ...newMessages]
         .filter((m) => !m.deleted)
         .map((m) => ({
-        role: m.role,
-        content: m.content,
-        ...(m.images ? { images: m.images } : {}),
-      }));
+          role: m.role,
+          content: m.content,
+          ...(m.images ? { images: m.images } : {}),
+        }));
       const stopArray = settings.stopSequences
         ? settings.stopSequences
             .split(",")
@@ -1697,7 +1705,8 @@ export default function HomePage({ initialConversationId = null }) {
                 : {}),
             }
           : {}),
-        ...(!selectedModelDef?.responsesAPI && (settings.thinkingEnabled || settings.provider === "lm-studio")
+        ...(!selectedModelDef?.responsesAPI &&
+        (settings.thinkingEnabled || settings.provider === "lm-studio")
           ? {
               thinkingEnabled: true,
               reasoningEffort: settings.reasoningEffort,
@@ -1904,7 +1913,9 @@ export default function HomePage({ initialConversationId = null }) {
               activeTab={leftTab}
               onChange={setLeftTab}
               glowingTabs={hoveredLink === "fc-card" ? ["tools"] : []}
-              onTabHover={(key) => setHoveredLink(key === "tools" ? "tools-tab" : null)}
+              onTabHover={(key) =>
+                setHoveredLink(key === "tools" ? "tools-tab" : null)
+              }
             />
             {leftTab === "settings" && (
               <SettingsPanel
@@ -2171,7 +2182,9 @@ export default function HomePage({ initialConversationId = null }) {
           functionCallingEnabled={!!settings.functionCallingEnabled}
           toolCount={allToolSchemas.length}
           fcCardGlowing={hoveredLink === "tools-tab"}
-          onFcCardHover={(hovering) => setHoveredLink(hovering ? "fc-card" : null)}
+          onFcCardHover={(hovering) =>
+            setHoveredLink(hovering ? "fc-card" : null)
+          }
           toolActivitySlot={
             settings.functionCallingEnabled && toolActivity.length > 0 ? (
               <ToolActivityPanelComponent activities={toolActivity} />
@@ -2188,12 +2201,15 @@ export default function HomePage({ initialConversationId = null }) {
                 return updated;
               }
               // Create new streaming user message
-              return [...prev, {
-                role: "user",
-                content: fullText,
-                timestamp: new Date().toISOString(),
-                _liveStreaming: true,
-              }];
+              return [
+                ...prev,
+                {
+                  role: "user",
+                  content: fullText,
+                  timestamp: new Date().toISOString(),
+                  _liveStreaming: true,
+                },
+              ];
             });
           }}
           onLiveAssistantChunk={(fullText) => {
@@ -2207,14 +2223,17 @@ export default function HomePage({ initialConversationId = null }) {
                 return updated;
               }
               // Create new streaming assistant message
-              return [...prev, {
-                role: "assistant",
-                content: fullText,
-                timestamp: new Date().toISOString(),
-                provider: settings.provider,
-                model: settings.model,
-                _liveStreaming: true,
-              }];
+              return [
+                ...prev,
+                {
+                  role: "assistant",
+                  content: fullText,
+                  timestamp: new Date().toISOString(),
+                  provider: settings.provider,
+                  model: settings.model,
+                  _liveStreaming: true,
+                },
+              ];
             });
           }}
           onLiveTurnComplete={(turnData) => {
@@ -2234,16 +2253,30 @@ export default function HomePage({ initialConversationId = null }) {
                     } else {
                       // Fallback: compute locally with audio-aware rates
                       const pricing = (() => {
-                        const models = config?.textToText?.models?.[settings.provider] || [];
-                        const md = models.find((x) => x.name === settings.model);
+                        const models =
+                          config?.textToText?.models?.[settings.provider] || [];
+                        const md = models.find(
+                          (x) => x.name === settings.model,
+                        );
                         return md?.pricing;
                       })();
                       if (pricing && turnData.usage) {
-                        const inputRate = pricing.audioInputPerMillion || pricing.inputPerMillion || 0;
-                        const outputRate = pricing.audioOutputPerMillion || pricing.outputPerMillion || 0;
-                        const inCost = (turnData.usage.inputTokens / 1_000_000) * inputRate;
-                        const outCost = (turnData.usage.outputTokens / 1_000_000) * outputRate;
-                        rest.estimatedCost = parseFloat((inCost + outCost).toFixed(8));
+                        const inputRate =
+                          pricing.audioInputPerMillion ||
+                          pricing.inputPerMillion ||
+                          0;
+                        const outputRate =
+                          pricing.audioOutputPerMillion ||
+                          pricing.outputPerMillion ||
+                          0;
+                        const inCost =
+                          (turnData.usage.inputTokens / 1_000_000) * inputRate;
+                        const outCost =
+                          (turnData.usage.outputTokens / 1_000_000) *
+                          outputRate;
+                        rest.estimatedCost = parseFloat(
+                          (inCost + outCost).toFixed(8),
+                        );
                       }
                     }
                   }
@@ -2258,33 +2291,38 @@ export default function HomePage({ initialConversationId = null }) {
               if (!currentId) {
                 // First turn — create the conversation via appendMessages (auto-creates doc)
                 const firstUserMsg = finalized.find((m) => m.role === "user");
-                const liveTitle = firstUserMsg?.content?.slice(0, 40) || "Live Conversation";
+                const liveTitle =
+                  firstUserMsg?.content?.slice(0, 40) || "Live Conversation";
                 currentId = crypto.randomUUID();
                 liveConvIdRef.current = currentId;
                 setActiveId(currentId);
                 setTitle(liveTitle);
                 updateUrl(currentId);
 
-                livePersistChainRef.current = livePersistChainRef.current.then(() =>
-                  PrismService.appendMessages(currentId, finalized, null, {
-                    title: liveTitle,
-                    systemPrompt,
-                    settings: modelSettings,
-                  }).then(() => loadConversations()),
-                ).catch((err) =>
-                  console.error("[Live] Failed to create conversation:", err),
-                );
+                livePersistChainRef.current = livePersistChainRef.current
+                  .then(() =>
+                    PrismService.appendMessages(currentId, finalized, null, {
+                      title: liveTitle,
+                      systemPrompt,
+                      settings: modelSettings,
+                    }).then(() => loadConversations()),
+                  )
+                  .catch((err) =>
+                    console.error("[Live] Failed to create conversation:", err),
+                  );
               } else {
                 // Subsequent turns — chain after creation to avoid 404
-                livePersistChainRef.current = livePersistChainRef.current.then(() =>
-                  PrismService.patchConversation(currentId, {
-                    messages: finalized,
-                    systemPrompt,
-                    settings: modelSettings,
-                  }).then(() => loadConversations()),
-                ).catch((err) =>
-                  console.error("[Live] Failed to persist:", err),
-                );
+                livePersistChainRef.current = livePersistChainRef.current
+                  .then(() =>
+                    PrismService.patchConversation(currentId, {
+                      messages: finalized,
+                      systemPrompt,
+                      settings: modelSettings,
+                    }).then(() => loadConversations()),
+                  )
+                  .catch((err) =>
+                    console.error("[Live] Failed to persist:", err),
+                  );
               }
 
               return finalized;

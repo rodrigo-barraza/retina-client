@@ -52,8 +52,6 @@ const EMPTY_TOOL = {
   enabled: true,
 };
 
-
-
 export default function CustomToolsPanel({
   tools,
   onToolsChange,
@@ -230,7 +228,8 @@ export default function CustomToolsPanel({
     onlineBuiltInTools.every((t) => !disabledBuiltIns.has(t.name));
 
   const enabledCustomCount = tools.filter((t) => t.enabled).length;
-  const allCustomEnabled = tools.length > 0 && enabledCustomCount === tools.length;
+  const allCustomEnabled =
+    tools.length > 0 && enabledCustomCount === tools.length;
 
   const handleToggleAllCustom = useCallback(async () => {
     const newEnabled = !allCustomEnabled;
@@ -482,8 +481,13 @@ export default function CustomToolsPanel({
       >
         {customOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         <Globe size={12} />
-        <span>Custom ({enabledCustomCount}/{tools.length})</span>
-        <div className={styles.sectionActions} onClick={(e) => e.stopPropagation()}>
+        <span>
+          Custom ({enabledCustomCount}/{tools.length})
+        </span>
+        <div
+          className={styles.sectionActions}
+          onClick={(e) => e.stopPropagation()}
+        >
           {tools.length > 0 && (
             <ToggleSwitchComponent
               checked={allCustomEnabled}
@@ -508,11 +512,14 @@ export default function CustomToolsPanel({
         </div>
       )}
 
-      {customOpen && filteredCustomTools.length === 0 && tools.length > 0 && query && (
-        <div className={styles.emptyCustom}>
-          No custom tools match &ldquo;{searchQuery}&rdquo;
-        </div>
-      )}
+      {customOpen &&
+        filteredCustomTools.length === 0 &&
+        tools.length > 0 &&
+        query && (
+          <div className={styles.emptyCustom}>
+            No custom tools match &ldquo;{searchQuery}&rdquo;
+          </div>
+        )}
 
       {customOpen &&
         filteredCustomTools.map((tool) => {
@@ -647,7 +654,10 @@ export default function CustomToolsPanel({
           Built-in ({enabledBuiltIn}/{builtInTools.length})
         </span>
         {onlineBuiltInTools.length > 0 && (
-          <div className={styles.sectionActions} onClick={(e) => e.stopPropagation()}>
+          <div
+            className={styles.sectionActions}
+            onClick={(e) => e.stopPropagation()}
+          >
             <ToggleSwitchComponent
               checked={allBuiltInEnabled}
               onChange={() => onToggleAllBuiltIn?.(!allBuiltInEnabled)}

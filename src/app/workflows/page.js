@@ -203,7 +203,11 @@ export default function WorkflowsPage({ initialWorkflowId }) {
     WorkflowService.getWorkflow(initialWorkflowId)
       .then((wf) => {
         if (!wf) return;
-        const loadedName = wf.name || wf.title || (wf.userContent ? wf.userContent.substring(0, 80) : "") || "Untitled Workflow";
+        const loadedName =
+          wf.name ||
+          wf.title ||
+          (wf.userContent ? wf.userContent.substring(0, 80) : "") ||
+          "Untitled Workflow";
         const loadedNodes = wf.nodes || [];
         const loadedEdges = wf.edges || wf.connections || [];
         setWorkflowId(wf._id || wf.id);
@@ -212,7 +216,11 @@ export default function WorkflowsPage({ initialWorkflowId }) {
         setEdges(loadedEdges);
         setNodeResults(wf.nodeResults || {});
         setNodeStatuses(wf.nodeStatuses || {});
-        savedSnapshotRef.current = JSON.stringify({ workflowName: loadedName, nodes: loadedNodes, edges: loadedEdges });
+        savedSnapshotRef.current = JSON.stringify({
+          workflowName: loadedName,
+          nodes: loadedNodes,
+          edges: loadedEdges,
+        });
         setSavedSnapshotVersion((v) => v + 1);
       })
       .catch(console.error)
@@ -819,7 +827,11 @@ export default function WorkflowsPage({ initialWorkflowId }) {
       setWorkflowId(newId);
       updateUrl(`/workflows/${newId}`);
       // Update saved snapshot after successful save
-      savedSnapshotRef.current = JSON.stringify({ workflowName: workflowName || "Untitled Workflow", nodes, edges });
+      savedSnapshotRef.current = JSON.stringify({
+        workflowName: workflowName || "Untitled Workflow",
+        nodes,
+        edges,
+      });
       setSavedSnapshotVersion((v) => v + 1);
       const wfs = await WorkflowService.getWorkflows();
       setSavedWorkflows(wfs.map((w) => ({ ...w, id: w._id || w.id })));
@@ -839,7 +851,11 @@ export default function WorkflowsPage({ initialWorkflowId }) {
       const loadedId = wf._id || wf.id;
       // React 18 batches all these into a single render — no flash
       setWorkflowId(loadedId);
-      const loadedName = wf.name || wf.title || (wf.userContent ? wf.userContent.substring(0, 80) : "") || "Untitled Workflow";
+      const loadedName =
+        wf.name ||
+        wf.title ||
+        (wf.userContent ? wf.userContent.substring(0, 80) : "") ||
+        "Untitled Workflow";
       const loadedNodes = wf.nodes || [];
       const loadedEdges = wf.edges || wf.connections || [];
       setWorkflowName(loadedName);
@@ -848,7 +864,11 @@ export default function WorkflowsPage({ initialWorkflowId }) {
       setNodeResults(wf.nodeResults || {});
       setNodeStatuses(wf.nodeStatuses || {});
       // Snapshot the loaded state for dirty-tracking
-      savedSnapshotRef.current = JSON.stringify({ workflowName: loadedName, nodes: loadedNodes, edges: loadedEdges });
+      savedSnapshotRef.current = JSON.stringify({
+        workflowName: loadedName,
+        nodes: loadedNodes,
+        edges: loadedEdges,
+      });
       setSavedSnapshotVersion((v) => v + 1);
       updateUrl(`/workflows/${loadedId}`);
       showToast("Workflow loaded");
@@ -994,40 +1014,34 @@ export default function WorkflowsPage({ initialWorkflowId }) {
     });
   }, [savedWorkflows]);
 
-  const handleDownloadWorkflow = useCallback(
-    async (id) => {
-      try {
-        const wf = await WorkflowService.getWorkflow(id);
-        if (!wf) return;
-        const data = JSON.stringify(wf, null, 2);
-        const blob = new Blob([data], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `workflow-${id}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast("Workflow downloaded");
-      } catch (err) {
-        showToast(`Download failed: ${err.message}`, "error");
-      }
-    },
-    [],
-  );
+  const handleDownloadWorkflow = useCallback(async (id) => {
+    try {
+      const wf = await WorkflowService.getWorkflow(id);
+      if (!wf) return;
+      const data = JSON.stringify(wf, null, 2);
+      const blob = new Blob([data], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `workflow-${id}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Workflow downloaded");
+    } catch (err) {
+      showToast(`Download failed: ${err.message}`, "error");
+    }
+  }, []);
 
-  const handleCopyWorkflow = useCallback(
-    async (id) => {
-      try {
-        const wf = await WorkflowService.getWorkflow(id);
-        if (!wf) return;
-        await copyToClipboard(JSON.stringify(wf, null, 2));
-        showToast("Workflow copied to clipboard");
-      } catch (err) {
-        showToast(`Copy failed: ${err.message}`, "error");
-      }
-    },
-    [],
-  );
+  const handleCopyWorkflow = useCallback(async (id) => {
+    try {
+      const wf = await WorkflowService.getWorkflow(id);
+      if (!wf) return;
+      await copyToClipboard(JSON.stringify(wf, null, 2));
+      showToast("Workflow copied to clipboard");
+    } catch (err) {
+      showToast(`Copy failed: ${err.message}`, "error");
+    }
+  }, []);
 
   const handleToggleFavorite = useCallback(
     async (wfId) => {
@@ -1167,7 +1181,10 @@ export default function WorkflowsPage({ initialWorkflowId }) {
         selectedNode && !selectedNode.nodeType ? (
           <ModelPickerPopoverComponent
             config={_config}
-            settings={{ provider: selectedNode.provider, model: selectedNode.modelName }}
+            settings={{
+              provider: selectedNode.provider,
+              model: selectedNode.modelName,
+            }}
             onSelectModel={(provider, modelName) => {
               const model = modelsWithModalities.find(
                 (m) => m.provider === provider && m.name === modelName,
@@ -1192,10 +1209,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
         ) : null
       }
       headerMeta={
-        <WorkflowHeaderStatsComponent
-          nodes={nodes}
-          edgeCount={edges.length}
-        />
+        <WorkflowHeaderStatsComponent nodes={nodes} edgeCount={edges.length} />
       }
       headerControls={
         <div className={styles.headerControls}>
@@ -1344,4 +1358,3 @@ export default function WorkflowsPage({ initialWorkflowId }) {
     </ThreePanelLayout>
   );
 }
-

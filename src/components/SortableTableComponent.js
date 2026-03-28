@@ -228,13 +228,18 @@ export default function SortableTableComponent({
                 const isExpandable = subRows && subRows.length > 0;
                 const clickable = !!onRowClick || isExpandable;
                 const isActive = activeRowKey != null && key === activeRowKey;
-                const isHighlighted = highlightedRowKey != null && key === highlightedRowKey;
+                const isHighlighted =
+                  highlightedRowKey != null && key === highlightedRowKey;
 
                 return (
                   <Fragment key={key}>
                     <tr
                       key={key}
-                      ref={isHighlighted && highlightedRowRef ? highlightedRowRef : undefined}
+                      ref={
+                        isHighlighted && highlightedRowRef
+                          ? highlightedRowRef
+                          : undefined
+                      }
                       className={`${styles.tr} ${clickable ? styles.clickable : ""} ${isExpandable ? styles.expandableRow : ""} ${isActive ? styles.activeRow : ""} ${isHighlighted ? styles.highlightedRow : ""}`}
                       onClick={
                         isExpandable
@@ -249,7 +254,8 @@ export default function SortableTableComponent({
                         const isSorted = sort.key === col.key;
                         const tdClass = isFirst ? styles.tdName : styles.td;
                         const extraClass = col.className || "";
-                        const sortedClass = !isFirst && isSorted ? styles.tdSorted : "";
+                        const sortedClass =
+                          !isFirst && isSorted ? styles.tdSorted : "";
                         const cellStyle =
                           ci > 0 && col.align !== "left"
                             ? { textAlign: "right" }

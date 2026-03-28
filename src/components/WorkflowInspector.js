@@ -857,9 +857,7 @@ export default function WorkflowInspector({
                   className={styles.clearBtn}
                   style={{ marginTop: "4px" }}
                   onClick={() =>
-                    copyToClipboard(
-                      JSON.stringify(results.embedding),
-                    )
+                    copyToClipboard(JSON.stringify(results.embedding))
                   }
                 >
                   Copy All

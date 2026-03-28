@@ -62,8 +62,6 @@ export default function ModelPickerPopoverComponent({
       })
     : allModels;
 
-
-
   // ── Position the popover below the trigger, centered on the ChatArea ─
   const positionPopover = useCallback(() => {
     if (!triggerRef.current) return;
@@ -205,7 +203,8 @@ export default function ModelPickerPopoverComponent({
     const body = bodyRef.current;
     if (!body) return;
     // Target the FilterBar: first child div of the ModelGrid container
-    const getFilterBar = () => body.querySelector(":scope > div > div:first-child");
+    const getFilterBar = () =>
+      body.querySelector(":scope > div > div:first-child");
     const measure = () => {
       const filterBar = getFilterBar();
       if (filterBar) {
@@ -243,7 +242,9 @@ export default function ModelPickerPopoverComponent({
       <button
         ref={triggerRef}
         className={`${styles.trigger} ${open ? styles.triggerOpen : ""} ${readOnly ? styles.triggerReadOnly : ""}`}
-        onClick={readOnly ? undefined : open ? () => setOpen(false) : openPopover}
+        onClick={
+          readOnly ? undefined : open ? () => setOpen(false) : openPopover
+        }
         data-model-picker-trigger
         title={readOnly ? displayLabel : "Switch model"}
         style={readOnly ? { cursor: "default" } : undefined}
@@ -293,10 +294,7 @@ export default function ModelPickerPopoverComponent({
                   <X size={14} />
                 </button>
               )}
-              <CloseButtonComponent
-                onClick={() => setOpen(false)}
-                size={16}
-              />
+              <CloseButtonComponent onClick={() => setOpen(false)} size={16} />
             </div>
 
             {/* Body: ModelGrid with search disabled (hoisted above) */}

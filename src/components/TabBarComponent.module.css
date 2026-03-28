@@ -75,10 +75,13 @@
 }
 
 @keyframes tabGlowPulse {
-  0%, 100% {
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--accent-color) 20%, transparent);
+  0%,
+  100% {
+    box-shadow: 0 2px 8px
+      color-mix(in srgb, var(--accent-color) 20%, transparent);
   }
   50% {
-    box-shadow: 0 2px 16px color-mix(in srgb, var(--accent-color) 40%, transparent);
+    box-shadow: 0 2px 16px
+      color-mix(in srgb, var(--accent-color) 40%, transparent);
   }
 }

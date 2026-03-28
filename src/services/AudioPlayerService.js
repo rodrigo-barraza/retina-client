@@ -26,7 +26,9 @@ export default class AudioPlayerService {
    */
   init() {
     if (!this.audioContext) {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+      this.audioContext = new (
+        window.AudioContext || window.webkitAudioContext
+      )({
         sampleRate: DEFAULT_SAMPLE_RATE,
       });
     }
@@ -78,7 +80,11 @@ export default class AudioPlayerService {
     if (float32.length === 0) return;
 
     // Create AudioBuffer and schedule
-    const buffer = this.audioContext.createBuffer(1, float32.length, this.sampleRate);
+    const buffer = this.audioContext.createBuffer(
+      1,
+      float32.length,
+      this.sampleRate,
+    );
     buffer.copyToChannel(float32, 0);
 
     const source = this.audioContext.createBufferSource();

@@ -37,7 +37,16 @@ export default function ToolCardComponent({
       onClick={locked ? undefined : onClick}
       role={onClick && !locked ? "button" : undefined}
       tabIndex={onClick && !locked ? 0 : undefined}
-      onKeyDown={onClick && !locked ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
+      onKeyDown={
+        onClick && !locked
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       onMouseEnter={() => onHover?.(true)}
       onMouseLeave={() => onHover?.(false)}
     >
@@ -45,9 +54,7 @@ export default function ToolCardComponent({
       <div className={styles.info}>
         <span className={styles.title}>
           {title}
-          {count != null && (
-            <span className={styles.count}>{count}</span>
-          )}
+          {count != null && <span className={styles.count}>{count}</span>}
         </span>
         <span className={styles.subtitle}>{subtitle}</span>
       </div>
@@ -57,7 +64,9 @@ export default function ToolCardComponent({
           Always On
         </div>
       ) : (
-        <div className={`${styles.badge}${!enabled ? ` ${styles.badgeDisabled}` : ""}`}>
+        <div
+          className={`${styles.badge}${!enabled ? ` ${styles.badgeDisabled}` : ""}`}
+        >
           {enabled ? <CircleCheck size={12} /> : <Circle size={12} />}
           {enabled ? "Enabled" : "Disabled"}
         </div>

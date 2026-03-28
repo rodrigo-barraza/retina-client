@@ -19,9 +19,7 @@ export default function EmptyStateComponent({
   className,
 }) {
   return (
-    <div
-      className={`${styles.emptyState}${className ? ` ${className}` : ""}`}
-    >
+    <div className={`${styles.emptyState}${className ? ` ${className}` : ""}`}>
       {icon && <div className={styles.icon}>{icon}</div>}
       {title && <h2 className={styles.title}>{title}</h2>}
       {subtitle && <p className={styles.subtitle}>{subtitle}</p>}

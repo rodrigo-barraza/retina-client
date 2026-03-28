@@ -101,13 +101,13 @@
 }
 
 .activeRow td:first-child {
-  background: rgba(99, 102, 241, 0.10);
+  background: rgba(99, 102, 241, 0.1);
   box-shadow: inset 2px 0 0 var(--accent-color);
 }
 
 /* Keyboard-highlighted row */
 .highlightedRow td {
-  background: rgba(99, 102, 241, 0.10);
+  background: rgba(99, 102, 241, 0.1);
 }
 
 .highlightedRow td:first-child {
@@ -121,7 +121,9 @@
   color: var(--text-secondary);
   white-space: nowrap;
   background: var(--bg-secondary);
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 /* Sorted-column highlight for data cells */

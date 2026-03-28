@@ -43,9 +43,6 @@
   line-height: 1.5;
 }
 
-
-
-
 .localModelsSection {
   margin-bottom: 20px;
 }
@@ -1191,13 +1188,27 @@
 }
 
 /* Staggered fade-in — offset by 2 to skip the header */
-.toolCardsStack > *:nth-child(2) { animation-delay: 0.04s; }
-.toolCardsStack > *:nth-child(3) { animation-delay: 0.08s; }
-.toolCardsStack > *:nth-child(4) { animation-delay: 0.12s; }
-.toolCardsStack > *:nth-child(5) { animation-delay: 0.16s; }
-.toolCardsStack > *:nth-child(6) { animation-delay: 0.20s; }
-.toolCardsStack > *:nth-child(7) { animation-delay: 0.24s; }
-.toolCardsStack > *:nth-child(8) { animation-delay: 0.28s; }
+.toolCardsStack > *:nth-child(2) {
+  animation-delay: 0.04s;
+}
+.toolCardsStack > *:nth-child(3) {
+  animation-delay: 0.08s;
+}
+.toolCardsStack > *:nth-child(4) {
+  animation-delay: 0.12s;
+}
+.toolCardsStack > *:nth-child(5) {
+  animation-delay: 0.16s;
+}
+.toolCardsStack > *:nth-child(6) {
+  animation-delay: 0.2s;
+}
+.toolCardsStack > *:nth-child(7) {
+  animation-delay: 0.24s;
+}
+.toolCardsStack > *:nth-child(8) {
+  animation-delay: 0.28s;
+}
 
 .toolCardsPrompts {
   position: absolute;
@@ -1251,7 +1262,8 @@
 }
 
 @keyframes liveStreamPulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     box-shadow: 0 0 6px rgba(52, 211, 153, 0.6);
   }
@@ -1288,11 +1300,11 @@
 }
 
 @keyframes liveMicPulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
   }
   50% {
     box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
   }
 }
-

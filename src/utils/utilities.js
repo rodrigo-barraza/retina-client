@@ -34,8 +34,7 @@ export function renderToolName(name) {
 export function buildDateRangeParams(dateRange) {
   const p = {};
   if (dateRange?.from) p.from = new Date(dateRange.from).toISOString();
-  if (dateRange?.to)
-    p.to = new Date(dateRange.to + "T23:59:59").toISOString();
+  if (dateRange?.to) p.to = new Date(dateRange.to + "T23:59:59").toISOString();
   return p;
 }
 
@@ -54,8 +53,7 @@ export function formatContextTokens(tokens) {
  */
 export function formatFileSize(bytes) {
   if (!bytes) return null;
-  if (bytes >= 1_073_741_824)
-    return `${(bytes / 1_073_741_824).toFixed(1)} GB`;
+  if (bytes >= 1_073_741_824) return `${(bytes / 1_073_741_824).toFixed(1)} GB`;
   if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`;
   return `${(bytes / 1024).toFixed(0)} KB`;
 }

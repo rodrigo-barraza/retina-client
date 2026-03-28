@@ -26,10 +26,7 @@ import {
   FilterBarComponent,
   FilterIconButtonGroupComponent,
 } from "./FilterBarComponent";
-import {
-  formatFileSize,
-  formatContextTokens,
-} from "../utils/utilities";
+import { formatFileSize, formatContextTokens } from "../utils/utilities";
 import styles from "./ModelGrid.module.css";
 
 function formatBytes(bytes) {

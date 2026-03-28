@@ -21,9 +21,7 @@ export default function TabBarComponent({
   glowingTabs = [],
 }) {
   return (
-    <div
-      className={`${styles.tabBar}${className ? ` ${className}` : ""}`}
-    >
+    <div className={`${styles.tabBar}${className ? ` ${className}` : ""}`}>
       {tabs.map((tab) => (
         <button
           key={tab.key}
@@ -35,7 +33,11 @@ export default function TabBarComponent({
           {tab.icon}
           {tab.label}
           {tab.badge != null && (
-            <span className={`${styles.tabBadge}${tab.badgeDisabled ? ` ${styles.tabBadgeDisabled}` : ""}`}>{tab.badge}</span>
+            <span
+              className={`${styles.tabBadge}${tab.badgeDisabled ? ` ${styles.tabBadgeDisabled}` : ""}`}
+            >
+              {tab.badge}
+            </span>
           )}
         </button>
       ))}

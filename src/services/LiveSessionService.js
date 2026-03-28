@@ -23,9 +23,9 @@ const LIVE_WS_URL = `${PRISM_WS_URL}/ws/live?project=retina&username=default`;
 export default class LiveSessionService {
   constructor() {
     this.ws = null;
-    this.audioContext = null;          // Capture context (16kHz)
-    this.playbackContext = null;       // Playback context (24kHz)
-    this.playbackWorkletNode = null;   // Persistent playback worklet
+    this.audioContext = null; // Capture context (16kHz)
+    this.playbackContext = null; // Playback context (24kHz)
+    this.playbackWorkletNode = null; // Persistent playback worklet
     this.mediaStream = null;
     this.audioWorkletNode = null;
     this.isRecording = false;
@@ -53,11 +53,13 @@ export default class LiveSessionService {
 
     this.ws.onopen = () => {
       // Send setup message to initialize the Live API session
-      this.ws.send(JSON.stringify({
-        type: "setup",
-        model,
-        config,
-      }));
+      this.ws.send(
+        JSON.stringify({
+          type: "setup",
+          model,
+          config,
+        }),
+      );
     };
 
     this.ws.onmessage = (event) => {
@@ -104,7 +106,8 @@ export default class LiveSessionService {
         break;
 
       case "toolCall":
-        if (this.callbacks.onToolCall) this.callbacks.onToolCall(data.functionCalls);
+        if (this.callbacks.onToolCall)
+          this.callbacks.onToolCall(data.functionCalls);
         break;
 
       case "inputTranscription":
@@ -195,7 +198,9 @@ export default class LiveSessionService {
       // rate (typically 48kHz) down to 16kHz using a high-quality
       // polyphase resampler, eliminating manual downsampling.
       if (!this.audioContext) {
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+        this.audioContext = new (
+          window.AudioContext || window.webkitAudioContext
+        )({
           sampleRate: 16000,
         });
         await this.audioContext.audioWorklet.addModule("/pcm-processor.js");
@@ -215,8 +220,13 @@ export default class LiveSessionService {
         },
       });
 
-      const source = this.audioContext.createMediaStreamSource(this.mediaStream);
-      this.audioWorkletNode = new AudioWorkletNode(this.audioContext, "pcm-processor");
+      const source = this.audioContext.createMediaStreamSource(
+        this.mediaStream,
+      );
+      this.audioWorkletNode = new AudioWorkletNode(
+        this.audioContext,
+        "pcm-processor",
+      );
 
       this.audioWorkletNode.port.onmessage = (event) => {
         if (!this.isRecording) return;
@@ -227,11 +237,13 @@ export default class LiveSessionService {
         // Send as base64 to Prism
         const base64 = this._arrayBufferToBase64(pcm16);
         if (this.ws?.readyState === WebSocket.OPEN) {
-          this.ws.send(JSON.stringify({
-            type: "audio",
-            data: base64,
-            mimeType: "audio/pcm;rate=16000",
-          }));
+          this.ws.send(
+            JSON.stringify({
+              type: "audio",
+              data: base64,
+              mimeType: "audio/pcm;rate=16000",
+            }),
+          );
         }
       };
 
@@ -273,10 +285,14 @@ export default class LiveSessionService {
   _ensurePlaybackContext() {
     if (!this._playbackInitPromise) {
       this._playbackInitPromise = (async () => {
-        this.playbackContext = new (window.AudioContext || window.webkitAudioContext)({
+        this.playbackContext = new (
+          window.AudioContext || window.webkitAudioContext
+        )({
           sampleRate: 24000,
         });
-        await this.playbackContext.audioWorklet.addModule("/playback-processor.js");
+        await this.playbackContext.audioWorklet.addModule(
+          "/playback-processor.js",
+        );
         this.playbackWorkletNode = new AudioWorkletNode(
           this.playbackContext,
           "playback-processor",

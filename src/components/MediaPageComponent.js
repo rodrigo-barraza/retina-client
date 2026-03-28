@@ -308,7 +308,6 @@ export default function MediaPageComponent({
         subtitle={`${total} files across conversations`}
       />
       <div className={styles.content}>
-
         {/* Filters */}
         <FilterBarComponent>
           <SearchInputComponent
@@ -472,7 +471,9 @@ export default function MediaPageComponent({
                         onClick={() => setLightboxSrc(resolvedUrl)}
                         onError={(e) => {
                           e.target.style.display = "none";
-                          e.target.parentElement.classList.add(styles.mediaPlaceholder);
+                          e.target.parentElement.classList.add(
+                            styles.mediaPlaceholder,
+                          );
                           const icon = document.createElement("span");
                           icon.textContent = "🖼";
                           icon.style.fontSize = "32px";
@@ -497,7 +498,10 @@ export default function MediaPageComponent({
                         className={styles.mediaAudioPreview}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <AudioPlayerRecorderComponent src={resolvedUrl} square />
+                        <AudioPlayerRecorderComponent
+                          src={resolvedUrl}
+                          square
+                        />
                       </div>
                     ) : m.mediaType === "pdf" && resolvedUrl ? (
                       <iframe

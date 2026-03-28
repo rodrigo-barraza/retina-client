@@ -367,7 +367,9 @@ export default function AudioPlayerRecorderComponent({
   // ───────────────────────────────────────────
   if (streaming && !src) {
     return (
-      <div className={`${styles.audioThumb} ${styles.audioStreaming} ${compact ? styles.audioCompact : ""}`}>
+      <div
+        className={`${styles.audioThumb} ${styles.audioStreaming} ${compact ? styles.audioCompact : ""}`}
+      >
         <div className={styles.streamingCanvasWrap}>
           <RainbowCanvasComponent turbo className={styles.streamingCanvas} />
         </div>
@@ -404,8 +406,14 @@ export default function AudioPlayerRecorderComponent({
             ref={audioRef}
             src={src}
             preload="metadata"
-            onLoadedMetadata={(e) => { if (Number.isFinite(e.target.duration)) setDuration(e.target.duration); }}
-            onDurationChange={(e) => { if (Number.isFinite(e.target.duration)) setDuration(e.target.duration); }}
+            onLoadedMetadata={(e) => {
+              if (Number.isFinite(e.target.duration))
+                setDuration(e.target.duration);
+            }}
+            onDurationChange={(e) => {
+              if (Number.isFinite(e.target.duration))
+                setDuration(e.target.duration);
+            }}
             onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
@@ -454,8 +462,14 @@ export default function AudioPlayerRecorderComponent({
           ref={audioRef}
           src={src}
           preload="metadata"
-          onLoadedMetadata={(e) => { if (Number.isFinite(e.target.duration)) setDuration(e.target.duration); }}
-          onDurationChange={(e) => { if (Number.isFinite(e.target.duration)) setDuration(e.target.duration); }}
+          onLoadedMetadata={(e) => {
+            if (Number.isFinite(e.target.duration))
+              setDuration(e.target.duration);
+          }}
+          onDurationChange={(e) => {
+            if (Number.isFinite(e.target.duration))
+              setDuration(e.target.duration);
+          }}
           onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}

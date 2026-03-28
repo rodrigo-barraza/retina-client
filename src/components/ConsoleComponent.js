@@ -1,14 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import {
-  Send,
-  Square,
-  Terminal,
-  Paperclip,
-  X,
-  Zap,
-} from "lucide-react";
+import { Send, Square, Terminal, Paperclip, X, Zap } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import SunService from "../services/SunService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
@@ -32,7 +25,6 @@ import { MAX_TOOL_ITERATIONS, PROJECT_CONSOLE } from "../constants.js";
 import chatStyles from "./ChatArea.module.css";
 import styles from "./ConsoleComponent.module.css";
 import ChatInputButton from "./ChatInputButton.js";
-
 
 const SYSTEM_PROMPT = buildFCSystemPrompt();
 
@@ -163,7 +155,8 @@ export default function ConsoleComponent() {
   // Load conversation history
   const loadConversations = useCallback(async () => {
     try {
-      const convs = await PrismService.getConversationsByProject(PROJECT_CONSOLE);
+      const convs =
+        await PrismService.getConversationsByProject(PROJECT_CONSOLE);
       setConversations(convs);
     } catch (err) {
       console.error("Failed to load conversations:", err);
@@ -669,8 +662,6 @@ export default function ConsoleComponent() {
     },
     [activeId, handleNewChat],
   );
-
-
 
   // ── Left sidebar: tab bar + content ──────────────────────────
   const handleToggleBuiltIn = useCallback((toolName) => {

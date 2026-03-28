@@ -255,9 +255,7 @@ export default function DashboardPage() {
           label="Avg Latency"
           value={loading ? "..." : formatLatency(stats?.avgLatency)}
           subtitle={
-            loading
-              ? ""
-              : `${formatTokensPerSec(stats?.avgTokensPerSec)} tok/s`
+            loading ? "" : `${formatTokensPerSec(stats?.avgTokensPerSec)} tok/s`
           }
           icon={Clock}
           variant="success"
@@ -338,8 +336,7 @@ export default function DashboardPage() {
           {
             key: "avgTokensPerSec",
             label: "Tok/s",
-            render: (p) =>
-              formatTokensPerSec(p.avgTokensPerSec),
+            render: (p) => formatTokensPerSec(p.avgTokensPerSec),
           },
           {
             key: "totalCost",
@@ -444,8 +441,7 @@ export default function DashboardPage() {
           {
             key: "avgTokensPerSec",
             label: "Tok/s",
-            render: (p) =>
-              formatTokensPerSec(p.avgTokensPerSec),
+            render: (p) => formatTokensPerSec(p.avgTokensPerSec),
           },
           {
             key: "totalCost",
@@ -554,8 +550,7 @@ export default function DashboardPage() {
           {
             key: "avgTokensPerSec",
             label: "Tok/s",
-            render: (m) =>
-              formatTokensPerSec(m.avgTokensPerSec),
+            render: (m) => formatTokensPerSec(m.avgTokensPerSec),
           },
           {
             key: "totalCost",

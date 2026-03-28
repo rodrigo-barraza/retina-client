@@ -45,8 +45,8 @@
   --select-bg: rgba(0, 0, 0, 0.4);
   --select-option-bg: #1a1b26;
   --select-option-text: #f8f8f8;
-  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Fira Mono", Menlo,
-    monospace;
+  --font-mono:
+    "JetBrains Mono", "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
   --prism-conic: conic-gradient(
     #ff0000,
     #ff8800,

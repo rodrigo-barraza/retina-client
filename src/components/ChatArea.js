@@ -37,7 +37,6 @@ import {
   TOOL_COLORS,
   TOOL_ICON_MAP,
   TOGGLEABLE_TOOLS,
-
 } from "./WorkflowNodeConstants";
 
 // ── Tool descriptions for empty-state cards ──
@@ -48,7 +47,8 @@ const TOOL_DESCRIPTIONS = {
   "Web Fetch": "Fetch and read content from any URL on the web.",
   "Code Execution": "Run code in a sandboxed environment and return results.",
   "URL Context": "Extract and analyze content from provided URLs.",
-  "Function Calling": "Ask about weather, events, commodities, trends, and more.",
+  "Function Calling":
+    "Ask about weather, events, commodities, trends, and more.",
 };
 
 // Map model input types to file accept strings
@@ -139,8 +139,6 @@ function MediaPreview({ dataUrl: rawDataUrl, onClick, compact = false }) {
   );
 }
 
-
-
 function getAllModelsFromConfig(config) {
   if (!config) return [];
   const seen = new Map();
@@ -171,8 +169,6 @@ function _getOutputTypesForInput(config, inputType) {
   }
   return [...outputSet];
 }
-
-
 
 function _formatContextLength(tokens) {
   return formatContextTokens(tokens);
@@ -243,7 +239,7 @@ export default function ChatArea({
       case "Thinking": {
         const isLmStudio = settings?.provider === "lm-studio";
         return {
-          checked: isLmStudio || (settings?.thinkingEnabled || false),
+          checked: isLmStudio || settings?.thinkingEnabled || false,
           onChange: (val) => onUpdateSettings?.({ thinkingEnabled: val }),
           disabled: isLmStudio,
         };
@@ -385,7 +381,11 @@ export default function ChatArea({
       const liveConfig = {
         responseModalities: ["AUDIO"],
       };
-      if (systemPrompt && systemPrompt !== "You are a helpful AI assistant" && systemPrompt !== "You are a helpful AI assistant.") {
+      if (
+        systemPrompt &&
+        systemPrompt !== "You are a helpful AI assistant" &&
+        systemPrompt !== "You are a helpful AI assistant."
+      ) {
         liveConfig.systemInstruction = systemPrompt;
       }
       if (settings?.temperature !== undefined) {
@@ -414,11 +414,14 @@ export default function ChatArea({
         callbacks: {
           onSetupComplete: () => {
             setLiveConnected(true);
-            session.startMicrophone().then(() => {
-              setLiveMicActive(true);
-            }).catch((err) => {
-              console.error("[LiveMic] Failed to start mic:", err);
-            });
+            session
+              .startMicrophone()
+              .then(() => {
+                setLiveMicActive(true);
+              })
+              .catch((err) => {
+                console.error("[LiveMic] Failed to start mic:", err);
+              });
           },
           onOutputTranscription: (text) => {
             // Accumulate and stream model's response in real-time
@@ -452,7 +455,10 @@ export default function ChatArea({
           },
           onClose: () => {
             // Finalize any in-progress messages
-            if (liveUserTranscriptRef.current.trim() || liveAssistantTranscriptRef.current.trim()) {
+            if (
+              liveUserTranscriptRef.current.trim() ||
+              liveAssistantTranscriptRef.current.trim()
+            ) {
               onLiveTurnComplete?.();
             }
             liveUserTranscriptRef.current = "";
@@ -558,8 +564,6 @@ export default function ChatArea({
     }
   }, [input]);
 
-
-
   // Shuffle FC prompt suggestions on new chat
   useEffect(() => {
     if (functionCallingEnabled) {
@@ -651,36 +655,42 @@ export default function ChatArea({
           )}
 
         {messages.length === 0 && activeTools.length > 0 && (
-            <div className={styles.toolCardsStack}>
-              <div className={styles.toolCardsHeader}>
-                <Zap size={14} />
-                <span>Tools</span>
-                <span className={styles.toolCardsCount}>
-                  {activeTools.filter((t) => getToolToggle(t)?.checked).length}
-                </span>
-              </div>
-              {activeTools.map((tool) => {
-                const ToolIcon = TOOL_ICON_MAP[tool];
-                const toggle = getToolToggle(tool);
-                const isEnabled = toggle?.checked || false;
-                const isLocked = (toggle?.disabled && toggle?.checked) || false;
-                return (
-                  <ToolCardComponent
-                    key={tool}
-                    icon={ToolIcon ? <ToolIcon size={20} /> : null}
-                    title={tool}
-                    subtitle={TOOL_DESCRIPTIONS[tool] || ""}
-                    color={TOOL_COLORS[tool]}
-                    count={tool === "Function Calling" ? toolCount : undefined}
-                    enabled={isEnabled}
-                    locked={isLocked}
-                    onClick={toggle ? () => toggle.onChange(!isEnabled) : undefined}
-                    glowing={tool === "Function Calling" && fcCardGlowing}
-                    onHover={tool === "Function Calling" ? (h) => onFcCardHover?.(h) : undefined}
-                  />
-                );
-              })}
+          <div className={styles.toolCardsStack}>
+            <div className={styles.toolCardsHeader}>
+              <Zap size={14} />
+              <span>Tools</span>
+              <span className={styles.toolCardsCount}>
+                {activeTools.filter((t) => getToolToggle(t)?.checked).length}
+              </span>
             </div>
+            {activeTools.map((tool) => {
+              const ToolIcon = TOOL_ICON_MAP[tool];
+              const toggle = getToolToggle(tool);
+              const isEnabled = toggle?.checked || false;
+              const isLocked = (toggle?.disabled && toggle?.checked) || false;
+              return (
+                <ToolCardComponent
+                  key={tool}
+                  icon={ToolIcon ? <ToolIcon size={20} /> : null}
+                  title={tool}
+                  subtitle={TOOL_DESCRIPTIONS[tool] || ""}
+                  color={TOOL_COLORS[tool]}
+                  count={tool === "Function Calling" ? toolCount : undefined}
+                  enabled={isEnabled}
+                  locked={isLocked}
+                  onClick={
+                    toggle ? () => toggle.onChange(!isEnabled) : undefined
+                  }
+                  glowing={tool === "Function Calling" && fcCardGlowing}
+                  onHover={
+                    tool === "Function Calling"
+                      ? (h) => onFcCardHover?.(h)
+                      : undefined
+                  }
+                />
+              );
+            })}
+          </div>
         )}
 
         {messages.length === 0 &&
@@ -758,9 +768,6 @@ export default function ChatArea({
             </div>
           )}
 
-
-
-
         <MessageList
           messages={messages}
           isGenerating={isGenerating}
@@ -794,36 +801,40 @@ export default function ChatArea({
 
       {toolActivitySlot}
 
-      {messages.length === 0 && functionCallingEnabled && fcRandomPrompts.length > 0 && (
-        <div className={styles.toolCardsPrompts}>
-          {fcRandomPrompts.map((prompt) => (
-            <button
-              key={prompt}
-              className={consoleStyles.quickPrompt}
-              onClick={() => {
-                setInput(prompt);
-                textareaRef.current?.focus();
-              }}
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
-      )}
+      {messages.length === 0 &&
+        functionCallingEnabled &&
+        fcRandomPrompts.length > 0 && (
+          <div className={styles.toolCardsPrompts}>
+            {fcRandomPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                className={consoleStyles.quickPrompt}
+                onClick={() => {
+                  setInput(prompt);
+                  textareaRef.current?.focus();
+                }}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        )}
 
-      {isLiveModel && messages.length > 0 && (
-        liveMicActive ? (
+      {isLiveModel &&
+        messages.length > 0 &&
+        (liveMicActive ? (
           <div className={styles.liveStreamBanner}>
             <span className={styles.liveStreamDot} />
             Stream is live
           </div>
         ) : (
-          <div className={`${styles.liveStreamBanner} ${styles.liveStreamStale}`}>
+          <div
+            className={`${styles.liveStreamBanner} ${styles.liveStreamStale}`}
+          >
             <span className={styles.liveStreamDotStale} />
             Session ended
           </div>
-        )
-      )}
+        ))}
 
       <div className={styles.inputWrapper}>
         {showToolsBubble && activeTools.length > 0 && (
@@ -989,9 +1000,11 @@ export default function ChatArea({
                 label={liveMicActive ? "Stop Live Mic" : "Start Live Mic"}
                 isActive={liveMicActive}
                 icon={
-                  liveMicActive
-                    ? <MicOff size={18} className={styles.liveMicActive} />
-                    : <Mic size={18} />
+                  liveMicActive ? (
+                    <MicOff size={18} className={styles.liveMicActive} />
+                  ) : (
+                    <Mic size={18} />
+                  )
                 }
                 className={liveMicActive ? styles.liveMicBtn : ""}
               />

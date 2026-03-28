@@ -88,8 +88,6 @@ export default function TextPageComponent({ mode = "user" }) {
       .catch(() => {});
   }, []);
 
-
-
   const toggleFavorite = async (textKey) => {
     if (favoriteKeys.includes(textKey)) {
       setFavoriteKeys((prev) => prev.filter((k) => k !== textKey));
@@ -115,188 +113,189 @@ export default function TextPageComponent({ mode = "user" }) {
         subtitle={`${total} messages across conversations`}
       />
       <div className={styles.page}>
+        {/* Filters */}
+        <FilterBarComponent>
+          <SearchInputComponent
+            value={searchInput}
+            onChange={(v) => {
+              setSearchInput(v);
+              setSearch(v);
+              setPage(1);
+            }}
+            placeholder="Search text…"
+            className={styles.searchWrapper}
+          />
 
-      {/* Filters */}
-      <FilterBarComponent>
-        <SearchInputComponent
-          value={searchInput}
-          onChange={(v) => {
-            setSearchInput(v);
-            setSearch(v);
-            setPage(1);
-          }}
-          placeholder="Search text…"
-          className={styles.searchWrapper}
-        />
+          <FilterIconButtonGroupComponent
+            options={ORIGIN_FILTERS.map((f) => ({
+              key: f.key,
+              icon: f.icon,
+              label: f.label,
+            }))}
+            activeKeys={origin === "all" ? null : origin}
+            isSingleSelect
+            onChange={(v) => {
+              setOrigin(v || "all");
+              setPage(1);
+            }}
+          />
 
-        <FilterIconButtonGroupComponent
-          options={ORIGIN_FILTERS.map((f) => ({
-            key: f.key,
-            icon: f.icon,
-            label: f.label,
-          }))}
-          activeKeys={origin === "all" ? null : origin}
-          isSingleSelect
-          onChange={(v) => {
-            setOrigin(v || "all");
-            setPage(1);
-          }}
-        />
+          <div className={styles.filterDivider} />
 
-        <div className={styles.filterDivider} />
+          <FilterIconButtonGroupComponent
+            options={[
+              {
+                key: "favorites",
+                icon: Star,
+                label: "Favorites only",
+              },
+            ]}
+            activeKeys={showFavoritesOnly ? "favorites" : null}
+            isSingleSelect
+            onChange={(v) => setShowFavoritesOnly(v === "favorites")}
+          />
 
-        <FilterIconButtonGroupComponent
-          options={[
-            {
-              key: "favorites",
-              icon: Star,
-              label: "Favorites only",
-            },
-          ]}
-          activeKeys={showFavoritesOnly ? "favorites" : null}
-          isSingleSelect
-          onChange={(v) => setShowFavoritesOnly(v === "favorites")}
-        />
+          <div className={styles.filterDivider} />
 
-        <div className={styles.filterDivider} />
+          <ComboboxFilter
+            options={providers}
+            value={provider}
+            onChange={(v) => {
+              setProvider(v);
+              setModel("");
+              setPage(1);
+            }}
+            placeholder="All Providers"
+            allLabel="All Providers"
+          />
 
-        <ComboboxFilter
-          options={providers}
-          value={provider}
-          onChange={(v) => {
-            setProvider(v);
-            setModel("");
-            setPage(1);
-          }}
-          placeholder="All Providers"
-          allLabel="All Providers"
-        />
+          <ComboboxFilter
+            options={
+              provider
+                ? models.filter((m) => m.startsWith(provider + "/"))
+                : models
+            }
+            value={model}
+            onChange={(v) => {
+              setModel(v);
+              setPage(1);
+            }}
+            placeholder="All Models"
+            allLabel="All Models"
+          />
 
-        <ComboboxFilter
-          options={
-            provider
-              ? models.filter((m) => m.startsWith(provider + "/"))
-              : models
-          }
-          value={model}
-          onChange={(v) => {
-            setModel(v);
-            setPage(1);
-          }}
-          placeholder="All Models"
-          allLabel="All Models"
-        />
+          <DatePickerComponent
+            from={dateRange.from}
+            to={dateRange.to}
+            onChange={(v) => {
+              setDateRange(v);
+              setPage(1);
+            }}
+            storageKey={LS_DATE_RANGE}
+          />
 
-        <DatePickerComponent
-          from={dateRange.from}
-          to={dateRange.to}
-          onChange={(v) => {
-            setDateRange(v);
-            setPage(1);
-          }}
-          storageKey={LS_DATE_RANGE}
-        />
+          <ViewModeToggleComponent
+            mode={viewMode}
+            onChange={setViewMode}
+            modes={[
+              { key: "raw", icon: Code, title: "Raw text" },
+              { key: "preview", icon: Eye, title: "Markdown preview" },
+            ]}
+          />
+        </FilterBarComponent>
 
-        <ViewModeToggleComponent
-          mode={viewMode}
-          onChange={setViewMode}
-          modes={[
-            { key: "raw", icon: Code, title: "Raw text" },
-            { key: "preview", icon: Eye, title: "Markdown preview" },
-          ]}
-        />
-      </FilterBarComponent>
+        {loading && <LoadingMessage message="Loading messages..." />}
 
-      {loading && <LoadingMessage message="Loading messages..." />}
-
-      {/* Text List */}
-      {!loading && (
-        <div className={styles.textList}>
-          {displayTexts.map((t, i) => {
-            const textKey = getTextKey(t, i);
-            const isFav = favoriteKeys.includes(textKey);
-            return (
-              <div key={`${t.convId}-${i}`} className={styles.textCard}>
-                <div className={styles.textHeader}>
-                  <button
-                    className={`${styles.favBtn} ${isFav ? styles.favBtnActive : ""}`}
-                    onClick={() => toggleFavorite(textKey)}
-                    title={isFav ? "Remove from favorites" : "Add to favorites"}
-                  >
-                    <Star size={11} fill={isFav ? "currentColor" : "none"} />
-                  </button>
-                  <span
-                    className={`${styles.roleBadge} ${t.origin === "ai" ? styles.roleAi : styles.roleUser}`}
-                  >
-                    {t.origin === "ai" ? (
-                      <>
-                        <Sparkles size={10} /> Response
-                      </>
-                    ) : (
-                      <>
-                        <User size={10} /> Prompt
-                      </>
+        {/* Text List */}
+        {!loading && (
+          <div className={styles.textList}>
+            {displayTexts.map((t, i) => {
+              const textKey = getTextKey(t, i);
+              const isFav = favoriteKeys.includes(textKey);
+              return (
+                <div key={`${t.convId}-${i}`} className={styles.textCard}>
+                  <div className={styles.textHeader}>
+                    <button
+                      className={`${styles.favBtn} ${isFav ? styles.favBtnActive : ""}`}
+                      onClick={() => toggleFavorite(textKey)}
+                      title={
+                        isFav ? "Remove from favorites" : "Add to favorites"
+                      }
+                    >
+                      <Star size={11} fill={isFav ? "currentColor" : "none"} />
+                    </button>
+                    <span
+                      className={`${styles.roleBadge} ${t.origin === "ai" ? styles.roleAi : styles.roleUser}`}
+                    >
+                      {t.origin === "ai" ? (
+                        <>
+                          <Sparkles size={10} /> Response
+                        </>
+                      ) : (
+                        <>
+                          <User size={10} /> Prompt
+                        </>
+                      )}
+                    </span>
+                    <Link
+                      href={`${convBasePath}/${t.convId}`}
+                      className={styles.convLink}
+                      title={t.convTitle}
+                    >
+                      <ExternalLink size={10} />
+                      <span>{t.convTitle}</span>
+                    </Link>
+                    {t.hasImages && (
+                      <span className={styles.attachmentTag}>
+                        <ImageIcon size={10} /> +media
+                      </span>
                     )}
-                  </span>
-                  <Link
-                    href={`${convBasePath}/${t.convId}`}
-                    className={styles.convLink}
-                    title={t.convTitle}
-                  >
-                    <ExternalLink size={10} />
-                    <span>{t.convTitle}</span>
-                  </Link>
-                  {t.hasImages && (
-                    <span className={styles.attachmentTag}>
-                      <ImageIcon size={10} /> +media
-                    </span>
-                  )}
-                  {t.model && (
-                    <span className={styles.modelTag}>
-                      {t.model.split("/").pop()}
-                    </span>
-                  )}
-                  {t.timestamp && (
-                    <span className={styles.time}>
-                      {new Date(t.timestamp).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-                <div className={styles.textContent}>
-                  {viewMode === "preview" ? (
-                    <MarkdownContent content={t.content} />
-                  ) : (
-                    <span className={styles.rawText}>
-                      {t.content.length > 600
-                        ? t.content.substring(0, 600) + "…"
-                        : t.content}
-                    </span>
-                  )}
-                </div>
-                {t.estimatedCost > 0 && (
-                  <div className={styles.textFooter}>
-                    <span className={styles.cost}>
-                      {formatCost(t.estimatedCost)}
-                    </span>
+                    {t.model && (
+                      <span className={styles.modelTag}>
+                        {t.model.split("/").pop()}
+                      </span>
+                    )}
+                    {t.timestamp && (
+                      <span className={styles.time}>
+                        {new Date(t.timestamp).toLocaleDateString()}
+                      </span>
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                  <div className={styles.textContent}>
+                    {viewMode === "preview" ? (
+                      <MarkdownContent content={t.content} />
+                    ) : (
+                      <span className={styles.rawText}>
+                        {t.content.length > 600
+                          ? t.content.substring(0, 600) + "…"
+                          : t.content}
+                      </span>
+                    )}
+                  </div>
+                  {t.estimatedCost > 0 && (
+                    <div className={styles.textFooter}>
+                      <span className={styles.cost}>
+                        {formatCost(t.estimatedCost)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
-      {!loading && displayTexts.length === 0 && (
-        <EmptyMessage message="No text content found" />
-      )}
+        {!loading && displayTexts.length === 0 && (
+          <EmptyMessage message="No text content found" />
+        )}
 
-      {/* Pagination */}
-      <PaginationComponent
-        page={page}
-        totalPages={totalPages}
-        totalItems={total}
-        onPageChange={setPage}
-      />
+        {/* Pagination */}
+        <PaginationComponent
+          page={page}
+          totalPages={totalPages}
+          totalItems={total}
+          onPageChange={setPage}
+        />
       </div>
     </>
   );

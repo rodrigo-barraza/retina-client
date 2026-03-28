@@ -264,8 +264,7 @@ export default function RequestsPage() {
       {
         key: "tokensPerSec",
         label: "Tok/s",
-        render: (r) =>
-          formatTokensPerSec(r.tokensPerSec),
+        render: (r) => formatTokensPerSec(r.tokensPerSec),
         align: "right",
       },
       {

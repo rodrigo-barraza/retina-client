@@ -6,7 +6,6 @@ import {
   ChevronRight,
   Brain,
   Check,
-
   FileText,
   Trash2,
   Pencil,
@@ -88,8 +87,6 @@ function getMimeCategory(ref) {
 
 /* ── Sub-components ──────────────────────────────────────────── */
 
-
-
 function ThinkingBlock({ thinking, isStreaming }) {
   // User can manually toggle after streaming has finished
   const [manualOpen, setManualOpen] = useState(false);
@@ -120,11 +117,10 @@ function ThinkingBlock({ thinking, isStreaming }) {
   if (!thinking) return null;
 
   return (
-    <div className={`${styles.thinkingBlock}${isStreaming ? ` ${styles.thinkingStreaming}` : ""}`}>
-      <button
-        className={styles.thinkingToggle}
-        onClick={handleToggle}
-      >
+    <div
+      className={`${styles.thinkingBlock}${isStreaming ? ` ${styles.thinkingStreaming}` : ""}`}
+    >
+      <button className={styles.thinkingToggle} onClick={handleToggle}>
         <Brain size={14} />
         <span>Thoughts</span>
         {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
@@ -486,7 +482,6 @@ export default function MessageList({
   return (
     <div className={styles.messagesList}>
       {messages.map((msg, i) => {
-
         const roleClass =
           msg.role === "user"
             ? styles.userNode
@@ -494,8 +489,10 @@ export default function MessageList({
               ? styles.systemNode
               : styles.aiNode;
         const isStreaming =
-          (isGenerating && msg.role === "assistant" && i === messages.length - 1)
-          || (msg.role === "assistant" && msg._liveStreaming === true);
+          (isGenerating &&
+            msg.role === "assistant" &&
+            i === messages.length - 1) ||
+          (msg.role === "assistant" && msg._liveStreaming === true);
 
         // Detect model swap: show divider above user message when the next
         // assistant's model differs from the previous assistant's model
@@ -536,7 +533,9 @@ export default function MessageList({
                 <span className={styles.modelChangeLine} />
               </div>
             )}
-            <div className={`${styles.message} ${roleClass}${msg.deleted ? ` ${styles.deletedMessage}` : ""}`}>
+            <div
+              className={`${styles.message} ${roleClass}${msg.deleted ? ` ${styles.deletedMessage}` : ""}`}
+            >
               <div
                 className={`${styles.avatar}${msg.role === "assistant" && isGenerating && i === messages.length - 1 ? ` ${styles.prismAvatar}` : ""}${msg.deleted ? ` ${styles.deletedAvatar}` : ""}`}
               >
@@ -579,7 +578,13 @@ export default function MessageList({
                           />
                         </>
                       )}
-                      {msg.content && <CopyButtonComponent text={msg.content} tooltip="Copy raw text" className={styles.actionBtn} />}
+                      {msg.content && (
+                        <CopyButtonComponent
+                          text={msg.content}
+                          tooltip="Copy raw text"
+                          className={styles.actionBtn}
+                        />
+                      )}
                       <IconButtonComponent
                         icon={<Trash2 size={14} />}
                         onClick={() => onDelete?.(i)}
@@ -602,7 +607,11 @@ export default function MessageList({
                   )}
                   {readOnly && msg.content && (
                     <div className={styles.messageActions}>
-                      <CopyButtonComponent text={msg.content} tooltip="Copy raw text" className={styles.actionBtn} />
+                      <CopyButtonComponent
+                        text={msg.content}
+                        tooltip="Copy raw text"
+                        className={styles.actionBtn}
+                      />
                     </div>
                   )}
                 </div>
@@ -643,11 +652,13 @@ export default function MessageList({
                 )}
 
                 {/* Streaming audio (live session in progress) */}
-                {msg.role === "assistant" && msg._liveStreaming && !msg.audio && (
-                  <div className={styles.audioCard}>
-                    <AudioPlayerRecorderComponent streaming compact />
-                  </div>
-                )}
+                {msg.role === "assistant" &&
+                  msg._liveStreaming &&
+                  !msg.audio && (
+                    <div className={styles.audioCard}>
+                      <AudioPlayerRecorderComponent streaming compact />
+                    </div>
+                  )}
 
                 {/* Audio */}
                 {msg.audio && (
@@ -703,11 +714,11 @@ export default function MessageList({
                   />
                 ) : msg.content ? (
                   <MarkdownContent
-                      content={msg.content}
-                      className={isStreaming ? styles.streamingText : ""}
-                    >
-                      <StreamingCursorComponent active={isStreaming} />
-                    </MarkdownContent>
+                    content={msg.content}
+                    className={isStreaming ? styles.streamingText : ""}
+                  >
+                    <StreamingCursorComponent active={isStreaming} />
+                  </MarkdownContent>
                 ) : isStreaming ? (
                   <span className={styles.streamingCursor} />
                 ) : null}

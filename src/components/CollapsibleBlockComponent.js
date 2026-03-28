@@ -30,10 +30,7 @@ export default function CollapsibleBlockComponent({
 
   return (
     <div className={`${styles.container} ${className}`}>
-      <button
-        className={styles.header}
-        onClick={() => setCollapsed((v) => !v)}
-      >
+      <button className={styles.header} onClick={() => setCollapsed((v) => !v)}>
         <span className={styles.chevron}>
           {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
         </span>

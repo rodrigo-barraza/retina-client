@@ -64,9 +64,7 @@ async function fetchSchemas() {
     cachedSchemas = schemas;
 
     // Strip endpoint metadata for LLM consumption
-    cachedAISchemas = schemas.map(
-      ({ endpoint: _endpoint, ...rest }) => rest,
-    );
+    cachedAISchemas = schemas.map(({ endpoint: _endpoint, ...rest }) => rest);
 
     // Build lookup map for executor
     toolMap.clear();
@@ -75,9 +73,13 @@ async function fetchSchemas() {
     }
 
     initialized = true;
-    console.log(`[SunService] Loaded ${schemas.length} tool schemas from tools-api`);
+    console.log(
+      `[SunService] Loaded ${schemas.length} tool schemas from tools-api`,
+    );
   } catch (err) {
-    console.warn(`[SunService] Could not reach tools-api for schemas: ${err.message}`);
+    console.warn(
+      `[SunService] Could not reach tools-api for schemas: ${err.message}`,
+    );
   }
 }
 
@@ -110,10 +112,7 @@ function buildUrlFromEndpoint(endpoint, args = {}) {
   const pathParams = new Set(endpoint.pathParams || []);
   for (const param of pathParams) {
     if (args[param] !== undefined && args[param] !== null) {
-      path = path.replace(
-        `:${param}`,
-        encodeURIComponent(String(args[param])),
-      );
+      path = path.replace(`:${param}`, encodeURIComponent(String(args[param])));
     }
   }
 

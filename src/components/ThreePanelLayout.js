@@ -205,7 +205,9 @@ export default function ThreePanelLayout({
           )}
 
           {/* Main Center */}
-          <section className={styles.main} data-chat-area>{children}</section>
+          <section className={styles.main} data-chat-area>
+            {children}
+          </section>
 
           {/* Mobile slit: visible strip behind right sidebar (history) — appears on left edge */}
           {rightPanel && isMobile && showRight && (

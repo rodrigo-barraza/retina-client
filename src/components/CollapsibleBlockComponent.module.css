@@ -17,7 +17,9 @@
   width: 100%;
   text-align: left;
   user-select: none;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 
   &:hover {
     background: var(--bg-tertiary);

@@ -126,8 +126,7 @@ export default function ProvidersPage() {
       {
         key: "avgTokensPerSec",
         label: "Tok/s",
-        render: (m) =>
-          formatTokensPerSec(m.avgTokensPerSec),
+        render: (m) => formatTokensPerSec(m.avgTokensPerSec),
         align: "right",
       },
       {
