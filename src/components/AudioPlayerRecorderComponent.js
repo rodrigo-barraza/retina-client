@@ -108,6 +108,40 @@ export default function AudioPlayerRecorderComponent({
   const [muted, setMuted] = useState(false);
   const [peaks, setPeaks] = useState(null);
   const playAnimRef = useRef(null);
+  const prevSrcRef = useRef(src);
+
+  // ── Reset player state when src changes (prevents stale audio across conversations) ──
+  useEffect(() => {
+    if (prevSrcRef.current !== src) {
+      prevSrcRef.current = src;
+      // Fully reset player state
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+      setPeaks(null);
+      // Reset the HTMLAudioElement to prevent zombie paused state
+      const audio = audioRef.current;
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+        // Force reload when src changes to clear internal media state
+        audio.load();
+      }
+    }
+  }, [src]);
+
+  // ── Cleanup on unmount — stop any playing audio ──
+  useEffect(() => {
+    const audio = audioRef.current;
+    const animRef = playAnimRef;
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    };
+  }, []);
 
   // ── Decode audio for playback waveform + true duration ──
   useEffect(() => {
