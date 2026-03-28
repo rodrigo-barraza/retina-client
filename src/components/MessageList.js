@@ -139,12 +139,26 @@ function ToolCallResultBlock({ result }) {
 
   if (!result) return null;
 
+  // Parse the result to extract special renderable fields
+  let parsed = null;
+  if (typeof result === "string") {
+    try {
+      parsed = JSON.parse(result);
+    } catch {
+      /* not JSON */
+    }
+  } else if (typeof result === "object") {
+    parsed = result;
+  }
+
+  const staticMapUrl = parsed?.staticMapUrl || null;
+
   const formatted =
     typeof result === "string"
       ? (() => {
           try {
-            const parsed = JSON.parse(result);
-            return "```json\n" + JSON.stringify(parsed, null, 2) + "\n```";
+            const p = JSON.parse(result);
+            return "```json\n" + JSON.stringify(p, null, 2) + "\n```";
           } catch {
             return "```\n" + result + "\n```";
           }
@@ -153,6 +167,17 @@ function ToolCallResultBlock({ result }) {
 
   return (
     <div className={styles.toolCallResultWrapper}>
+      {staticMapUrl && (
+        <div className={styles.toolCallMapPreview}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={staticMapUrl}
+            alt="Map"
+            className={styles.toolCallMapImage}
+            loading="lazy"
+          />
+        </div>
+      )}
       <button
         className={styles.toolCallResultToggle}
         onClick={() => setShowResult((v) => !v)}
