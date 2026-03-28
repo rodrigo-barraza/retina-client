@@ -29,6 +29,7 @@ import { DateTime } from "luxon";
 import styles from "./HistoryList.module.css";
 import { MODALITY_COLORS } from "./WorkflowNodeConstants";
 import { LS_DATE_RANGE } from "../constants";
+import { formatCost } from "../utils/utilities";
 
 /**
  * HistoryList — shared list component for both conversations and workflows.
@@ -268,7 +269,7 @@ export default function HistoryList({
                   <span className={styles.time}>{dt}</span>
                   {(item.totalCost || 0) > 0 && (
                     <span className={styles.cost}>
-                      ${item.totalCost.toFixed(5)}
+                      {formatCost(item.totalCost)}
                     </span>
                   )}
                 </div>

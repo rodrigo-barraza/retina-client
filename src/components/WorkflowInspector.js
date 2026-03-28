@@ -24,6 +24,7 @@ import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import AssetInputOptions from "./AssetInputOptions";
 import ToggleSwitchComponent from "./ToggleSwitch";
 import PrismService from "../services/PrismService";
+import { copyToClipboard } from "../utils/utilities";
 
 import styles from "./WorkflowInspector.module.css";
 import { LS_WORKFLOW_INSPECTOR_WIDTH } from "../constants";
@@ -856,7 +857,7 @@ export default function WorkflowInspector({
                   className={styles.clearBtn}
                   style={{ marginTop: "4px" }}
                   onClick={() =>
-                    navigator.clipboard.writeText(
+                    copyToClipboard(
                       JSON.stringify(results.embedding),
                     )
                   }
@@ -943,7 +944,7 @@ export default function WorkflowInspector({
                     className={styles.clearBtn}
                     style={{ marginTop: "4px" }}
                     onClick={() =>
-                      navigator.clipboard.writeText(
+                      copyToClipboard(
                         JSON.stringify(node.receivedOutputs.embedding),
                       )
                     }

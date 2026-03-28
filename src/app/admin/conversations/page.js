@@ -23,6 +23,7 @@ import ModelPickerPopoverComponent from "../../../components/ModelPickerPopoverC
 import { ErrorMessage } from "../../../components/StateMessageComponent";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
 import useProjectFilter from "../../../hooks/useProjectFilter";
+import { formatCost } from "../../../utils/utilities";
 import styles from "./page.module.css";
 
 const POLL_INTERVAL = 5000; // 5s
@@ -457,10 +458,10 @@ export default function ConversationsPage({ initialId = null }) {
                           : undefined
                       }
                     >
-                      ${totalCost.toFixed(5)}
+                      {formatCost(totalCost)}
                       {costDiff > 0.000001 && (
                         <span className={styles.metaTooltip}>
-                          ${originalCost.toFixed(5)} total
+                          {formatCost(originalCost)} total
                         </span>
                       )}
                     </span>

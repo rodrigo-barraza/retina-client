@@ -25,26 +25,16 @@ import { ALL_CONSOLE_PROMPTS } from "../arrays.js";
 import {
   truncateToolResult,
   expandMessagesForFC,
+  sanitizeToolName,
 } from "../utils/FunctionCallingUtilities.js";
+import { buildFCSystemPrompt } from "../utils/utilities.js";
+import { MAX_TOOL_ITERATIONS, PROJECT_CONSOLE } from "../constants.js";
 import chatStyles from "./ChatArea.module.css";
 import styles from "./ConsoleComponent.module.css";
 import ChatInputButton from "./ChatInputButton.js";
 
-const MAX_TOOL_ITERATIONS = 25;
-const PROJECT = "retina-console";
 
-
-const SYSTEM_PROMPT = `You are Sun Console — an intelligent assistant with access to real-time data APIs. You have tools for weather, air quality, earthquakes, solar activity, aurora forecasts, sunrise/sunset times, tides, wildfires, ISS tracking, local events, commodity/market prices, trending topics, and product search.
-
-Guidelines:
-- When asked about weather, events, prices, trends, or similar data, ALWAYS use the appropriate tool to fetch real-time data. Never guess or make up data.
-- You may call multiple tools in a single response if the question requires data from multiple sources.
-- Present data clearly with relevant formatting — use tables, bullet points, and emojis where appropriate.
-- When data includes numbers, format them appropriately (currencies, percentages, temperatures).
-- If a tool returns an error, inform the user and suggest alternatives.
-- Be conversational and helpful, not just a data dump.
-- For questions that don't require API data, respond naturally without tool calls.
-- The current local date/time is: ${new Date().toLocaleString()}`;
+const SYSTEM_PROMPT = buildFCSystemPrompt();
 
 export default function ConsoleComponent() {
   // ── State ────────────────────────────────────────────────────
@@ -173,7 +163,7 @@ export default function ConsoleComponent() {
   // Load conversation history
   const loadConversations = useCallback(async () => {
     try {
-      const convs = await PrismService.getConversationsByProject(PROJECT);
+      const convs = await PrismService.getConversationsByProject(PROJECT_CONSOLE);
       setConversations(convs);
     } catch (err) {
       console.error("Failed to load conversations:", err);
@@ -187,7 +177,7 @@ export default function ConsoleComponent() {
   // Load custom tools
   const loadCustomTools = useCallback(async () => {
     try {
-      const tools = await PrismService.getCustomTools(PROJECT);
+      const tools = await PrismService.getCustomTools(PROJECT_CONSOLE);
       setCustomTools(tools);
     } catch (err) {
       console.error("Failed to load custom tools:", err);
@@ -211,18 +201,10 @@ export default function ConsoleComponent() {
       (t) => !disabledBuiltIns.has(t.name) && !offlineTools.has(t.name),
     );
 
-    // Google's function calling API requires names to be alphanumeric + _ . : -
-    // starting with a letter or underscore, max 128 chars.
-    const sanitizeName = (name) =>
-      name
-        .replace(/[^a-zA-Z0-9_.:/-]/g, "_")
-        .replace(/^[^a-zA-Z_]/, "_$&")
-        .slice(0, 128);
-
     const custom = customTools
       .filter((t) => t.enabled)
       .map((t) => ({
-        name: sanitizeName(t.name),
+        name: sanitizeToolName(t.name),
         description: t.description,
         parameters: {
           type: "object",
@@ -246,14 +228,9 @@ export default function ConsoleComponent() {
 
   // Build a lookup for custom tools by sanitized name for execution
   const customToolMap = useMemo(() => {
-    const sanitizeName = (name) =>
-      name
-        .replace(/[^a-zA-Z0-9_.:/-]/g, "_")
-        .replace(/^[^a-zA-Z_]/, "_$&")
-        .slice(0, 128);
     const map = new Map();
     for (const t of customTools) {
-      if (t.enabled) map.set(sanitizeName(t.name), t);
+      if (t.enabled) map.set(sanitizeToolName(t.name), t);
     }
     return map;
   }, [customTools]);
@@ -501,7 +478,7 @@ export default function ConsoleComponent() {
           PrismService.appendMessages(
             conversationId,
             toolResultMessages,
-            PROJECT,
+            PROJECT_CONSOLE,
           ).catch((err) =>
             console.error("Failed to append tool results:", err),
           );
@@ -663,7 +640,7 @@ export default function ConsoleComponent() {
       try {
         const full = await PrismService.getConversationByProject(
           conv.id,
-          PROJECT,
+          PROJECT_CONSOLE,
         );
         const displayMessages = prepareDisplayMessages(full.messages || []);
         setMessages(displayMessages);
@@ -681,7 +658,7 @@ export default function ConsoleComponent() {
   const handleDeleteConversation = useCallback(
     async (convId) => {
       try {
-        await PrismService.deleteConversationByProject(convId, PROJECT);
+        await PrismService.deleteConversationByProject(convId, PROJECT_CONSOLE);
         setConversations((prev) => prev.filter((c) => c.id !== convId));
         if (activeId === convId) {
           handleNewChat();

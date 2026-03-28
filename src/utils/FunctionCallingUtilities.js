@@ -7,6 +7,18 @@
  * logic to avoid duplication.
  */
 
+/**
+ * Sanitize a tool name for LLM function calling APIs.
+ * Google's function calling API requires names to be alphanumeric + _ . : -
+ * starting with a letter or underscore, max 128 chars.
+ */
+export function sanitizeToolName(name) {
+  return name
+    .replace(/[^a-zA-Z0-9_.:/-]/g, "_")
+    .replace(/^[^a-zA-Z_]/, "_$&")
+    .slice(0, 128);
+}
+
 // ── Array keys whose entries get capped during truncation ─────
 const TRUNCATABLE_ARRAY_KEYS = [
   "events",

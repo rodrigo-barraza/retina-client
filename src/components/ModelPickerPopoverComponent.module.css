@@ -94,19 +94,9 @@
   max-height: 75dvh;
   height: 100%;
   transition: left 0.5s ease;
-  animation: popoverIn 0.18s cubic-bezier(0.2, 0, 0, 1.1) forwards;
+  animation: popoverInDown 0.18s cubic-bezier(0.2, 0, 0, 1.1) forwards;
 }
 
-@keyframes popoverIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
 
 /* ── Popover header ─────────────────────────────────────────────────── */
 

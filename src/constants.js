@@ -17,6 +17,10 @@ export const SK_LAST_PROVIDER = "lastProvider";
 export const SK_LAST_MODEL = "lastModel";
 export const SK_INFERENCE_MODE = "inferenceMode";
 
+// ── Application constants ────────────────────────────────────────
+export const MAX_TOOL_ITERATIONS = 25;
+export const PROJECT_CONSOLE = "retina-console";
+
 // ── Raw localStorage keys (no namespace prefix) ─────────────────
 export const LS_PANEL_LEFT = "panel_left";
 export const LS_PANEL_RIGHT = "panel_right";

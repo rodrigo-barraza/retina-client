@@ -10,6 +10,7 @@
   --border-subtle: rgba(255, 255, 255, 0.03);
   --text-primary: #f8f8f8;
   --text-secondary: #8e95ae;
+  --text-tertiary: #6b728e;
   --text-muted: #5a6078;
   --accent-color: #6366f1;
   --accent-hover: #4f46e5;
@@ -68,6 +69,7 @@
   --border-subtle: rgba(0, 0, 0, 0.04);
   --text-primary: #1a1a2e;
   --text-secondary: #64748b;
+  --text-tertiary: #78849c;
   --text-muted: #94a3b8;
   --accent-color: #4f46e5;
   --accent-hover: #4338ca;
@@ -306,6 +308,39 @@ select option {
 }
 
 /* prismSpin removed — use spin instead */
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes popoverInUp {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes popoverInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 
 @keyframes toastIn {
   from {

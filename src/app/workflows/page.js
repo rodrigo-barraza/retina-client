@@ -33,6 +33,7 @@ import ThreePanelLayout from "../../components/ThreePanelLayout";
 import NavigationSidebarComponent from "../../components/NavigationSidebarComponent";
 import { useToast } from "../../components/ToastComponent";
 import ButtonComponent from "../../components/ButtonComponent";
+import { copyToClipboard } from "../../utils/utilities";
 import styles from "./page.module.css";
 
 const MODEL_SECTIONS = [
@@ -1019,7 +1020,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
       try {
         const wf = await WorkflowService.getWorkflow(id);
         if (!wf) return;
-        await navigator.clipboard.writeText(JSON.stringify(wf, null, 2));
+        await copyToClipboard(JSON.stringify(wf, null, 2));
         showToast("Workflow copied to clipboard");
       } catch (err) {
         showToast(`Copy failed: ${err.message}`, "error");

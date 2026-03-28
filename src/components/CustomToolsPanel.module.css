@@ -246,17 +246,6 @@
   animation: slideDown 0.15s ease;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    max-height: 0;
-  }
-  to {
-    opacity: 1;
-    max-height: 400px;
-  }
-}
-
 .toolCardDesc {
   font-size: 11px;
   color: var(--text-secondary);

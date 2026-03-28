@@ -11,8 +11,10 @@ import StorageService from "../services/StorageService";
 import {
   truncateToolResult,
   expandMessagesForFC,
+  sanitizeToolName,
 } from "../utils/FunctionCallingUtilities";
-import { SK_LAST_PROVIDER, SK_LAST_MODEL, SK_INFERENCE_MODE } from "../constants";
+import { buildFCSystemPrompt, formatCost } from "../utils/utilities";
+import { SK_LAST_PROVIDER, SK_LAST_MODEL, SK_INFERENCE_MODE, MAX_TOOL_ITERATIONS } from "../constants";
 import {
   Send,
   Settings,
@@ -236,27 +238,8 @@ export default function HomePage({ initialConversationId = null }) {
   }, []);
 
   // ── Function Calling infrastructure ────────────────────────
-  const MAX_TOOL_ITERATIONS = 25;
 
-
-
-  const FC_SYSTEM_PROMPT = `You are a helpful AI assistant with access to real-time data APIs. You have tools for weather, air quality, earthquakes, solar activity, aurora forecasts, sunrise/sunset times, tides, wildfires, ISS tracking, local events, commodity/market prices, trending topics, and product search.
-
-Guidelines:
-- When asked about weather, events, prices, trends, or similar data, ALWAYS use the appropriate tool to fetch real-time data. Never guess or make up data.
-- You may call multiple tools in a single response if the question requires data from multiple sources.
-- Present data clearly with relevant formatting — use tables, bullet points, and emojis where appropriate.
-- When data includes numbers, format them appropriately (currencies, percentages, temperatures).
-- If a tool returns an error, inform the user and suggest alternatives.
-- Be conversational and helpful, not just a data dump.
-- For questions that don't require API data, respond naturally without tool calls.
-- The current local date/time is: ${new Date().toLocaleString()}`;
-
-  const sanitizeName = (name) =>
-    name
-      .replace(/[^a-zA-Z0-9_.:/-]/g, "_")
-      .replace(/^[^a-zA-Z_]/, "_$&")
-      .slice(0, 128);
+  const FC_SYSTEM_PROMPT = buildFCSystemPrompt();
 
   const allToolSchemas = useMemo(() => {
     const builtIn = SunService.getToolSchemas().filter(
@@ -265,7 +248,7 @@ Guidelines:
     const custom = customTools
       .filter((t) => t.enabled)
       .map((t) => ({
-        name: sanitizeName(t.name),
+        name: sanitizeToolName(t.name),
         description: t.description,
         parameters: {
           type: "object",
@@ -290,7 +273,7 @@ Guidelines:
   const customToolMap = useMemo(() => {
     const map = new Map();
     for (const t of customTools) {
-      if (t.enabled) map.set(sanitizeName(t.name), t);
+      if (t.enabled) map.set(sanitizeToolName(t.name), t);
     }
     return map;
   }, [customTools]);
@@ -2067,10 +2050,10 @@ Guidelines:
                           : undefined
                       }
                     >
-                      ${totalCost.toFixed(5)}
+                      {formatCost(totalCost)}
                       {costDiff > 0.000001 && (
                         <span className={styles.metaTooltip}>
-                          ${originalTotalCost.toFixed(5)} total
+                          {formatCost(originalTotalCost)} total
                         </span>
                       )}
                     </span>

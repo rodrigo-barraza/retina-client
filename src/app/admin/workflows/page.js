@@ -10,6 +10,7 @@ import { ErrorMessage } from "../../../components/StateMessageComponent";
 import { useToast } from "../../../components/ToastComponent";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
 import useProjectFilter from "../../../hooks/useProjectFilter";
+import { copyToClipboard } from "../../../utils/utilities";
 import styles from "./page.module.css";
 
 export default function AdminWorkflowsPage() {
@@ -138,7 +139,7 @@ export default function AdminWorkflowsPage() {
       const wf = await IrisService.getWorkflow(id);
       if (!wf) return;
       const data = JSON.stringify(wf, null, 2);
-      await navigator.clipboard.writeText(data);
+      await copyToClipboard(data);
       showToast("Workflow copied to clipboard");
     } catch (err) {
       showToast(`Copy failed: ${err.message}`, "error");

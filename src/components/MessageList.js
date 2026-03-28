@@ -25,6 +25,7 @@ import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import styles from "./MessageList.module.css";
 import { DateTime } from "luxon";
 import PrismService from "../services/PrismService";
+import { formatCost } from "../utils/utilities";
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 
@@ -754,7 +755,7 @@ export default function MessageList({
                         {msg.provider === "lm-studio" || msg.provider === "vllm"
                           ? " • $0"
                           : msg.estimatedCost
-                            ? ` • $${msg.estimatedCost.toFixed(5)}`
+                            ? ` • ${formatCost(msg.estimatedCost)}`
                             : ""}
                       </div>
                     </div>
