@@ -247,9 +247,15 @@ export default class LiveSessionService {
       this.mediaStream = null;
     }
     if (this.audioWorkletNode) {
+      // Flush any remaining samples in the worklet's 512-sample buffer
+      this.audioWorkletNode.port.postMessage("flush");
       this.audioWorkletNode.disconnect();
       this.audioWorkletNode.port.close();
       this.audioWorkletNode = null;
+    }
+    // Signal the Live API to flush any server-side cached audio
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "audioStreamEnd" }));
     }
   }
 

@@ -16,6 +16,14 @@ class PCMProcessor extends AudioWorkletProcessor {
     this.bufferSize = 512;
     this.buffer = new Float32Array(this.bufferSize);
     this.bufferIndex = 0;
+
+    // Listen for flush command to send any remaining buffered audio
+    this.port.onmessage = (event) => {
+      if (event.data === "flush" && this.bufferIndex > 0) {
+        this.port.postMessage(this.buffer.slice(0, this.bufferIndex));
+        this.bufferIndex = 0;
+      }
+    };
   }
 
   process(inputs) {
