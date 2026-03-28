@@ -704,6 +704,7 @@ export default function HomePage({ initialConversationId = null }) {
           iterations++;
           let streamedText = "";
           let streamedThinking = "";
+          let turnDoneData = {};
           const pendingToolCalls = [];
 
           // Insert placeholder so the blinking cursor shows immediately
@@ -780,7 +781,10 @@ export default function HomePage({ initialConversationId = null }) {
                   },
                 ]);
               },
-              onDone: () => resolve(),
+              onDone: (data) => {
+                turnDoneData = data || {};
+                resolve();
+              },
               onError: (err) => reject(err),
               onThinking: (content) => {
                 streamedThinking += content;
@@ -855,6 +859,12 @@ export default function HomePage({ initialConversationId = null }) {
               content: streamedText || "",
               thinking: streamedThinking || undefined,
               timestamp: new Date().toISOString(),
+              provider: turnDoneData.provider || settings.provider,
+              model: turnDoneData.model || settings.model,
+              usage: turnDoneData.usage,
+              totalTime: turnDoneData.totalTime,
+              tokensPerSec: turnDoneData.tokensPerSec,
+              estimatedCost: turnDoneData.estimatedCost,
               toolCalls: pendingToolCalls.map((tc) => {
                 const match = results.find((r) => r.id === tc.id);
                 return {
@@ -902,6 +912,12 @@ export default function HomePage({ initialConversationId = null }) {
               content: streamedText,
               thinking: streamedThinking || undefined,
               timestamp: new Date().toISOString(),
+              provider: turnDoneData.provider || settings.provider,
+              model: turnDoneData.model || settings.model,
+              usage: turnDoneData.usage,
+              totalTime: turnDoneData.totalTime,
+              tokensPerSec: turnDoneData.tokensPerSec,
+              estimatedCost: turnDoneData.estimatedCost,
             });
           } else if (iterations > 1) {
             console.warn(
@@ -1417,6 +1433,7 @@ export default function HomePage({ initialConversationId = null }) {
           iterations++;
           let streamedText = "";
           let streamedThinking = "";
+          let turnDoneData = {};
           const pendingToolCalls = [];
 
           // Insert placeholder so the blinking cursor shows immediately
@@ -1500,7 +1517,10 @@ export default function HomePage({ initialConversationId = null }) {
                   },
                 ]);
               },
-              onDone: () => resolve(),
+              onDone: (data) => {
+                turnDoneData = data || {};
+                resolve();
+              },
               onError: (err) => reject(err),
               onThinking: (content) => {
                 streamedThinking += content;
@@ -1575,6 +1595,12 @@ export default function HomePage({ initialConversationId = null }) {
               content: streamedText || "",
               thinking: streamedThinking || undefined,
               timestamp: new Date().toISOString(),
+              provider: turnDoneData.provider || settings.provider,
+              model: turnDoneData.model || settings.model,
+              usage: turnDoneData.usage,
+              totalTime: turnDoneData.totalTime,
+              tokensPerSec: turnDoneData.tokensPerSec,
+              estimatedCost: turnDoneData.estimatedCost,
               toolCalls: pendingToolCalls.map((tc) => {
                 const match = results.find((r) => r.id === tc.id);
                 return {
@@ -1622,6 +1648,12 @@ export default function HomePage({ initialConversationId = null }) {
               content: streamedText,
               thinking: streamedThinking || undefined,
               timestamp: new Date().toISOString(),
+              provider: turnDoneData.provider || settings.provider,
+              model: turnDoneData.model || settings.model,
+              usage: turnDoneData.usage,
+              totalTime: turnDoneData.totalTime,
+              tokensPerSec: turnDoneData.tokensPerSec,
+              estimatedCost: turnDoneData.estimatedCost,
             });
           } else if (iterations > 1) {
             console.warn(
