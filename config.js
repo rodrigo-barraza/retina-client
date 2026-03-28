@@ -27,4 +27,6 @@ export const PRISM_WS_URL = IS_PRODUCTION
   : DEFAULT_PRISM_WS_URL;
 
 // Sun Tools API (unified)
-export const TOOLS_API_URL = DEFAULT_TOOLS_API_URL;
+export const TOOLS_API_URL = IS_PRODUCTION
+  ? "https://tools.clankerbox.com"
+  : DEFAULT_TOOLS_API_URL;
