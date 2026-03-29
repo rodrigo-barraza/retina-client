@@ -1970,6 +1970,7 @@ export default function HomePage({ initialConversationId = null }) {
           systemPrompt={settings.systemPrompt}
           onSystemPromptClick={() => setShowSystemPromptModal(true)}
           functionCallingEnabled={!!settings.functionCallingEnabled}
+          enabledToolNames={allToolSchemas.map((t) => t.name)}
           toolCount={allToolSchemas.length}
           fcCardGlowing={hoveredLink === "tools-tab"}
           onFcCardHover={(hovering) =>
@@ -2137,6 +2138,44 @@ export default function HomePage({ initialConversationId = null }) {
                   break;
                 }
               }
+              return updated;
+            });
+          }}
+          onLiveToolExecution={(data) => {
+            const tc = data.tool;
+            setToolActivity((prev) => {
+              let updated = [];
+              if (data.status === "calling") {
+                updated = [
+                  ...prev,
+                  {
+                    id: tc.id || `tc-${Date.now()}-${Math.random()}`,
+                    name: tc.name,
+                    args: tc.args,
+                    status: "calling",
+                    timestamp: Date.now(),
+                  },
+                ];
+              } else {
+                updated = prev.map((activity) => {
+                  if (
+                    (tc.id && activity.id === tc.id) ||
+                    (!tc.id && activity.name === tc.name && activity.status === "calling")
+                  ) {
+                    return { ...activity, status: data.status, result: tc.result };
+                  }
+                  return activity;
+                });
+              }
+              setMessages((msgPrev) => {
+                const arr = [...msgPrev];
+                // Try attaching to the most recent assistant message (if it is the live streaming one)
+                const last = arr[arr.length - 1];
+                if (last?.role === "assistant" || last?._liveStreaming) {
+                  arr[arr.length - 1] = { ...last, toolCalls: updated };
+                }
+                return arr;
+              });
               return updated;
             });
           }}

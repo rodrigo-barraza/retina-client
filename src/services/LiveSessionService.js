@@ -110,6 +110,12 @@ export default class LiveSessionService {
           this.callbacks.onToolCall(data.functionCalls);
         break;
 
+      case "tool_execution":
+        if (this.callbacks.onToolExecution) {
+          this.callbacks.onToolExecution(data);
+        }
+        break;
+
       case "inputTranscription":
         if (this.callbacks.onInputTranscription) {
           this.callbacks.onInputTranscription(data.text);

@@ -208,6 +208,7 @@ export default function ChatArea({
   conversationId = null,
   toolActivitySlot = null,
   functionCallingEnabled = false,
+  enabledToolNames = [],
   toolCount = 0,
   fcCardGlowing = false,
   onFcCardHover,
@@ -217,6 +218,7 @@ export default function ChatArea({
   onLiveAssistantChunk,
   onLiveTurnComplete,
   onLiveUserAudioReady,
+  onLiveToolExecution,
 }) {
   const [showToolsBubble, setShowToolsBubble] = useState(false);
   const toolsBubbleRef = useRef(null);
@@ -422,6 +424,14 @@ export default function ChatArea({
         };
       }
 
+      // Pass the enabled tools down to Prism so it can automatically fetch schemas
+      const activeToolNames = activeTools.filter((t) => getToolToggle(t)?.checked);
+      if (activeToolNames.includes("Function Calling") && enabledToolNames.length > 0) {
+        liveConfig.enabledTools = [...new Set([...activeToolNames, ...enabledToolNames])];
+      } else {
+        liveConfig.enabledTools = activeToolNames;
+      }
+
       // Reset transcript accumulators
       liveUserTranscriptRef.current = "";
       liveAssistantTranscriptRef.current = "";
@@ -456,6 +466,9 @@ export default function ChatArea({
           },
           onUserAudioReady: (userAudioRef) => {
             onLiveUserAudioReady?.(userAudioRef);
+          },
+          onToolExecution: (data) => {
+            onLiveToolExecution?.(data);
           },
           onInterrupted: (turnData) => {
             // User interrupted — finalize any in-progress assistant message
