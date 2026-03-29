@@ -4,9 +4,8 @@ import {
   Volume2,
   Hash,
   ArrowRight,
-  Parentheses,
 } from "lucide-react";
-import { MODALITY_COLORS } from "../../components/WorkflowNodeConstants";
+import { MODALITY_COLORS, TOOL_ICON_MAP, TOOL_COLORS } from "../../components/WorkflowNodeConstants";
 import TooltipComponent from "../../components/TooltipComponent";
 import BadgeComponent from "../../components/BadgeComponent";
 import {
@@ -15,8 +14,9 @@ import {
   formatLatency,
   formatTokensPerSec,
 } from "../../utils/utilities";
+import styles from "./page.module.css";
 
-export const getRequestsColumns = () => [
+export const getRequestsColumns = (configModels = {}) => [
   {
     key: "timestamp",
     label: "Time",
@@ -108,12 +108,38 @@ export const getRequestsColumns = () => [
     key: "toolsUsed",
     label: "Tools",
     sortable: true,
-    render: (r) =>
-      r.toolsUsed ? (
-        <Parentheses size={13} style={{ color: "var(--accent)" }} />
-      ) : (
-        <span style={{ color: "var(--text-muted)" }}>—</span>
-      ),
+    align: "left",
+    render: (r) => {
+      if (!r.toolsUsed) {
+        return <span style={{ color: "var(--text-muted)" }}>—</span>;
+      }
+      const tools = configModels[`${r.provider}:${r.model}`];
+      if (!tools?.length) {
+        // toolsUsed is true but no config found — show generic pill
+        return <span style={{ color: "var(--text-muted)" }}>—</span>;
+      }
+      return (
+        <span className={styles.toolPills}>
+          {tools.map((t) => {
+            const Icon = TOOL_ICON_MAP[t];
+            if (!Icon) {
+              return (
+                <TooltipComponent key={t} label={t} position="top">
+                  <span className={styles.toolPill}>{t}</span>
+                </TooltipComponent>
+              );
+            }
+            return (
+              <TooltipComponent key={t} label={t} position="top">
+                <span className={styles.toolPill}>
+                  <Icon size={12} style={{ color: TOOL_COLORS[t] }} />
+                </span>
+              </TooltipComponent>
+            );
+          })}
+        </span>
+      );
+    },
   },
   {
     key: "inputTokens",

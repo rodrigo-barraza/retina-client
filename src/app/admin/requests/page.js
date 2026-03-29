@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Download, MessageSquare, GitBranch } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import HistoryItemComponent from "../../../components/HistoryItemComponent";
 import IrisService from "../../../services/IrisService";
+import PrismService from "../../../services/PrismService";
 import {
   formatNumber,
   formatCost,
@@ -35,6 +37,7 @@ import { LS_DATE_RANGE } from "../../../constants";
 import { getRequestsColumns } from "../requestsColumns";
 
 export default function RequestsPage() {
+  const router = useRouter();
   const { projectFilter, projectOptions, handleProjectChange } =
     useProjectFilter();
   const [requests, setRequests] = useState([]);
@@ -45,6 +48,7 @@ export default function RequestsPage() {
   const [sort, setSort] = useState("timestamp");
   const [order, setOrder] = useState("desc");
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [configModels, setConfigModels] = useState({});
   const [associations, setAssociations] = useState(null);
   const [loadingAssociations, setLoadingAssociations] = useState(false);
   const [filters, setFilters] = useState({
@@ -69,9 +73,23 @@ export default function RequestsPage() {
       });
       Object.assign(params, buildDateRangeParams(dateRange));
 
-      const data = await IrisService.getRequests(params);
+      const [data, prismConfig] = await Promise.all([
+        IrisService.getRequests(params),
+        PrismService.getConfig().catch(() => null),
+      ]);
       setRequests(data.data || []);
       setTotal(data.total || 0);
+
+      if (prismConfig?.textToText?.models) {
+        const lookup = {};
+        for (const [provider, models] of Object.entries(prismConfig.textToText.models)) {
+          for (const m of models) {
+            const key = `${provider}:${m.name}`;
+            if (m.tools?.length) lookup[key] = m.tools;
+          }
+        }
+        setConfigModels(lookup);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -128,7 +146,7 @@ export default function RequestsPage() {
     setPage(1);
   }
 
-  const columns = useMemo(() => getRequestsColumns(), []);
+  const columns = useMemo(() => getRequestsColumns(configModels), [configModels]);
 
   const exportCSV = useCallback(() => {
     const headers = columns.map((c) => c.label).join(",");
@@ -453,24 +471,33 @@ export default function RequestsPage() {
                       <MessageSquare size={12} /> Conversations
                     </span>
                     {associations?.conversations?.length > 0 ? (
-                      <ul className={styles.associationList}>
+                      <div className={styles.associationList}>
                         {associations.conversations.map((c) => (
-                          <li key={c.id} className={styles.associationItem}>
-                            <Link
-                              href={`/admin/conversations/${c.id}`}
-                              className={styles.associationLink}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <span className={styles.associationTitle}>
-                                {c.title || "Untitled"}
-                              </span>
-                              <span className={styles.associationMeta}>
-                                {c.project}
-                              </span>
-                            </Link>
-                          </li>
+                          <HistoryItemComponent
+                            key={c.id}
+                            item={{
+                              id: c.id,
+                              title: c.title || "Untitled",
+                              tags: c.project
+                                ? [
+                                    {
+                                      label: c.project,
+                                      style: {
+                                        background: "var(--accent-subtle)",
+                                        color: "var(--accent-color)",
+                                      },
+                                    },
+                                  ]
+                                : [],
+                              updatedAt: c.updatedAt || c.createdAt,
+                            }}
+                            icon={MessageSquare}
+                            onClick={() =>
+                              router.push(`/admin/conversations/${c.id}`)
+                            }
+                          />
                         ))}
-                      </ul>
+                      </div>
                     ) : (
                       <span className={styles.associationEmpty}>—</span>
                     )}
@@ -480,24 +507,31 @@ export default function RequestsPage() {
                       <GitBranch size={12} /> Workflows
                     </span>
                     {associations?.workflows?.length > 0 ? (
-                      <ul className={styles.associationList}>
+                      <div className={styles.associationList}>
                         {associations.workflows.map((w) => (
-                          <li key={w.id} className={styles.associationItem}>
-                            <Link
-                              href={`/admin/workflows/${w.id}`}
-                              className={styles.associationLink}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <span className={styles.associationTitle}>
-                                {w.name}
-                              </span>
-                              <span className={styles.associationMeta}>
-                                {w.nodeCount} nodes · {w.edgeCount} edges
-                              </span>
-                            </Link>
-                          </li>
+                          <HistoryItemComponent
+                            key={w.id}
+                            item={{
+                              id: w.id,
+                              title: w.name || "Untitled",
+                              tags: [
+                                {
+                                  label: `${w.nodeCount} nodes · ${w.edgeCount} edges`,
+                                  style: {
+                                    background: "var(--bg-tertiary)",
+                                    color: "var(--text-muted)",
+                                  },
+                                },
+                              ],
+                              updatedAt: w.updatedAt || w.createdAt,
+                            }}
+                            icon={GitBranch}
+                            onClick={() =>
+                              router.push(`/admin/workflows/${w.id}`)
+                            }
+                          />
                         ))}
-                      </ul>
+                      </div>
                     ) : (
                       <span className={styles.associationEmpty}>—</span>
                     )}
