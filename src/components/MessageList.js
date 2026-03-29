@@ -288,11 +288,13 @@ function ToolCallsBlock({ toolCalls }) {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   if (!toolCalls || toolCalls.length === 0) return null;
 
-  const formatName = (raw) =>
-    (raw || "unknown")
+  const formatName = (raw) => {
+    if (raw === "googleSearch") return "Google Search";
+    return (raw || "unknown")
       .replace(/^get_/, "")
       .replace(/_/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
 
   return (
     <div className={styles.toolCallsBlock}>

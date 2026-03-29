@@ -5,6 +5,7 @@ import { Download, MessageSquare, GitBranch } from "lucide-react";
 import { useRouter } from "next/navigation";
 import HistoryItemComponent from "../../../components/HistoryItemComponent";
 import IrisService from "../../../services/IrisService";
+import PrismService from "../../../services/PrismService";
 import {
   formatNumber,
   formatCost,
@@ -34,6 +35,39 @@ import useProjectFilter from "../../../hooks/useProjectFilter";
 import styles from "./page.module.css";
 import { LS_DATE_RANGE } from "../../../constants";
 import { getRequestsColumns } from "../requestsColumns";
+
+function extractMediaAssets(obj) {
+  const assets = new Set();
+  const search = (node) => {
+    if (!node) return;
+    if (typeof node === "string") {
+      if (
+        node.startsWith("minio://") ||
+        node.startsWith("data:image/") ||
+        node.startsWith("data:audio/") ||
+        node.startsWith("data:video/")
+      ) {
+        assets.add(node);
+      } else if (node.startsWith("http://") || node.startsWith("https://")) {
+        const ext = node.split("?")[0].split(".").pop()?.toLowerCase();
+        if (
+          ["png", "jpg", "jpeg", "gif", "webp", "mp3", "wav", "ogg", "webm", "mp4", "mov", "avi"].includes(
+            ext
+          )
+        ) {
+          assets.add(node);
+        }
+      }
+    } else if (Array.isArray(node)) {
+      node.forEach(search);
+    } else if (typeof node === "object") {
+      Object.values(node).forEach(search);
+    }
+  };
+  search(obj?.requestPayload);
+  search(obj?.responsePayload);
+  return Array.from(assets);
+}
 
 export default function RequestsPage() {
   const router = useRouter();
@@ -533,6 +567,57 @@ export default function RequestsPage() {
                 </div>
               )}
             </div>
+            {(() => {
+              const mediaAssets = extractMediaAssets(selectedRequest);
+              if (!mediaAssets.length) return null;
+              return (
+                <div className={styles.detailSection}>
+                  <div className={styles.detailSectionTitle}>Media Assets</div>
+                  <div className={styles.mediaGrid}>
+                    {mediaAssets.map((ref, idx) => {
+                      const src = PrismService.getFileUrl(ref);
+                      const isData = ref.startsWith("data:");
+                      const isAudio = isData
+                        ? ref.startsWith("data:audio")
+                        : /\.(mp3|wav|ogg|webm)$/i.test(ref.split("?")[0]);
+                      const isVideo = isData
+                        ? ref.startsWith("data:video")
+                        : /\.(mp4|avi|mov)$/i.test(ref.split("?")[0]);
+
+                      if (isAudio) {
+                        return (
+                          <audio
+                            key={idx}
+                            src={src}
+                            controls
+                            className={styles.audioPreview}
+                          />
+                        );
+                      }
+                      if (isVideo) {
+                        return (
+                          <video
+                            key={idx}
+                            src={src}
+                            controls
+                            className={styles.videoPreview}
+                          />
+                        );
+                      }
+                      return (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={idx}
+                          src={src}
+                          alt="Asset preview"
+                          className={styles.imagePreview}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
             {selectedRequest.requestPayload && (
               <div className={styles.detailSection}>
                 <div className={styles.detailSectionTitle}>Request Payload</div>
