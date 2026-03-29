@@ -783,6 +783,12 @@ export default function HomePage({ initialConversationId = null }) {
             },
             onToolExecution: (data) => {
               const tc = data.tool;
+              // Reset streamed text for the new iteration so the next
+              // assistant message doesn't repeat previous segments
+              if (data.status === "calling") {
+                streamedText = "";
+                streamedThinking = "";
+              }
               setToolActivity((prev) => {
                 let updated = [];
                 if (data.status === "calling") {
@@ -1423,6 +1429,12 @@ export default function HomePage({ initialConversationId = null }) {
             },
             onToolExecution: (data) => {
               const tc = data.tool;
+              // Reset streamed text for the new iteration so the next
+              // assistant message doesn't repeat previous segments
+              if (data.status === "calling") {
+                streamedText = "";
+                streamedThinking = "";
+              }
               setToolActivity((prev) => {
                 let updated = [];
                 if (data.status === "calling") {
