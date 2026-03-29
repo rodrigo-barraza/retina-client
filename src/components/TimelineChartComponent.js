@@ -9,6 +9,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Customized,
 } from "recharts";
 import styles from "./TimelineChartComponent.module.css";
 import ChartTabsComponent from "./ChartTabsComponent";
@@ -21,6 +22,116 @@ const TABS = [
   { key: "avgLatency", label: "Latency", color: "#ec4899", unit: "ms" },
   { key: "successRate", label: "Success", color: "#10b981", unit: "%" },
 ];
+
+/**
+ * Compute the number of vertical sub-divisions to draw between each data point.
+ *
+ * ≤ 24 hourly points  → 6 subs (one line every 10 min)
+ * 25–168 hourly points → 1 per data point (just data-point grid lines)
+ * date-level or larger → 0 (keep as-is)
+ */
+function getSubDivisions(data) {
+  if (!data.length) return 0;
+  const isHourly = data[0]?.hour?.length > 10;
+  if (!isHourly) return 0;
+  if (data.length <= 24) return 6;   // ≤ 1 day → every 10 min
+  if (data.length <= 168) return 1;  // 1–7 days → every hour (data-point lines)
+  return 0;
+}
+
+/**
+ * SubGridLines — renders minor vertical grid lines between data points.
+ * Injected via Recharts' <Customized /> component, which passes chart internals.
+ */
+function SubGridLines(props) {
+  const {
+    xAxisMap,
+    yAxisMap,
+    formattedGraphicalItems,
+    offset,
+  } = props;
+
+  const xAxis = xAxisMap && Object.values(xAxisMap)[0];
+  const yAxis = yAxisMap && Object.values(yAxisMap)[0];
+  if (!xAxis || !yAxis) return null;
+
+  // Recharts v3: items are { graphicalItem, data, points } or { props: { points } }
+  const areaItem = formattedGraphicalItems?.[0];
+  const points =
+    areaItem?.props?.points ||      // v2 format
+    areaItem?.points ||              // v3 format
+    [];
+  if (points.length < 2) return null;
+
+  // Recover original data for period detection
+  const sourceData =
+    areaItem?.item?.props?.data ||   // v2
+    areaItem?.props?.data ||         // v3 alt
+    props.chartData ||               // possible direct pass
+    [];
+  const subs = getSubDivisions(sourceData);
+  if (subs === 0) return null;
+
+  const yTop = offset?.top ?? 0;
+  const yBottom = yTop + (offset?.height ?? 0);
+  const lines = [];
+
+  if (subs === 1) {
+    // 1–7 day range: thin vertical line at each hourly data point
+    for (let i = 0; i < points.length; i++) {
+      lines.push(
+        <line
+          key={`dg-${i}`}
+          x1={points[i].x}
+          y1={yTop}
+          x2={points[i].x}
+          y2={yBottom}
+          stroke="rgba(255,255,255,0.04)"
+          strokeWidth={0.5}
+        />,
+      );
+    }
+  } else {
+    // ≤ 24h: data-point lines + sub-division lines between them
+    for (let i = 0; i < points.length; i++) {
+      // Data point vertical line (slightly more visible than sub-divs)
+      lines.push(
+        <line
+          key={`dp-${i}`}
+          x1={points[i].x}
+          y1={yTop}
+          x2={points[i].x}
+          y2={yBottom}
+          stroke="rgba(255,255,255,0.05)"
+          strokeWidth={0.5}
+        />,
+      );
+      // Sub-division lines to the next data point
+      if (i < points.length - 1) {
+        const x0 = points[i].x;
+        const x1Pos = points[i + 1].x;
+        const step = (x1Pos - x0) / subs;
+        for (let j = 1; j < subs; j++) {
+          const x = x0 + step * j;
+          lines.push(
+            <line
+              key={`sg-${i}-${j}`}
+              x1={x}
+              y1={yTop}
+              x2={x}
+              y2={yBottom}
+              stroke="rgba(255,255,255,0.025)"
+              strokeWidth={0.5}
+            />,
+          );
+        }
+      }
+    }
+  }
+
+  return <g className="sub-grid-lines">{lines}</g>;
+}
+
 
 function formatValue(value, tab) {
   if (value === null || value === undefined) return "—";
@@ -115,6 +226,13 @@ export default function TimelineChartComponent({
     [tab],
   );
 
+  // Determine whether we need vertical data-point grid lines
+  const showVerticalGrid = useMemo(() => {
+    if (!data.length) return false;
+    const isHourly = data[0]?.hour?.length > 10;
+    return isHourly && data.length > 24 && data.length <= 168;
+  }, [data]);
+
   return (
     <div className={styles.container}>
       {title && <h2 className={styles.title}>{title}</h2>}
@@ -142,8 +260,9 @@ export default function TimelineChartComponent({
               <CartesianGrid
                 strokeDasharray="3 6"
                 stroke="rgba(255,255,255,0.04)"
-                vertical={false}
+                vertical={showVerticalGrid}
               />
+              <Customized component={SubGridLines} />
               <XAxis
                 dataKey="label"
                 tick={{ fill: "#5a6078", fontSize: 11 }}

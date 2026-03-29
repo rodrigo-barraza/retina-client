@@ -651,7 +651,7 @@ export default function DashboardPage() {
             </Link>
           </span>
         }
-        columns={getRequestsColumns(configModels)}
+        columns={getRequestsColumns()}
         data={recentRequests}
         getRowKey={(r, i) => r.requestId || i}
         emptyText={loading ? "Loading..." : "No requests yet"}

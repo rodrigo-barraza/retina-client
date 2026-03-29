@@ -4,8 +4,9 @@ import {
   Volume2,
   Hash,
   ArrowRight,
+  Parentheses,
 } from "lucide-react";
-import { MODALITY_COLORS, TOOL_ICON_MAP, TOOL_COLORS } from "../../components/WorkflowNodeConstants";
+import { MODALITY_COLORS } from "../../components/WorkflowNodeConstants";
 import TooltipComponent from "../../components/TooltipComponent";
 import BadgeComponent from "../../components/BadgeComponent";
 import {
@@ -16,7 +17,7 @@ import {
 } from "../../utils/utilities";
 import styles from "./page.module.css";
 
-export const getRequestsColumns = (configModels = {}) => [
+export const getRequestsColumns = () => [
   {
     key: "timestamp",
     label: "Time",
@@ -113,30 +114,26 @@ export const getRequestsColumns = (configModels = {}) => [
       if (!r.toolsUsed) {
         return <span style={{ color: "var(--text-muted)" }}>—</span>;
       }
-      const tools = configModels[`${r.provider}:${r.model}`];
-      if (!tools?.length) {
-        // toolsUsed is true but no config found — show generic pill
-        return <span style={{ color: "var(--text-muted)" }}>—</span>;
+      const names = r.toolNames;
+      if (!names?.length) {
+        // Legacy rows: toolsUsed=true but no toolNames stored yet
+        return (
+          <TooltipComponent label="Function Calling" position="top">
+            <span className={styles.toolPill}>
+              <Parentheses size={12} style={{ color: "var(--accent-color)" }} />
+            </span>
+          </TooltipComponent>
+        );
       }
       return (
         <span className={styles.toolPills}>
-          {tools.map((t) => {
-            const Icon = TOOL_ICON_MAP[t];
-            if (!Icon) {
-              return (
-                <TooltipComponent key={t} label={t} position="top">
-                  <span className={styles.toolPill}>{t}</span>
-                </TooltipComponent>
-              );
-            }
-            return (
-              <TooltipComponent key={t} label={t} position="top">
-                <span className={styles.toolPill}>
-                  <Icon size={12} style={{ color: TOOL_COLORS[t] }} />
-                </span>
-              </TooltipComponent>
-            );
-          })}
+          {names.map((name) => (
+            <TooltipComponent key={name} label={name} position="top">
+              <span className={styles.toolPill}>
+                <Parentheses size={12} style={{ color: "var(--accent-color)" }} />
+              </span>
+            </TooltipComponent>
+          ))}
         </span>
       );
     },

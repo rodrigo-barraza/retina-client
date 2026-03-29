@@ -5,7 +5,6 @@ import { Download, MessageSquare, GitBranch } from "lucide-react";
 import { useRouter } from "next/navigation";
 import HistoryItemComponent from "../../../components/HistoryItemComponent";
 import IrisService from "../../../services/IrisService";
-import PrismService from "../../../services/PrismService";
 import {
   formatNumber,
   formatCost,
@@ -48,7 +47,6 @@ export default function RequestsPage() {
   const [sort, setSort] = useState("timestamp");
   const [order, setOrder] = useState("desc");
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [configModels, setConfigModels] = useState({});
   const [associations, setAssociations] = useState(null);
   const [loadingAssociations, setLoadingAssociations] = useState(false);
   const [filters, setFilters] = useState({
@@ -73,23 +71,9 @@ export default function RequestsPage() {
       });
       Object.assign(params, buildDateRangeParams(dateRange));
 
-      const [data, prismConfig] = await Promise.all([
-        IrisService.getRequests(params),
-        PrismService.getConfig().catch(() => null),
-      ]);
+      const data = await IrisService.getRequests(params);
       setRequests(data.data || []);
       setTotal(data.total || 0);
-
-      if (prismConfig?.textToText?.models) {
-        const lookup = {};
-        for (const [provider, models] of Object.entries(prismConfig.textToText.models)) {
-          for (const m of models) {
-            const key = `${provider}:${m.name}`;
-            if (m.tools?.length) lookup[key] = m.tools;
-          }
-        }
-        setConfigModels(lookup);
-      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -146,7 +130,7 @@ export default function RequestsPage() {
     setPage(1);
   }
 
-  const columns = useMemo(() => getRequestsColumns(configModels), [configModels]);
+  const columns = useMemo(() => getRequestsColumns(), []);
 
   const exportCSV = useCallback(() => {
     const headers = columns.map((c) => c.label).join(",");
