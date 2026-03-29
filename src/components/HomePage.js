@@ -6,6 +6,7 @@ import styles from "../app/page.module.css";
 import PrismService from "../services/PrismService";
 import AudioPlayerService from "../services/AudioPlayerService";
 import { prepareDisplayMessages } from "./MessageList";
+import { getModalities } from "./HistoryPanel";
 import StorageService from "../services/StorageService";
 import {
   expandMessagesForFC,
@@ -188,6 +189,8 @@ export default function HomePage({ initialConversationId = null }) {
     }
     return [...counts.entries()].map(([name, count]) => ({ name, count }));
   }, [messages]);
+
+  const modalities = useMemo(() => getModalities(messages), [messages]);
 
   // Auto-save system prompt on edit (debounced)
   useEffect(() => {
@@ -1875,6 +1878,7 @@ export default function HomePage({ initialConversationId = null }) {
                         totalCost,
                         originalTotalCost,
                         usedTools,
+                        modalities,
                       }
                     : null
                 }

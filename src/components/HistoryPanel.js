@@ -6,7 +6,7 @@ import HistoryList from "./HistoryList";
 import ButtonComponent from "./ButtonComponent";
 import styles from "./HistoryPanel.module.css";
 
-function getModalities(messages) {
+export function getModalities(messages) {
   const modalities = {
     textIn: false,
     textOut: false,

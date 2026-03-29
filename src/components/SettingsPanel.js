@@ -259,6 +259,62 @@ export default function SettingsPanel({
                     </span>
                   );
                 })}
+              {/* Modality icons: input → output */}
+              {conversationStats.modalities &&
+                Object.values(conversationStats.modalities).some(Boolean) && (
+                  <span className={styles.statBadge}>
+                    {conversationStats.modalities.textIn && (
+                      <span className={styles.modalityDot} style={{ color: MODALITY_COLORS.text }} title="Text input">
+                        <Type size={11} />
+                      </span>
+                    )}
+                    {conversationStats.modalities.imageIn && (
+                      <span className={styles.modalityDot} style={{ color: MODALITY_COLORS.image }} title="Image input">
+                        <ImageIcon size={11} />
+                      </span>
+                    )}
+                    {conversationStats.modalities.audioIn && (
+                      <span className={styles.modalityDot} style={{ color: MODALITY_COLORS.audio }} title="Audio input">
+                        <Volume2 size={11} />
+                      </span>
+                    )}
+                    {conversationStats.modalities.videoIn && (
+                      <span className={styles.modalityDot} style={{ color: MODALITY_COLORS.video }} title="Video input">
+                        <Video size={11} />
+                      </span>
+                    )}
+                    {conversationStats.modalities.docIn && (
+                      <span className={styles.modalityDot} style={{ color: MODALITY_COLORS.pdf }} title="Document input">
+                        <FileText size={11} />
+                      </span>
+                    )}
+                    {(conversationStats.modalities.textIn ||
+                      conversationStats.modalities.imageIn ||
+                      conversationStats.modalities.audioIn ||
+                      conversationStats.modalities.videoIn ||
+                      conversationStats.modalities.docIn) &&
+                      (conversationStats.modalities.textOut ||
+                        conversationStats.modalities.imageOut ||
+                        conversationStats.modalities.audioOut) && (
+                        <span className={styles.modalityArrow}>→</span>
+                      )}
+                    {conversationStats.modalities.textOut && (
+                      <span className={styles.modalityDot} style={{ color: MODALITY_COLORS.text }} title="Text output">
+                        <Type size={11} />
+                      </span>
+                    )}
+                    {conversationStats.modalities.imageOut && (
+                      <span className={styles.modalityDot} style={{ color: MODALITY_COLORS.image }} title="Image output">
+                        <ImageIcon size={11} />
+                      </span>
+                    )}
+                    {conversationStats.modalities.audioOut && (
+                      <span className={styles.modalityDot} style={{ color: MODALITY_COLORS.audio }} title="Audio output">
+                        <Volume2 size={11} />
+                      </span>
+                    )}
+                  </span>
+                )}
             </div>
           </div>
         )}

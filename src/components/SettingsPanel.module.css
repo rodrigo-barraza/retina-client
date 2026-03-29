@@ -86,6 +86,26 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Modality Icons (inside badge) ── */
+.modalityDot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.modalityArrow {
+  font-size: 9px;
+  color: var(--text-secondary);
+  opacity: 0.4;
+  margin: 0 3px;
+}
+
 .container > * {
   flex-shrink: 0;
 }

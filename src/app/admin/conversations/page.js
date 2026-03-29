@@ -15,7 +15,7 @@ import MessageList, {
 } from "../../../components/MessageList";
 import SettingsPanel from "../../../components/SettingsPanel";
 import ParametersPanelComponent from "../../../components/ParametersPanelComponent";
-import HistoryPanel from "../../../components/HistoryPanel";
+import HistoryPanel, { getModalities } from "../../../components/HistoryPanel";
 
 import ThreePanelLayout from "../../../components/ThreePanelLayout";
 import SelectDropdown from "../../../components/SelectDropdown";
@@ -238,11 +238,17 @@ export default function ConversationsPage({ initialId = null }) {
   async function selectConversation(id) {
     if (id === selectedId) return;
     setSelectedId(id);
-    // Update URL for deep-linking (preserve project filter)
-    const qs = projectFilter
-      ? `?project=${encodeURIComponent(projectFilter)}`
-      : "";
-    window.history.replaceState(null, "", `/admin/conversations/${id}${qs}`);
+    // Update URL for deep-linking (preserve all filter params)
+    const params = new URLSearchParams();
+    if (projectFilter) params.set("project", projectFilter);
+    if (providerFilter) params.set("provider", providerFilter);
+    if (modelFilter) params.set("model", modelFilter);
+    const qs = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `/admin/conversations/${id}${qs ? `?${qs}` : ""}`,
+    );
     // Remove NEW badge when clicking into a conversation
     setNewIds((prev) => {
       if (!prev.has(id)) return prev;
@@ -319,6 +325,11 @@ export default function ConversationsPage({ initialId = null }) {
     }
     return [...counts.entries()].map(([name, count]) => ({ name, count }));
   }, [selectedConv]);
+
+  const modalities = useMemo(
+    () => getModalities(selectedConv?.messages || []),
+    [selectedConv],
+  );
 
   const settingsWithDefaults = useMemo(
     () => ({ ...SETTINGS_DEFAULTS, ...(selectedConv?.settings || {}) }),
@@ -412,6 +423,7 @@ export default function ConversationsPage({ initialId = null }) {
                             totalCost,
                             originalTotalCost: selectedConv.totalCost || 0,
                             usedTools,
+                            modalities,
                           }
                         : null
                     }
