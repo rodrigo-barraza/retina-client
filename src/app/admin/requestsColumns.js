@@ -5,8 +5,9 @@ import {
   Hash,
   ArrowRight,
   Parentheses,
+  Wrench,
 } from "lucide-react";
-import { MODALITY_COLORS } from "../../components/WorkflowNodeConstants";
+import { MODALITY_COLORS, TOOL_ICON_MAP, TOOL_COLORS } from "../../components/WorkflowNodeConstants";
 import TooltipComponent from "../../components/TooltipComponent";
 import BadgeComponent from "../../components/BadgeComponent";
 import {
@@ -120,17 +121,30 @@ export const getRequestsColumns = () => [
         return (
           <TooltipComponent label="Function Calling" position="top">
             <span className={styles.toolPill}>
-              <Parentheses size={12} style={{ color: "var(--accent-color)" }} />
+              <Parentheses size={12} style={{ color: TOOL_COLORS["Function Calling"] || "#f97316" }} />
             </span>
           </TooltipComponent>
         );
       }
+      // Resolve raw function names to canonical tool categories and deduplicate
+      const resolved = new Map();
+      for (const raw of names) {
+        if (TOOL_ICON_MAP[raw]) {
+          // Direct match — canonical tool name (e.g. "Web Search")
+          if (!resolved.has(raw)) resolved.set(raw, TOOL_ICON_MAP[raw]);
+        } else {
+          // Custom function call — group under "Function Calling"
+          if (!resolved.has("Function Calling")) {
+            resolved.set("Function Calling", TOOL_ICON_MAP["Function Calling"] || Wrench);
+          }
+        }
+      }
       return (
         <span className={styles.toolPills}>
-          {names.map((name) => (
-            <TooltipComponent key={name} label={name} position="top">
+          {[...resolved.entries()].map(([label, Icon]) => (
+            <TooltipComponent key={label} label={label} position="top">
               <span className={styles.toolPill}>
-                <Parentheses size={12} style={{ color: "var(--accent-color)" }} />
+                <Icon size={12} style={{ color: TOOL_COLORS[label] || "#f97316" }} />
               </span>
             </TooltipComponent>
           ))}
