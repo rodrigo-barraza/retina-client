@@ -36,6 +36,9 @@ export default function SortableTableComponent({
   activeRowKey,
   highlightedRowKey,
   highlightedRowRef,
+  onRowMouseEnter,
+  onRowMouseLeave,
+  getRowClassName,
 }) {
   const [internalSort, setInternalSort] = useState({ key: null, dir: "desc" });
   const sort = onSort
@@ -231,6 +234,7 @@ export default function SortableTableComponent({
                 const isActive = activeRowKey != null && key === activeRowKey;
                 const isHighlighted =
                   highlightedRowKey != null && key === highlightedRowKey;
+                const customClass = getRowClassName ? getRowClassName(row, ri) : "";
 
                 return (
                   <Fragment key={key}>
@@ -241,13 +245,19 @@ export default function SortableTableComponent({
                           ? highlightedRowRef
                           : undefined
                       }
-                      className={`${styles.tr} ${clickable ? styles.clickable : ""} ${isExpandable ? styles.expandableRow : ""} ${isActive ? styles.activeRow : ""} ${isHighlighted ? styles.highlightedRow : ""}`}
+                      className={`${styles.tr} ${clickable ? styles.clickable : ""} ${isExpandable ? styles.expandableRow : ""} ${isActive ? styles.activeRow : ""} ${isHighlighted ? styles.highlightedRow : ""} ${customClass}`}
                       onClick={
                         isExpandable
                           ? () => toggleExpand(key)
                           : onRowClick
                             ? () => onRowClick(row)
                             : undefined
+                      }
+                      onMouseEnter={
+                        onRowMouseEnter ? () => onRowMouseEnter(row, ri) : undefined
+                      }
+                      onMouseLeave={
+                        onRowMouseLeave ? () => onRowMouseLeave(row, ri) : undefined
                       }
                     >
                       {columns.map((col, ci) => {

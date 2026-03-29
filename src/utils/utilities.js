@@ -157,7 +157,7 @@ export function getConversationTokenStats(messages) {
   let requests = 0;
   for (const m of messages) {
     if (m.role !== "assistant" || !m.usage) continue;
-    requests++;
+    requests += m.usage.requests || 1;
     input += getTotalInputTokens(m.usage);
     output += m.usage.outputTokens || 0;
   }

@@ -85,6 +85,16 @@
   border-color: var(--accent-color);
 }
 
+/* Shared conversation row highlighting */
+.sharedConversationRow td {
+  background: rgba(99, 102, 241, 0.06) !important;
+}
+
+.sharedConversationRow td:first-child {
+  background: rgba(99, 102, 241, 0.1) !important;
+  box-shadow: inset 2px 0 0 var(--accent-color) !important;
+}
+
 /* Badges */
 .badge {
   display: inline-flex;

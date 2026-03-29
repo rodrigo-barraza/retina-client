@@ -56,6 +56,7 @@ export default function RequestsPage() {
     success: "",
   });
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
+  const [hoveredConversationId, setHoveredConversationId] = useState(null);
 
   const LIMIT = 50;
 
@@ -272,6 +273,15 @@ export default function RequestsPage() {
           sortKey={sort}
           sortDir={order}
           onSort={handleSort}
+          onRowMouseEnter={(row) => {
+            if (row.conversationId) setHoveredConversationId(row.conversationId);
+          }}
+          onRowMouseLeave={() => setHoveredConversationId(null)}
+          getRowClassName={(row) =>
+            hoveredConversationId && row.conversationId === hoveredConversationId
+              ? styles.sharedConversationRow
+              : ""
+          }
           onRowClick={async (req) => {
             setSelectedRequest(req);
             // Fetch full detail (includes payloads)
