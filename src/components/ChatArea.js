@@ -1010,7 +1010,9 @@ export default function ChatArea({
                     <Mic size={18} />
                   )
                 }
-                className={liveMicActive ? styles.liveMicBtn : ""}
+                className={
+                  liveMicActive ? styles.liveMicBtn : styles.liveMicReady
+                }
               />
             )}
             {!isTranscriptionModel && (

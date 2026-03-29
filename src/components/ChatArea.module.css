@@ -1288,15 +1288,31 @@
   flex-shrink: 0;
 }
 
+.liveMicReady {
+  background: var(--accent-color) !important;
+  color: #fff !important;
+  transition: all 0.2s;
+}
+
+.liveMicReady:hover {
+  background: var(--accent-hover) !important;
+  transform: translateY(-1px);
+}
+
 .liveMicBtn {
   position: relative;
-  color: #ef4444 !important;
+  background: #ef4444 !important;
+  color: #fff !important;
   animation: liveMicPulse 1.5s ease-in-out infinite;
 }
 
+.liveMicBtn:hover {
+  background: #dc2626 !important;
+}
+
 .liveMicActive {
-  color: #ef4444;
-  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5));
+  color: #fff;
+  filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.5));
 }
 
 @keyframes liveMicPulse {
