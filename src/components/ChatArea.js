@@ -368,8 +368,8 @@ export default function ChatArea({
     const prevId = prevConvIdRef.current;
     prevConvIdRef.current = conversationId;
 
-    // Only tear down when changing away from a conversation (not on mount)
-    if (prevId !== conversationId && liveSessionRef.current) {
+    // Only tear down when changing away from an existing conversation (e.g., not from a new, unsaved chat)
+    if (prevId && prevId !== conversationId && liveSessionRef.current) {
       liveSessionRef.current.disconnect();
       liveSessionRef.current = null;
       liveUserTranscriptRef.current = "";
