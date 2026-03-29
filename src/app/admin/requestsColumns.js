@@ -4,7 +4,6 @@ import {
   Volume2,
   Hash,
   ArrowRight,
-  Parentheses,
   Wrench,
 } from "lucide-react";
 import { MODALITY_COLORS, TOOL_ICON_MAP, TOOL_COLORS } from "../../components/WorkflowNodeConstants";
@@ -112,30 +111,44 @@ export const getRequestsColumns = () => [
     sortable: true,
     align: "left",
     render: (r) => {
-      if (!r.toolsUsed) {
+      const names = r.toolNames;
+      if (!r.toolsUsed || !names?.length) {
         return <span style={{ color: "var(--text-muted)" }}>—</span>;
       }
-      const names = r.toolNames;
-      if (!names?.length) {
-        // Legacy rows: toolsUsed=true but no toolNames stored yet
-        return (
-          <TooltipComponent label="Function Calling" position="top">
-            <span className={styles.toolPill}>
-              <Parentheses size={12} style={{ color: TOOL_COLORS["Function Calling"] || "#f97316" }} />
-            </span>
-          </TooltipComponent>
-        );
-      }
-      // Resolve raw function names to canonical tool categories and deduplicate
+
+      const API_TO_CANONICAL = {
+        googleSearch: "Google Search",
+        googleSearchRetrieval: "Google Search",
+        web_search: "Web Search",
+        webSearch: "Web Search",
+        webFetch: "Web Fetch",
+        codeExecution: "Code Execution",
+        code_execution: "Code Execution",
+        computerUse: "Computer Use",
+        computer_use: "Computer Use",
+        fileSearch: "File Search",
+        file_search: "File Search",
+        urlContext: "URL Context",
+        url_context: "URL Context",
+        thinking: "Thinking",
+        imageGeneration: "Image Generation",
+        image_generation: "Image Generation",
+      };
+
       const resolved = new Map();
       for (const raw of names) {
         if (TOOL_ICON_MAP[raw]) {
           // Direct match — canonical tool name (e.g. "Web Search")
           if (!resolved.has(raw)) resolved.set(raw, TOOL_ICON_MAP[raw]);
+        } else if (API_TO_CANONICAL[raw] && TOOL_ICON_MAP[API_TO_CANONICAL[raw]]) {
+          const canonical = API_TO_CANONICAL[raw];
+          if (!resolved.has(canonical)) resolved.set(canonical, TOOL_ICON_MAP[canonical]);
         } else {
           // Custom function call — group under "Function Calling"
+          // We will use Wrench icon directly since we might not have it reliably imported if it wasn't resolving
+          const fallbackIcon = TOOL_ICON_MAP["Function Calling"] || Wrench;
           if (!resolved.has("Function Calling")) {
-            resolved.set("Function Calling", TOOL_ICON_MAP["Function Calling"] || Wrench);
+            resolved.set("Function Calling", fallbackIcon);
           }
         }
       }
