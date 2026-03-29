@@ -15,6 +15,13 @@
   animation: fadeIn 0.3s ease-out forwards;
 }
 
+/* ── Coalesced continuation messages ── */
+.continuationMessage {
+  margin-top: -18px;
+  padding-left: 48px; /* avatar 32px + gap 16px */
+  animation: none;
+}
+
 /* ── Avatar ── */
 .avatar {
   flex-shrink: 0;

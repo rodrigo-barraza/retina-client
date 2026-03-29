@@ -1,7 +1,7 @@
 // ============================================================
 // Console — Prompt Suggestion Pool
 // ============================================================
-// ~200 example prompts organized by API category. A random
+// ~400 example prompts organized by API category. A random
 // subset is shown in the Console's empty state on each load.
 // ============================================================
 
@@ -41,6 +41,16 @@ export const AIR_QUALITY_PROMPTS = [
   "What's the AQI right now?",
   "Should I wear a mask outside today?",
   "Is air quality better today than yesterday?",
+  "What's the dominant pollutant right now?",
+  "Are there any health recommendations for today's air quality?",
+  "Which pollen types are in season right now?",
+  "Is the grass pollen high today?",
+  "How does Google's air quality compare to the regular AQI?",
+  "What's the ozone level right now?",
+  "Are there any weather warnings or advisories active?",
+  "Any avalanche forecasts for BC right now?",
+  "What's the wildfire smoke situation?",
+  "Is the air safe for kids to play outside today?",
 ];
 
 export const EARTHQUAKE_PROMPTS = [
@@ -134,6 +144,21 @@ export const ISS_PROMPTS = [
   "What orbit is the ISS on?",
 ];
 
+export const SPACE_PROMPTS = [
+  "Are there any asteroids passing near Earth today?",
+  "What's the closest near-Earth object right now?",
+  "How many hazardous asteroids are there today?",
+  "What's NASA's Astronomy Picture of the Day?",
+  "When is the next rocket launch?",
+  "Who's launching the next rocket?",
+  "Show me the APOD and explain it",
+  "Any upcoming SpaceX launches?",
+  "What exoplanets are in the habitable zone?",
+  "How many exoplanets have been discovered so far?",
+  "What's the solar wind Bz component right now?",
+  "Is the interplanetary magnetic field southward?",
+];
+
 // ── Events (Beacon) ─────────────────────────────────────────
 
 export const EVENT_PROMPTS = [
@@ -182,6 +207,31 @@ export const COMMODITY_PROMPTS = [
   "What's the soybean price?",
   "How is lumber performing?",
   "What are the best performing commodities this week?",
+];
+
+// ── Finance / Stocks ────────────────────────────────────────
+
+export const FINANCE_PROMPTS = [
+  "What's Apple's stock price right now?",
+  "How is NVIDIA doing today?",
+  "What's Tesla's current stock price?",
+  "Give me a full overview of Microsoft stock",
+  "What do analysts recommend for AAPL?",
+  "What companies are reporting earnings this week?",
+  "What's the latest market news?",
+  "How is the S&P 500 doing?",
+  "What are Google's financial metrics?",
+  "What's Amazon's P/E ratio?",
+  "Is it a good time to buy MSFT?",
+  "What's Bitcoin trading at right now?",
+  "Show me the crypto market overview",
+  "What's the current inflation rate?",
+  "What's the Fed funds rate right now?",
+  "How is unemployment trending?",
+  "Search FRED for housing price data",
+  "What's the 10-year Treasury yield?",
+  "What are the latest GDP numbers?",
+  "How has the CPI changed over the past year?",
 ];
 
 // ── Trends ──────────────────────────────────────────────────
@@ -234,6 +284,242 @@ export const PRODUCT_PROMPTS = [
   "What e-readers are available?",
 ];
 
+// ── Knowledge ───────────────────────────────────────────────
+
+export const KNOWLEDGE_PROMPTS = [
+  "Define the word 'ephemeral'",
+  "What does 'serendipity' mean?",
+  "Look up the definition of 'ubiquitous'",
+  "Search for books by Haruki Murakami",
+  "What are the best books about machine learning?",
+  "Tell me about the country of Japan",
+  "What's the population of Canada?",
+  "What currencies does Brazil use?",
+  "Search arXiv for papers on large language models",
+  "Find recent AI research papers",
+  "Give me the Wikipedia summary of quantum computing",
+  "What happened on this day in history?",
+  "Who were notable people born today?",
+  "Tell me about Albert Einstein",
+  "What languages are spoken in Switzerland?",
+  "What are the timezones in India?",
+  "Find academic papers on climate change",
+  "What's the capital of every country in South America?",
+  "Look up the etymology of 'algorithm'",
+  "What are the borders of France?",
+];
+
+// ── Anime / Movies / TV ─────────────────────────────────────
+
+export const ENTERTAINMENT_PROMPTS = [
+  "What anime is airing this season?",
+  "What are the top-rated anime of all time?",
+  "Search for anime like Attack on Titan",
+  "What movies are trending right now?",
+  "Find sci-fi movies from 2025",
+  "What are the best horror movies of all time?",
+  "Who directed Inception?",
+  "What TV shows are trending this week?",
+  "Search for TV shows like Breaking Bad",
+  "What are the highest rated shows on right now?",
+  "Find the cast of The Last of Us",
+  "What new movies came out this year?",
+  "Show me details about the movie Oppenheimer",
+  "What are the best animated movies?",
+  "Find comedy TV series from the last 5 years",
+  "What episodes are in Arcane season 2?",
+  "What anime movies are trending?",
+  "Search for movies by Christopher Nolan",
+  "What are the top-rated TV dramas?",
+  "Find action movies with a rating above 8",
+];
+
+// ── Health / Nutrition / Fitness ─────────────────────────────
+
+export const HEALTH_PROMPTS = [
+  "What are the side effects of ibuprofen?",
+  "Search for FDA info on Tylenol",
+  "Are there any recent drug recalls?",
+  "What foods are highest in protein?",
+  "Compare the nutrition of chicken vs salmon vs tofu",
+  "What fruits have the most vitamin C?",
+  "What foods are rich in iron?",
+  "What are the best sources of omega-3?",
+  "How much potassium is in a banana?",
+  "What vegetables have the most fiber?",
+  "Search for chest exercises",
+  "What are good beginner dumbbell exercises?",
+  "Find compound exercises for legs",
+  "What exercises work the biceps?",
+  "Give me a stretching routine",
+  "What foods are highest in calcium?",
+  "Compare the nutrition of rice vs quinoa",
+  "What are the most calorie-dense foods?",
+  "Which nuts have the most magnesium?",
+  "What meats have the highest B12 content?",
+];
+
+// ── Transit ─────────────────────────────────────────────────
+
+export const TRANSIT_PROMPTS = [
+  "When is the next bus at stop 51479?",
+  "What buses stop near downtown?",
+  "What routes serve my bus stop?",
+  "Tell me about the 99 B-Line route",
+  "Find bus stops near me",
+  "Is the next bus on time?",
+  "When does the last bus leave?",
+  "What transit stops are nearby?",
+  "How do I get to UBC by bus?",
+  "What's the R4 rapid bus route?",
+  "Which bus routes go to SFU?",
+  "Are there any bus stops with wheelchair access nearby?",
+];
+
+// ── Utilities (Currency, Time, Places, Maps) ────────────────
+
+export const UTILITY_PROMPTS = [
+  "Convert 100 USD to CAD",
+  "What's the exchange rate for EUR to JPY?",
+  "How much is 50 GBP in USD?",
+  "What time is it in Tokyo right now?",
+  "What's the time difference between Vancouver and London?",
+  "Is it daytime in Sydney right now?",
+  "Find restaurants near me",
+  "Where's the nearest pharmacy?",
+  "Show me coffee shops nearby",
+  "Find gas stations nearby",
+  "What gyms are close by?",
+  "Look up the nearest airport to me",
+  "What airports are in Canada?",
+  "Search for airports near Vancouver",
+  "What's the IATA code for Heathrow?",
+  "Find a 24 hour pharmacy nearby",
+  "What's my server's IP location?",
+  "Show me parks nearby on a map",
+  "Find the best sushi restaurants near downtown",
+  "Where's the nearest grocery store?",
+];
+
+// ── Science (Periodic Table, Exoplanets, World Bank) ────────
+
+export const SCIENCE_PROMPTS = [
+  "Tell me about the element gold",
+  "What are the noble gases?",
+  "What are the densest elements?",
+  "Which element has the highest melting point?",
+  "What is the electron configuration of iron?",
+  "Compare the GDP of the US, Canada, and Japan",
+  "Which countries have the highest life expectancy?",
+  "Rank countries by GDP per capita",
+  "What are the development indicators for Norway?",
+  "Which countries have the most renewable energy?",
+  "How many exoplanets have been discovered?",
+  "Tell me about TRAPPIST-1 e",
+  "What are the most Earth-like exoplanets?",
+  "Rank exoplanets by size",
+  "Which exoplanets are in the habitable zone?",
+  "What are the transition metals?",
+  "Compare life expectancy in the US, UK, and Japan",
+  "Which countries have the lowest unemployment?",
+  "What elements are in the f-block?",
+  "What's the CO2 emissions per capita for China?",
+];
+
+// ── Multi-Tool / Cross-API (designed to trigger 2+ tools) ───
+
+export const MULTI_TOOL_PROMPTS = [
+  // Weather + Events
+  "Is it good weather for the outdoor events this weekend?",
+  "What's happening tonight and will I need a jacket?",
+  "Are there any events today I can walk to in this weather?",
+
+  // Weather + Twilight + Aurora
+  "Is tonight good for stargazing? Check weather, sunset, and aurora",
+  "When should I go outside for sunset photos and what's the weather like?",
+  "What time does it get dark and are the northern lights visible tonight?",
+
+  // Weather + Air Quality + Fitness
+  "Is it safe to run outside right now? Check weather and air quality",
+  "What's the weather and air quality like for an outdoor workout?",
+  "Can I exercise outside today with my asthma?",
+
+  // Finance + News + Trends
+  "What's moving in the market today and why?",
+  "Give me a full market briefing with news and trending topics",
+  "Are there any trending stocks in the news right now?",
+  "What companies are reporting earnings and what's their stock price?",
+
+  // Nutrition + Fitness
+  "What high-protein foods should I eat after a chest workout?",
+  "Plan my post-workout meal and show exercises for back day",
+  "What foods help muscle recovery and what stretches should I do?",
+  "What are good pre-workout foods and show me warmup exercises",
+
+  // Movies/TV + Trends + Events
+  "What movies are trending and are any playing near me?",
+  "What TV shows are everyone talking about according to trends?",
+  "Are there any film-related events happening this week?",
+
+  // Countries + World Bank + Currency
+  "Tell me about Japan's economy, development, and currency rate",
+  "Compare Canada and Australia on GDP, population, and exchange rate",
+  "What's the GDP per capita of Switzerland and convert it to CAD?",
+
+  // Weather + Commodities
+  "How is the weather affecting energy commodity prices?",
+  "What are agricultural commodity prices and any relevant weather events?",
+
+  // Transit + Places + Weather
+  "Find coffee shops near the bus stop and is it raining?",
+  "What restaurants are near downtown and how do I get there by bus?",
+
+  // Knowledge + Entertainment
+  "Look up Christopher Nolan on Wikipedia and show his filmography",
+  "Tell me about Studio Ghibli and list their highest rated anime",
+  "Get the Wikipedia summary of Mars and find exoplanets near it",
+
+  // Space + Science
+  "Full space report: ISS position, near-Earth asteroids, solar activity, and aurora forecast",
+  "What's happening in space today? Check asteroids, launches, and solar wind",
+  "Are there any rocket launches soon and what's the APOD today?",
+  "Show me today's solar activity and aurora Kp index",
+
+  // Health + Knowledge
+  "What are the side effects of aspirin and what's it made of?",
+  "Look up ibuprofen on FDA and Wikipedia",
+  "What vitamins are in spinach and are there any drug interactions?",
+
+  // Products + Finance
+  "Find me a good laptop and how is the tech sector performing?",
+  "What's trending in tech products and how are tech stocks doing?",
+  "Find gaming monitors and compare NVIDIA vs AMD stock performance",
+
+  // Airports + Countries + Weather
+  "What are the major airports in Japan and what's the weather like there?",
+  "Find airports near me and what's the local weather forecast?",
+
+  // Periodic Table + Nutrition
+  "What element is iron and what foods are highest in it?",
+  "Tell me about calcium — the element and the best food sources",
+
+  // World Bank + Countries
+  "Which Scandinavian countries have the best quality of life indicators?",
+  "Compare healthcare spending across G7 nations",
+
+  // Full briefing — multi-domain
+  "Give me a full morning briefing: weather, news, events, and market summary",
+  "What should I know today? Weather, trends, events, and any space news",
+  "End of day summary: market close, tomorrow's weather, and upcoming events",
+  "Weekend planner: weather forecast, events, movies, and restaurant suggestions",
+  "What's the best outdoor activity today based on weather, tides, and events?",
+  "Is today a good day to be outside? Check weather, UV, air quality, and pollen",
+  "What anime should I watch and what snacks have good nutrition?",
+  "What's the most interesting Wikipedia article, trending topic, and APOD today?",
+  "Find nearby parks, check the weather, and are there any events there today?",
+  "How are the Big Tech stocks doing and what tech topics are trending on Reddit?",
+];
+
 // ── Cross-API / General ─────────────────────────────────────
 
 export const GENERAL_PROMPTS = [
@@ -261,9 +547,18 @@ export const ALL_CONSOLE_PROMPTS = [
   ...TIDE_PROMPTS,
   ...WILDFIRE_PROMPTS,
   ...ISS_PROMPTS,
+  ...SPACE_PROMPTS,
   ...EVENT_PROMPTS,
   ...COMMODITY_PROMPTS,
+  ...FINANCE_PROMPTS,
   ...TREND_PROMPTS,
   ...PRODUCT_PROMPTS,
+  ...KNOWLEDGE_PROMPTS,
+  ...ENTERTAINMENT_PROMPTS,
+  ...HEALTH_PROMPTS,
+  ...TRANSIT_PROMPTS,
+  ...UTILITY_PROMPTS,
+  ...SCIENCE_PROMPTS,
+  ...MULTI_TOOL_PROMPTS,
   ...GENERAL_PROMPTS,
 ];

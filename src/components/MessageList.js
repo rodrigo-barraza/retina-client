@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -518,6 +518,28 @@ export default function MessageList({
 }) {
   const [editingIndex, setEditingIndex] = useState(null);
 
+  // ── Coalesce consecutive assistant messages into groups ────
+  // Each group shares a single avatar + header. Only the first
+  // message in a run of assistant messages shows the avatar.
+  // "isContinuation" means this assistant msg continues the
+  // previous assistant msg's visual container.
+  // "isLastInGroup" means metadata (tokens, cost) should render.
+  const coalesceMeta = useMemo(() => {
+    const meta = new Array(messages.length).fill(null);
+    for (let i = 0; i < messages.length; i++) {
+      if (messages[i].role !== "assistant") continue;
+      const prevIsAssistant =
+        i > 0 && messages[i - 1].role === "assistant";
+      const nextIsAssistant =
+        i < messages.length - 1 && messages[i + 1].role === "assistant";
+      meta[i] = {
+        isContinuation: prevIsAssistant,
+        isLastInGroup: !nextIsAssistant,
+      };
+    }
+    return meta;
+  }, [messages]);
+
   return (
     <div className={styles.messagesList}>
       {messages.map((msg, i) => {
@@ -532,6 +554,7 @@ export default function MessageList({
             msg.role === "assistant" &&
             i === messages.length - 1) ||
           (msg.role === "assistant" && msg._liveStreaming === true);
+        const coalesce = coalesceMeta[i];
 
         // Detect model swap: show divider above user message when the next
         // assistant's model differs from the previous assistant's model
@@ -573,15 +596,19 @@ export default function MessageList({
               </div>
             )}
             <div
-              className={`${styles.message} ${roleClass}${msg.deleted ? ` ${styles.deletedMessage}` : ""}`}
+              className={`${styles.message} ${roleClass}${msg.deleted ? ` ${styles.deletedMessage}` : ""}${coalesce?.isContinuation ? ` ${styles.continuationMessage}` : ""}`}
             >
-              <div
-                className={`${styles.avatar}${msg.role === "assistant" && isGenerating && i === messages.length - 1 ? ` ${styles.prismAvatar}` : ""}${msg.deleted ? ` ${styles.deletedAvatar}` : ""}`}
-              >
-                {msg.role === "user" ? "U" : msg.role === "system" ? "S" : "AI"}
-              </div>
+              {/* Avatar: hidden for continuation messages */}
+              {!coalesce?.isContinuation && (
+                <div
+                  className={`${styles.avatar}${msg.role === "assistant" && isGenerating && i === messages.length - 1 ? ` ${styles.prismAvatar}` : ""}${msg.deleted ? ` ${styles.deletedAvatar}` : ""}`}
+                >
+                  {msg.role === "user" ? "U" : msg.role === "system" ? "S" : "AI"}
+                </div>
+              )}
               <div className={styles.content}>
-                {/* Header: role + timestamp + actions */}
+                {/* Header: hidden for continuation messages */}
+                {!coalesce?.isContinuation && (
                 <div className={styles.messageHeader}>
                   <div className={styles.roleLabel}>
                     {msg.role === "user"
@@ -654,6 +681,7 @@ export default function MessageList({
                     </div>
                   )}
                 </div>
+                )}
 
                 {/* Thinking block */}
                 {msg.thinking && (
@@ -777,8 +805,9 @@ export default function MessageList({
                   </div>
                 )}
 
-                {/* Assistant metadata */}
+                {/* Assistant metadata — only on the last message in a coalesced group */}
                 {msg.role === "assistant" &&
+                  (coalesce?.isLastInGroup !== false) &&
                   (msg.usage || msg.audio || msg.provider) && (
                     <div className={styles.meta}>
                       <div className={styles.metaRow}>
