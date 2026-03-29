@@ -2141,6 +2141,11 @@ export default function HomePage({ initialConversationId = null }) {
               return updated;
             });
           }}
+          onInitializeLiveConversation={(newId) => {
+            liveConvIdRef.current = newId;
+            setActiveId(newId);
+            updateUrl(newId);
+          }}
           onLiveToolExecution={(data) => {
             const tc = data.tool;
             setToolActivity((prev) => {

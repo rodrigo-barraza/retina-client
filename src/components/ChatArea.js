@@ -219,6 +219,7 @@ export default function ChatArea({
   onLiveTurnComplete,
   onLiveUserAudioReady,
   onLiveToolExecution,
+  onInitializeLiveConversation,
 }) {
   const [showToolsBubble, setShowToolsBubble] = useState(false);
   const toolsBubbleRef = useRef(null);
@@ -397,9 +398,16 @@ export default function ChatArea({
     const session = liveSessionRef.current;
 
     if (!session.connected) {
+      let connectConversationId = conversationId;
+      if (!connectConversationId) {
+        connectConversationId = crypto.randomUUID();
+        onInitializeLiveConversation?.(connectConversationId);
+      }
+
       // Build config from current settings
       const liveConfig = {
         responseModalities: ["AUDIO"],
+        conversationId: connectConversationId,
       };
       if (
         systemPrompt &&
