@@ -61,8 +61,10 @@ export const getRequestsColumns = () => [
         live: {
           inIcon: Volume2,
           inColor: MODALITY_COLORS.audio,
-          outIcon: Volume2,
-          outColor: MODALITY_COLORS.audio,
+          outIcon: Type,
+          outColor: MODALITY_COLORS.text,
+          outIcon2: Volume2,
+          outColor2: MODALITY_COLORS.audio,
           label: "Speech → Text + Audio",
         },
         embed: {
@@ -85,6 +87,7 @@ export const getRequestsColumns = () => [
       m = m || map["chat"];
       const InIcon = m.inIcon;
       const OutIcon = m.outIcon;
+      const outParts = m.label.split(" → ")[1]?.split(" + ") || [m.label.split(" → ")[1]];
       return (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           <TooltipComponent label={m.label.split(" → ")[0]} position="top">
@@ -94,9 +97,20 @@ export const getRequestsColumns = () => [
             size={10}
             style={{ color: "var(--text-muted)", opacity: 0.5 }}
           />
-          <TooltipComponent label={m.label.split(" → ")[1]} position="top">
+          <TooltipComponent label={outParts[0]} position="top">
             <OutIcon size={13} style={{ color: m.outColor }} />
           </TooltipComponent>
+          {m.outIcon2 && (() => {
+            const OutIcon2 = m.outIcon2;
+            return (
+              <>
+                <span style={{ color: "var(--text-muted)", opacity: 0.4, fontSize: 10, lineHeight: 1 }}>+</span>
+                <TooltipComponent label={outParts[1] || ""} position="top">
+                  <OutIcon2 size={13} style={{ color: m.outColor2 }} />
+                </TooltipComponent>
+              </>
+            );
+          })()}
         </span>
       );
     },
