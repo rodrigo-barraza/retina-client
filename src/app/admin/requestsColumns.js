@@ -1,7 +1,5 @@
-import { Wrench } from "lucide-react";
-import { TOOL_ICON_MAP, TOOL_COLORS } from "../../components/WorkflowNodeConstants";
-import ModalityIconsComponent from "../../components/ModalityIconsComponent";
-import TooltipComponent from "../../components/TooltipComponent";
+import ModalityIconComponent from "../../components/ModalityIconComponent";
+import ToolIconComponent from "../../components/ToolIconComponent";
 import BadgeComponent from "../../components/BadgeComponent";
 import {
   formatNumber,
@@ -9,7 +7,6 @@ import {
   formatLatency,
   formatTokensPerSec,
 } from "../../utils/utilities";
-import styles from "./page.module.css";
 
 export const getRequestsColumns = () => [
   {
@@ -25,7 +22,7 @@ export const getRequestsColumns = () => [
     render: (r) => {
       if (!r.modalities) return <span style={{ color: "var(--text-muted)" }}>—</span>;
       return (
-        <ModalityIconsComponent
+        <ModalityIconComponent
           modalities={r.modalities}
           size={13}
         />
@@ -53,35 +50,10 @@ export const getRequestsColumns = () => [
     sortable: true,
     align: "left",
     render: (r) => {
-      const names = r.toolNames;
-      if (!r.toolsUsed || !names?.length) {
+      if (!r.toolsUsed || !r.toolNames?.length) {
         return <span style={{ color: "var(--text-muted)" }}>—</span>;
       }
-
-      const resolved = new Map();
-      for (const raw of names) {
-        if (TOOL_ICON_MAP[raw]) {
-          // Direct match — canonical tool name (e.g. "Web Search")
-          if (!resolved.has(raw)) resolved.set(raw, TOOL_ICON_MAP[raw]);
-        } else {
-          // Custom function call — group under "Function Calling"
-          const fallbackIcon = TOOL_ICON_MAP["Function Calling"] || Wrench;
-          if (!resolved.has("Function Calling")) {
-            resolved.set("Function Calling", fallbackIcon);
-          }
-        }
-      }
-      return (
-        <span className={styles.toolPills}>
-          {[...resolved.entries()].map(([label, Icon]) => (
-            <TooltipComponent key={label} label={label} position="top">
-              <span className={styles.toolPill}>
-                <Icon size={12} style={{ color: TOOL_COLORS[label] || "#f97316" }} />
-              </span>
-            </TooltipComponent>
-          ))}
-        </span>
-      );
+      return <ToolIconComponent toolNames={r.toolNames} />;
     },
   },
   {

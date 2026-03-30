@@ -16,7 +16,7 @@ import ConversationsTableComponent from "../../../components/ConversationsTableC
 import ProjectBadgeComponent from "../../../components/ProjectBadgeComponent";
 import UserBadgeComponent from "../../../components/UserBadgeComponent";
 import CostBadgeComponent from "../../../components/CostBadgeComponent";
-import ModalityIconsComponent from "../../../components/ModalityIconsComponent";
+import ModalityIconComponent from "../../../components/ModalityIconComponent";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
 import { formatNumber } from "../../../utils/utilities";
 import { DateTime } from "luxon";
@@ -161,7 +161,7 @@ export default function SessionsPage() {
                   <UserBadgeComponent username={session.username} />
 
                   {mergedModalities && (
-                    <ModalityIconsComponent
+                    <ModalityIconComponent
                       modalities={mergedModalities}
                       size={12}
                     />

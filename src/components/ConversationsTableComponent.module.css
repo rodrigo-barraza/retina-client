@@ -1,27 +1,5 @@
 /* ── ConversationsTableComponent ─────────────────────── */
 
-.toolPills {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.toolPill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 3px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  cursor: default;
-  transition: border-color 0.15s;
-}
-
-.toolPill:hover {
-  border-color: var(--accent-color);
-}
 
 .modelList {
   display: inline-flex;

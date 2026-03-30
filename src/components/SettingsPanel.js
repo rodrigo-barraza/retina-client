@@ -24,7 +24,7 @@ import {
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import SelectDropdown from "./SelectDropdown";
 import ToggleSwitch from "./ToggleSwitch";
-import ModalityIconsComponent from "./ModalityIconsComponent";
+import ModalityIconComponent from "./ModalityIconComponent";
 import SystemPromptModal from "./SystemPromptModal";
 import styles from "./SettingsPanel.module.css";
 import { formatCost } from "../utils/utilities";
@@ -259,7 +259,7 @@ export default function SettingsPanel({
               {/* Modality icons: input → output */}
               {conversationStats.modalities &&
                 Object.values(conversationStats.modalities).some(Boolean) && (
-                  <ModalityIconsComponent
+                  <ModalityIconComponent
                     modalities={conversationStats.modalities}
                   />
                 )}

@@ -7,7 +7,7 @@ import {
   Trash2,
 } from "lucide-react";
 import IconButtonComponent from "./IconButtonComponent";
-import ModalityIconsComponent from "./ModalityIconsComponent";
+import ModalityIconComponent from "./ModalityIconComponent";
 import { DateTime } from "luxon";
 import styles from "./HistoryItemComponent.module.css";
 import { formatCost } from "../utils/utilities";
@@ -101,7 +101,7 @@ export default function HistoryItemComponent({
             {item.modelName.split("/").pop()}
           </span>
         )}
-        <ModalityIconsComponent modalities={mod} />
+        <ModalityIconComponent modalities={mod} />
         {children}
       </div>
       {/* Actions */}

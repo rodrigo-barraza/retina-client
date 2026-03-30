@@ -138,30 +138,35 @@ export default function UsagePage() {
     {
       key: "totalRequests",
       label: "Requests",
+      align: "right",
       render: requestsRender,
       renderSub: requestsRender,
     },
     {
       key: "totalInputTokens",
       label: "Tokens In",
+      align: "right",
       render: tokensInRender,
       renderSub: tokensInRender,
     },
     {
       key: "totalOutputTokens",
       label: "Tokens Out",
+      align: "right",
       render: tokensOutRender,
       renderSub: tokensOutRender,
     },
     {
       key: "avgTokensPerSec",
       label: "Tok/s",
+      align: "right",
       render: tpsRender,
       renderSub: tpsRender,
     },
     {
       key: "totalCost",
       label: "Cost",
+      align: "right",
       render: costRender,
       renderSub: costRender,
     },
@@ -181,30 +186,35 @@ export default function UsagePage() {
     {
       key: "totalRequests",
       label: "Requests",
+      align: "right",
       render: requestsRender,
       renderSub: requestsRender,
     },
     {
       key: "totalInputTokens",
       label: "Tokens In",
+      align: "right",
       render: tokensInRender,
       renderSub: tokensInRender,
     },
     {
       key: "totalOutputTokens",
       label: "Tokens Out",
+      align: "right",
       render: tokensOutRender,
       renderSub: tokensOutRender,
     },
     {
       key: "avgTokensPerSec",
       label: "Tok/s",
+      align: "right",
       render: tpsRender,
       renderSub: tpsRender,
     },
     {
       key: "totalCost",
       label: "Cost",
+      align: "right",
       render: costRender,
       renderSub: costRender,
     },
@@ -220,30 +230,35 @@ export default function UsagePage() {
     {
       key: "totalRequests",
       label: "Requests",
+      align: "right",
       render: requestsRender,
       renderSub: requestsRender,
     },
     {
       key: "totalInputTokens",
       label: "Tokens In",
+      align: "right",
       render: tokensInRender,
       renderSub: tokensInRender,
     },
     {
       key: "totalOutputTokens",
       label: "Tokens Out",
+      align: "right",
       render: tokensOutRender,
       renderSub: tokensOutRender,
     },
     {
       key: "avgTokensPerSec",
       label: "Tok/s",
+      align: "right",
       render: tpsRender,
       renderSub: tpsRender,
     },
     {
       key: "totalCost",
       label: "Cost",
+      align: "right",
       render: costRender,
       renderSub: costRender,
     },
@@ -255,11 +270,11 @@ export default function UsagePage() {
       label: "Provider",
       align: "left",
     },
-    { key: "totalRequests", label: "Requests", render: requestsRender },
-    { key: "totalInputTokens", label: "Tokens In", render: tokensInRender },
-    { key: "totalOutputTokens", label: "Tokens Out", render: tokensOutRender },
-    { key: "avgTokensPerSec", label: "Tok/s", render: tpsRender },
-    { key: "totalCost", label: "Cost", render: costRender },
+    { key: "totalRequests", label: "Requests", align: "right", render: requestsRender },
+    { key: "totalInputTokens", label: "Tokens In", align: "right", render: tokensInRender },
+    { key: "totalOutputTokens", label: "Tokens Out", align: "right", render: tokensOutRender },
+    { key: "avgTokensPerSec", label: "Tok/s", align: "right", render: tpsRender },
+    { key: "totalCost", label: "Cost", align: "right", render: costRender },
   ];
 
   const modalityColumns = [
@@ -273,11 +288,11 @@ export default function UsagePage() {
         </BadgeComponent>
       ),
     },
-    { key: "totalRequests", label: "Requests", render: requestsRender },
-    { key: "totalInputTokens", label: "Tokens In", render: tokensInRender },
-    { key: "totalOutputTokens", label: "Tokens Out", render: tokensOutRender },
-    { key: "avgTokensPerSec", label: "Tok/s", render: tpsRender },
-    { key: "totalCost", label: "Cost", render: costRender },
+    { key: "totalRequests", label: "Requests", align: "right", render: requestsRender },
+    { key: "totalInputTokens", label: "Tokens In", align: "right", render: tokensInRender },
+    { key: "totalOutputTokens", label: "Tokens Out", align: "right", render: tokensOutRender },
+    { key: "avgTokensPerSec", label: "Tok/s", align: "right", render: tpsRender },
+    { key: "totalCost", label: "Cost", align: "right", render: costRender },
   ];
 
   const modelColumns = [
@@ -293,11 +308,11 @@ export default function UsagePage() {
         <BadgeComponent variant="provider">{row.provider}</BadgeComponent>
       ),
     },
-    { key: "totalRequests", label: "Requests", render: requestsRender },
-    { key: "totalInputTokens", label: "Tokens In", render: tokensInRender },
-    { key: "totalOutputTokens", label: "Tokens Out", render: tokensOutRender },
-    { key: "avgTokensPerSec", label: "Tok/s", render: tpsRender },
-    { key: "totalCost", label: "Cost", render: costRender },
+    { key: "totalRequests", label: "Requests", align: "right", render: requestsRender },
+    { key: "totalInputTokens", label: "Tokens In", align: "right", render: tokensInRender },
+    { key: "totalOutputTokens", label: "Tokens Out", align: "right", render: tokensOutRender },
+    { key: "avgTokensPerSec", label: "Tok/s", align: "right", render: tpsRender },
+    { key: "totalCost", label: "Cost", align: "right", render: costRender },
   ];
 
   return (

@@ -28,11 +28,10 @@ import TimelineChartComponent from "../../components/TimelineChartComponent";
 import DistributionChartComponent from "../../components/DistributionChartComponent";
 import UsageBarComponent from "../../components/UsageBarComponent";
 import SortableTableComponent from "../../components/SortableTableComponent";
-import TooltipComponent from "../../components/TooltipComponent";
+import ToolIconComponent from "../../components/ToolIconComponent";
 import SelectDropdown from "../../components/SelectDropdown";
 import { ErrorMessage } from "../../components/StateMessageComponent";
 import { useAdminHeader } from "../../components/AdminHeaderContext";
-import { TOOL_ICON_MAP, TOOL_COLORS } from "../../components/WorkflowNodeConstants";
 import useProjectFilter from "../../hooks/useProjectFilter";
 import styles from "./page.module.css";
 import { LS_DATE_RANGE } from "../../constants";
@@ -339,6 +338,7 @@ export default function DashboardPage() {
           {
             key: "totalRequests",
             label: "Requests",
+            align: "right",
             render: (p) => formatNumber(p.totalRequests),
           },
           {
@@ -354,36 +354,42 @@ export default function DashboardPage() {
               />
             ),
           },
-          { key: "providerCount", label: "Providers" },
-          { key: "modelCount", label: "Models" },
+          { key: "providerCount", label: "Providers", align: "right" },
+          { key: "modelCount", label: "Models", align: "right" },
           {
             key: "totalInputTokens",
             label: "Tokens In",
+            align: "right",
             render: (p) => formatNumber(p.totalInputTokens),
           },
           {
             key: "totalOutputTokens",
             label: "Tokens Out",
+            align: "right",
             render: (p) => formatNumber(p.totalOutputTokens),
           },
           {
             key: "avgTokensPerSec",
             label: "Tok/s",
+            align: "right",
             render: (p) => formatTokensPerSec(p.avgTokensPerSec),
           },
           {
             key: "totalCost",
             label: "Cost",
+            align: "right",
             render: (p) => formatCost(p.totalCost),
           },
           {
             key: "avgLatency",
             label: "Avg Latency",
+            align: "right",
             render: (p) => formatLatency(p.avgLatency),
           },
           {
             key: "conversationCount",
             label: "Conversations",
+            align: "right",
             render: (p) => (
               <CountLinkComponent
                 count={p.conversationCount}
@@ -396,6 +402,7 @@ export default function DashboardPage() {
           {
             key: "workflowCount",
             label: "Workflows",
+            align: "right",
             render: (p) => (
               <CountLinkComponent
                 count={p.workflowCount}
@@ -439,6 +446,7 @@ export default function DashboardPage() {
           {
             key: "totalRequests",
             label: "Requests",
+            align: "right",
             render: (p) => formatNumber(p.totalRequests),
           },
           {
@@ -453,7 +461,7 @@ export default function DashboardPage() {
               />
             ),
           },
-          { key: "modelCount", label: "Models" },
+          { key: "modelCount", label: "Models", align: "right" },
           {
             key: "totalInputTokens",
             label: "Tokens In",
@@ -482,6 +490,7 @@ export default function DashboardPage() {
           {
             key: "conversationCount",
             label: "Conversations",
+            align: "right",
             render: (p) => (
               <CountLinkComponent
                 count={p.conversationCount}
@@ -494,6 +503,7 @@ export default function DashboardPage() {
           {
             key: "workflowCount",
             label: "Workflows",
+            align: "right",
             render: (p) => (
               <CountLinkComponent
                 count={p.workflowCount}
@@ -518,6 +528,7 @@ export default function DashboardPage() {
           {
             key: "totalRequests",
             label: "Requests",
+            align: "right",
             render: (m) => formatNumber(m.totalRequests),
           },
           {
@@ -548,57 +559,43 @@ export default function DashboardPage() {
               if (!tools?.length) {
                 return <span style={{ color: "var(--text-muted)" }}>—</span>;
               }
-              return (
-                <span className={styles.toolPills}>
-                  {tools.map((t) => {
-                    const Icon = TOOL_ICON_MAP[t];
-                    if (!Icon) {
-                      return (
-                        <TooltipComponent key={t} label={t} position="top">
-                          <span className={styles.toolPill}>{t}</span>
-                        </TooltipComponent>
-                      );
-                    }
-                    return (
-                      <TooltipComponent key={t} label={t} position="top">
-                        <span className={styles.toolPill}>
-                          <Icon size={12} style={{ color: TOOL_COLORS[t] }} />
-                        </span>
-                      </TooltipComponent>
-                    );
-                  })}
-                </span>
-              );
+              return <ToolIconComponent toolNames={tools} />;
             },
           },
           {
             key: "totalInputTokens",
             label: "Tokens In",
+            align: "right",
             render: (m) => formatNumber(m.totalInputTokens),
           },
           {
             key: "totalOutputTokens",
             label: "Tokens Out",
+            align: "right",
             render: (m) => formatNumber(m.totalOutputTokens),
           },
           {
             key: "avgTokensPerSec",
             label: "Tok/s",
+            align: "right",
             render: (m) => formatTokensPerSec(m.avgTokensPerSec),
           },
           {
             key: "totalCost",
             label: "Cost",
+            align: "right",
             render: (m) => formatCost(m.totalCost),
           },
           {
             key: "avgLatency",
             label: "Avg Latency",
+            align: "right",
             render: (m) => formatLatency(m.avgLatency),
           },
           {
             key: "conversationCount",
             label: "Conversations",
+            align: "right",
             render: (m) => (
               <CountLinkComponent
                 count={m.conversationCount}
@@ -611,6 +608,7 @@ export default function DashboardPage() {
           {
             key: "workflowCount",
             label: "Workflows",
+            align: "right",
             render: (m) => (
               <CountLinkComponent
                 count={m.workflowCount}

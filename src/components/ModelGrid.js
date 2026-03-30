@@ -20,6 +20,7 @@ import {
   TOOL_COLORS,
 } from "./WorkflowNodeConstants";
 import SortableTableComponent from "./SortableTableComponent";
+import ToolIconComponent from "./ToolIconComponent";
 import TooltipComponent from "./TooltipComponent";
 import SearchInputComponent from "./SearchInputComponent";
 import {
@@ -395,6 +396,7 @@ export default function ModelGrid({
       cols.push({
         key: "year",
         label: "Year",
+        align: "right",
         render: (row) => row._raw.year || "—",
       });
     }
@@ -421,26 +423,7 @@ export default function ModelGrid({
         render: (row) => {
           const tools = row._raw.tools;
           if (!tools?.length) return "—";
-          return (
-            <span className={styles.toolPills}>
-              {tools.map((t) => {
-                const Icon = TOOL_ICONS[t];
-                if (!Icon)
-                  return (
-                    <TooltipComponent key={t} label={t} position="top">
-                      <span className={styles.toolPill}>{t}</span>
-                    </TooltipComponent>
-                  );
-                return (
-                  <TooltipComponent key={t} label={t} position="top">
-                    <span className={styles.toolPill}>
-                      <Icon size={12} style={{ color: TOOL_COLORS[t] }} />
-                    </span>
-                  </TooltipComponent>
-                );
-              })}
-            </span>
-          );
+          return <ToolIconComponent toolNames={tools} />;
         },
       });
     }
@@ -449,6 +432,7 @@ export default function ModelGrid({
       cols.push({
         key: "context",
         label: "Context",
+        align: "right",
         render: (row) =>
           row._model.contextLength
             ? formatContextLength(row._model.contextLength)
@@ -460,6 +444,7 @@ export default function ModelGrid({
       cols.push({
         key: "size",
         label: "Size",
+        align: "right",
         render: (row) => row._model.size || "—",
       });
     }
@@ -468,6 +453,7 @@ export default function ModelGrid({
       cols.push({
         key: "params",
         label: "Params",
+        align: "right",
         render: (row) => row._model.params || "—",
       });
     }
@@ -476,6 +462,7 @@ export default function ModelGrid({
       cols.push({
         key: "quant",
         label: "Quant",
+        align: "right",
         render: (row) => row._model.quantization || "—",
       });
     }
@@ -484,6 +471,7 @@ export default function ModelGrid({
       cols.push({
         key: "bpw",
         label: "BPW",
+        align: "right",
         render: (row) =>
           row._model.bitsPerWeight != null ? row._model.bitsPerWeight : "—",
       });
@@ -510,6 +498,7 @@ export default function ModelGrid({
       cols.push({
         key: "input",
         label: "Input",
+        align: "right",
         render: (row) =>
           row._raw.pricing?.inputPerMillion != null
             ? `$${row._raw.pricing.inputPerMillion}`
@@ -521,6 +510,7 @@ export default function ModelGrid({
       cols.push({
         key: "output",
         label: "Output",
+        align: "right",
         render: (row) =>
           row._raw.pricing?.outputPerMillion != null
             ? `$${row._raw.pricing.outputPerMillion}`
@@ -532,6 +522,7 @@ export default function ModelGrid({
       cols.push({
         key: arenaCol.key,
         label: arenaCol.label,
+        align: "right",
         render: (row) => row._raw.arena?.[arenaCol.dataKey] ?? "—",
       });
     }

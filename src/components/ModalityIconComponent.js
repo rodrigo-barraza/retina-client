@@ -13,11 +13,11 @@ import {
 } from "lucide-react";
 import TooltipComponent from "./TooltipComponent";
 import { MODALITY_COLORS } from "./WorkflowNodeConstants";
-import styles from "./ModalityIconsComponent.module.css";
+import styles from "./ModalityIconComponent.module.css";
 
 /**
  * MODALITY_ICON_DEFS — data-driven icon list for input/output modalities
- * and tool-capability badges. Used by ModalityIconsComponent to avoid
+ * and tool-capability badges. Used by ModalityIconComponent to avoid
  * hand-coding every icon/tooltip/color permutation.
  */
 const INPUT_MODALITIES = [
@@ -42,7 +42,7 @@ const TOOL_MODALITIES = [
 ];
 
 /**
- * ModalityIconsComponent — renders a compact row of input → output modality
+ * ModalityIconComponent — renders a compact row of input → output modality
  * icons plus tool-capability badges from a modalities object.
  *
  * Props:
@@ -50,7 +50,7 @@ const TOOL_MODALITIES = [
  *   size        — icon size in px (default 11)
  *   className   — extra root class name
  */
-export default function ModalityIconsComponent({
+export default function ModalityIconComponent({
   modalities,
   size = 11,
   className,

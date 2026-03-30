@@ -194,7 +194,7 @@ export default function SortableTableComponent({
           <table className={styles.table}>
             <thead>
               <tr>
-                {columns.map((col, ci) => {
+                {columns.map((col, _ci) => {
                   const isSortable = col.sortable !== false;
                   const isActive = sort.key === col.key;
                   const thClasses = [
@@ -209,11 +209,7 @@ export default function SortableTableComponent({
                     <th
                       key={col.key}
                       className={thClasses}
-                      style={
-                        ci > 0 && col.align !== "left"
-                          ? { textAlign: "right" }
-                          : { textAlign: "left" }
-                      }
+                      style={{ textAlign: col.align || "left" }}
                       onClick={
                         isSortable ? () => handleSort(col.key) : undefined
                       }
@@ -267,10 +263,9 @@ export default function SortableTableComponent({
                         const extraClass = col.className || "";
                         const sortedClass =
                           !isFirst && isSorted ? styles.tdSorted : "";
-                        const cellStyle =
-                          ci > 0 && col.align !== "left"
-                            ? { textAlign: "right" }
-                            : {};
+                        const cellStyle = col.align
+                          ? { textAlign: col.align }
+                          : {};
 
                         let content;
                         if (col.render) {
@@ -300,11 +295,10 @@ export default function SortableTableComponent({
                     {isExpanded &&
                       subRows.map((sub, si) => (
                         <tr key={`${key}-sub-${si}`} className={styles.subRow}>
-                          {columns.map((col, ci) => {
-                            const cellStyle =
-                              ci > 0 && col.align !== "left"
-                                ? { textAlign: "right" }
-                                : {};
+                          {columns.map((col, _ci) => {
+                            const cellStyle = col.align
+                              ? { textAlign: col.align }
+                              : {};
                             let content;
                             if (col.renderSub) {
                               content = col.renderSub(sub, si);

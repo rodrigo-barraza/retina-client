@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { MessageSquare, Wrench } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import SortableTableComponent from "./SortableTableComponent";
-import ModalityIconsComponent from "./ModalityIconsComponent";
+import ModalityIconComponent from "./ModalityIconComponent";
+import ToolIconComponent from "./ToolIconComponent";
 import TooltipComponent from "./TooltipComponent";
 import BadgeComponent from "./BadgeComponent";
 import {
@@ -12,7 +13,6 @@ import {
   formatLatency,
   formatTokensPerSec,
 } from "../utils/utilities";
-import { TOOL_ICON_MAP, TOOL_COLORS } from "./WorkflowNodeConstants";
 import { DateTime } from "luxon";
 import styles from "./ConversationsTableComponent.module.css";
 
@@ -29,39 +29,6 @@ import styles from "./ConversationsTableComponent.module.css";
  * @param {boolean} [props.compact] — Slightly reduced padding
  * @param {string} [props.maxHeight] — CSS max-height for scrollable tables
  */
-
-function renderToolPills(toolNames) {
-  if (!toolNames || toolNames.length === 0) {
-    return <span style={{ color: "var(--text-muted)" }}>—</span>;
-  }
-
-  const resolved = new Map();
-  for (const raw of toolNames) {
-    if (TOOL_ICON_MAP[raw]) {
-      if (!resolved.has(raw)) resolved.set(raw, TOOL_ICON_MAP[raw]);
-    } else {
-      const fallbackIcon = TOOL_ICON_MAP["Function Calling"] || Wrench;
-      if (!resolved.has("Function Calling")) {
-        resolved.set("Function Calling", fallbackIcon);
-      }
-    }
-  }
-
-  return (
-    <span className={styles.toolPills}>
-      {[...resolved.entries()].map(([label, Icon]) => (
-        <TooltipComponent key={label} label={label} position="top">
-          <span className={styles.toolPill}>
-            <Icon
-              size={12}
-              style={{ color: TOOL_COLORS[label] || "#f97316" }}
-            />
-          </span>
-        </TooltipComponent>
-      ))}
-    </span>
-  );
-}
 
 const COLUMNS = [
   {
@@ -104,7 +71,7 @@ const COLUMNS = [
     render: (c) => {
       if (!c.modalities)
         return <span style={{ color: "var(--text-muted)" }}>—</span>;
-      return <ModalityIconsComponent modalities={c.modalities} size={13} />;
+      return <ModalityIconComponent modalities={c.modalities} size={13} />;
     },
   },
   {
@@ -163,7 +130,7 @@ const COLUMNS = [
     label: "Tools",
     sortable: false,
     align: "left",
-    render: (c) => renderToolPills(c.toolNames),
+    render: (c) => <ToolIconComponent toolNames={c.toolNames} />,
   },
   {
     key: "inputTokens",

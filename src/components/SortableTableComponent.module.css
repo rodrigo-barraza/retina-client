@@ -30,7 +30,7 @@
 
 .th {
   padding: 10px 14px;
-  text-align: right;
+  text-align: left;
   font-size: 9px;
   font-weight: 600;
   color: var(--text-secondary);
@@ -117,7 +117,7 @@
 
 .td {
   padding: 10px 14px;
-  text-align: right;
+  text-align: left;
   color: var(--text-secondary);
   white-space: nowrap;
   background: var(--bg-secondary);
