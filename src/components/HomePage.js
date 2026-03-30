@@ -156,6 +156,8 @@ export default function HomePage({ initialConversationId = null }) {
   // Auto-save system prompt on edit (debounced)
   useEffect(() => {
     if (!activeId || messages.length === 0) return;
+    // Skip for live conversations that haven't been persisted yet
+    if (liveConvIdRef.current === activeId && !liveConvCreatedRef.current) return;
     if (skipSystemPromptSave.current) {
       skipSystemPromptSave.current = false;
       return;
@@ -176,6 +178,8 @@ export default function HomePage({ initialConversationId = null }) {
       setWorkflows([]);
       return;
     }
+    // Skip for live conversations that haven't been persisted yet
+    if (liveConvIdRef.current === activeId && !liveConvCreatedRef.current) return;
     PrismService.getConversationWorkflows(activeId)
       .then(setWorkflows)
       .catch(() => setWorkflows([]));

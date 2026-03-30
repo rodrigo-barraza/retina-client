@@ -885,7 +885,7 @@ export default function ChatArea({
 
       {isLiveModel &&
         messages.length > 0 &&
-        (liveMicActive ? (
+        (_liveConnected || liveMicActive ? (
           <div className={styles.liveStreamBanner}>
             <span className={styles.liveStreamDot} />
             Stream is live
