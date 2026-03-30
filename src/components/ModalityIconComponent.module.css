@@ -30,15 +30,12 @@
 
 .badge svg {
   flex-shrink: 0;
-  opacity: 0.6;
 }
 
 .modalityIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
-  opacity: 0.6;
 }
 
 .modalityArrow {
