@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Download, MessageSquare, GitBranch } from "lucide-react";
+import { Download, MessageSquare, GitBranch, FolderOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import HistoryItemComponent from "../../../components/HistoryItemComponent";
 import IrisService from "../../../services/IrisService";
@@ -154,7 +154,8 @@ export default function RequestsPage() {
         if (!cancelled) setAssociations(data);
       })
       .catch(() => {
-        if (!cancelled) setAssociations({ conversations: [], workflows: [] });
+        if (!cancelled)
+          setAssociations({ conversations: [], workflows: [], sessions: [] });
       })
       .finally(() => {
         if (!cancelled) setLoadingAssociations(false);
@@ -578,6 +579,40 @@ export default function RequestsPage() {
                             icon={GitBranch}
                             onClick={() =>
                               router.push(`/admin/workflows/${w.id}`)
+                            }
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <span className={styles.associationEmpty}>—</span>
+                    )}
+                  </div>
+                  <div className={styles.associationGroup}>
+                    <span className={styles.associationGroupLabel}>
+                      <FolderOpen size={12} /> Sessions
+                    </span>
+                    {associations?.sessions?.length > 0 ? (
+                      <div className={styles.associationList}>
+                        {associations.sessions.map((s) => (
+                          <HistoryItemComponent
+                            key={s.id}
+                            item={{
+                              id: s.id,
+                              title: s.id.slice(0, 8),
+                              tags: [
+                                {
+                                  label: `${s.conversationCount} conversation${s.conversationCount !== 1 ? "s" : ""}`,
+                                  style: {
+                                    background: "var(--bg-tertiary)",
+                                    color: "var(--text-muted)",
+                                  },
+                                },
+                              ],
+                              updatedAt: s.updatedAt || s.createdAt,
+                            }}
+                            icon={FolderOpen}
+                            onClick={() =>
+                              router.push("/admin/sessions")
                             }
                           />
                         ))}

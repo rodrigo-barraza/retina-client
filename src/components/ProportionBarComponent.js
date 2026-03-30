@@ -1,16 +1,17 @@
 "use client";
 
-import styles from "./UsageBarComponent.module.css";
+import styles from "./ProportionBarComponent.module.css";
 
 /**
- * UsageBarComponent — a proportional bar with percentage label.
+ * ProportionBarComponent — a proportional bar with percentage label.
+ * Used for usage share, cost share, or any value-vs-total visualization.
  *
  * Props:
  *   value    — the item's count/value
  *   total    — the total to compute percentage against
  *   color    — fill color (defaults to accent)
  */
-export default function UsageBarComponent({ value = 0, total = 1, color }) {
+export default function ProportionBarComponent({ value = 0, total = 1, color }) {
   const pct = total > 0 ? (value / total) * 100 : 0;
 
   return (

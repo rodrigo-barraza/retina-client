@@ -12,6 +12,9 @@ import {
   AlertCircle,
   Workflow,
   MessageSquare,
+  FolderOpen,
+  Hash,
+  TrendingUp,
 } from "lucide-react";
 import IrisService from "../../services/IrisService";
 import PrismService from "../../services/PrismService";
@@ -26,9 +29,12 @@ import StatsCard from "../../components/StatsCard";
 import DatePickerComponent from "../../components/DatePickerComponent";
 import TimelineChartComponent from "../../components/TimelineChartComponent";
 import DistributionChartComponent from "../../components/DistributionChartComponent";
-import UsageBarComponent from "../../components/UsageBarComponent";
+import ProportionBarComponent from "../../components/ProportionBarComponent";
 import SortableTableComponent from "../../components/SortableTableComponent";
 import ToolIconComponent from "../../components/ToolIconComponent";
+import CostBadgeComponent from "../../components/CostBadgeComponent";
+import ProjectBadgeComponent from "../../components/ProjectBadgeComponent";
+import UserBadgeComponent from "../../components/UserBadgeComponent";
 import SelectDropdown from "../../components/SelectDropdown";
 import { ErrorMessage } from "../../components/StateMessageComponent";
 import { useAdminHeader } from "../../components/AdminHeaderContext";
@@ -36,6 +42,7 @@ import useProjectFilter from "../../hooks/useProjectFilter";
 import styles from "./page.module.css";
 import { LS_DATE_RANGE } from "../../constants";
 import { getRequestsColumns } from "./requestsColumns";
+import { DateTime } from "luxon";
 
 const PROVIDER_COLORS = [
   "#6366f1",
@@ -59,6 +66,7 @@ export default function DashboardPage() {
 
   const [timeline, setTimeline] = useState([]);
   const [recentRequests, setRecentRequests] = useState([]);
+  const [recentSessions, setRecentSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -83,7 +91,7 @@ export default function DashboardPage() {
       const filterParams = { ...dateParams };
       if (projectFilter) filterParams.project = projectFilter;
 
-      const [statsData, projects, models, timelineData, requestsData, prismConfig] =
+      const [statsData, projects, models, timelineData, requestsData, sessionsData, prismConfig] =
         await Promise.all([
           IrisService.getStats(filterParams),
           IrisService.getProjectStats(filterParams),
@@ -94,6 +102,12 @@ export default function DashboardPage() {
             sort: "timestamp",
             order: "desc",
             ...filterParams,
+          }),
+          IrisService.getSessions({
+            page: 1,
+            limit: 5,
+            sort: "createdAt",
+            order: "desc",
           }),
           PrismService.getConfig().catch(() => null),
         ]);
@@ -116,6 +130,7 @@ export default function DashboardPage() {
 
       setTimeline(timelineData.data || timelineData);
       setRecentRequests(requestsData.data || []);
+      setRecentSessions(sessionsData.data || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -162,6 +177,7 @@ export default function DashboardPage() {
         modelCount: 0,
         conversationCount: 0,
         workflowCount: 0,
+        sessionCount: 0,
       };
     }
     const p = providerAgg[m.provider];
@@ -173,6 +189,7 @@ export default function DashboardPage() {
     p.modelCount += 1;
     p.conversationCount += m.conversationCount || 0;
     p.workflowCount += m.workflowCount || 0;
+    p.sessionCount += m.sessionCount || 0;
     if (m.avgTokensPerSec) {
       p.tpsSum += m.avgTokensPerSec * m.totalRequests;
       p.tpsCount += m.totalRequests;
@@ -187,6 +204,8 @@ export default function DashboardPage() {
     .sort((a, b) => b.totalRequests - a.totalRequests);
   const totalProviderRequests =
     providerData.reduce((s, p) => s + p.totalRequests, 0) || 1;
+  const totalProviderCost =
+    providerData.reduce((s, p) => s + p.totalCost, 0) || 1;
 
   // Top 10 models
   const topModels = [...modelStats].sort(
@@ -195,6 +214,14 @@ export default function DashboardPage() {
 
   const totalModelRequests =
     modelStats.reduce((s, m) => s + m.totalRequests, 0) || 1;
+  const totalModelCost =
+    modelStats.reduce((s, m) => s + (m.totalCost || 0), 0) || 1;
+
+  // Project totals for proportion bars
+  const totalProjectRequests =
+    projectStats.reduce((s, x) => s + x.totalRequests, 0) || 1;
+  const totalProjectCost =
+    projectStats.reduce((s, x) => s + (x.totalCost || 0), 0) || 1;
 
   // Recharts-friendly timeline data — add display label
   const chartData = useMemo(() => {
@@ -228,6 +255,11 @@ export default function DashboardPage() {
       return { ...t, label, tickLabel };
     });
   }, [timeline]);
+
+  // Derived stats for extra cards
+  const avgCostPerRequest = stats?.totalRequests > 0
+    ? stats.totalCost / stats.totalRequests
+    : 0;
 
   return (
     <div className={styles.page}>
@@ -304,6 +336,30 @@ export default function DashboardPage() {
           variant={stats?.errorCount > 0 ? "danger" : "success"}
           loading={loading}
         />
+        <StatsCard
+          label="Sessions"
+          value={loading ? "..." : formatNumber(stats?.sessionCount)}
+          subtitle={loading ? "" : `${formatNumber(stats?.conversationCount)} conversations`}
+          icon={FolderOpen}
+          variant="accent"
+          loading={loading}
+        />
+        <StatsCard
+          label="Avg Cost / Request"
+          value={loading ? "..." : formatCost(avgCostPerRequest)}
+          subtitle="Per-request average"
+          icon={TrendingUp}
+          variant="info"
+          loading={loading}
+        />
+        <StatsCard
+          label="Models Used"
+          value={loading ? "..." : formatNumber(modelStats.length)}
+          subtitle={loading ? "" : `${providerData.length} providers`}
+          icon={Hash}
+          variant="warning"
+          loading={loading}
+        />
       </div>
 
       {/* ── Charts Row ── */}
@@ -346,11 +402,9 @@ export default function DashboardPage() {
             label: "Usage",
             sortValue: (p) => p.totalRequests,
             render: (p) => (
-              <UsageBarComponent
+              <ProportionBarComponent
                 value={p.totalRequests}
-                total={
-                  projectStats.reduce((s, x) => s + x.totalRequests, 0) || 1
-                }
+                total={totalProjectRequests}
               />
             ),
           },
@@ -378,13 +432,35 @@ export default function DashboardPage() {
             key: "totalCost",
             label: "Cost",
             align: "right",
-            render: (p) => formatCost(p.totalCost),
+            render: (p) => (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                {formatCost(p.totalCost)}
+                <ProportionBarComponent
+                  value={p.totalCost}
+                  total={totalProjectCost}
+                  color="var(--warning)"
+                />
+              </span>
+            ),
           },
           {
             key: "avgLatency",
             label: "Avg Latency",
             align: "right",
             render: (p) => formatLatency(p.avgLatency),
+          },
+          {
+            key: "sessionCount",
+            label: "Sessions",
+            align: "right",
+            render: (p) => (
+              <CountLinkComponent
+                count={p.sessionCount}
+                href={`/admin/sessions?project=${encodeURIComponent(p.project)}`}
+                icon={FolderOpen}
+                className={styles.workflowLink}
+              />
+            ),
           },
           {
             key: "conversationCount",
@@ -454,7 +530,7 @@ export default function DashboardPage() {
             label: "Usage",
             sortValue: (p) => p.totalRequests,
             render: (p, i) => (
-              <UsageBarComponent
+              <ProportionBarComponent
                 value={p.totalRequests}
                 total={totalProviderRequests}
                 color={PROVIDER_COLORS[i % PROVIDER_COLORS.length]}
@@ -480,12 +556,34 @@ export default function DashboardPage() {
           {
             key: "totalCost",
             label: "Cost",
-            render: (p) => formatCost(p.totalCost),
+            render: (p) => (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                {formatCost(p.totalCost)}
+                <ProportionBarComponent
+                  value={p.totalCost}
+                  total={totalProviderCost}
+                  color="var(--warning)"
+                />
+              </span>
+            ),
           },
           {
             key: "avgLatency",
             label: "Avg Latency",
             render: (p) => formatLatency(p.avgLatency),
+          },
+          {
+            key: "sessionCount",
+            label: "Sessions",
+            align: "right",
+            render: (p) => (
+              <CountLinkComponent
+                count={p.sessionCount}
+                href={`/admin/sessions?provider=${encodeURIComponent(p.provider)}`}
+                icon={FolderOpen}
+                className={styles.workflowLink}
+              />
+            ),
           },
           {
             key: "conversationCount",
@@ -536,7 +634,7 @@ export default function DashboardPage() {
             label: "Usage",
             sortValue: (m) => m.totalRequests,
             render: (m) => (
-              <UsageBarComponent
+              <ProportionBarComponent
                 value={m.totalRequests}
                 total={totalModelRequests}
               />
@@ -584,13 +682,35 @@ export default function DashboardPage() {
             key: "totalCost",
             label: "Cost",
             align: "right",
-            render: (m) => formatCost(m.totalCost),
+            render: (m) => (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                {formatCost(m.totalCost)}
+                <ProportionBarComponent
+                  value={m.totalCost}
+                  total={totalModelCost}
+                  color="var(--warning)"
+                />
+              </span>
+            ),
           },
           {
             key: "avgLatency",
             label: "Avg Latency",
             align: "right",
             render: (m) => formatLatency(m.avgLatency),
+          },
+          {
+            key: "sessionCount",
+            label: "Sessions",
+            align: "right",
+            render: (m) => (
+              <CountLinkComponent
+                count={m.sessionCount}
+                href={`/admin/sessions?model=${encodeURIComponent(m.model)}`}
+                icon={FolderOpen}
+                className={styles.workflowLink}
+              />
+            ),
           },
           {
             key: "conversationCount",
@@ -622,6 +742,98 @@ export default function DashboardPage() {
         data={topModels}
         getRowKey={(m, i) => `${m.provider}-${m.model}-${i}`}
         emptyText={loading ? "Loading..." : "No data yet"}
+      />
+
+      {/* ── Recent Sessions ── */}
+      <SortableTableComponent
+        maxHeight={420}
+        title={
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
+            }}
+          >
+            Recent Sessions
+            <Link href="/admin/sessions" className={styles.sectionAction}>
+              View all →
+            </Link>
+          </span>
+        }
+        columns={[
+          {
+            key: "id",
+            label: "Session",
+            render: (s) => (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <FolderOpen size={12} style={{ opacity: 0.5, flexShrink: 0 }} />
+                {s.id?.slice(0, 8) || "—"}
+              </span>
+            ),
+          },
+          {
+            key: "project",
+            label: "Project",
+            render: (s) => s.project
+              ? <ProjectBadgeComponent project={s.project} />
+              : <span style={{ color: "var(--text-muted)" }}>—</span>,
+          },
+          {
+            key: "username",
+            label: "User",
+            render: (s) => s.username
+              ? <UserBadgeComponent username={s.username} />
+              : <span style={{ color: "var(--text-muted)" }}>—</span>,
+          },
+          {
+            key: "conversationCount",
+            label: "Conversations",
+            align: "right",
+            render: (s) => (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <MessageSquare size={11} style={{ opacity: 0.5 }} />
+                {s.conversationCount || 0}
+              </span>
+            ),
+          },
+          {
+            key: "requestCount",
+            label: "Requests",
+            align: "right",
+            render: (s) => formatNumber(s.requestCount || 0),
+          },
+          {
+            key: "totalInputTokens",
+            label: "Tokens In",
+            align: "right",
+            render: (s) => formatNumber(s.totalInputTokens || 0),
+          },
+          {
+            key: "totalOutputTokens",
+            label: "Tokens Out",
+            align: "right",
+            render: (s) => formatNumber(s.totalOutputTokens || 0),
+          },
+          {
+            key: "totalCost",
+            label: "Cost",
+            align: "right",
+            render: (s) => <CostBadgeComponent cost={s.totalCost} />,
+          },
+          {
+            key: "createdAt",
+            label: "Created",
+            align: "right",
+            render: (s) => s.createdAt
+              ? DateTime.fromISO(s.createdAt).toRelative()
+              : "—",
+          },
+        ]}
+        data={recentSessions}
+        getRowKey={(s, i) => s.id || i}
+        emptyText={loading ? "Loading..." : "No sessions yet"}
       />
 
       {/* ── Recent Requests ── */}
