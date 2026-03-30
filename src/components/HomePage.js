@@ -1990,7 +1990,7 @@ export default function HomePage({ initialConversationId = null }) {
               />
             ) : null
           }
-          onLiveUserChunk={(fullText) => {
+          onLiveUserChunk={(fullText, { isTyped } = {}) => {
             setMessages((prev) => {
               const lastIdx = prev.length - 1;
               const lastMsg = prev[lastIdx];
@@ -2008,7 +2008,7 @@ export default function HomePage({ initialConversationId = null }) {
                   content: fullText,
                   timestamp: new Date().toISOString(),
                   _liveStreaming: true,
-                  _liveTranscription: true,
+                  ...(!isTyped && { _liveTranscription: true }),
                 },
               ];
             });

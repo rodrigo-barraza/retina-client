@@ -350,7 +350,7 @@ export default function ChatArea({
   const liveUserTranscriptRef = useRef("");
   const liveAssistantTranscriptRef = useRef("");
   // Stale = live model with messages but no active session (view-only)
-  const liveSessionStale = isLiveModel && messages.length > 0 && !liveMicActive;
+  const liveSessionStale = isLiveModel && messages.length > 0 && !liveMicActive && !_liveConnected;
 
   // All input buttons disabled when viewing a past / ended conversation
   const inputDisabled = readOnly || liveSessionStale;
@@ -380,24 +380,21 @@ export default function ChatArea({
     }
   }, [conversationId]);
 
-  const handleLiveMicToggle = async () => {
-    if (liveMicActive) {
-      // Stop mic
-      if (liveSessionRef.current) {
-        liveSessionRef.current.stopMicrophone();
-      }
-      setLiveMicActive(false);
-      return;
-    }
-
-    // Start mic — connect if not already connected
+  // ── Shared live session setup ─────────────────────────────
+  // Builds the config and connects to Prism's /ws/live if not
+  // already connected. Returns a Promise that resolves with
+  // the session once setupComplete fires.  `responseModalities`
+  // is overridable so text-only sends use ["TEXT"] while mic
+  // sends use ["AUDIO"].
+  const ensureLiveSession = (responseModalities = ["AUDIO"]) => {
     if (!liveSessionRef.current) {
       liveSessionRef.current = new LiveSessionService();
     }
-
     const session = liveSessionRef.current;
 
-    if (!session.connected) {
+    if (session.connected) return Promise.resolve(session);
+
+    return new Promise((resolve, reject) => {
       let connectConversationId = conversationId;
       if (!connectConversationId) {
         connectConversationId = crypto.randomUUID();
@@ -406,7 +403,7 @@ export default function ChatArea({
 
       // Build config from current settings
       const liveConfig = {
-        responseModalities: ["AUDIO"],
+        responseModalities,
         conversationId: connectConversationId,
       };
       if (
@@ -419,11 +416,9 @@ export default function ChatArea({
       if (settings?.temperature !== undefined) {
         liveConfig.temperature = settings.temperature;
       }
-      // Voice selection — passed to Prism's speechConfig.voiceConfig
       if (settings?.liveVoice) {
         liveConfig.voiceName = settings.liveVoice;
       }
-      // Thinking level — "none" means no thinking, otherwise pass the level
       const thinkingLevel = settings?.liveThinkingLevel || "none";
       if (thinkingLevel !== "none") {
         liveConfig.thinkingConfig = {
@@ -432,7 +427,6 @@ export default function ChatArea({
         };
       }
 
-      // Pass the enabled tools down to Prism so it can automatically fetch schemas
       const activeToolNames = activeTools.filter((t) => getToolToggle(t)?.checked);
       if (activeToolNames.includes("Function Calling") && enabledToolNames.length > 0) {
         liveConfig.enabledTools = [...new Set([...activeToolNames, ...enabledToolNames])];
@@ -440,7 +434,6 @@ export default function ChatArea({
         liveConfig.enabledTools = activeToolNames;
       }
 
-      // Reset transcript accumulators
       liveUserTranscriptRef.current = "";
       liveAssistantTranscriptRef.current = "";
 
@@ -450,22 +443,18 @@ export default function ChatArea({
         callbacks: {
           onSetupComplete: () => {
             setLiveConnected(true);
-            session
-              .startMicrophone()
-              .then(() => {
-                setLiveMicActive(true);
-              })
-              .catch((err) => {
-                console.error("[LiveMic] Failed to start mic:", err);
-              });
+            resolve(session);
+          },
+          onText: (text) => {
+            // Text-modality response chunks (used when responseModalities=["TEXT"])
+            liveAssistantTranscriptRef.current += text;
+            onLiveAssistantChunk?.(liveAssistantTranscriptRef.current);
           },
           onOutputTranscription: (text) => {
-            // Accumulate and stream model's response in real-time
             liveAssistantTranscriptRef.current += text;
             onLiveAssistantChunk?.(liveAssistantTranscriptRef.current);
           },
           onInputTranscription: (text) => {
-            // Accumulate and stream user's speech in real-time
             liveUserTranscriptRef.current += text;
             onLiveUserChunk?.(liveUserTranscriptRef.current);
           },
@@ -479,14 +468,12 @@ export default function ChatArea({
             onLiveToolExecution?.(data);
           },
           onInterrupted: (turnData) => {
-            // User interrupted — finalize any in-progress assistant message
             if (liveAssistantTranscriptRef.current.trim()) {
               onLiveTurnComplete?.(turnData);
               liveAssistantTranscriptRef.current = "";
             }
           },
           onTurnComplete: (turnData) => {
-            // Model finished a turn — finalize messages and reset
             onLiveTurnComplete?.(turnData);
             liveUserTranscriptRef.current = "";
             liveAssistantTranscriptRef.current = "";
@@ -494,9 +481,9 @@ export default function ChatArea({
           onError: (msg) => {
             console.error("[LiveAPI] Error:", msg);
             setLiveMicActive(false);
+            reject(new Error(msg));
           },
           onClose: () => {
-            // Finalize any in-progress messages
             if (
               liveUserTranscriptRef.current.trim() ||
               liveAssistantTranscriptRef.current.trim()
@@ -510,14 +497,24 @@ export default function ChatArea({
           },
         },
       });
-    } else {
-      // Already connected, just toggle mic
-      try {
-        await session.startMicrophone();
-        setLiveMicActive(true);
-      } catch (err) {
-        console.error("[LiveMic] Failed to start mic:", err);
+    });
+  };
+
+  const handleLiveMicToggle = async () => {
+    if (liveMicActive) {
+      if (liveSessionRef.current) {
+        liveSessionRef.current.stopMicrophone();
       }
+      setLiveMicActive(false);
+      return;
+    }
+
+    try {
+      const session = await ensureLiveSession(["AUDIO"]);
+      await session.startMicrophone();
+      setLiveMicActive(true);
+    } catch (err) {
+      console.error("[LiveMic] Failed to start mic:", err);
     }
   };
 
@@ -618,7 +615,7 @@ export default function ChatArea({
     }
   }, [functionCallingEnabled, newChatKey]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (isGenerating) {
       onStop?.();
@@ -629,6 +626,30 @@ export default function ChatArea({
     } else {
       if (!input.trim() && pendingImages.length === 0) return;
     }
+
+    // ── Live model text input — route through WebSocket ────────
+    if (isLiveModel && input.trim()) {
+      const text = input.trim();
+      setInput("");
+      setPendingImages([]);
+
+      // Add user message immediately (typed text won't trigger
+      // inputTranscription from the API, so we inject it directly)
+      onLiveUserChunk?.(text, { isTyped: true });
+
+      try {
+        // Use TEXT modality for typed input so the response is text,
+        // unless the session is already connected (mic session = AUDIO)
+        const session = liveSessionRef.current?.connected
+          ? liveSessionRef.current
+          : await ensureLiveSession(["AUDIO"]);
+        session.sendText(text);
+      } catch (err) {
+        console.error("[LiveText] Failed to send text:", err);
+      }
+      return;
+    }
+
     onSend(input, pendingImages);
     setInput("");
     setPendingImages([]);
