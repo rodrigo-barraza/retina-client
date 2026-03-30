@@ -1,0 +1,45 @@
+/* ── Session ID cell ─────────────────────────────────── */
+.sessionIdCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sessionIcon {
+  flex-shrink: 0;
+  color: var(--accent-color);
+  opacity: 0.7;
+}
+
+.sessionIdText {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+}
+
+/* ── Inline stat cells ───────────────────────────────── */
+.countCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.countCell svg {
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.durationCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.durationCell svg {
+  opacity: 0.5;
+  flex-shrink: 0;
+}

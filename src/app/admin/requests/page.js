@@ -7,7 +7,6 @@ import HistoryItemComponent from "../../../components/HistoryItemComponent";
 import IrisService from "../../../services/IrisService";
 import {
   formatNumber,
-  formatCost,
   formatLatency,
   formatTokensPerSec,
   buildDateRangeParams,
@@ -27,6 +26,7 @@ import {
   FilterClearButton,
 } from "../../../components/FilterBarComponent";
 import BadgeComponent from "../../../components/BadgeComponent";
+import CostBadgeComponent from "../../../components/CostBadgeComponent";
 import ButtonComponent from "../../../components/ButtonComponent";
 import DetailDrawerComponent from "../../../components/DetailDrawerComponent";
 import MediaCardComponent from "../../../components/MediaCardComponent";
@@ -445,7 +445,7 @@ export default function RequestsPage() {
                     },
                     {
                       label: "Estimated Cost",
-                      value: formatCost(selectedRequest.estimatedCost),
+                      value: <CostBadgeComponent cost={selectedRequest.estimatedCost} />,
                     },
                     {
                       label: "Tokens/sec",

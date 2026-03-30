@@ -26,7 +26,6 @@ import {
   formatLatency,
   formatTokensPerSec,
   buildDateRangeParams,
-  formatDateTime,
 } from "../../utils/utilities";
 import StatsCard from "../../components/StatsCard";
 import DatePickerComponent from "../../components/DatePickerComponent";
@@ -35,11 +34,11 @@ import DistributionChartComponent from "../../components/DistributionChartCompon
 import ProportionBarComponent from "../../components/ProportionBarComponent";
 import SortableTableComponent from "../../components/SortableTableComponent";
 import ConversationsTableComponent from "../../components/ConversationsTableComponent";
+import SessionsTableComponent from "../../components/SessionsTableComponent";
 import ToolIconComponent from "../../components/ToolIconComponent";
-import CostBadgeComponent from "../../components/CostBadgeComponent";
 import ProvidersBadgeComponent from "../../components/ProvidersBadgeComponent";
-import ProjectBadgeComponent from "../../components/ProjectBadgeComponent";
-import UserBadgeComponent from "../../components/UserBadgeComponent";
+import CostBadgeComponent from "../../components/CostBadgeComponent";
+
 import SelectDropdown from "../../components/SelectDropdown";
 import { ErrorMessage } from "../../components/StateMessageComponent";
 import { useAdminHeader } from "../../components/AdminHeaderContext";
@@ -469,7 +468,7 @@ export default function DashboardPage() {
             align: "right",
             render: (p) => (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                {formatCost(p.totalCost)}
+                <CostBadgeComponent cost={p.totalCost} />
                 <ProportionBarComponent
                   value={p.totalCost}
                   total={totalProjectCost}
@@ -594,7 +593,7 @@ export default function DashboardPage() {
             label: "Cost",
             render: (p) => (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                {formatCost(p.totalCost)}
+                <CostBadgeComponent cost={p.totalCost} />
                 <ProportionBarComponent
                   value={p.totalCost}
                   total={totalProviderCost}
@@ -720,7 +719,7 @@ export default function DashboardPage() {
             align: "right",
             render: (m) => (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                {formatCost(m.totalCost)}
+                <CostBadgeComponent cost={m.totalCost} />
                 <ProportionBarComponent
                   value={m.totalCost}
                   total={totalModelCost}
@@ -781,7 +780,9 @@ export default function DashboardPage() {
       />
 
       {/* ── Recent Sessions ── */}
-      <SortableTableComponent
+      <SessionsTableComponent
+        sessions={recentSessions}
+        compact
         maxHeight={420}
         title={
           <span
@@ -798,90 +799,6 @@ export default function DashboardPage() {
             </Link>
           </span>
         }
-        columns={[
-          {
-            key: "id",
-            label: "Session",
-            render: (s) => (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <FolderOpen size={12} style={{ opacity: 0.5, flexShrink: 0 }} />
-                {s.id?.slice(0, 8) || "—"}
-              </span>
-            ),
-          },
-          {
-            key: "project",
-            label: "Project",
-            render: (s) => s.project
-              ? <ProjectBadgeComponent project={s.project} />
-              : <span style={{ color: "var(--text-muted)" }}>—</span>,
-          },
-          {
-            key: "username",
-            label: "User",
-            render: (s) => s.username
-              ? <UserBadgeComponent username={s.username} />
-              : <span style={{ color: "var(--text-muted)" }}>—</span>,
-          },
-          {
-            key: "conversationCount",
-            label: "Conversations",
-            align: "right",
-            render: (s) => (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                <MessageSquare size={11} style={{ opacity: 0.5 }} />
-                {s.conversationCount || 0}
-              </span>
-            ),
-          },
-          {
-            key: "requestCount",
-            label: "Requests",
-            align: "right",
-            render: (s) => formatNumber(s.requestCount || 0),
-          },
-          {
-            key: "totalInputTokens",
-            label: "Tokens In",
-            align: "right",
-            render: (s) => formatNumber(s.totalInputTokens || 0),
-          },
-          {
-            key: "totalOutputTokens",
-            label: "Tokens Out",
-            align: "right",
-            render: (s) => formatNumber(s.totalOutputTokens || 0),
-          },
-          {
-            key: "totalCost",
-            label: "Cost",
-            align: "right",
-            render: (s) => <CostBadgeComponent cost={s.totalCost} />,
-          },
-          {
-            key: "createdAt",
-            label: "Created",
-            align: "right",
-            render: (s) => formatDateTime(s.createdAt),
-          },
-          {
-            key: "duration",
-            label: "Duration",
-            align: "right",
-            render: (s) => {
-              if (!s.startedAt || !s.finishedAt) return "—";
-              const ms = new Date(s.finishedAt) - new Date(s.startedAt);
-              if (ms < 1000) return "<1s";
-              const secs = Math.round(ms / 1000);
-              if (secs < 60) return `${secs}s`;
-              const mins = Math.floor(secs / 60);
-              const rem = secs % 60;
-              return rem > 0 ? `${mins}m ${rem}s` : `${mins}m`;
-            },
-          },
-        ]}
-        data={recentSessions}
-        getRowKey={(s, i) => s.id || i}
         emptyText={loading ? "Loading..." : "No sessions yet"}
       />
 

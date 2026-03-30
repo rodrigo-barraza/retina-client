@@ -2,9 +2,9 @@ import ModalityIconComponent from "../../components/ModalityIconComponent";
 import ToolIconComponent from "../../components/ToolIconComponent";
 import ProvidersBadgeComponent from "../../components/ProvidersBadgeComponent";
 import BadgeComponent from "../../components/BadgeComponent";
+import CostBadgeComponent from "../../components/CostBadgeComponent";
 import {
   formatNumber,
-  formatCost,
   formatLatency,
   formatTokensPerSec,
   formatDateTime,
@@ -80,7 +80,7 @@ export const getRequestsColumns = () => [
   {
     key: "estimatedCost",
     label: "Cost",
-    render: (r) => formatCost(r.estimatedCost),
+    render: (r) => <CostBadgeComponent cost={r.estimatedCost} />,
     align: "right",
   },
   {

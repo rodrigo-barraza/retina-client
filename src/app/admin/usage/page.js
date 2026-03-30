@@ -22,6 +22,7 @@ import DatePickerComponent from "../../../components/DatePickerComponent";
 import PageHeaderComponent from "../../../components/PageHeaderComponent";
 import { ErrorMessage } from "../../../components/StateMessageComponent";
 import BadgeComponent from "../../../components/BadgeComponent";
+import CostBadgeComponent from "../../../components/CostBadgeComponent";
 import ProvidersBadgeComponent from "../../../components/ProvidersBadgeComponent";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
 import useProjectFilter from "../../../hooks/useProjectFilter";
@@ -35,11 +36,7 @@ const ENDPOINT_LABELS = {
 };
 
 // Shared column renderers
-const costRender = (row) => (
-  <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-    {formatCost(row.totalCost)}
-  </span>
-);
+const costRender = (row) => <CostBadgeComponent cost={row.totalCost} />;
 const tokensInRender = (row) => formatNumber(row.totalInputTokens);
 const tokensOutRender = (row) => formatNumber(row.totalOutputTokens);
 const requestsRender = (row) => formatNumber(row.totalRequests);
