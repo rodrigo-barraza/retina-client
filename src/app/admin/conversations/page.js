@@ -197,7 +197,9 @@ export default function ConversationsPage({ initialId = null }) {
   useEffect(() => {
     // Immediately clear stale data and reset tracking when filters change
     knownIdsRef.current = null;
-    autoSelectedRef.current = false;
+    // Only reset auto-select when there is no initialId — otherwise the
+    // deep-linked conversation would be overwritten by list[0].
+    if (!initialId) autoSelectedRef.current = false;
     lastFingerprintRef.current = "";
     setConversations([]);
     setFingerprint("");
