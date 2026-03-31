@@ -78,18 +78,6 @@
   white-space: nowrap;
 }
 
-.cost {
-  white-space: nowrap;
-  font-family: var(--font-mono, monospace);
-  font-size: 10px;
-  opacity: 0.8;
-
-  &::before {
-    content: "•";
-    margin-right: 6px;
-    opacity: 0.4;
-  }
-}
 
 .modelTag {
   display: inline-flex;

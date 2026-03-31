@@ -10,7 +10,7 @@ import IconButtonComponent from "./IconButtonComponent";
 import ModalityIconComponent from "./ModalityIconComponent";
 import { DateTime } from "luxon";
 import styles from "./HistoryItemComponent.module.css";
-import { formatCost } from "../utils/utilities";
+import CostBadgeComponent from "./CostBadgeComponent";
 
 /**
  * HistoryItemComponent — a single row within HistoryList or any list that
@@ -92,9 +92,7 @@ export default function HistoryItemComponent({
             </span>
           ))}
           <span className={styles.time}>{dt}</span>
-          {(item.totalCost || 0) > 0 && (
-            <span className={styles.cost}>{formatCost(item.totalCost)}</span>
-          )}
+          <CostBadgeComponent cost={item.totalCost} mini showIcon={false} />
         </div>
         {item.modelName && (
           <span className={styles.modelTag} title={item.modelName}>

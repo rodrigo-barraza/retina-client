@@ -18,7 +18,6 @@ import {
   MessageSquare,
   Layers,
   Zap,
-  Coins,
   Hash,
 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
@@ -27,6 +26,7 @@ import ToggleSwitch from "./ToggleSwitch";
 import ModalityIconComponent from "./ModalityIconComponent";
 import SystemPromptModal from "./SystemPromptModal";
 import styles from "./SettingsPanel.module.css";
+import CostBadgeComponent from "./CostBadgeComponent";
 import { formatCost } from "../utils/utilities";
 import {
   MODALITY_COLORS,
@@ -226,15 +226,10 @@ export default function SettingsPanel({
                   </span>
                 </>
               )}
-              {conversationStats.totalCost > 0 && (
-                <span className={`${styles.statBadge} ${styles.statBadgeCost}`}>
-                  <Coins size={11} />
-                  {formatCost(conversationStats.totalCost)}
-                  {conversationStats.originalTotalCost > 0 && conversationStats.originalTotalCost !== conversationStats.totalCost && (
-                    <span className={styles.statBadgeSub}>
-                      ({formatCost(conversationStats.originalTotalCost)} total)
-                    </span>
-                  )}
+              <CostBadgeComponent cost={conversationStats.totalCost} />
+              {conversationStats.originalTotalCost > 0 && conversationStats.originalTotalCost !== conversationStats.totalCost && (
+                <span className={`${styles.statBadge} ${styles.statBadgeSub}`}>
+                  ({formatCost(conversationStats.originalTotalCost)} total)
                 </span>
               )}
               {conversationStats.usedTools?.length > 0 &&

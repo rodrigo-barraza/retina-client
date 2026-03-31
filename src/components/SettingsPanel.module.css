@@ -63,15 +63,6 @@
   opacity: 0.6;
 }
 
-.statBadgeCost {
-  color: var(--accent-color);
-  background: var(--accent-glow);
-  border-color: color-mix(in srgb, var(--accent-color) 25%, transparent);
-}
-
-.statBadgeCost svg {
-  opacity: 0.9;
-}
 
 .statBadgeSub {
   font-size: 9px;
