@@ -114,11 +114,13 @@ export default function TextPageComponent({ mode = "user", dateRange: externalDa
 
   return (
     <>
-      <PageHeaderComponent
-        title="Text"
-        subtitle={`${total} messages across conversations`}
-      />
-      <div className={styles.page}>
+      {!isAdmin && (
+        <PageHeaderComponent
+          title="Text"
+          subtitle={`${total} messages across conversations`}
+        />
+      )}
+      <div className={isAdmin ? styles.adminPage : styles.page}>
         {/* Filters */}
         <FilterBarComponent>
           <SearchInputComponent

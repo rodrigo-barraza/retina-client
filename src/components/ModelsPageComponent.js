@@ -221,20 +221,33 @@ export default function ModelsPageComponent({ mode = "user", onCountChange }) {
 
   return (
     <>
-      <PageHeaderComponent
-        title="Models"
-        subtitle={`${allModels.length} models across ${providerSet.size} providers`}
-      >
-        <button
-          className={styles.refreshBtn}
-          onClick={handleRefresh}
-          disabled={loading}
+      {!isAdmin ? (
+        <PageHeaderComponent
+          title="Models"
+          subtitle={`${allModels.length} models across ${providerSet.size} providers`}
         >
-          <RefreshCw size={16} className={loading ? styles.spinning : ""} />
-          Refresh
-        </button>
-      </PageHeaderComponent>
-      <div className={styles.content}>
+          <button
+            className={styles.refreshBtn}
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            <RefreshCw size={16} className={loading ? styles.spinning : ""} />
+            Refresh
+          </button>
+        </PageHeaderComponent>
+      ) : (
+        <div className={styles.adminActions}>
+          <button
+            className={styles.refreshBtn}
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            <RefreshCw size={16} className={loading ? styles.spinning : ""} />
+            Refresh
+          </button>
+        </div>
+      )}
+      <div className={isAdmin ? styles.adminContent : styles.content}>
         <ErrorMessage message={error} />
 
         {toastElement}

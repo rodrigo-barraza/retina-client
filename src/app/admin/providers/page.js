@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import IrisService from "../../../services/IrisService";
 import SortableTableComponent from "../../../components/SortableTableComponent";
-import PageHeaderComponent from "../../../components/PageHeaderComponent";
+
 
 import SelectDropdown from "../../../components/SelectDropdown";
 import {
@@ -176,12 +176,6 @@ export default function ProvidersPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeaderComponent
-        title="Providers"
-        subtitle={`${providers.length} providers \u00B7 ${modelStats.length} models`}
-      />
-
-
 
       {loading && <LoadingMessage message="Loading provider data..." />}
 

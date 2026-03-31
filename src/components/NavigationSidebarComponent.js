@@ -9,7 +9,6 @@ import {
   MessageSquare,
   ArrowLeft,
   Server,
-  DollarSign,
   GitBranch,
   Sun,
   Moon,
@@ -65,7 +64,6 @@ const ADMIN_NAV_ITEMS = [
   { href: "/admin/providers", label: "Providers", icon: Layers },
   { href: "/admin/media", label: "Media", icon: ImageIcon },
   { href: "/admin/text", label: "Text", icon: Type },
-  { href: "/admin/usage", label: "Usage", icon: DollarSign },
   { href: "/admin/models", label: "Models", icon: Server },
 ];
 

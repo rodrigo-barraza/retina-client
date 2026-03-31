@@ -5,13 +5,12 @@
 /* ── Trigger button ── */
 
 .trigger {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
   height: var(--input-height);
   padding: 0 12px;
   font-size: 14px;
-  font-weight: 500;
   color: var(--text-primary);
   background: var(--select-bg);
   border: 1px solid var(--border-color);
@@ -27,19 +26,39 @@
   }
 }
 
-.triggerActive {
-  color: var(--accent-color);
-}
-
 .triggerOpen {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
+.triggerContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.triggerIcon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .triggerText {
-  max-width: 180px;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.chevron {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  margin-left: 4px;
+  transition: transform 0.2s;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
 }
 
 .triggerClear {

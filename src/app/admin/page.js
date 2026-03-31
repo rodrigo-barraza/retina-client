@@ -181,6 +181,7 @@ export default function DashboardPage() {
         tpsSum: 0,
         tpsCount: 0,
         modelCount: 0,
+        models: [],
         conversationCount: 0,
         workflowCount: 0,
         sessionCount: 0,
@@ -193,6 +194,7 @@ export default function DashboardPage() {
     p.totalCost += m.totalCost || 0;
     p.latencySum += (m.avgLatency || 0) * m.totalRequests;
     p.modelCount += 1;
+    if (m.model) p.models.push(m.model);
     p.conversationCount += m.conversationCount || 0;
     p.workflowCount += m.workflowCount || 0;
     p.sessionCount += m.sessionCount || 0;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { Calendar, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import styles from "./DatePickerComponent.module.css";
 
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -361,12 +361,14 @@ export default function DatePickerComponent({
       <button
         ref={triggerRef}
         type="button"
-        className={`${styles.trigger} ${hasValue ? styles.triggerActive : ""} ${open ? styles.triggerOpen : ""}`}
+        className={`${styles.trigger} ${open ? styles.triggerOpen : ""}`}
         onClick={() => setOpen((v) => !v)}
       >
-        <Calendar size={13} />
-        <span className={styles.triggerText}>{displayText || placeholder}</span>
-        {hasValue && (
+        <span className={styles.triggerContent}>
+          <span className={styles.triggerIcon}><Calendar size={13} /></span>
+          <span className={styles.triggerText}>{displayText || placeholder}</span>
+        </span>
+        {hasValue ? (
           <span
             className={styles.triggerClear}
             onClick={(e) => {
@@ -377,6 +379,11 @@ export default function DatePickerComponent({
           >
             <X size={12} />
           </span>
+        ) : (
+          <ChevronDown
+            size={14}
+            className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`}
+          />
         )}
       </button>
 

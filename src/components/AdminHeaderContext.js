@@ -37,10 +37,16 @@ export function AdminHeaderProvider({ children }) {
   // React re-renders this provider immediately (before rendering children) when
   // own state is set during render, so the new page never sees the old page's
   // controls or badge — eliminating the cross-page flicker entirely.
-  if (prevPathname !== pathname) {
+  // Compare only the top-level route segment so sub-route navigations
+  // (e.g. /admin/conversations → /admin/conversations/[id]) don't wipe the badge.
+  const routeSegment = pathname.replace("/admin", "").split("/").filter(Boolean)[0] || "";
+  const prevRouteSegment = prevPathname.replace("/admin", "").split("/").filter(Boolean)[0] || "";
+  if (prevRouteSegment !== routeSegment) {
     setPrevPathname(pathname);
     if (controls !== null) setControlsState(null);
     if (titleBadge !== null) setTitleBadgeState(null);
+  } else if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
   }
 
   // Persist to localStorage on change

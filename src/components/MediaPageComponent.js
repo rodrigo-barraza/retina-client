@@ -312,11 +312,13 @@ export default function MediaPageComponent({
 
   return (
     <>
-      <PageHeaderComponent
-        title="Media"
-        subtitle={`${total} files across conversations`}
-      />
-      <div className={styles.content}>
+      {!isAdmin && (
+        <PageHeaderComponent
+          title="Media"
+          subtitle={`${total} files across conversations`}
+        />
+      )}
+      <div className={isAdmin ? styles.adminContent : styles.content}>
         {/* Filters */}
         <FilterBarComponent>
           <SearchInputComponent

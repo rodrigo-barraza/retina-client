@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import SortableTableComponent from "./SortableTableComponent";
 import ProvidersBadgeComponent from "./ProvidersBadgeComponent";
+import ModelBadgeComponent from "./ModelBadgeComponent";
 import CountLinkComponent from "./CountLinkComponent";
 import CostBadgeComponent from "./CostBadgeComponent";
 import ProportionBarComponent from "./ProportionBarComponent";
@@ -80,7 +81,14 @@ export default function ProvidersTableComponent({
         />
       ),
     },
-    { key: "modelCount", label: "Models", align: "right" },
+    {
+      key: "modelCount",
+      label: "Models",
+      sortValue: (p) => (p.models?.length || p.modelCount || 0),
+      render: (p) => (
+        <ModelBadgeComponent models={p.models || []} />
+      ),
+    },
     {
       key: "totalInputTokens",
       label: "Tokens In",

@@ -3,6 +3,16 @@
   animation: fadeIn 0.3s ease-out;
 }
 
+.adminContent {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.adminActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
 .refreshBtn {
   display: flex;
   align-items: center;

@@ -3,6 +3,10 @@
   animation: fadeIn var(--transition-normal) ease-out;
 }
 
+.adminContent {
+  animation: fadeIn var(--transition-normal) ease-out;
+}
+
 .searchWrapper {
   flex: 1;
 }
