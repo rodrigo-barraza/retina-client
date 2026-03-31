@@ -39,13 +39,14 @@ import styles from "./page.module.css";
 
 const POLL_INTERVAL = 5000; // 5s
 
-export default function ConversationsPage({ initialId = null }) {
+export default function ConversationsPage({ initialId = null, sessionId = null }) {
   const { projectFilter, projectOptions, handleProjectChange } =
     useProjectFilter();
   const searchParams = useSearchParams();
   const providerFilter = searchParams.get("provider") || null;
   const modelFilter = searchParams.get("model") || null;
-  const { setControls, setTitleBadge, dateRange } = useAdminHeader();
+  const sessionParam = searchParams.get("session") || sessionId;
+  const { setControls, setTitleBadge, dateRange, sessionFilter, setSessionFilter } = useAdminHeader();
   const [conversations, setConversations] = useState([]);
 
   const [error, setError] = useState(null);
@@ -65,6 +66,20 @@ export default function ConversationsPage({ initialId = null }) {
   const autoSelectedRef = useRef(!!initialId);
   const viewerBodyRef = useRef(null);
   const intervalRef = useRef(null);
+
+  // Sync the session parameter into the admin header context
+  useEffect(() => {
+    if (sessionParam) {
+      setSessionFilter(sessionParam);
+    }
+    return () => {
+      // Only clear if we set it — avoid clearing on unmount when there's no session
+      if (sessionParam) setSessionFilter(null);
+    };
+  }, [sessionParam, setSessionFilter]);
+
+  // The active session filter (from URL param or context)
+  const activeSession = sessionParam || sessionFilter;
 
   useEffect(() => {
     IrisService.getConfig()
@@ -90,9 +105,14 @@ export default function ConversationsPage({ initialId = null }) {
         limit: 200,
         sort: "updatedAt",
         order: "desc",
-        ...buildDateRangeParams(dateRange),
       };
-      if (projectFilter) params.project = projectFilter;
+      // When filtering by session, skip date/project filters
+      if (activeSession) {
+        params.session = activeSession;
+      } else {
+        Object.assign(params, buildDateRangeParams(dateRange));
+        if (projectFilter) params.project = projectFilter;
+      }
       if (providerFilter) params.provider = providerFilter;
       if (modelFilter) params.model = modelFilter;
       const data = await IrisService.getConversations(params);
@@ -141,7 +161,7 @@ export default function ConversationsPage({ initialId = null }) {
     } catch (err) {
       setError(err.message);
     }
-  }, [projectFilter, providerFilter, modelFilter, dateRange]);
+  }, [projectFilter, providerFilter, modelFilter, dateRange, activeSession]);
 
   // Initial stats fetch + SSE subscription for real-time updates
   useEffect(() => {
@@ -238,6 +258,7 @@ export default function ConversationsPage({ initialId = null }) {
     setSelectedId(id);
     // Update URL for deep-linking (preserve all filter params)
     const params = new URLSearchParams();
+    if (activeSession) params.set("session", activeSession);
     if (projectFilter) params.set("project", projectFilter);
     if (providerFilter) params.set("provider", providerFilter);
     if (modelFilter) params.set("model", modelFilter);
@@ -308,6 +329,7 @@ export default function ConversationsPage({ initialId = null }) {
           options={projectOptions}
           onChange={handleProjectChange}
           placeholder="All Projects"
+          disabled={!!activeSession}
         />
         {generatingCount > 0 && (
           <span className={`${styles.statPill} ${styles.statPillGenerating}`}>
@@ -326,6 +348,7 @@ export default function ConversationsPage({ initialId = null }) {
     generatingCount,
     generatingDisplay,
     error,
+    activeSession,
   ]);
 
   // Cleanup on unmount

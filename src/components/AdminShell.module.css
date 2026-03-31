@@ -53,6 +53,54 @@
   flex-shrink: 0;
 }
 
+/* ── Session filter badge ── */
+.sessionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: var(--input-height);
+  background: var(--accent-subtle);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: var(--border-radius-sm);
+  color: var(--accent-color);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: rgba(99, 102, 241, 0.35);
+  }
+}
+
+.sessionBadgeLabel {
+  font-weight: 500;
+  opacity: 0.7;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.sessionBadgeId {
+  font-family: var(--font-mono, "SF Mono", "Fira Code", monospace);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sessionBadgeX {
+  opacity: 0.5;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.sessionBadge:hover .sessionBadgeX {
+  opacity: 1;
+}
+
 .themeToggle {
   display: flex;
   align-items: center;

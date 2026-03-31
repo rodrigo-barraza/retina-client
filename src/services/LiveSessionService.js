@@ -7,7 +7,7 @@
 
 import { PRISM_WS_URL } from "../../config.js";
 
-const LIVE_WS_URL = `${PRISM_WS_URL}/ws/live?project=retina&username=default`;
+const LIVE_WS_URL = `${PRISM_WS_URL}/ws/live?project=retina`;
 
 /**
  * Singleton-like service for managing a Live API WebSocket session.

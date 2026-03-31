@@ -47,10 +47,17 @@ const SESSION_COLUMNS = [
     label: "Session",
     sortable: false,
     render: (s) => (
-      <span className={styles.sessionIdCell}>
+      <a
+        href={`/admin/conversations?session=${s.id}`}
+        className={styles.sessionIdCell}
+        title={`View conversations for session ${s.id}`}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+      >
         <FolderOpen size={12} className={styles.sessionIcon} />
         <span className={styles.sessionIdText}>{s.id.slice(0, 8)}</span>
-      </span>
+      </a>
     ),
   },
   {
@@ -236,6 +243,7 @@ export default function SessionsTableComponent({
         <ConversationsTableComponent
           conversations={session.conversations || []}
           emptyText="No conversations linked"
+          sessionId={session.id}
           compact
           mini
         />

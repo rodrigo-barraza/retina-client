@@ -184,6 +184,7 @@ export default function DatePickerComponent({
   onChange,
   placeholder = "All time",
   storageKey = "",
+  disabled = false,
 }) {
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => {
@@ -361,8 +362,9 @@ export default function DatePickerComponent({
       <button
         ref={triggerRef}
         type="button"
-        className={`${styles.trigger} ${open ? styles.triggerOpen : ""}`}
-        onClick={() => setOpen((v) => !v)}
+        className={`${styles.trigger} ${open ? styles.triggerOpen : ""} ${disabled ? styles.triggerDisabled : ""}`}
+        onClick={() => !disabled && setOpen((v) => !v)}
+        disabled={disabled}
       >
         <span className={styles.triggerContent}>
           <span className={styles.triggerIcon}><Calendar size={13} /></span>

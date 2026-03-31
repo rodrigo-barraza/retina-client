@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { X } from "lucide-react";
 import IrisService from "../services/IrisService";
 
 import NavigationSidebarComponent from "./NavigationSidebarComponent";
@@ -14,6 +15,7 @@ function AdminShellInner({ children }) {
   const [generatingCount, setGeneratingCount] = useState(0);
   const [systemStatus, setSystemStatus] = useState("connected");
   const pathname = usePathname();
+  const router = useRouter();
 
   // Track conversations by ID → messageCount to detect both new convos and updates
   const knownConvsRef = useRef(null); // null = not initialized
@@ -101,7 +103,14 @@ function AdminShellInner({ children }) {
     }
   }, []);
 
-  const { controls, titleBadge, dateRange, setDateRange } = useAdminHeader();
+  const { controls, titleBadge, dateRange, setDateRange, sessionFilter, setSessionFilter } = useAdminHeader();
+
+  const hasSessionFilter = !!sessionFilter;
+
+  const handleClearSession = useCallback(() => {
+    setSessionFilter(null);
+    router.push("/admin/conversations");
+  }, [setSessionFilter, router]);
 
   // Derive page title from pathname (first segment only)
   const pageTitle = (() => {
@@ -128,11 +137,26 @@ function AdminShellInner({ children }) {
               <span className={styles.titleCount}>: {titleBadge}</span>
             )}
           </h1>
+          {hasSessionFilter && (
+            <button
+              type="button"
+              className={styles.sessionBadge}
+              onClick={handleClearSession}
+              title="Clear session filter and show all conversations"
+            >
+              <span className={styles.sessionBadgeLabel}>Session</span>
+              <span className={styles.sessionBadgeId}>
+                {sessionFilter.slice(0, 8)}
+              </span>
+              <X size={12} className={styles.sessionBadgeX} />
+            </button>
+          )}
           <div className={styles.headerDatePicker}>
             <DatePickerComponent
               from={dateRange.from}
               to={dateRange.to}
               onChange={setDateRange}
+              disabled={hasSessionFilter}
             />
           </div>
           {controls && <div className={styles.headerControls}>{controls}</div>}

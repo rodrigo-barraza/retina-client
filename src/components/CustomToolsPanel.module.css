@@ -564,14 +564,52 @@
 .paramsSectionHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 6px;
 
   & label {
     font-size: 11px;
     font-weight: 600;
     color: var(--text-secondary);
     letter-spacing: 0.02em;
+    margin-right: auto;
   }
+}
+
+/* ── Mode Toggle (Manual / JSON) ──────────────────────────── */
+
+.paramsModeToggle {
+  display: flex;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+.modeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:not(:last-child) {
+    border-right: 1px solid var(--border-color);
+  }
+
+  &:hover:not(.modeBtnActive) {
+    color: var(--text-secondary);
+    background: color-mix(in srgb, var(--bg-card) 60%, transparent);
+  }
+}
+
+.modeBtnActive {
+  color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 10%, transparent);
 }
 
 .addParamBtn {
@@ -598,6 +636,107 @@
   color: var(--text-tertiary);
   font-style: italic;
   padding: 8px 0;
+}
+
+/* ── JSON Import Section ──────────────────────────────────── */
+
+.jsonImportSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: slideDown 0.18s ease;
+}
+
+.jsonImportHint {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  line-height: 1.45;
+  padding: 0 2px;
+}
+
+.jsonTextarea {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.55;
+  min-height: 140px;
+  resize: vertical;
+  tab-size: 2;
+  white-space: pre;
+}
+
+.jsonActions {
+  display: flex;
+  gap: 6px;
+}
+
+.jsonParseBtn,
+.jsonUploadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.jsonParseBtn {
+  color: #fff;
+  background: var(--accent-color);
+
+  &:hover:not(:disabled) {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px var(--accent-glow);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.jsonUploadBtn {
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: color-mix(in srgb, var(--accent-color) 40%, var(--border-color));
+    background: color-mix(in srgb, var(--accent-color) 5%, var(--bg-card));
+  }
+}
+
+.jsonFeedback {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: 11px;
+  line-height: 1.4;
+  animation: slideDown 0.15s ease;
+
+  & > svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+}
+
+.jsonFeedback[data-type="error"] {
+  color: #ef4444;
+  background: color-mix(in srgb, #ef4444 8%, transparent);
+  border: 1px solid color-mix(in srgb, #ef4444 20%, transparent);
+}
+
+.jsonFeedback[data-type="success"] {
+  color: #22c55e;
+  background: color-mix(in srgb, #22c55e 8%, transparent);
+  border: 1px solid color-mix(in srgb, #22c55e 20%, transparent);
 }
 
 .paramCard {

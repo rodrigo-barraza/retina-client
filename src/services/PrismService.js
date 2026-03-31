@@ -8,7 +8,6 @@ function getHeaders() {
   return {
     "Content-Type": "application/json",
     "x-project": "retina",
-    "x-username": "default",
   };
 }
 

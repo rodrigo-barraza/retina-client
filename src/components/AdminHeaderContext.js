@@ -11,6 +11,8 @@ const AdminHeaderContext = createContext({
   setTitleBadge: () => {},
   dateRange: { from: "", to: "" },
   setDateRange: () => {},
+  sessionFilter: null,
+  setSessionFilter: () => {},
 });
 
 export function AdminHeaderProvider({ children }) {
@@ -18,6 +20,7 @@ export function AdminHeaderProvider({ children }) {
   const [controls, setControlsState] = useState(null);
   const [titleBadge, setTitleBadgeState] = useState(null);
   const [dateRange, setDateRangeState] = useState({ from: "", to: "" });
+  const [sessionFilter, setSessionFilterState] = useState(null);
 
   // Hydrate dateRange from localStorage after mount to avoid SSR mismatch
   useEffect(() => {
@@ -45,6 +48,7 @@ export function AdminHeaderProvider({ children }) {
     setPrevPathname(pathname);
     if (controls !== null) setControlsState(null);
     if (titleBadge !== null) setTitleBadgeState(null);
+    if (sessionFilter !== null) setSessionFilterState(null);
   } else if (prevPathname !== pathname) {
     setPrevPathname(pathname);
   }
@@ -74,8 +78,12 @@ export function AdminHeaderProvider({ children }) {
     setDateRangeState(val);
   }, []);
 
+  const setSessionFilter = useCallback((val) => {
+    setSessionFilterState(val);
+  }, []);
+
   return (
-    <AdminHeaderContext.Provider value={{ controls, setControls, titleBadge, setTitleBadge, dateRange, setDateRange }}>
+    <AdminHeaderContext.Provider value={{ controls, setControls, titleBadge, setTitleBadge, dateRange, setDateRange, sessionFilter, setSessionFilter }}>
       {children}
     </AdminHeaderContext.Provider>
   );

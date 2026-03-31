@@ -52,6 +52,12 @@
   box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
+.triggerDisabled {
+  opacity: 0.35;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
 .triggerContent {
   display: flex;
   align-items: center;

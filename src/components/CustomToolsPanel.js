@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import {
   Plus,
   Trash2,
   Edit3,
   Save,
   X,
+  Upload,
+  FileText,
+  AlertCircle,
+  CheckCircle,
   ChevronDown,
   ChevronRight,
   Globe,
@@ -139,12 +143,21 @@ export default function CustomToolsPanel({
   const [searchQuery, setSearchQuery] = useState("");
   const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
   const [collapsedDomains, setCollapsedDomains] = useState(new Set());
+  const [inputMode, setInputMode] = useState("manual"); // "manual" | "json"
+  const [jsonText, setJsonText] = useState("");
+  const [jsonError, setJsonError] = useState(null);
+  const [jsonSuccess, setJsonSuccess] = useState(null);
+  const fileInputRef = useRef(null);
 
   // ── CRUD ─────────────────────────────────────────────────────
 
   const handleCreate = useCallback(() => {
     setEditingTool({ ...EMPTY_TOOL, parameters: [] });
     setIsNew(true);
+    setInputMode("manual");
+    setJsonText("");
+    setJsonError(null);
+    setJsonSuccess(null);
   }, []);
 
   const handleEdit = useCallback((tool) => {
@@ -156,11 +169,19 @@ export default function CustomToolsPanel({
       })),
     });
     setIsNew(false);
+    setInputMode("manual");
+    setJsonText("");
+    setJsonError(null);
+    setJsonSuccess(null);
   }, []);
 
   const handleCancel = useCallback(() => {
     setEditingTool(null);
     setIsNew(false);
+    setInputMode("manual");
+    setJsonText("");
+    setJsonError(null);
+    setJsonSuccess(null);
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -262,6 +283,114 @@ export default function CustomToolsPanel({
       parameters: t.parameters.filter((_, i) => i !== index),
     }));
   }, []);
+
+  // ── JSON import ──────────────────────────────────────────────
+
+  /**
+   * Parse a pasted/uploaded JSON in any of these OpenAI-compatible shapes:
+   *  1. Full tool definition:  { type: "function", function: { name, description, parameters } }
+   *  2. Function wrapper:      { name, description, parameters: { type: "object", properties } }
+   *  3. Raw parameters object: { type: "object", properties: { ... } }
+   *  4. Array of tools:        [ { type: "function", function: ... }, ... ]  (uses first)
+   */
+  const parseJsonDefinition = useCallback(
+    (raw) => {
+      setJsonError(null);
+      setJsonSuccess(null);
+
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        setJsonError("Invalid JSON — check syntax");
+        return;
+      }
+
+      // Unwrap array → first element
+      if (Array.isArray(parsed)) {
+        if (parsed.length === 0) {
+          setJsonError("Empty array — provide at least one tool definition");
+          return;
+        }
+        parsed = parsed[0];
+      }
+
+      let name = "";
+      let description = "";
+      let parametersObj = null;
+
+      // Shape 1: { type: "function", function: { ... } }
+      if (parsed.type === "function" && parsed.function) {
+        const fn = parsed.function;
+        name = fn.name || "";
+        description = fn.description || "";
+        parametersObj = fn.parameters || null;
+      }
+      // Shape 2: { name, parameters: { type: "object", properties } }
+      else if (parsed.name && parsed.parameters?.properties) {
+        name = parsed.name;
+        description = parsed.description || "";
+        parametersObj = parsed.parameters;
+      }
+      // Shape 3: Raw parameters { type: "object", properties }
+      else if (parsed.type === "object" && parsed.properties) {
+        parametersObj = parsed;
+      } else {
+        setJsonError(
+          'Unrecognized shape — expected an OpenAI tool definition, a {name, parameters} object, or a raw {type:"object", properties} schema',
+        );
+        return;
+      }
+
+      // Convert parametersObj → flat parameter list
+      const params = [];
+      if (parametersObj?.properties) {
+        const required = parametersObj.required || [];
+        for (const [pName, schema] of Object.entries(
+          parametersObj.properties,
+        )) {
+          params.push({
+            name: pName,
+            type: schema.type || "string",
+            description: schema.description || "",
+            required: required.includes(pName),
+            enum: Array.isArray(schema.enum) ? schema.enum.join(", ") : "",
+          });
+        }
+      }
+
+      setEditingTool((t) => ({
+        ...t,
+        ...(name ? { name: name.replace(/[^a-zA-Z0-9_]/g, "_").toLowerCase() } : {}),
+        ...(description ? { description } : {}),
+        parameters: params,
+      }));
+
+      const parts = [];
+      if (name) parts.push("name");
+      if (description) parts.push("description");
+      parts.push(`${params.length} parameter${params.length !== 1 ? "s" : ""}`);
+      setJsonSuccess(`Imported ${parts.join(", ")}`);
+    },
+    [],
+  );
+
+  const handleJsonFileUpload = useCallback(
+    (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target.result;
+        setJsonText(text);
+        parseJsonDefinition(text);
+      };
+      reader.readAsText(file);
+      // Reset so re-uploading the same file triggers onChange
+      e.target.value = "";
+    },
+    [parseJsonDefinition],
+  );
 
   // ── Tool list ────────────────────────────────────────────────
 
@@ -472,102 +601,181 @@ export default function CustomToolsPanel({
           <div className={styles.paramsSection}>
             <div className={styles.paramsSectionHeader}>
               <label>Parameters</label>
-              <button className={styles.addParamBtn} onClick={addParameter}>
-                <Plus size={12} /> Add
-              </button>
+              <div className={styles.paramsModeToggle}>
+                <button
+                  className={`${styles.modeBtn} ${inputMode === "manual" ? styles.modeBtnActive : ""}`}
+                  onClick={() => setInputMode("manual")}
+                >
+                  Manual
+                </button>
+                <button
+                  className={`${styles.modeBtn} ${inputMode === "json" ? styles.modeBtnActive : ""}`}
+                  onClick={() => setInputMode("json")}
+                >
+                  <FileText size={10} />
+                  JSON
+                </button>
+              </div>
+              {inputMode === "manual" && (
+                <button className={styles.addParamBtn} onClick={addParameter}>
+                  <Plus size={12} /> Add
+                </button>
+              )}
             </div>
 
-            {editingTool.parameters.length === 0 && (
-              <div className={styles.paramsEmpty}>
-                No parameters — tool will be called without arguments.
-              </div>
+            {inputMode === "manual" && (
+              <>
+                {editingTool.parameters.length === 0 && (
+                  <div className={styles.paramsEmpty}>
+                    No parameters — tool will be called without arguments.
+                  </div>
+                )}
+
+                {editingTool.parameters.map((param, i) => (
+                  <div key={i} className={styles.paramCard}>
+                    <div className={styles.paramCardHeader}>
+                      <span className={styles.paramIndex}>#{i + 1}</span>
+                      <button
+                        className={styles.paramRemoveBtn}
+                        onClick={() => removeParameter(i)}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+
+                    <div className={styles.paramFields}>
+                      <div className={styles.paramRow}>
+                        <div className={styles.paramField}>
+                          <label>Name</label>
+                          <input
+                            type="text"
+                            className={styles.inputSmall}
+                            value={param.name}
+                            onChange={(e) =>
+                              updateParameter(i, "name", e.target.value)
+                            }
+                            placeholder="symbol"
+                          />
+                        </div>
+                        <div className={styles.paramField} style={{ width: 100 }}>
+                          <label>Type</label>
+                          <select
+                            className={styles.selectSmall}
+                            value={param.type}
+                            onChange={(e) =>
+                              updateParameter(i, "type", e.target.value)
+                            }
+                          >
+                            {PARAM_TYPES.map((t) => (
+                              <option key={t.value} value={t.value}>
+                                {t.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className={styles.paramFieldToggle}>
+                          <label>Req</label>
+                          <ToggleSwitchComponent
+                            checked={param.required}
+                            onChange={(v) => updateParameter(i, "required", v)}
+                            size="small"
+                          />
+                        </div>
+                      </div>
+
+                      <div className={styles.paramField}>
+                        <label>Description</label>
+                        <input
+                          type="text"
+                          className={styles.inputSmall}
+                          value={param.description}
+                          onChange={(e) =>
+                            updateParameter(i, "description", e.target.value)
+                          }
+                          placeholder="Stock ticker symbol (e.g. AAPL)"
+                        />
+                      </div>
+
+                      <div className={styles.paramField}>
+                        <label>
+                          Enum values{" "}
+                          <span className={styles.optional}>
+                            (comma-separated, optional)
+                          </span>
+                        </label>
+                        <input
+                          type="text"
+                          className={styles.inputSmall}
+                          value={param.enum}
+                          onChange={(e) =>
+                            updateParameter(i, "enum", e.target.value)
+                          }
+                          placeholder="1d, 5d, 1m, 3m, 1y"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
             )}
 
-            {editingTool.parameters.map((param, i) => (
-              <div key={i} className={styles.paramCard}>
-                <div className={styles.paramCardHeader}>
-                  <span className={styles.paramIndex}>#{i + 1}</span>
+            {inputMode === "json" && (
+              <div className={styles.jsonImportSection}>
+                <div className={styles.jsonImportHint}>
+                  Paste an OpenAI-style tool definition, a function schema, or
+                  a raw parameters object. Name, description, and parameters
+                  will be auto-populated.
+                </div>
+                <textarea
+                  className={`${styles.textarea} ${styles.jsonTextarea}`}
+                  value={jsonText}
+                  onChange={(e) => {
+                    setJsonText(e.target.value);
+                    setJsonError(null);
+                    setJsonSuccess(null);
+                  }}
+                  placeholder={`{\n  "type": "function",\n  "function": {\n    "name": "get_weather",\n    "description": "Get current weather",\n    "parameters": {\n      "type": "object",\n      "properties": {\n        "location": {\n          "type": "string",\n          "description": "City name"\n        }\n      },\n      "required": ["location"]\n    }\n  }\n}`}
+                  rows={10}
+                  spellCheck={false}
+                />
+                <div className={styles.jsonActions}>
                   <button
-                    className={styles.paramRemoveBtn}
-                    onClick={() => removeParameter(i)}
+                    className={styles.jsonParseBtn}
+                    onClick={() => parseJsonDefinition(jsonText)}
+                    disabled={!jsonText.trim()}
                   >
-                    <Trash2 size={12} />
+                    <CheckCircle size={12} />
+                    Apply JSON
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json,application/json"
+                    style={{ display: "none" }}
+                    onChange={handleJsonFileUpload}
+                  />
+                  <button
+                    className={styles.jsonUploadBtn}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload size={12} />
+                    Upload .json
                   </button>
                 </div>
-
-                <div className={styles.paramFields}>
-                  <div className={styles.paramRow}>
-                    <div className={styles.paramField}>
-                      <label>Name</label>
-                      <input
-                        type="text"
-                        className={styles.inputSmall}
-                        value={param.name}
-                        onChange={(e) =>
-                          updateParameter(i, "name", e.target.value)
-                        }
-                        placeholder="symbol"
-                      />
-                    </div>
-                    <div className={styles.paramField} style={{ width: 100 }}>
-                      <label>Type</label>
-                      <select
-                        className={styles.selectSmall}
-                        value={param.type}
-                        onChange={(e) =>
-                          updateParameter(i, "type", e.target.value)
-                        }
-                      >
-                        {PARAM_TYPES.map((t) => (
-                          <option key={t.value} value={t.value}>
-                            {t.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className={styles.paramFieldToggle}>
-                      <label>Req</label>
-                      <ToggleSwitchComponent
-                        checked={param.required}
-                        onChange={(v) => updateParameter(i, "required", v)}
-                        size="small"
-                      />
-                    </div>
+                {jsonError && (
+                  <div className={styles.jsonFeedback} data-type="error">
+                    <AlertCircle size={12} />
+                    {jsonError}
                   </div>
-
-                  <div className={styles.paramField}>
-                    <label>Description</label>
-                    <input
-                      type="text"
-                      className={styles.inputSmall}
-                      value={param.description}
-                      onChange={(e) =>
-                        updateParameter(i, "description", e.target.value)
-                      }
-                      placeholder="Stock ticker symbol (e.g. AAPL)"
-                    />
+                )}
+                {jsonSuccess && (
+                  <div className={styles.jsonFeedback} data-type="success">
+                    <CheckCircle size={12} />
+                    {jsonSuccess}
                   </div>
-
-                  <div className={styles.paramField}>
-                    <label>
-                      Enum values{" "}
-                      <span className={styles.optional}>
-                        (comma-separated, optional)
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      className={styles.inputSmall}
-                      value={param.enum}
-                      onChange={(e) =>
-                        updateParameter(i, "enum", e.target.value)
-                      }
-                      placeholder="1d, 5d, 1m, 3m, 1y"
-                    />
-                  </div>
-                </div>
+                )}
               </div>
-            ))}
+            )}
           </div>
 
           <button

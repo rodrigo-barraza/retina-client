@@ -16,6 +16,7 @@ export default function SelectDropdown({
   onChange,
   placeholder = "Select...",
   icon = null,
+  disabled = false,
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
@@ -67,8 +68,9 @@ export default function SelectDropdown({
       </div>
       <button
         type="button"
-        className={`${styles.trigger} ${open ? styles.triggerOpen : ""}`}
-        onClick={() => setOpen((prev) => !prev)}
+        className={`${styles.trigger} ${open ? styles.triggerOpen : ""} ${disabled ? styles.triggerDisabled : ""}`}
+        onClick={() => !disabled && setOpen((prev) => !prev)}
+        disabled={disabled}
       >
         <span className={styles.triggerContent}>
           {icon && <span className={styles.triggerIcon}>{icon}</span>}

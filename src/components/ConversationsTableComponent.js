@@ -216,6 +216,7 @@ export default function ConversationsTableComponent({
   mini = false,
   maxHeight,
   title,
+  sessionId = null,
 }) {
   const router = useRouter();
   const columns = buildColumns(mini);
@@ -228,7 +229,10 @@ export default function ConversationsTableComponent({
       sortDir={sortDir}
       onSort={onSort}
       getRowKey={(c) => c.id || c._id}
-      onRowClick={(c) => router.push(`/admin/conversations/${c.id}`)}
+      onRowClick={(c) => {
+        const sessionQs = sessionId ? `?session=${sessionId}` : "";
+        router.push(`/admin/conversations/${c.id}${sessionQs}`);
+      }}
       emptyText={emptyText}
       maxHeight={maxHeight || (compact ? "300px" : undefined)}
       mini={mini}

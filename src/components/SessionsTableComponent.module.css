@@ -3,6 +3,17 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  &:hover .sessionIdText {
+    color: var(--accent-color);
+  }
 }
 
 .sessionIcon {
