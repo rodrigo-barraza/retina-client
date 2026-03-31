@@ -73,6 +73,7 @@ function mergeByModality(rows) {
 export default function UsagePage() {
   const { projectFilter, projectOptions, handleProjectChange } =
     useProjectFilter();
+  const { setControls, dateRange } = useAdminHeader();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -98,7 +99,7 @@ export default function UsagePage() {
     loadCosts();
   }, [loadCosts]);
 
-  const { setControls, dateRange } = useAdminHeader();
+
 
   useEffect(() => {
     setControls(

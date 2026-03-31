@@ -36,6 +36,7 @@ const PROVIDER_COLORS = [
 export default function ProvidersPage() {
   const { projectFilter, projectOptions, handleProjectChange } =
     useProjectFilter();
+  const { setControls, dateRange } = useAdminHeader();
   const [modelStats, setModelStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -141,7 +142,7 @@ export default function ProvidersPage() {
     [],
   );
 
-  const { setControls, dateRange } = useAdminHeader();
+
 
   useEffect(() => {
     setControls(

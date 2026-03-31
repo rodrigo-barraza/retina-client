@@ -94,6 +94,7 @@ export default function RequestsPage() {
   const router = useRouter();
   const { projectFilter, projectOptions, handleProjectChange } =
     useProjectFilter();
+  const { setControls, dateRange } = useAdminHeader();
   const [requests, setRequests] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -217,7 +218,7 @@ export default function RequestsPage() {
 
   const totalPages = Math.ceil(total / LIMIT);
 
-  const { setControls, dateRange } = useAdminHeader();
+
 
   // Inject controls into AdminShell header
   useEffect(() => {
