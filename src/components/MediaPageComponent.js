@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Image as ImageIcon,
   Music,
@@ -54,25 +54,6 @@ const TYPE_FILTERS = [
   { key: "pdf", label: "PDF", icon: FileText, color: MODALITY_COLORS.pdf },
 ];
 
-/** Map model name prefixes → provider keys for models stored without a provider/ prefix */
-const MODEL_PREFIX_TO_PROVIDER = [
-  ["gemini", "google"],
-  ["gpt", "openai"],
-  ["dall-e", "openai"],
-  ["claude", "anthropic"],
-  ["inworld", "inworld"],
-  ["eleven", "elevenlabs"],
-];
-
-function getProviderFromModel(modelName) {
-  if (!modelName) return null;
-  if (modelName.includes("/")) return modelName.split("/")[0];
-  const lower = modelName.toLowerCase();
-  for (const [prefix, provider] of MODEL_PREFIX_TO_PROVIDER) {
-    if (lower.startsWith(prefix)) return provider;
-  }
-  return null;
-}
 
 function resolveUrl(url) {
   if (!url || typeof url !== "string") return null;
@@ -129,22 +110,8 @@ export default function MediaPageComponent({
   const [username, setUsername] = useState("");
   const [provider, setProvider] = useState("");
   const [model, setModel] = useState("");
+  const [providers, setProviders] = useState([]);
   const [models, setModels] = useState([]);
-
-  // Derive unique providers from the models list using prefix mapping
-  const derivedProviders = useMemo(() => {
-    const providerSet = new Set();
-    for (const m of models) {
-      const p = getProviderFromModel(m);
-      if (p) providerSet.add(p);
-    }
-    const labelOrder = Object.keys(PROVIDER_LABELS);
-    return [...providerSet].sort((a, b) => {
-      const ai = labelOrder.indexOf(a);
-      const bi = labelOrder.indexOf(b);
-      return (ai === -1 ? Infinity : ai) - (bi === -1 ? Infinity : bi);
-    });
-  }, [models]);
   const [viewMode, setViewMode] = useState("grid");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -177,6 +144,7 @@ export default function MediaPageComponent({
       setTotal(result.total || 0);
       if (result.projects) setProjects(result.projects);
       if (result.usernames) setUsernames(result.usernames);
+      if (result.providers) setProviders(result.providers);
       if (result.models) setModels(result.models);
     } catch (err) {
       console.error("Failed to load media:", err);
@@ -397,11 +365,11 @@ export default function MediaPageComponent({
                   setPage(1);
                 },
               },
-              ...(derivedProviders.length >= 2
+              ...(providers.length >= 2
                 ? [
                     {
                       label: "Providers",
-                      items: derivedProviders.map((p) => ({
+                      items: providers.map((p) => ({
                         key: p,
                         icon: () => <ProviderLogo provider={p} size={13} />,
                         title: PROVIDER_LABELS[p] || p,
@@ -420,13 +388,10 @@ export default function MediaPageComponent({
                 ? [
                     {
                       label: "Models",
-                      items: (provider
-                        ? models.filter((m) => getProviderFromModel(m) === provider)
-                        : models
-                      ).map((m) => ({
+                      items: models.map((m) => ({
                         key: m,
                         icon: Bot,
-                        title: m.includes("/") ? m.split("/").pop() : m,
+                        title: m,
                       })),
                       activeKeys: model || null,
                       isSingleSelect: true,
