@@ -45,7 +45,6 @@ const USER_NAV_ITEMS = [
     exact: true,
     alsoMatches: ["/conversations"],
   },
-  { href: "/workflows", label: "Workflows", icon: Workflow },
   { href: "/models", label: "Models", icon: Server },
   { href: "/media", label: "Media", icon: ImageIcon },
   { href: "/text", label: "Text", icon: Type },
@@ -53,6 +52,7 @@ const USER_NAV_ITEMS = [
 
 const USER_EXPERIMENT_ITEMS = [
   { href: "/synthesis", label: "Synthesis", icon: FlaskConical },
+  { href: "/workflows", label: "Workflows", icon: Workflow },
 ];
 
 const ADMIN_NAV_ITEMS = [
@@ -65,11 +65,15 @@ const ADMIN_NAV_ITEMS = [
     showBadge: true,
   },
   { href: "/admin/sessions", label: "Sessions", icon: FolderOpen },
-  { href: "/admin/workflows", label: "Workflows", icon: GitBranch },
   { href: "/admin/providers", label: "Providers", icon: Layers },
   { href: "/admin/media", label: "Media", icon: ImageIcon },
   { href: "/admin/text", label: "Text", icon: Type },
   { href: "/admin/models", label: "Models", icon: Server },
+];
+
+const ADMIN_EXPERIMENT_ITEMS = [
+  { href: "/admin/synthesis", label: "Synthesis", icon: FlaskConical },
+  { href: "/admin/workflows", label: "Workflows", icon: GitBranch },
 ];
 
 export default function NavigationSidebarComponent({
@@ -106,6 +110,7 @@ export default function NavigationSidebarComponent({
   }, []);
 
   const navItems = mode === "admin" ? ADMIN_NAV_ITEMS : USER_NAV_ITEMS;
+  const experimentItems = mode === "admin" ? ADMIN_EXPERIMENT_ITEMS : USER_EXPERIMENT_ITEMS;
   const isAdmin = mode === "admin";
 
   /* ── Mobile: render floating hamburger + compact popover menu ── */
@@ -178,13 +183,13 @@ export default function NavigationSidebarComponent({
                   );
                 })}
 
-                {/* Experiments divider (mobile — user mode only) */}
-                {!isAdmin && USER_EXPERIMENT_ITEMS.length > 0 && (
+                {/* Experiments divider (mobile) */}
+                {experimentItems.length > 0 && (
                   <>
                     <div className={styles.navDivider}>
                       <span>Experiments</span>
                     </div>
-                    {USER_EXPERIMENT_ITEMS.map((item) => {
+                    {experimentItems.map((item) => {
                       const Icon = item.icon;
                       const isActive = pathname.startsWith(item.href);
                       return (
@@ -308,13 +313,13 @@ export default function NavigationSidebarComponent({
             );
           })}
 
-          {/* Experiments divider (desktop — user mode only) */}
-          {!isAdmin && USER_EXPERIMENT_ITEMS.length > 0 && (
+          {/* Experiments divider (desktop) */}
+          {experimentItems.length > 0 && (
             <>
               <div className={styles.navDivider}>
                 <span>Experiments</span>
               </div>
-              {USER_EXPERIMENT_ITEMS.map((item) => {
+              {experimentItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname.startsWith(item.href);
                 return (

@@ -19,7 +19,7 @@
 
 /* ── Full-width header ─────────────────────────────── */
 
-.glassHeader {
+.pageHeader {
   height: 60px;
   min-height: 60px;
   display: flex;
@@ -289,7 +289,7 @@
   }
 
   /* Ensure header stays above sidebar overlays */
-  .glassHeader {
+  .pageHeader {
     position: relative;
     z-index: 201;
   }

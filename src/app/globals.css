@@ -173,7 +173,7 @@ select option {
 }
 
 /* Utils */
-.glass-panel {
+.frosted-panel {
   background: var(--bg-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);

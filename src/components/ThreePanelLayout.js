@@ -132,7 +132,7 @@ export default function ThreePanelLayout({
       {navSidebar}
       <div className={styles.page}>
         {/* Full-width header */}
-        <header className={styles.glassHeader}>
+        <header className={styles.pageHeader}>
           <button
             className={`${styles.headerToggle} ${!showLeft ? styles.panelHidden : ""}`}
             onClick={toggleLeft}

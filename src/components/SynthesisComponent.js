@@ -122,6 +122,7 @@ export default function SynthesisComponent() {
   const [templateExpanded, setTemplateExpanded] = useState(false);
 
   const abortRef = useRef(null);
+  const abortedRef = useRef(false);
   const messagesEndRef = useRef(null);
 
   // ── Load config ───────────────────────────────────────────────
@@ -168,6 +169,7 @@ export default function SynthesisComponent() {
     if (systemPrompt.trim()) {
       msgs.push({ role: "system", content: systemPrompt.trim() });
     }
+    // Filter out any internal _streaming flag
     for (const m of generatedMessages) {
       msgs.push({ role: m.role, content: m.content });
     }
@@ -213,87 +215,127 @@ export default function SynthesisComponent() {
     setSeedsExpanded(true);
   }, []);
 
-  // ── Generation logic ──────────────────────────────────────────
+  // ── Generation logic (real back-and-forth /chat calls) ─────────
   const handleGenerate = useCallback(async () => {
     if (!settings.provider || !settings.model) return;
 
     setIsGenerating(true);
-    setGeneratedMessages([]);
     setGenerationProgress("");
+    abortedRef.current = false;
 
-    // Start with seed messages
-    const currentMessages = seedMessages
+    // Start with seed messages as the conversation so far
+    const conversation = seedMessages
       .filter((m) => m.content.trim())
       .map((m) => ({ role: m.role, content: m.content }));
 
-    // Build the meta-prompt that instructs the model to generate the conversation
-    const metaSystemPrompt = buildMetaPrompt(
-      systemPrompt,
-      userPersona,
-      targetTurns,
-      currentMessages,
-    );
+    setGeneratedMessages([...conversation]);
+
+    // targetTurns = total user/assistant pairs; each turn = 2 messages
+    const totalMessages = targetTurns * 2;
+    const remaining = totalMessages - conversation.length;
+
+    // Figure out what role the next message should be
+    let nextRole =
+      conversation.length === 0
+        ? "user"
+        : conversation[conversation.length - 1].role === "user"
+          ? "assistant"
+          : "user";
 
     try {
-      let streamedText = "";
+      for (let i = 0; i < remaining; i++) {
+        if (abortedRef.current) break;
 
-      await new Promise((resolve, reject) => {
-        abortRef.current = PrismService.streamText(
-          {
-            provider: settings.provider,
-            model: settings.model,
-            messages: [
-              { role: "system", content: metaSystemPrompt },
-              {
-                role: "user",
-                content: currentMessages.length > 0
-                  ? `Here are the existing messages in the conversation so far:\n\n${JSON.stringify(currentMessages, null, 2)}\n\nPlease continue this conversation naturally for ${targetTurns} total turns (alternating user/assistant), ensuring the LAST message is from the assistant. Output ONLY valid JSON — an array of message objects.`
-                  : `Generate a ${targetTurns}-turn conversation (alternating user/assistant, ending with assistant). Output ONLY valid JSON — an array of message objects with "role" and "content" keys.`,
-              },
-            ],
-            temperature: settings.temperature,
-            maxTokens: settings.maxTokens,
-          },
-          {
-            onChunk: (content) => {
-              streamedText += content;
-              // Store raw text for progress display
-              setGenerationProgress(streamedText);
-              // Incrementally parse complete messages from the stream
-              const parsed = parseGeneratedMessages(streamedText);
-              if (parsed.length > 0) {
-                setGeneratedMessages(parsed);
-              }
+        if (nextRole === "assistant") {
+          // ─── ASSISTANT TURN: genuine model response ───────────
+          const assistantContent = await streamTurn(
+            settings,
+            systemPrompt,
+            conversation,
+            (partial) => {
+              setGeneratedMessages([
+                ...conversation,
+                { role: "assistant", content: partial, _streaming: true },
+              ]);
+              setGenerationProgress(partial);
             },
-            onDone: () => resolve(streamedText),
-            onError: (err) => reject(err),
-          },
-        );
-      });
+            abortRef,
+          );
 
-      // Final parse of the complete stream
-      const finalParsed = parseGeneratedMessages(streamedText);
-      if (finalParsed.length > 0) {
-        // Ensure ends with assistant
-        const finalMessages =
-          finalParsed[finalParsed.length - 1].role === "assistant"
-            ? finalParsed
-            : finalParsed.slice(0, finalParsed.length - 1);
-        setGeneratedMessages(
-          finalMessages.length > 0 ? finalMessages : finalParsed,
-        );
-        setLeftTab("output");
-      } else {
-        setGeneratedMessages([
-          {
-            role: "assistant",
-            content: `⚠️ Failed to parse generated conversation. Raw output:\n\n${streamedText}`,
+          if (abortedRef.current) break;
+
+          conversation.push({ role: "assistant", content: assistantContent });
+          setGeneratedMessages([...conversation]);
+          setGenerationProgress("");
+          nextRole = "user";
+        } else {
+          // ─── USER TURN: simulated user message ───────────────
+          const userSystemPrompt = buildUserSimulationPrompt(
+            systemPrompt,
+            userPersona,
+          );
+
+          const userContent = await streamTurn(
+            settings,
+            userSystemPrompt,
+            // Present the conversation to the user-simulator:
+            // swap roles so the model takes the "user" perspective
+            conversation.map((m) => ({
+              role: m.role === "user" ? "assistant" : "user",
+              content: m.content,
+            })),
+            (partial) => {
+              setGeneratedMessages([
+                ...conversation,
+                { role: "user", content: partial, _streaming: true },
+              ]);
+              setGenerationProgress(partial);
+            },
+            abortRef,
+          );
+
+          if (abortedRef.current) break;
+
+          conversation.push({ role: "user", content: userContent });
+          setGeneratedMessages([...conversation]);
+          setGenerationProgress("");
+          nextRole = "assistant";
+        }
+      }
+
+      // Ensure conversation ends with assistant
+      if (
+        !abortedRef.current &&
+        conversation.length > 0 &&
+        conversation[conversation.length - 1].role !== "assistant"
+      ) {
+        const assistantContent = await streamTurn(
+          settings,
+          systemPrompt,
+          conversation,
+          (partial) => {
+            setGeneratedMessages([
+              ...conversation,
+              { role: "assistant", content: partial, _streaming: true },
+            ]);
+            setGenerationProgress(partial);
           },
-        ]);
+          abortRef,
+        );
+
+        if (!abortedRef.current) {
+          conversation.push({ role: "assistant", content: assistantContent });
+          setGeneratedMessages([...conversation]);
+        }
+      }
+
+      if (!abortedRef.current) {
+        setLeftTab("output");
       }
     } catch (err) {
-      if (err.name !== "AbortError") {
-        setGeneratedMessages([
+      if (err.name !== "AbortError" && !abortedRef.current) {
+        setGeneratedMessages((prev) => [
+          ...prev.filter((m) => !m._streaming),
           {
             role: "assistant",
             content: `⚠️ Generation error: ${err.message}`,
@@ -306,10 +348,7 @@ export default function SynthesisComponent() {
       abortRef.current = null;
     }
   }, [
-    settings.provider,
-    settings.model,
-    settings.temperature,
-    settings.maxTokens,
+    settings,
     systemPrompt,
     userPersona,
     targetTurns,
@@ -317,11 +356,14 @@ export default function SynthesisComponent() {
   ]);
 
   const handleStop = useCallback(() => {
-    if (abortRef.current) {
+    abortedRef.current = true;
+    if (abortRef.current && typeof abortRef.current === "function") {
       abortRef.current();
-      abortRef.current = null;
     }
+    abortRef.current = null;
     setIsGenerating(false);
+    // Clean up any in-flight streaming messages
+    setGeneratedMessages((prev) => prev.filter((m) => !m._streaming));
   }, []);
 
   const handleReset = useCallback(() => {
@@ -664,7 +706,7 @@ export default function SynthesisComponent() {
             )}
           </div>
 
-          {/* Generated Preview */}
+          {/* Generated Preview — live message bubbles */}
           {(generatedMessages.length > 0 || isGenerating) && (
             <div className={styles.generatedSection}>
               <div className={styles.generatedHeader}>
@@ -683,11 +725,10 @@ export default function SynthesisComponent() {
                 )}
               </div>
 
-              {/* Rendered messages — live during streaming */}
               {generatedMessages.map((msg, i) => (
                 <div
                   key={i}
-                  className={`${styles.generatedMessage} ${styles[`generated_${msg.role}`]}`}
+                  className={`${styles.generatedMessage} ${styles[`generated_${msg.role}`]}${msg._streaming ? ` ${styles.generatedMessageStreaming}` : ""}`}
                 >
                   <div className={styles.generatedMsgHeader}>
                     <span
@@ -700,7 +741,7 @@ export default function SynthesisComponent() {
                       )}
                       {msg.role}
                     </span>
-                    {!isGenerating && (
+                    {!msg._streaming && !isGenerating && (
                       <div className={styles.generatedMsgActions}>
                         <CopyButtonComponent text={msg.content} size={12} />
                         <button
@@ -713,7 +754,12 @@ export default function SynthesisComponent() {
                       </div>
                     )}
                   </div>
-                  {isGenerating ? (
+                  {msg._streaming ? (
+                    <div className={styles.generatedContent}>
+                      {msg.content}
+                      <span className={styles.streamCursor} />
+                    </div>
+                  ) : isGenerating ? (
                     <div className={styles.generatedContent}>
                       {msg.content}
                     </div>
@@ -733,26 +779,6 @@ export default function SynthesisComponent() {
                 </div>
               ))}
 
-              {/* Trailing partial content — the message currently being written */}
-              {isGenerating && (() => {
-                const partial = getPartialMessage(generationProgress, generatedMessages.length);
-                if (!partial) return null;
-                return (
-                  <div className={`${styles.generatedMessage} ${styles[`generated_${partial.role}`]} ${styles.generatedMessageStreaming}`}>
-                    <div className={styles.generatedMsgHeader}>
-                      <span className={`${styles.roleBadge} ${styles[`role_${partial.role}`]}`}>
-                        {partial.role === "user" ? <User size={11} /> : <Bot size={11} />}
-                        {partial.role}
-                      </span>
-                    </div>
-                    <div className={styles.generatedContent}>
-                      {partial.content}
-                      <span className={styles.streamCursor} />
-                    </div>
-                  </div>
-                );
-              })()}
-
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -763,7 +789,7 @@ export default function SynthesisComponent() {
               <EmptyStateComponent
                 icon={<FlaskConical size={40} />}
                 title="SFT Data Synthesis"
-                subtitle="Configure your system prompt and user persona, optionally prefill messages, then generate synthetic conversations in standard SFT dataset format."
+                subtitle="Configure your system prompt and user persona, optionally prefill messages, then generate synthetic conversations via real turn-by-turn model distillation."
               />
             </div>
           )}
@@ -775,155 +801,76 @@ export default function SynthesisComponent() {
 
 // ── Helpers ─────────────────────────────────────────────────────
 
-function buildMetaPrompt(systemPrompt, userPersona, targetTurns, existingMessages) {
-  let prompt = `You are a conversation generator for SFT (Supervised Fine-Tuning) datasets. Your task is to generate a realistic, natural, multi-turn conversation between a user and an AI assistant.
+/**
+ * Stream a single chat turn and return the collected text.
+ * Each turn is a real /chat call — the model genuinely responds to the context.
+ */
+function streamTurn(settings, turnSystemPrompt, history, onPartial, abortRef) {
+  return new Promise((resolve, reject) => {
+    let collected = "";
 
-## The AI Assistant's Personality
-The assistant has the following system prompt defining its behavior:
+    const cancel = PrismService.streamText(
+      {
+        provider: settings.provider,
+        model: settings.model,
+        messages: [
+          { role: "system", content: turnSystemPrompt },
+          ...history,
+        ],
+        temperature: settings.temperature,
+        maxTokens: settings.maxTokens,
+      },
+      {
+        onChunk: (content) => {
+          collected += content;
+          onPartial(collected);
+        },
+        onDone: () => resolve(collected),
+        onError: (err) => reject(err),
+      },
+    );
+
+    // Store cancellation so the parent can abort mid-turn
+    abortRef.current = cancel;
+  });
+}
+
+/**
+ * Build the system prompt for the user-simulator model call.
+ * Instructs the model to role-play as the user persona and
+ * generate a single natural follow-up user message.
+ */
+function buildUserSimulationPrompt(assistantSystemPrompt, userPersona) {
+  let prompt = `You are simulating a human user in a conversation with an AI assistant. Your job is to generate the NEXT single message that this user would naturally say.
+
+## Context
+The user is talking to an AI assistant that has the following personality:
 """
-${systemPrompt}
+${assistantSystemPrompt}
 """
 
 `;
 
   if (userPersona.trim()) {
-    prompt += `## The User's Personality
-The user has the following personality and communication style:
+    prompt += `## Your Personality (as the user)
 """
 ${userPersona}
 """
 
 `;
+  } else {
+    prompt += `## Your Personality (as the user)
+You are a casual, curious human chatting naturally. Ask follow-up questions, share reactions, and keep the conversation flowing organically.
+
+`;
   }
 
-  prompt += `## Requirements
-- Generate exactly ${targetTurns} total turns (each turn = 1 user message + 1 assistant response = 2 messages = 1 turn).
-- The conversation MUST alternate: user, assistant, user, assistant, ...
-- The LAST message MUST be from the assistant.
-- So the output must have exactly ${targetTurns * 2} messages.
-- Messages should feel natural, as if from a real human conversation with an AI.
-- The assistant should stay in character per its system prompt.
-${userPersona.trim() ? "- The user should stay in character per their persona description." : "- The user should speak naturally and casually."}
-${existingMessages.length > 0 ? `- Continue naturally from the provided existing messages. The new messages should seamlessly follow the conversation flow.\n- Include the existing messages at the start, then continue from there.` : ""}
-
-## Output Format
-Respond with ONLY a valid JSON array of message objects. Each object has:
-- "role": either "user" or "assistant"
-- "content": the message text
-
-Do NOT include any markdown formatting, code fences, or explanations. Output raw JSON only.`;
+  prompt += `## Rules
+- Generate ONLY the next user message — nothing else.
+- Do NOT include quotes, labels, prefixes like "User:", or any meta-commentary.
+- Be natural and conversational — react to what the assistant said, ask follow-ups, or steer the topic.
+- Keep messages concise and human-like (1-3 sentences typically).
+- Do NOT repeat or rephrase previous messages.`;
 
   return prompt;
-}
-
-function parseGeneratedMessages(raw) {
-  // Try to extract JSON array from the response
-  let text = raw.trim();
-
-  // Remove markdown code fences if present
-  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-  text = text.trim();
-
-  // Try parsing directly (complete JSON)
-  try {
-    const parsed = JSON.parse(text);
-    if (Array.isArray(parsed)) {
-      return parsed.filter(
-        (m) => m && typeof m.role === "string" && typeof m.content === "string",
-      );
-    }
-  } catch {
-    // Not valid JSON yet — try incremental strategies
-  }
-
-  // Try to find and parse a JSON array in the text
-  const arrayStart = text.indexOf("[");
-  if (arrayStart === -1) return [];
-
-  const jsonCandidate = text.slice(arrayStart);
-
-  // Try parsing as-is (maybe the array is complete mid-text)
-  try {
-    const parsed = JSON.parse(jsonCandidate);
-    if (Array.isArray(parsed)) {
-      return parsed.filter(
-        (m) => m && typeof m.role === "string" && typeof m.content === "string",
-      );
-    }
-  } catch {
-    // Attempt to repair truncated JSON by closing the array
-  }
-
-  // Incremental repair: try closing the array at progressively earlier points
-  // Find complete message objects by looking for complete "content":"..." patterns
-  const messages = [];
-  const msgPattern = /\{\s*"role"\s*:\s*"(user|assistant)"\s*,\s*"content"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g;
-  let match;
-  while ((match = msgPattern.exec(jsonCandidate)) !== null) {
-    messages.push({
-      role: match[1],
-      content: match[2]
-        .replace(/\\n/g, "\n")
-        .replace(/\\t/g, "\t")
-        .replace(/\\"/g, '"')
-        .replace(/\\\\/g, "\\"),
-    });
-  }
-
-  return messages;
-}
-
-/**
- * Extract the partial (in-flight) message from the raw stream.
- * This finds content that's being written but hasn't yet formed a complete message object.
- */
-function getPartialMessage(raw, _completedCount) {
-  if (!raw) return null;
-
-  let text = raw.trim();
-  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-
-  // Count completed message objects to find where the partial one starts
-  const msgPattern = /\{\s*"role"\s*:\s*"(user|assistant)"\s*,\s*"content"\s*:\s*"(?:[^"\\]|\\.)*"\s*\}/g;
-  let lastCompleteEnd = 0;
-  let m;
-  while ((m = msgPattern.exec(text)) !== null) {
-    lastCompleteEnd = m.index + m[0].length;
-  }
-
-  // If we haven't gotten past the completed messages, look at what's after them
-  const remainder = text.slice(lastCompleteEnd);
-
-  // Try to extract partial role and content
-  const partialRole = remainder.match(/"role"\s*:\s*"(user|assistant)"/);
-  if (!partialRole) return null;
-
-  const role = partialRole[1];
-
-  // Extract partial content after "content": "
-  const contentStart = remainder.indexOf('"content"');
-  if (contentStart === -1) return { role, content: "" };
-
-  const afterContent = remainder.slice(contentStart);
-  const contentValueMatch = afterContent.match(/"content"\s*:\s*"/);
-  if (!contentValueMatch) return { role, content: "" };
-
-  // Get everything after the opening quote of the content value
-  const valueStart = afterContent.indexOf(contentValueMatch[0]) + contentValueMatch[0].length;
-  let partialContent = afterContent.slice(valueStart);
-
-  // Remove trailing incomplete escape or quote
-  if (partialContent.endsWith("\\")) {
-    partialContent = partialContent.slice(0, -1);
-  }
-  // Unescape what we have
-  partialContent = partialContent
-    .replace(/\\n/g, "\n")
-    .replace(/\\t/g, "\t")
-    .replace(/\\"/g, '"')
-    .replace(/\\\\/g, "\\");
-
-  if (!partialContent) return null;
-
-  return { role, content: partialContent };
 }

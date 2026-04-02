@@ -39,7 +39,9 @@
   justify-content: space-between;
   padding: 12px 20px;
   border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   gap: 12px;
   flex-shrink: 0;
 }
