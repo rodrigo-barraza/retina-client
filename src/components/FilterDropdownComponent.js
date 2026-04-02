@@ -170,7 +170,7 @@ export default function FilterDropdownComponent({
   }
 
   return (
-    <div className={styles.filterSection} style={fullWidth ? { width: "100%", boxSizing: "border-box" } : undefined}>
+    <div className={styles.filterSection} style={fullWidth ? { width: "100%", boxSizing: "border-box", padding: "0 12px" } : undefined}>
       <div className={styles.filterRow} style={fullWidth ? { flexDirection: "column" } : undefined}>
         {/* ── Dropdown trigger ── */}
         <div className={styles.dropdownWrapper} ref={dropdownRef} style={fullWidth ? { width: "100%" } : undefined}>
@@ -253,7 +253,7 @@ export default function FilterDropdownComponent({
                           key={item.key}
                           type="button"
                           className={`${styles.menuItem} ${isActive ? styles.menuItemActive : ""}`}
-                          onClick={() => onToggle(item.key)}
+                          onClick={() => onToggle(isSingleSelect && isActive ? null : item.key)}
                         >
                           {Icon && (
                             <Icon
