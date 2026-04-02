@@ -434,7 +434,6 @@ export default function HomePage({ initialConversationId = null }) {
     skipSystemPromptSave.current = true;
     setSettings((s) => ({
       ...s,
-      ...TOOL_TOGGLE_DEFAULTS,
       systemPrompt: "You are a helpful AI assistant.",
     }));
   };
