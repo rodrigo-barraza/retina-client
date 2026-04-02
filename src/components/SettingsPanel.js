@@ -174,6 +174,12 @@ export default function SettingsPanel({
           onChange: (val) => onChange({ functionCallingEnabled: val }),
           disabled: false,
         };
+      case "Image Generation":
+        return {
+          checked: settings.forceImageGeneration || false,
+          onChange: (val) => onChange({ forceImageGeneration: val }),
+          disabled: false,
+        };
       default:
         return null;
     }

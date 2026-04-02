@@ -924,6 +924,7 @@ export default function HomePage({ initialConversationId = null }) {
           : {}),
         ...(settings.codeExecutionEnabled ? { codeExecution: true } : {}),
         ...(settings.urlContextEnabled ? { urlContext: true } : {}),
+        ...(settings.forceImageGeneration ? { forceImageGeneration: true } : {}),
         ...(settings.verbosity ? { verbosity: settings.verbosity } : {}),
         // No conversationId — Retina handles persistence via patchConversation
         // for reruns (Prism's auto-append would be immediately overwritten).
@@ -1584,6 +1585,7 @@ export default function HomePage({ initialConversationId = null }) {
           : {}),
         ...(settings.codeExecutionEnabled ? { codeExecution: true } : {}),
         ...(settings.urlContextEnabled ? { urlContext: true } : {}),
+        ...(settings.forceImageGeneration ? { forceImageGeneration: true } : {}),
         ...(settings.verbosity ? { verbosity: settings.verbosity } : {}),
         // Server-side conversation accumulation
         conversationId: currentId,

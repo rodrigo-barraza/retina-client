@@ -97,6 +97,7 @@ export const TOGGLEABLE_TOOLS = new Set([
   "Code Execution",
   "URL Context",
   "Function Calling",
+  "Image Generation",
 ]);
 
 // ── Asset-type Icons ──
