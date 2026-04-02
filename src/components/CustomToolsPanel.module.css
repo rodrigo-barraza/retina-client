@@ -19,15 +19,6 @@
   margin-bottom: 4px;
 }
 
-/* ── Type Filter Bar ──────────────────────────────────────── */
-
-.typeFilterBar {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  padding: 2px 0 4px;
-}
-
 .sectionHeader {
   display: flex;
   align-items: center;
@@ -882,3 +873,65 @@
     cursor: not-allowed;
   }
 }
+
+/* ── Group-by Segmented Toggle ────────────────────────────── */
+
+.groupByBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px;
+  flex-shrink: 0;
+}
+
+.groupByIcon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.groupByLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
+.groupByToggle {
+  display: flex;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  margin-left: auto;
+}
+
+.groupByBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+
+  &:not(:last-child) {
+    border-right: 1px solid var(--border-color);
+  }
+
+  &:hover:not(.groupByBtnActive) {
+    color: var(--text-secondary);
+    background: color-mix(in srgb, var(--bg-card) 60%, transparent);
+  }
+}
+
+.groupByBtnActive {
+  color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 10%, transparent);
+}
+

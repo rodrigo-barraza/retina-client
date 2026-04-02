@@ -12,11 +12,10 @@ import MessageList, { prepareDisplayMessages } from "./MessageList.js";
 import ImagePreviewComponent from "./ImagePreviewComponent.js";
 import TabBarComponent from "./TabBarComponent.js";
 import EmptyStateComponent from "./EmptyStateComponent.js";
-import ToolActivityPanelComponent from "./ToolActivityPanelComponent.js";
+
 import { ALL_CONSOLE_PROMPTS } from "../arrays.js";
 import {
   buildToolSchemas,
-  buildToolSchemaMap,
 } from "../utils/FunctionCallingUtilities.js";
 import { PROJECT_CONSOLE, SETTINGS_DEFAULTS } from "../constants.js";
 import chatStyles from "./ChatArea.module.css";
@@ -180,11 +179,7 @@ export default function ConsoleComponent() {
     [customTools, builtInTools, disabledBuiltIns],
   );
 
-  // Schema lookup for ToolActivityPanel data source badges
-  const toolSchemaMap = useMemo(
-    () => buildToolSchemaMap(builtInTools),
-    [builtInTools],
-  );
+
 
   // Pick 5 random prompt suggestions — re-shuffles on new chat (client-only to avoid hydration mismatch)
   const [randomPrompts, setRandomPrompts] = useState([]);
@@ -630,12 +625,7 @@ export default function ConsoleComponent() {
         <div ref={endRef} />
       </div>
 
-      {/* Tool Activity Panel */}
-      <ToolActivityPanelComponent
-        activities={toolActivity}
-        toolSchemaMap={toolSchemaMap}
-        streamingOutputs={streamingOutputs}
-      />
+
 
       {/* Input area — same as ChatArea */}
       <div className={chatStyles.inputWrapper}>

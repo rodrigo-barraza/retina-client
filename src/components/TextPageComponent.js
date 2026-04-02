@@ -17,12 +17,11 @@ import MarkdownContent from "./MarkdownContent";
 import ComboboxFilter from "./ComboboxFilter";
 import PaginationComponent from "./PaginationComponent";
 import PageHeaderComponent from "./PageHeaderComponent";
-import DatePickerComponent from "./DatePickerComponent";
 import SearchInputComponent from "./SearchInputComponent";
+import FilterDropdownComponent from "./FilterDropdownComponent";
 import { LoadingMessage, EmptyMessage } from "./StateMessageComponent";
 import {
   FilterBarComponent,
-  FilterIconButtonGroupComponent,
   ViewModeToggleComponent,
 } from "./FilterBarComponent";
 import { formatCost, buildDateRangeParams } from "../utils/utilities";
@@ -134,36 +133,37 @@ export default function TextPageComponent({ mode = "user", dateRange: externalDa
             className={styles.searchWrapper}
           />
 
-          <FilterIconButtonGroupComponent
-            options={ORIGIN_FILTERS.map((f) => ({
-              key: f.key,
-              icon: f.icon,
-              label: f.label,
-            }))}
-            activeKeys={origin === "all" ? null : origin}
-            isSingleSelect
-            onChange={(v) => {
-              setOrigin(v || "all");
-              setPage(1);
-            }}
-          />
-
-          <div className={styles.filterDivider} />
-
-          <FilterIconButtonGroupComponent
-            options={[
+          <FilterDropdownComponent
+            groups={[
               {
-                key: "favorites",
-                icon: Star,
-                label: "Favorites only",
+                label: "Source",
+                items: ORIGIN_FILTERS.map((f) => ({
+                  key: f.key,
+                  icon: f.icon,
+                  title: f.label,
+                })),
+                activeKeys: origin === "all" ? null : origin,
+                isSingleSelect: true,
+                onToggle: (v) => {
+                  setOrigin(v || "all");
+                  setPage(1);
+                },
+              },
+              {
+                label: "Favorites",
+                items: [{ key: "favorites", icon: Star, title: "Favorites Only" }],
+                activeKeys: showFavoritesOnly ? "favorites" : null,
+                isSingleSelect: true,
+                onToggle: (v) => setShowFavoritesOnly(v === "favorites"),
               },
             ]}
-            activeKeys={showFavoritesOnly ? "favorites" : null}
-            isSingleSelect
-            onChange={(v) => setShowFavoritesOnly(v === "favorites")}
+            dateRange={!externalDateRange ? dateRange : undefined}
+            onDateChange={!externalDateRange ? (v) => {
+              setInternalDateRange(v);
+              setPage(1);
+            } : undefined}
+            dateStorageKey={!externalDateRange ? LS_DATE_RANGE : undefined}
           />
-
-          <div className={styles.filterDivider} />
 
           <ComboboxFilter
             options={providers}
@@ -191,18 +191,6 @@ export default function TextPageComponent({ mode = "user", dateRange: externalDa
             placeholder="All Models"
             allLabel="All Models"
           />
-
-          {!externalDateRange && (
-            <DatePickerComponent
-              from={dateRange.from}
-              to={dateRange.to}
-              onChange={(v) => {
-                setInternalDateRange(v);
-                setPage(1);
-              }}
-              storageKey={LS_DATE_RANGE}
-            />
-          )}
 
           <ViewModeToggleComponent
             mode={viewMode}

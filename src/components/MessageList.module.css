@@ -889,3 +889,84 @@
   50% { opacity: 0.4; }
 }
 
+/* ── Inline Terminal Output ─────────────────────────────────── */
+
+.terminalContainer {
+  margin-left: 20px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  background: #0d1117;
+  margin-bottom: 4px;
+}
+
+.terminalHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #8b949e;
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+.terminalLive {
+  color: #3fb950;
+  font-size: 9px;
+  margin-left: auto;
+  animation: livePulse 1.5s ease-in-out infinite;
+}
+
+.terminalBody {
+  margin: 0;
+  padding: 8px 10px;
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #c9d1d9;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #30363d transparent;
+}
+
+.terminalBody::-webkit-scrollbar {
+  width: 6px;
+}
+
+.terminalBody::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.terminalBody::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 3px;
+}
+
+.terminalCursor {
+  color: #58a6ff;
+  animation: blink 1s step-end infinite;
+}
+
+.terminalInput {
+  color: #79c0ff;
+  user-select: all;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+

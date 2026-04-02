@@ -31,7 +31,6 @@ import styles from "./MessageList.module.css";
 import { DateTime } from "luxon";
 import PrismService from "../services/PrismService";
 import { formatCost, getTotalInputTokens } from "../utils/utilities";
-import toolPanelStyles from "./ToolActivityPanelComponent.module.css";
 
 // Tools that support real-time output streaming
 const STREAMABLE_TOOL_NAMES = new Set([
@@ -301,7 +300,7 @@ function ToolCallResultBlock({ result }) {
   );
 }
 
-// ── Inline Terminal Output (reuses ToolActivityPanelComponent styles) ───
+// ── Inline Terminal Output ──────────────────────────────────────────────
 
 const PROMPT_PREFIXES = {
   bash: "$ ",
@@ -347,18 +346,18 @@ function InlineTerminalOutput({ output, language, isStreaming, input, cwd }) {
   const formattedInput = formatInputPrompt(input, language, cwd);
 
   return (
-    <div className={toolPanelStyles.terminalContainer}>
-      <div className={toolPanelStyles.terminalHeader}>
+    <div className={styles.terminalContainer}>
+      <div className={styles.terminalHeader}>
         <Terminal size={10} />
         <span>{language || "output"}</span>
-        {isStreaming && <span className={toolPanelStyles.terminalLive}>● live</span>}
+        {isStreaming && <span className={styles.terminalLive}>● live</span>}
       </div>
-      <pre ref={preRef} className={toolPanelStyles.terminalBody}>
+      <pre ref={preRef} className={styles.terminalBody}>
         {formattedInput && (
-          <span className={toolPanelStyles.terminalInput}>{formattedInput}{"\n"}</span>
+          <span className={styles.terminalInput}>{formattedInput}{"\n"}</span>
         )}
         {output}
-        {isStreaming && <span className={toolPanelStyles.terminalCursor}>▊</span>}
+        {isStreaming && <span className={styles.terminalCursor}>▊</span>}
       </pre>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Image as ImageIcon,
   Music,
@@ -12,23 +12,24 @@ import {
   Grid,
   List,
   Star,
+  Bot,
 } from "lucide-react";
 import Link from "next/link";
 import IrisService from "../services/IrisService";
 import PrismService from "../services/PrismService";
 import MediaCardComponent from "./MediaCardComponent";
 import ComboboxFilter from "./ComboboxFilter";
+import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import ImagePreviewComponent from "./ImagePreviewComponent";
 import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import PaginationComponent from "./PaginationComponent";
 import SortableTableComponent from "./SortableTableComponent";
 import PageHeaderComponent from "./PageHeaderComponent";
-import DatePickerComponent from "./DatePickerComponent";
 import SearchInputComponent from "./SearchInputComponent";
+import FilterDropdownComponent from "./FilterDropdownComponent";
 import { LoadingMessage, EmptyMessage } from "./StateMessageComponent";
 import {
   FilterBarComponent,
-  FilterIconButtonGroupComponent,
   ViewModeToggleComponent,
 } from "./FilterBarComponent";
 import { MODALITY_COLORS } from "./WorkflowNodeConstants";
@@ -52,6 +53,26 @@ const TYPE_FILTERS = [
   { key: "video", label: "Video", icon: Film, color: MODALITY_COLORS.video },
   { key: "pdf", label: "PDF", icon: FileText, color: MODALITY_COLORS.pdf },
 ];
+
+/** Map model name prefixes → provider keys for models stored without a provider/ prefix */
+const MODEL_PREFIX_TO_PROVIDER = [
+  ["gemini", "google"],
+  ["gpt", "openai"],
+  ["dall-e", "openai"],
+  ["claude", "anthropic"],
+  ["inworld", "inworld"],
+  ["eleven", "elevenlabs"],
+];
+
+function getProviderFromModel(modelName) {
+  if (!modelName) return null;
+  if (modelName.includes("/")) return modelName.split("/")[0];
+  const lower = modelName.toLowerCase();
+  for (const [prefix, provider] of MODEL_PREFIX_TO_PROVIDER) {
+    if (lower.startsWith(prefix)) return provider;
+  }
+  return null;
+}
 
 function resolveUrl(url) {
   if (!url || typeof url !== "string") return null;
@@ -108,8 +129,22 @@ export default function MediaPageComponent({
   const [username, setUsername] = useState("");
   const [provider, setProvider] = useState("");
   const [model, setModel] = useState("");
-  const [providers, setProviders] = useState([]);
   const [models, setModels] = useState([]);
+
+  // Derive unique providers from the models list using prefix mapping
+  const derivedProviders = useMemo(() => {
+    const providerSet = new Set();
+    for (const m of models) {
+      const p = getProviderFromModel(m);
+      if (p) providerSet.add(p);
+    }
+    const labelOrder = Object.keys(PROVIDER_LABELS);
+    return [...providerSet].sort((a, b) => {
+      const ai = labelOrder.indexOf(a);
+      const bi = labelOrder.indexOf(b);
+      return (ai === -1 ? Infinity : ai) - (bi === -1 ? Infinity : bi);
+    });
+  }, [models]);
   const [viewMode, setViewMode] = useState("grid");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -142,7 +177,6 @@ export default function MediaPageComponent({
       setTotal(result.total || 0);
       if (result.projects) setProjects(result.projects);
       if (result.usernames) setUsernames(result.usernames);
-      if (result.providers) setProviders(result.providers);
       if (result.models) setModels(result.models);
     } catch (err) {
       console.error("Failed to load media:", err);
@@ -332,53 +366,92 @@ export default function MediaPageComponent({
             className={styles.searchWrapper}
           />
 
-          <FilterIconButtonGroupComponent
-            options={ORIGIN_FILTERS.map((f) => ({
-              key: f.key,
-              icon: f.icon,
-              label: f.label,
-            }))}
-            activeKeys={origin === "all" ? null : origin}
-            isSingleSelect
-            onChange={(v) => {
-              setOrigin(v || "all");
-              setPage(1);
-            }}
-          />
-
-          <div className={styles.filterDivider} />
-
-          <FilterIconButtonGroupComponent
-            options={TYPE_FILTERS.map((f) => ({
-              key: f.key,
-              icon: f.icon,
-              color: f.color,
-              label: f.label,
-            }))}
-            activeKeys={type === "all" ? null : type}
-            isSingleSelect
-            onChange={(v) => {
-              setType(v || "all");
-              setPage(1);
-            }}
-          />
-
-          <div className={styles.filterDivider} />
-
-          <FilterIconButtonGroupComponent
-            options={[
+          <FilterDropdownComponent
+            groups={[
               {
-                key: "favorites",
-                icon: Star,
-                label: "Favorites only",
+                label: "Source",
+                items: ORIGIN_FILTERS.map((f) => ({
+                  key: f.key,
+                  icon: f.icon,
+                  title: f.label,
+                })),
+                activeKeys: origin === "all" ? null : origin,
+                isSingleSelect: true,
+                onToggle: (v) => {
+                  setOrigin(v || "all");
+                  setPage(1);
+                },
+              },
+              {
+                label: "Type",
+                items: TYPE_FILTERS.map((f) => ({
+                  key: f.key,
+                  icon: f.icon,
+                  color: f.color,
+                  title: f.label,
+                })),
+                activeKeys: type === "all" ? null : type,
+                isSingleSelect: true,
+                onToggle: (v) => {
+                  setType(v || "all");
+                  setPage(1);
+                },
+              },
+              ...(derivedProviders.length >= 2
+                ? [
+                    {
+                      label: "Providers",
+                      items: derivedProviders.map((p) => ({
+                        key: p,
+                        icon: () => <ProviderLogo provider={p} size={13} />,
+                        title: PROVIDER_LABELS[p] || p,
+                      })),
+                      activeKeys: provider || null,
+                      isSingleSelect: true,
+                      onToggle: (v) => {
+                        setProvider(v || "");
+                        setModel("");
+                        setPage(1);
+                      },
+                    },
+                  ]
+                : []),
+              ...(models.length >= 2
+                ? [
+                    {
+                      label: "Models",
+                      items: (provider
+                        ? models.filter((m) => getProviderFromModel(m) === provider)
+                        : models
+                      ).map((m) => ({
+                        key: m,
+                        icon: Bot,
+                        title: m.includes("/") ? m.split("/").pop() : m,
+                      })),
+                      activeKeys: model || null,
+                      isSingleSelect: true,
+                      onToggle: (v) => {
+                        setModel(v || "");
+                        setPage(1);
+                      },
+                    },
+                  ]
+                : []),
+              {
+                label: "Favorites",
+                items: [{ key: "favorites", icon: Star, title: "Favorites Only" }],
+                activeKeys: showFavoritesOnly ? "favorites" : null,
+                isSingleSelect: true,
+                onToggle: (v) => setShowFavoritesOnly(v === "favorites"),
               },
             ]}
-            activeKeys={showFavoritesOnly ? "favorites" : null}
-            isSingleSelect
-            onChange={(v) => setShowFavoritesOnly(v === "favorites")}
+            dateRange={!externalDateRange ? dateRange : undefined}
+            onDateChange={!externalDateRange ? (v) => {
+              setInternalDateRange(v);
+              setPage(1);
+            } : undefined}
+            dateStorageKey={!externalDateRange ? LS_DATE_RANGE : undefined}
           />
-
-          <div className={styles.filterDivider} />
 
           {isAdmin && externalProject === undefined && (
             <ComboboxFilter
@@ -403,45 +476,6 @@ export default function MediaPageComponent({
               }}
               placeholder="All Users"
               allLabel="All Users"
-            />
-          )}
-
-          <ComboboxFilter
-            options={providers}
-            value={provider}
-            onChange={(v) => {
-              setProvider(v);
-              setModel("");
-              setPage(1);
-            }}
-            placeholder="All Providers"
-            allLabel="All Providers"
-          />
-
-          <ComboboxFilter
-            options={
-              provider
-                ? models.filter((m) => m.startsWith(provider + "/"))
-                : models
-            }
-            value={model}
-            onChange={(v) => {
-              setModel(v);
-              setPage(1);
-            }}
-            placeholder="All Models"
-            allLabel="All Models"
-          />
-
-          {!externalDateRange && (
-            <DatePickerComponent
-              from={dateRange.from}
-              to={dateRange.to}
-              onChange={(v) => {
-                setInternalDateRange(v);
-                setPage(1);
-              }}
-              storageKey={LS_DATE_RANGE}
             />
           )}
 

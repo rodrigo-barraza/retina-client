@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronRight,
   Globe,
+  LayoutGrid,
   Cpu,
   Shield,
   Database,
@@ -41,7 +42,7 @@ import PrismService from "../services/PrismService.js";
 import ButtonComponent from "./ButtonComponent.js";
 import ToggleSwitchComponent from "./ToggleSwitch.js";
 import SearchInputComponent from "./SearchInputComponent.js";
-import { FilterIconButtonGroupComponent } from "./FilterBarComponent.js";
+import FilterDropdownComponent from "./FilterDropdownComponent.js";
 import { renderToolName } from "../utils/utilities";
 import styles from "./CustomToolsPanel.module.css";
 
@@ -116,6 +117,8 @@ const DOMAIN_ORDER = [
   "Other",
 ];
 
+const TYPE_ORDER = ["cached", "onDemand", "static", "compute", "realtime"];
+
 const PARAM_TYPES = [
   { value: "string", label: "String" },
   { value: "number", label: "Number" },
@@ -146,6 +149,7 @@ const EMPTY_TOOL = {
   enabled: true,
 };
 
+
 export default function CustomToolsPanel({
   tools,
   onToolsChange,
@@ -163,8 +167,9 @@ export default function CustomToolsPanel({
   const [builtInOpen, setBuiltInOpen] = useState(true);
   const [customOpen, setCustomOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTypeFilter, setActiveTypeFilter] = useState(null);
+  const [activeTypeFilter, setActiveTypeFilter] = useState(() => new Set());
   const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
+  const [groupMode, setGroupMode] = useState("domain"); // "domain" | "type"
   const [collapsedDomains, setCollapsedDomains] = useState(new Set());
   const [inputMode, setInputMode] = useState("manual"); // "manual" | "json"
   const [jsonText, setJsonText] = useState("");
@@ -442,7 +447,7 @@ export default function CustomToolsPanel({
 
   const filteredCustomTools = useMemo(() => {
     // If a type filter is active, custom tools are hidden (they don't have a dataSource type)
-    if (activeTypeFilter) return [];
+    if (activeTypeFilter.size > 0) return [];
     if (!query) return tools;
     return tools.filter(
       (t) =>
@@ -453,8 +458,8 @@ export default function CustomToolsPanel({
 
   const filteredBuiltInTools = useMemo(() => {
     let result = builtInTools;
-    if (activeTypeFilter) {
-      result = result.filter((t) => t.dataSource?.type === activeTypeFilter);
+    if (activeTypeFilter.size > 0) {
+      result = result.filter((t) => activeTypeFilter.has(t.dataSource?.type));
     }
     if (query) {
       result = result.filter(
@@ -496,7 +501,7 @@ export default function CustomToolsPanel({
   }, [allCustomEnabled, tools, onToolsChange]);
 
   // ── Group built-in tools by domain ──────────────────────────
-  const groupedBuiltInTools = useMemo(() => {
+  const groupedByDomain = useMemo(() => {
     const groups = new Map();
     for (const tool of filteredBuiltInTools) {
       const domain = tool.domain || "Other";
@@ -514,6 +519,42 @@ export default function CustomToolsPanel({
     }
     return sorted;
   }, [filteredBuiltInTools]);
+
+  // ── Group built-in tools by data-source type ────────────────
+  const groupedByType = useMemo(() => {
+    const groups = new Map();
+    for (const tool of filteredBuiltInTools) {
+      const type = tool.dataSource?.type || "other";
+      if (!groups.has(type)) groups.set(type, []);
+      groups.get(type).push(tool);
+    }
+    const sorted = [];
+    for (const type of TYPE_ORDER) {
+      if (groups.has(type)) sorted.push([type, groups.get(type)]);
+    }
+    for (const [type, tools] of groups) {
+      if (!TYPE_ORDER.includes(type)) sorted.push([type, tools]);
+    }
+    return sorted;
+  }, [filteredBuiltInTools]);
+
+  // ── Active grouping based on mode ───────────────────────────
+  const groupedBuiltInTools = groupMode === "domain" ? groupedByDomain : groupedByType;
+
+  /** Resolve icon + label for a group key based on current groupMode */
+  const resolveGroupMeta = useCallback((key) => {
+    if (groupMode === "domain") {
+      return {
+        Icon: DOMAIN_ICONS[key] || Layers,
+        label: key,
+      };
+    }
+    return {
+      Icon: DATA_SOURCE_ICONS[key] || Layers,
+      label: DATA_SOURCE_LABELS[key] || key,
+      color: DATA_SOURCE_COLORS[key],
+    };
+  }, [groupMode]);
 
   const toggleDomain = useCallback((domain) => {
     setCollapsedDomains((prev) => {
@@ -846,24 +887,32 @@ export default function CustomToolsPanel({
       <SearchInputComponent
         value={searchQuery}
         onChange={setSearchQuery}
-        placeholder="Filter tools…"
+        placeholder="Search tools…"
         className={styles.searchBar}
       />
 
-      {/* ── Type Filter Badges ── */}
+      {/* ── Type Filter (dropdown + badges) ── */}
       {availableTypeOptions.length > 0 && (
-        <div className={styles.typeFilterBar}>
-          <FilterIconButtonGroupComponent
-            options={availableTypeOptions}
-            activeKeys={activeTypeFilter}
-            onChange={setActiveTypeFilter}
-            isSingleSelect
-          />
-        </div>
+        <FilterDropdownComponent
+          fullWidth
+          triggerLabel="Types"
+          groups={[{
+            label: "Data Source",
+            items: availableTypeOptions.map((o) => ({ key: o.key, icon: o.icon, title: o.label, color: o.color })),
+            activeKeys: activeTypeFilter,
+            onToggle: (key) => {
+              setActiveTypeFilter((prev) => {
+                const next = new Set(prev);
+                next.has(key) ? next.delete(key) : next.add(key);
+                return next;
+              });
+            },
+          }]}
+        />
       )}
 
       {/* ── Custom tools (hidden when type-filtering built-ins) ── */}
-      {!activeTypeFilter && (<>
+      {activeTypeFilter.size === 0 && (<>
       <div
         className={styles.sectionHeader}
         onClick={() => setCustomOpen((v) => !v)}
@@ -1057,6 +1106,30 @@ export default function CustomToolsPanel({
         )}
       </div>
 
+      {/* ── Group-by segmented toggle ── */}
+      {builtInOpen && (
+        <div className={styles.groupByBar}>
+          <LayoutGrid size={10} className={styles.groupByIcon} />
+          <span className={styles.groupByLabel}>Group</span>
+          <div className={styles.groupByToggle}>
+            <button
+              type="button"
+              className={`${styles.groupByBtn} ${groupMode === "domain" ? styles.groupByBtnActive : ""}`}
+              onClick={() => { setGroupMode("domain"); setCollapsedDomains(new Set()); }}
+            >
+              Domain
+            </button>
+            <button
+              type="button"
+              className={`${styles.groupByBtn} ${groupMode === "type" ? styles.groupByBtnActive : ""}`}
+              onClick={() => { setGroupMode("type"); setCollapsedDomains(new Set()); }}
+            >
+              Type
+            </button>
+          </div>
+        </div>
+      )}
+
       {builtInOpen && filteredBuiltInTools.length === 0 && query && (
         <div className={styles.emptyCustom}>
           No built-in tools match &ldquo;{searchQuery}&rdquo;
@@ -1064,9 +1137,9 @@ export default function CustomToolsPanel({
       )}
 
       {builtInOpen &&
-        groupedBuiltInTools.map(([domain, domainTools]) => {
-          const DomainIcon = DOMAIN_ICONS[domain] || Layers;
-          const isDomainCollapsed = collapsedDomains.has(domain);
+        groupedBuiltInTools.map(([groupKey, domainTools]) => {
+          const { Icon: GroupIcon, label: groupLabel, color: groupColor } = resolveGroupMeta(groupKey);
+          const isDomainCollapsed = collapsedDomains.has(groupKey);
           const onlineDomainTools = domainTools.filter(
             (t) => !offlineTools.has(t.name),
           );
@@ -1078,18 +1151,18 @@ export default function CustomToolsPanel({
             enabledCount === onlineDomainTools.length;
 
           return (
-            <div key={domain} className={styles.domainGroup}>
+            <div key={groupKey} className={styles.domainGroup}>
               <div
                 className={styles.domainHeader}
-                onClick={() => toggleDomain(domain)}
+                onClick={() => toggleDomain(groupKey)}
               >
                 {isDomainCollapsed ? (
                   <ChevronRight size={10} />
                 ) : (
                   <ChevronDown size={10} />
                 )}
-                <DomainIcon size={11} className={styles.domainIcon} />
-                <span className={styles.domainLabel}>{domain}</span>
+                <GroupIcon size={11} className={styles.domainIcon} style={groupColor ? { color: groupColor } : undefined} />
+                <span className={styles.domainLabel}>{groupLabel}</span>
                 <span className={styles.domainCount}>
                   {enabledCount}/{domainTools.length}
                 </span>

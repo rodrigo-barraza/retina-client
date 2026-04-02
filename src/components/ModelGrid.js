@@ -23,7 +23,8 @@ import SortableTableComponent from "./SortableTableComponent";
 import ToolIconComponent from "./ToolIconComponent";
 import TooltipComponent from "./TooltipComponent";
 import SearchInputComponent from "./SearchInputComponent";
-import { FilterBarComponent, FilterIconButtonGroupComponent } from "./FilterBarComponent";
+import FilterDropdownComponent from "./FilterDropdownComponent";
+import { FilterBarComponent } from "./FilterBarComponent";
 import ProportionBarComponent from "./ProportionBarComponent";
 import { formatFileSize, formatContextTokens, formatNumber, formatTokenCount } from "../utils/utilities";
 import styles from "./ModelGrid.module.css";
@@ -615,81 +616,68 @@ export default function ModelGrid({
             className={styles.searchWrapper}
           />
         )}
-        {onToggleFavorite && favorites.length > 0 && (
-          <>
-            <FilterIconButtonGroupComponent
-              options={[
-                {
-                  key: "favorites",
-                  icon: Star,
-                  color: showFavoritesOnly ? "#f59e0b" : undefined,
-                  label: "Favorites only",
-                },
-              ]}
-              activeKeys={showFavoritesOnly ? "favorites" : null}
-              isSingleSelect={true}
-              onChange={() => setShowFavoritesOnly((prev) => !prev)}
-            />
-            <div className={styles.filterDivider} />
-          </>
-        )}
-        {allModalities.length >= 2 && (
-          <FilterIconButtonGroupComponent
-            options={allModalities
-              .map((t) => {
-                const m = MODALITY_ICONS[t];
-                return m
-                  ? {
-                      key: t,
-                      icon: m.icon,
-                      color: MODALITY_COLORS[t],
-                      label: m.label,
-                    }
-                  : null;
-              })
-              .filter(Boolean)}
-            activeKeys={activeModality}
-            isSingleSelect={true}
-            onChange={setActiveModality}
-          />
-        )}
-        {allTools.length >= 2 && (
-          <>
-            {allModalities.length >= 2 && (
-              <div className={styles.filterDivider} />
-            )}
-            <FilterIconButtonGroupComponent
-              options={allTools
-                .map((t) => {
-                  const Icon = TOOL_ICONS[t];
-                  return Icon
-                    ? { key: t, icon: Icon, color: TOOL_COLORS[t], label: t }
-                    : null;
-                })
-                .filter(Boolean)}
-              activeKeys={activeTool}
-              isSingleSelect={true}
-              onChange={setActiveTool}
-            />
-          </>
-        )}
-        {showProviderFilter &&
-          allProviders.length >= 2 &&
-          (allModalities.length >= 2 || allTools.length >= 2) && (
-            <div className={styles.filterDivider} />
-          )}
-        {showProviderFilter && allProviders.length >= 2 && (
-          <FilterIconButtonGroupComponent
-            options={allProviders.map((p) => ({
-              key: p,
-              customRender: () => <ProviderLogo provider={p} size={14} />,
-              label: PROVIDER_LABELS[p] || p,
-            }))}
-            activeKeys={activeProvider}
-            isSingleSelect={true}
-            onChange={setActiveProvider}
-          />
-        )}
+        <FilterDropdownComponent
+          groups={[
+            ...(onToggleFavorite && favorites.length > 0
+              ? [
+                  {
+                    label: "Favorites",
+                    items: [{ key: "favorites", icon: Star, title: "Favorites Only", color: "#f59e0b" }],
+                    activeKeys: showFavoritesOnly ? "favorites" : null,
+                    isSingleSelect: true,
+                    onToggle: () => setShowFavoritesOnly((prev) => !prev),
+                  },
+                ]
+              : []),
+            ...(allModalities.length >= 2
+              ? [
+                  {
+                    label: "Modality",
+                    items: allModalities
+                      .map((t) => {
+                        const m = MODALITY_ICONS[t];
+                        return m ? { key: t, icon: m.icon, color: MODALITY_COLORS[t], title: m.label } : null;
+                      })
+                      .filter(Boolean),
+                    activeKeys: activeModality,
+                    isSingleSelect: true,
+                    onToggle: setActiveModality,
+                  },
+                ]
+              : []),
+            ...(allTools.length >= 2
+              ? [
+                  {
+                    label: "Tools",
+                    items: allTools
+                      .map((t) => {
+                        const Icon = TOOL_ICONS[t];
+                        return Icon ? { key: t, icon: Icon, color: TOOL_COLORS[t], title: t } : null;
+                      })
+                      .filter(Boolean),
+                    activeKeys: activeTool,
+                    isSingleSelect: true,
+                    onToggle: setActiveTool,
+                  },
+                ]
+              : []),
+            ...(showProviderFilter && allProviders.length >= 2
+              ? [
+                  {
+                    label: "Providers",
+                    items: allProviders.map((p) => ({
+                      key: p,
+                      icon: () => <ProviderLogo provider={p} size={13} />,
+                      title: PROVIDER_LABELS[p] || p,
+                    })),
+                    activeKeys: activeProvider,
+                    isSingleSelect: true,
+                    onToggle: setActiveProvider,
+                  },
+                ]
+              : []),
+          ]}
+        />
       </FilterBarComponent>
 
       <SortableTableComponent

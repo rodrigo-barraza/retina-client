@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { PROVIDER_LABELS } from "./ProviderLogos";
-import SidebarFilterComponent, {
-  MODALITY_FILTERS,
-  TOOL_FILTERS,
-} from "./SidebarFilterComponent";
-import DatePickerComponent from "./DatePickerComponent";
+import { Star } from "lucide-react";
+import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
+import { MODALITY_FILTERS, TOOL_FILTERS } from "./SidebarFilterComponent";
+import FilterDropdownComponent from "./FilterDropdownComponent";
 import SearchInputComponent from "./SearchInputComponent";
 import HistoryItemComponent from "./HistoryItemComponent";
 import styles from "./HistoryList.module.css";
@@ -150,7 +148,6 @@ export default function HistoryList({
     dateRange,
   ]);
 
-  const hasFavorites = !!onToggleFavorite && favorites.length > 0;
 
   return (
     <div className={styles.container}>
@@ -161,32 +158,77 @@ export default function HistoryList({
         className={styles.searchWrapper}
       />
 
-      <SidebarFilterComponent
-        modalities={showModalityFilters ? allModalities : []}
-        tools={showModalityFilters ? allTools : []}
-        providers={showProviderFilters ? allProviders : []}
-        activeModalities={activeModalities}
-        activeTools={activeTools}
-        activeProviders={activeProviders}
-        onModalityChange={setActiveModalities}
-        onToolChange={setActiveTools}
-        onProviderChange={setActiveProviders}
-        showFavoritesOnly={showFavoritesOnly}
-        onFavoritesToggle={
-          onToggleFavorite ? () => setShowFavoritesOnly((v) => !v) : undefined
-        }
-        hasFavorites={hasFavorites}
+      <FilterDropdownComponent
+        fullWidth
+        groups={[
+          ...(onToggleFavorite
+            ? [
+                {
+                  label: "Favorites",
+                  items: [{ key: "favorites", icon: Star, title: "Favorites Only", color: "#eab308" }],
+                  activeKeys: showFavoritesOnly ? "favorites" : null,
+                  isSingleSelect: true,
+                  onToggle: () => setShowFavoritesOnly((v) => !v),
+                },
+              ]
+            : []),
+          ...(showModalityFilters && allModalities.length >= 2
+            ? [
+                {
+                  label: "Modality",
+                  items: allModalities.map((m) => ({ key: m.key, icon: m.icon, title: m.title, color: m.color })),
+                  activeKeys: activeModalities,
+                  onToggle: (key) => {
+                    setActiveModalities((prev) => {
+                      const next = new Set(prev);
+                      next.has(key) ? next.delete(key) : next.add(key);
+                      return next;
+                    });
+                  },
+                },
+              ]
+            : []),
+          ...(showModalityFilters && allTools.length >= 1
+            ? [
+                {
+                  label: "Tools",
+                  items: allTools.map((t) => ({ key: t.key, icon: t.icon, title: t.title, color: t.color })),
+                  activeKeys: activeTools,
+                  onToggle: (key) => {
+                    setActiveTools((prev) => {
+                      const next = new Set(prev);
+                      next.has(key) ? next.delete(key) : next.add(key);
+                      return next;
+                    });
+                  },
+                },
+              ]
+            : []),
+          ...(showProviderFilters && allProviders.length >= 2
+            ? [
+                {
+                  label: "Providers",
+                  items: allProviders.map((p) => ({
+                    key: p,
+                    icon: () => <ProviderLogo provider={p} size={13} />,
+                    title: PROVIDER_LABELS[p] || p,
+                  })),
+                  activeKeys: activeProviders,
+                  onToggle: (key) => {
+                    setActiveProviders((prev) => {
+                      const next = new Set(prev);
+                      next.has(key) ? next.delete(key) : next.add(key);
+                      return next;
+                    });
+                  },
+                },
+              ]
+            : []),
+        ]}
+        dateRange={dateRange}
+        onDateChange={setDateRange}
+        dateStorageKey={LS_DATE_RANGE}
       />
-
-      <div className={styles.datePickerWrapper}>
-        <DatePickerComponent
-          from={dateRange.from}
-          to={dateRange.to}
-          onChange={setDateRange}
-          placeholder="All dates"
-          storageKey={LS_DATE_RANGE}
-        />
-      </div>
 
       <div className={styles.list}>
         {filtered.map((item) => (

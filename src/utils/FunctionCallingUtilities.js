@@ -59,7 +59,7 @@ export function buildToolSchemas(builtInTools, disabledBuiltIns, customTools) {
 
 /**
  * Build a name → schema Map from built-in tools.
- * Used by ToolActivityPanelComponent for data source badges.
+ * Build a name → schema Map for data source badge lookups.
  */
 export function buildToolSchemaMap(builtInTools) {
   const map = new Map();

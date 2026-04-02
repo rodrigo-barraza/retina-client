@@ -185,8 +185,11 @@ export default function DatePickerComponent({
   placeholder = "All time",
   storageKey = "",
   disabled = false,
+  defaultOpen = false,
+  onClose,
+  hideTrigger = false,
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [viewDate, setViewDate] = useState(() => {
     const d = from ? parseDate(from) : new Date();
     return { year: d.getFullYear(), month: d.getMonth() };
@@ -196,27 +199,55 @@ export default function DatePickerComponent({
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
+  const dropdownElRef = useRef(null);
   const initializedRef = useRef(false);
 
-  // Calculate fixed position from trigger bounding rect
+  // Calculate fixed position from trigger bounding rect, clamped to viewport
   const updateDropdownPos = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    setDropdownPos({
-      top: rect.bottom + 6,
-      left: rect.left,
-    });
+    let top = rect.bottom + 6;
+    let left = rect.left;
+
+    // After the dropdown is rendered, clamp to viewport
+    if (dropdownElRef.current) {
+      const dropRect = dropdownElRef.current.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      // Clamp right edge
+      if (left + dropRect.width > vw - 8) {
+        left = Math.max(8, vw - dropRect.width - 8);
+      }
+      // Clamp bottom edge — flip above if needed
+      if (top + dropRect.height > vh - 8) {
+        const above = rect.top - dropRect.height - 6;
+        if (above >= 8) {
+          top = above;
+        } else {
+          top = Math.max(8, vh - dropRect.height - 8);
+        }
+      }
+    }
+
+    setDropdownPos({ top, left });
   }, []);
 
   // Recalculate on open, scroll, and resize
   useEffect(() => {
     if (!open) return;
-    updateDropdownPos();
+    // Use rAF so the dropdown is painted before we measure for clamping
+    const rafId = requestAnimationFrame(() => {
+      updateDropdownPos();
+      // Second frame: re-clamp now that position is applied
+      requestAnimationFrame(() => updateDropdownPos());
+    });
     const handleScroll = () => updateDropdownPos();
     const handleResize = () => updateDropdownPos();
     window.addEventListener("scroll", handleScroll, true);
     window.addEventListener("resize", handleResize);
     return () => {
+      cancelAnimationFrame(rafId);
       window.removeEventListener("scroll", handleScroll, true);
       window.removeEventListener("resize", handleResize);
     };
@@ -260,11 +291,12 @@ export default function DatePickerComponent({
       if (containerRef.current && !containerRef.current.contains(e.target)) {
         setOpen(false);
         setSelecting(null);
+        onClose?.();
       }
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
+  }, [open, onClose]);
 
   // Close on Escape
   useEffect(() => {
@@ -273,11 +305,12 @@ export default function DatePickerComponent({
       if (e.key === "Escape") {
         setOpen(false);
         setSelecting(null);
+        onClose?.();
       }
     }
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [open]);
+  }, [open, onClose]);
 
   const prevMonth = useCallback(() => {
     setViewDate((v) => {
@@ -327,9 +360,10 @@ export default function DatePickerComponent({
         setSelecting(null);
         setHoverDate(null);
         setOpen(false);
+        onClose?.();
       }
     },
-    [selecting, onChange],
+    [selecting, onChange, onClose],
   );
 
   const handlePreset = useCallback(
@@ -339,8 +373,9 @@ export default function DatePickerComponent({
       setSelecting(null);
       setHoverDate(null);
       setOpen(false);
+      onClose?.();
     },
-    [onChange],
+    [onChange, onClose],
   );
 
   const handleClear = useCallback(() => {
@@ -348,7 +383,8 @@ export default function DatePickerComponent({
     setSelecting(null);
     setHoverDate(null);
     setOpen(false);
-  }, [onChange]);
+    onClose?.();
+  }, [onChange, onClose]);
 
   const displayText = formatDisplay(from, to);
   const hasValue = !!(from || to);
@@ -359,38 +395,42 @@ export default function DatePickerComponent({
 
   return (
     <div className={styles.container} ref={containerRef}>
-      <button
-        ref={triggerRef}
-        type="button"
-        className={`${styles.trigger} ${open ? styles.triggerOpen : ""} ${disabled ? styles.triggerDisabled : ""}`}
-        onClick={() => !disabled && setOpen((v) => !v)}
-        disabled={disabled}
-      >
-        <span className={styles.triggerContent}>
-          <span className={styles.triggerIcon}><Calendar size={13} /></span>
-          <span className={styles.triggerText}>{displayText || placeholder}</span>
-        </span>
-        {hasValue ? (
-          <span
-            className={styles.triggerClear}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleClear();
-            }}
-            title="Clear dates"
-          >
-            <X size={12} />
+      {!hideTrigger && (
+        <button
+          ref={triggerRef}
+          type="button"
+          className={`${styles.trigger} ${open ? styles.triggerOpen : ""} ${disabled ? styles.triggerDisabled : ""}`}
+          onClick={() => !disabled && setOpen((v) => !v)}
+          disabled={disabled}
+        >
+          <span className={styles.triggerContent}>
+            <span className={styles.triggerIcon}><Calendar size={13} /></span>
+            <span className={styles.triggerText}>{displayText || placeholder}</span>
           </span>
-        ) : (
-          <ChevronDown
-            size={14}
-            className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`}
-          />
-        )}
-      </button>
+          {hasValue ? (
+            <span
+              className={styles.triggerClear}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClear();
+              }}
+              title="Clear dates"
+            >
+              <X size={12} />
+            </span>
+          ) : (
+            <ChevronDown
+              size={14}
+              className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`}
+            />
+          )}
+        </button>
+      )}
+      {hideTrigger && <div ref={triggerRef} />}
 
       {open && (
         <div
+          ref={dropdownElRef}
           className={styles.dropdown}
           style={{ top: dropdownPos.top, left: dropdownPos.left }}
         >

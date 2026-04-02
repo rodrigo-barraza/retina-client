@@ -10,7 +10,6 @@ import { getModalities } from "./HistoryPanel";
 import StorageService from "../services/StorageService";
 import {
   buildToolSchemas,
-  buildToolSchemaMap,
 } from "../utils/FunctionCallingUtilities";
 import {
   getUniqueModels,
@@ -34,8 +33,61 @@ import HistoryPanel from "../components/HistoryPanel";
 import ThreePanelLayout from "../components/ThreePanelLayout";
 import TabBarComponent from "../components/TabBarComponent";
 import ModelPickerPopoverComponent from "../components/ModelPickerPopoverComponent";
-import ToolActivityPanelComponent from "../components/ToolActivityPanelComponent";
 import useToolToggles from "../hooks/useToolToggles";
+
+// All tool-toggle keys that must be explicitly reset when switching conversations
+// to prevent leaking state from the previous selection.
+const TOOL_TOGGLE_DEFAULTS = {
+  functionCallingEnabled: false,
+  webSearchEnabled: false,
+  thinkingEnabled: false,
+  codeExecutionEnabled: false,
+  urlContextEnabled: false,
+};
+
+// Detect which tool toggles were active in a conversation from its messages,
+// so we can restore them even if the settings object wasn't saved.
+function detectToolTogglesFromMessages(messages) {
+  const toggles = {};
+  for (const m of messages || []) {
+    // Function calling
+    if (m.role === "tool" || m.toolCalls?.length > 0) {
+      toggles.functionCallingEnabled = true;
+    }
+    // Thinking / reasoning
+    if (m.role === "assistant" && m.thinking) {
+      toggles.thinkingEnabled = true;
+    }
+    // Web search (from inline results or tool calls)
+    if (
+      m.role === "assistant" &&
+      typeof m.content === "string" &&
+      m.content.includes("> **Sources:**")
+    ) {
+      toggles.webSearchEnabled = true;
+    }
+    if (m.toolCalls?.length > 0) {
+      for (const tc of m.toolCalls) {
+        const name = (tc.name || "").toLowerCase();
+        if (name === "web_search" || name === "web_search_preview" || name === "google_search") {
+          toggles.webSearchEnabled = true;
+        }
+        if (name === "code_execution") {
+          toggles.codeExecutionEnabled = true;
+        }
+      }
+    }
+    // Code execution (from inline blocks)
+    if (
+      m.role === "assistant" &&
+      typeof m.content === "string" &&
+      m.content.includes("```exec-")
+    ) {
+      toggles.codeExecutionEnabled = true;
+    }
+  }
+  return toggles;
+}
 
 export default function HomePage({ initialConversationId = null }) {
   const router = useRouter();
@@ -96,7 +148,7 @@ export default function HomePage({ initialConversationId = null }) {
   const [builtInTools, setBuiltInTools] = useState([]);
   const { disabledBuiltIns, handleToggleBuiltIn, handleToggleAllBuiltIn } =
     useToolToggles(builtInTools);
-  const [toolActivity, setToolActivity] = useState([]);
+  const [_toolActivity, setToolActivity] = useState([]);
   const [streamingOutputs, setStreamingOutputs] = useState(new Map());
 
   // Reusable callback for tool_output SSE events
@@ -260,11 +312,7 @@ export default function HomePage({ initialConversationId = null }) {
     [customTools, disabledBuiltIns, builtInTools],
   );
 
-  // Schema lookup for ToolActivityPanel data source badges
-  const toolSchemaMap = useMemo(
-    () => buildToolSchemaMap(builtInTools),
-    [builtInTools],
-  );
+
 
   const loadCustomTools = useCallback(async () => {
     try {
@@ -330,11 +378,6 @@ export default function HomePage({ initialConversationId = null }) {
           );
           skipSystemPromptSave.current = true;
 
-          // Detect if conversation used function calling
-          const hadToolCalls = (full.messages || []).some(
-            (m) => m.role === "tool" || m.toolCalls?.length > 0,
-          );
-
           let restoredSettings = full.settings || {};
           if (!restoredSettings.provider && full.messages?.length) {
             const lastAssistant = [...(full.messages || [])]
@@ -349,12 +392,14 @@ export default function HomePage({ initialConversationId = null }) {
             }
           }
 
+          const detectedToggles = detectToolTogglesFromMessages(full.messages);
           setSettings((s) => ({
             ...s,
+            ...TOOL_TOGGLE_DEFAULTS,
             ...restoredSettings,
+            ...detectedToggles,
             systemPrompt:
               full.systemPrompt || "You are a helpful AI assistant.",
-            ...(hadToolCalls && { functionCallingEnabled: true }),
           }));
         })
         .catch(() => {
@@ -388,6 +433,7 @@ export default function HomePage({ initialConversationId = null }) {
     skipSystemPromptSave.current = true;
     setSettings((s) => ({
       ...s,
+      ...TOOL_TOGGLE_DEFAULTS,
       systemPrompt: "You are a helpful AI assistant.",
     }));
   };
@@ -429,11 +475,6 @@ export default function HomePage({ initialConversationId = null }) {
       );
       skipSystemPromptSave.current = true;
 
-      // Detect if conversation used function calling
-      const hadToolCalls = (full.messages || []).some(
-        (m) => m.role === "tool" || m.toolCalls?.length > 0,
-      );
-
       // Restore settings — use saved settings, or fall back to
       // provider/model from the last assistant message (for older conversations).
       let restoredSettings = full.settings || {};
@@ -450,11 +491,13 @@ export default function HomePage({ initialConversationId = null }) {
         }
       }
 
+      const detectedToggles = detectToolTogglesFromMessages(full.messages);
       setSettings((s) => ({
         ...s,
+        ...TOOL_TOGGLE_DEFAULTS,
         ...restoredSettings,
+        ...detectedToggles,
         systemPrompt: full.systemPrompt || "You are a helpful AI assistant.",
-        ...(hadToolCalls && { functionCallingEnabled: true }),
       }));
     } catch (err) {
       console.error(err);
@@ -2007,15 +2050,7 @@ export default function HomePage({ initialConversationId = null }) {
             setHoveredLink(hovering ? "fc-card" : null)
           }
           streamingOutputs={streamingOutputs}
-          toolActivitySlot={
-            settings.functionCallingEnabled && toolActivity.length > 0 ? (
-              <ToolActivityPanelComponent
-                activities={toolActivity}
-                toolSchemaMap={toolSchemaMap}
-                streamingOutputs={streamingOutputs}
-              />
-            ) : null
-          }
+
           onLiveUserChunk={(fullText, { isTyped } = {}) => {
             setMessages((prev) => {
               const lastIdx = prev.length - 1;

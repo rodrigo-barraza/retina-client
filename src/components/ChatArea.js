@@ -206,7 +206,7 @@ export default function ChatArea({
   readOnly = false,
   newChatKey = 0,
   conversationId = null,
-  toolActivitySlot = null,
+
   functionCallingEnabled = false,
   enabledToolNames = [],
   toolCount = 0,
@@ -864,7 +864,7 @@ export default function ChatArea({
         <div ref={endRef} />
       </div>
 
-      {toolActivitySlot}
+
 
       {messages.length === 0 &&
         functionCallingEnabled &&

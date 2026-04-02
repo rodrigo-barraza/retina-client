@@ -1,31 +1,27 @@
-/* ── Sidebar Filters — Dropdown + Badge pattern ── */
+/* ── FilterDropdown — Reusable dropdown + badge filter for page-level filter bars ── */
 
 .filterSection {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 0 12px 8px;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .filterRow {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
 }
 
-/* ── Dropdown (matches DatePicker trigger style) ── */
+/* ── Dropdown trigger ── */
 .dropdownWrapper {
   position: relative;
-  width: 100%;
+  flex-shrink: 0;
 }
 
 .dropdownTrigger {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
   height: var(--input-height);
   padding: 0 12px;
   font-size: 14px;
@@ -111,10 +107,10 @@
   border-radius: var(--border-radius-md, 6px);
   box-shadow: var(--shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.25));
   padding: 4px 0;
-  animation: dropdownSlideIn 0.15s ease-out;
+  animation: filterDropdownSlideIn 0.15s ease-out;
 }
 
-@keyframes dropdownSlideIn {
+@keyframes filterDropdownSlideIn {
   from {
     opacity: 0;
     transform: translateY(-4px);
@@ -180,7 +176,7 @@
   font-weight: 700;
 }
 
-/* ── Scrollbar styling for menu ── */
+/* ── Scrollbar ── */
 .dropdownMenu::-webkit-scrollbar {
   width: 4px;
 }
@@ -218,10 +214,10 @@
   white-space: nowrap;
   user-select: none;
   cursor: default;
-  animation: badgeFadeIn 0.2s ease-out;
+  animation: filterBadgeFadeIn 0.2s ease-out;
 }
 
-@keyframes badgeFadeIn {
+@keyframes filterBadgeFadeIn {
   from {
     opacity: 0;
     transform: scale(0.9);
