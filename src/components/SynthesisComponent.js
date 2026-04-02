@@ -252,7 +252,8 @@ export default function SynthesisComponent() {
       }
     }
 
-    // Conversation metadata for Prism persistence
+    // Conversation metadata for Prism persistence — only used the FIRST
+    // time we need to create the conversation record in the backend.
     const convMeta = {
       title: `Synthesis: ${systemPrompt.slice(0, 60)}`,
       systemPrompt,
@@ -262,6 +263,10 @@ export default function SynthesisComponent() {
         temperature: settings.temperature,
       },
     };
+
+    // Track whether the conversation record has been created in the backend.
+    // If seed messages were appended above, it's already created.
+    let conversationCreated = conversation.length > 0;
 
     // targetTurns = total user/assistant pairs; each turn = 2 messages
     const totalMessages = targetTurns * 2;
@@ -281,6 +286,13 @@ export default function SynthesisComponent() {
 
         if (nextRole === "assistant") {
           // ─── ASSISTANT TURN: genuine model response ───────────
+          // Only pass conversationMeta if the conversation hasn't been
+          // created yet (first assistant call with no seeds). When meta
+          // is present, the /chat route also persists the last user
+          // message — which would duplicate it if we already appended
+          // it explicitly during a user-simulation turn.
+          const turnMeta = conversationCreated ? undefined : convMeta;
+
           const assistantContent = await streamTurn(
             settings,
             systemPrompt,
@@ -294,8 +306,9 @@ export default function SynthesisComponent() {
             },
             abortRef,
             convId,
-            convMeta,
+            turnMeta,
           );
+          conversationCreated = true;
 
           if (abortedRef.current) break;
 
@@ -334,10 +347,17 @@ export default function SynthesisComponent() {
           if (abortedRef.current) break;
 
           // Append the generated user message to the conversation in Prism
-          const userMsg = { role: "user", content: userContent };
+          const userMsg = {
+            role: "user",
+            content: userContent,
+            timestamp: new Date().toISOString(),
+          };
           conversation.push(userMsg);
           try {
-            await PrismService.appendMessages(convId, [userMsg]);
+            // Pass meta on the first call to create the conversation record
+            const appendMeta = conversationCreated ? undefined : convMeta;
+            await PrismService.appendMessages(convId, [userMsg], undefined, appendMeta);
+            conversationCreated = true;
           } catch {
             // Non-critical
           }
@@ -366,7 +386,6 @@ export default function SynthesisComponent() {
           },
           abortRef,
           convId,
-          convMeta,
         );
 
         if (!abortedRef.current) {
