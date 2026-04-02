@@ -197,6 +197,6 @@ export default class IrisService {
   }
 
   static async getLocalConfig() {
-    return fetchUserRouteAsAdmin("/config/local-config");
+    return fetchUserRouteAsAdmin("/config-local");
   }
 }
