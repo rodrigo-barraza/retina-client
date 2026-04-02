@@ -19,6 +19,15 @@
   margin-bottom: 4px;
 }
 
+/* ── Type Filter Bar ──────────────────────────────────────── */
+
+.typeFilterBar {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 2px 0 4px;
+}
+
 .sectionHeader {
   display: flex;
   align-items: center;

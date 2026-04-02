@@ -41,6 +41,7 @@ import PrismService from "../services/PrismService.js";
 import ButtonComponent from "./ButtonComponent.js";
 import ToggleSwitchComponent from "./ToggleSwitch.js";
 import SearchInputComponent from "./SearchInputComponent.js";
+import { FilterIconButtonGroupComponent } from "./FilterBarComponent.js";
 import { renderToolName } from "../utils/utilities";
 import styles from "./CustomToolsPanel.module.css";
 
@@ -71,6 +72,14 @@ const DATA_SOURCE_LABELS = {
   static: "Static",
   compute: "Compute",
   realtime: "Realtime",
+};
+
+const DATA_SOURCE_COLORS = {
+  cached: "#0ea5e9",
+  onDemand: "#f59e0b",
+  static: "#a855f7",
+  compute: "#10b981",
+  realtime: "#f43f5e",
 };
 
 const DOMAIN_ICONS = {
@@ -154,6 +163,7 @@ export default function CustomToolsPanel({
   const [builtInOpen, setBuiltInOpen] = useState(true);
   const [customOpen, setCustomOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTypeFilter, setActiveTypeFilter] = useState(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
   const [collapsedDomains, setCollapsedDomains] = useState(new Set());
   const [inputMode, setInputMode] = useState("manual"); // "manual" | "json"
@@ -409,27 +419,53 @@ export default function CustomToolsPanel({
 
   const enabledBuiltIn = builtInTools.length - disabledBuiltIns.size;
 
-  // ── Search filtering ────────────────────────────────────────
+  // ── Available type filters from built-in tools ──────────────
+  const availableTypeOptions = useMemo(() => {
+    const types = new Map();
+    for (const t of builtInTools) {
+      const type = t.dataSource?.type;
+      if (type) types.set(type, (types.get(type) || 0) + 1);
+    }
+    const order = ["cached", "onDemand", "static", "compute", "realtime"];
+    return order
+      .filter((k) => types.has(k))
+      .map((k) => ({
+        key: k,
+        label: `${DATA_SOURCE_LABELS[k]} (${types.get(k)})`,
+        icon: DATA_SOURCE_ICONS[k],
+        color: DATA_SOURCE_COLORS[k],
+      }));
+  }, [builtInTools]);
+
+  // ── Search + type filtering ─────────────────────────────────
   const query = searchQuery.toLowerCase().trim();
 
   const filteredCustomTools = useMemo(() => {
+    // If a type filter is active, custom tools are hidden (they don't have a dataSource type)
+    if (activeTypeFilter) return [];
     if (!query) return tools;
     return tools.filter(
       (t) =>
         t.name?.toLowerCase().includes(query) ||
         t.description?.toLowerCase().includes(query),
     );
-  }, [tools, query]);
+  }, [tools, query, activeTypeFilter]);
 
   const filteredBuiltInTools = useMemo(() => {
-    if (!query) return builtInTools;
-    return builtInTools.filter(
-      (t) =>
-        t.name?.toLowerCase().includes(query) ||
-        renderToolName(t.name)?.toLowerCase().includes(query) ||
-        t.description?.toLowerCase().includes(query),
-    );
-  }, [builtInTools, query]);
+    let result = builtInTools;
+    if (activeTypeFilter) {
+      result = result.filter((t) => t.dataSource?.type === activeTypeFilter);
+    }
+    if (query) {
+      result = result.filter(
+        (t) =>
+          t.name?.toLowerCase().includes(query) ||
+          renderToolName(t.name)?.toLowerCase().includes(query) ||
+          t.description?.toLowerCase().includes(query),
+      );
+    }
+    return result;
+  }, [builtInTools, query, activeTypeFilter]);
 
   // ── Toggle-all states ───────────────────────────────────────
   const onlineBuiltInTools = builtInTools.filter(
@@ -814,7 +850,20 @@ export default function CustomToolsPanel({
         className={styles.searchBar}
       />
 
-      {/* ── Custom tools ── */}
+      {/* ── Type Filter Badges ── */}
+      {availableTypeOptions.length > 0 && (
+        <div className={styles.typeFilterBar}>
+          <FilterIconButtonGroupComponent
+            options={availableTypeOptions}
+            activeKeys={activeTypeFilter}
+            onChange={setActiveTypeFilter}
+            isSingleSelect
+          />
+        </div>
+      )}
+
+      {/* ── Custom tools (hidden when type-filtering built-ins) ── */}
+      {!activeTypeFilter && (<>
       <div
         className={styles.sectionHeader}
         onClick={() => setCustomOpen((v) => !v)}
@@ -981,6 +1030,7 @@ export default function CustomToolsPanel({
             </div>
           );
         })}
+      </>)}
 
       {/* ── Built-in tools ── */}
       <div
