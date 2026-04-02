@@ -6,7 +6,6 @@ import {
   Volume2,
   Video,
   FileText as DocIcon,
-  Parentheses,
   Globe,
   Code,
   Brain,
@@ -38,7 +37,6 @@ const TOOL_MODALITIES = [
   { key: "thinking", label: "Thinking", icon: Brain, color: MODALITY_COLORS.thinking },
   { key: "webSearch", label: "Web search", icon: Globe, color: MODALITY_COLORS.webSearch },
   { key: "codeExecution", label: "Code execution", icon: Code, color: MODALITY_COLORS.codeExecution },
-  { key: "functionCalling", label: "Function calling", icon: Parentheses, color: MODALITY_COLORS.functionCalling },
 ];
 
 /**
