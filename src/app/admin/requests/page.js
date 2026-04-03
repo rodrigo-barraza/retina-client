@@ -545,8 +545,14 @@ export default function RequestsPage() {
                                   ]
                                 : [],
                               updatedAt: c.updatedAt || c.createdAt,
+                              createdAt: c.createdAt,
+                              totalCost: c.totalCost || 0,
+                              modalities: c.modalities || {},
+                              modelName: c.model || null,
+                              username: c.username,
                             }}
                             icon={MessageSquare}
+                            admin
                             onClick={() =>
                               router.push(`/admin/conversations/${c.id}`)
                             }
