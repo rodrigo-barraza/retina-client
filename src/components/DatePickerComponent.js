@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { Calendar, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Clock, X } from "lucide-react";
 import { DATE_PRESETS, fmtDate as fmt, parseDateValue as parseDate, formatDateDisplay, getActiveDatePreset } from "../utils/datePresets";
 import styles from "./DatePickerComponent.module.css";
 
@@ -17,6 +17,26 @@ function isSameDay(a, b) {
 function isInRange(date, from, to) {
   if (!from || !to || !date) return false;
   return date >= from && date <= to;
+}
+
+/** Extract local HH:MM from an ISO string or return "" */
+function extractTime(str) {
+  if (!str || !str.includes("T")) return "";
+  const d = new Date(str);
+  if (isNaN(d)) return "";
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/** Compose a date string with optional local time → full UTC ISO string */
+function composeDatetime(dateStr, time) {
+  if (!dateStr) return "";
+  const dayPart = dateStr.slice(0, 10);
+  if (!time) return dayPart;
+  // Parse as local time, then convert to UTC ISO
+  const [hh, mm] = time.split(":").map(Number);
+  const d = new Date(dayPart + "T00:00:00");
+  d.setHours(hh, mm, 0, 0);
+  return d.toISOString();
 }
 
 function MonthGrid({
@@ -124,6 +144,16 @@ export default function DatePickerComponent({
   const triggerRef = useRef(null);
   const dropdownElRef = useRef(null);
   const initializedRef = useRef(false);
+
+  // Time inputs for custom ranges — local editable state keyed by from/to
+  // When from/to props change, React remounts state via key change in initializer
+  const [timeEdits, setTimeEdits] = useState({ fromTime: extractTime(from), toTime: extractTime(to), key: `${from}|${to}` });
+  if (`${from}|${to}` !== timeEdits.key) {
+    setTimeEdits({ fromTime: extractTime(from), toTime: extractTime(to), key: `${from}|${to}` });
+  }
+  const { fromTime, toTime } = timeEdits;
+  const setFromTime = (v) => setTimeEdits((s) => ({ ...s, fromTime: v }));
+  const setToTime = (v) => setTimeEdits((s) => ({ ...s, toTime: v }));
 
   // Calculate fixed position from trigger bounding rect, clamped to viewport
   const updateDropdownPos = useCallback(() => {
@@ -279,14 +309,19 @@ export default function DatePickerComponent({
         const a = selecting;
         const b = dateStr;
         const [rangeFrom, rangeTo] = a <= b ? [a, b] : [b, a];
-        onChange({ from: rangeFrom, to: rangeTo });
+        const composedFrom = composeDatetime(rangeFrom, fromTime);
+        const composedTo = composeDatetime(rangeTo, toTime);
+        onChange({ from: composedFrom, to: composedTo });
         setSelecting(null);
         setHoverDate(null);
-        setOpen(false);
-        onClose?.();
+        // Don't auto-close if time is set — user might want to adjust
+        if (!fromTime && !toTime) {
+          setOpen(false);
+          onClose?.();
+        }
       }
     },
-    [selecting, onChange, onClose],
+    [selecting, onChange, onClose, fromTime, toTime],
   );
 
   const handlePreset = useCallback(
@@ -303,11 +338,23 @@ export default function DatePickerComponent({
 
   const handleClear = useCallback(() => {
     onChange({ from: "", to: "" });
+    setFromTime("");
+    setToTime("");
     setSelecting(null);
     setHoverDate(null);
     setOpen(false);
     onClose?.();
   }, [onChange, onClose]);
+
+  /** Apply time changes to the current range */
+  const handleApplyTime = useCallback(() => {
+    if (!from) return;
+    const composedFrom = composeDatetime(from, fromTime);
+    const composedTo = to ? composeDatetime(to, toTime) : "";
+    onChange({ from: composedFrom, to: composedTo });
+    setOpen(false);
+    onClose?.();
+  }, [from, to, fromTime, toTime, onChange, onClose]);
 
   const displayText = formatDateDisplay(from, to);
   const hasValue = !!(from || to);
@@ -315,6 +362,9 @@ export default function DatePickerComponent({
   // Current "from" during selection: either the selecting state or the committed from
   const activeFrom = selecting || from;
   const activeTo = selecting ? "" : to;
+
+  // Show time row whenever a date range is active
+  const showTimeRow = hasValue;
 
   return (
     <div className={styles.container} ref={containerRef}>
@@ -424,6 +474,40 @@ export default function DatePickerComponent({
             {selecting && (
               <div className={styles.selectHint}>
                 Click a second date to complete the range
+              </div>
+            )}
+
+            {/* Time inputs */}
+            {showTimeRow && !selecting && (
+              <div className={styles.timeRow}>
+                <div className={styles.timeField}>
+                  <Clock size={12} className={styles.timeIcon} />
+                  <span className={styles.timeLabel}>From</span>
+                  <input
+                    type="time"
+                    className={styles.timeInput}
+                    value={fromTime}
+                    onChange={(e) => setFromTime(e.target.value)}
+                  />
+                </div>
+                <span className={styles.timeSep}>–</span>
+                <div className={styles.timeField}>
+                  <Clock size={12} className={styles.timeIcon} />
+                  <span className={styles.timeLabel}>To</span>
+                  <input
+                    type="time"
+                    className={styles.timeInput}
+                    value={toTime}
+                    onChange={(e) => setToTime(e.target.value)}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className={styles.timeApplyBtn}
+                  onClick={handleApplyTime}
+                >
+                  Apply
+                </button>
               </div>
             )}
           </div>

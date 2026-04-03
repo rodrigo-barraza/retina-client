@@ -95,22 +95,28 @@ export function formatDateDisplay(from, to) {
     return !to && from && v.from.slice(0, 16) === from.slice(0, 16);
   });
   if (matchingPreset) return matchingPreset.label;
-  const opts = { month: "short", day: "numeric" };
+
+  const hasFromTime = from?.includes("T");
+  const hasToTime = to?.includes("T");
+  const dateOpts = { month: "short", day: "numeric" };
+  const timeOpts = { hour: "2-digit", minute: "2-digit", hour12: false };
   const fromDate = parseDateValue(from);
   const toDate = parseDateValue(to);
+
+  const fmtWithTime = (date, hasTime) => {
+    const dayStr = date.toLocaleDateString("en-US", dateOpts);
+    if (!hasTime) return dayStr;
+    const timStr = date.toLocaleTimeString("en-US", timeOpts);
+    return `${dayStr} ${timStr}`;
+  };
+
   if (fromDate && toDate) {
-    if (isSameDay(fromDate, toDate))
-      return fromDate.toLocaleDateString("en-US", opts);
-    const fromStr = fromDate.toLocaleDateString("en-US", opts);
-    const toStr = toDate.toLocaleDateString("en-US", {
-      ...opts,
-      year:
-        fromDate.getFullYear() !== toDate.getFullYear() ? "numeric" : undefined,
-    });
-    return `${fromStr} – ${toStr}`;
+    if (isSameDay(fromDate, toDate) && !hasFromTime && !hasToTime)
+      return fromDate.toLocaleDateString("en-US", dateOpts);
+    return `${fmtWithTime(fromDate, hasFromTime)} – ${fmtWithTime(toDate, hasToTime)}`;
   }
-  if (fromDate) return `From ${fromDate.toLocaleDateString("en-US", opts)}`;
-  if (toDate) return `Until ${toDate.toLocaleDateString("en-US", opts)}`;
+  if (fromDate) return `From ${fmtWithTime(fromDate, hasFromTime)}`;
+  if (toDate) return `Until ${fmtWithTime(toDate, hasToTime)}`;
   return null;
 }
 

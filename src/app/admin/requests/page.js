@@ -679,7 +679,10 @@ export default function RequestsPage() {
                 };
 
                 // Handle different response formats
-                if (resPayload.content) {
+                if (resPayload.text) {
+                  // Prism standardized format
+                  assistantMsg.content = resPayload.text;
+                } else if (resPayload.content) {
                   assistantMsg.content = resPayload.content;
                 } else if (resPayload.candidates?.[0]?.content?.parts) {
                   // Google format
@@ -708,7 +711,17 @@ export default function RequestsPage() {
                   }));
                 }
 
-                if (assistantMsg.content || assistantMsg.toolCalls?.length) {
+                // Extract generated images
+                if (resPayload.images?.length) {
+                  assistantMsg.images = resPayload.images;
+                }
+
+                // Extract thinking content
+                if (resPayload.thinking) {
+                  assistantMsg.thinking = resPayload.thinking;
+                }
+
+                if (assistantMsg.content || assistantMsg.toolCalls?.length || assistantMsg.images?.length) {
                   chatMessages.push(assistantMsg);
                 }
               }
