@@ -143,13 +143,11 @@
   width: 1%;
   text-align: left;
   white-space: nowrap;
-  background: var(--bg-primary);
-  font-weight: 600;
+  background: transparent;
   color: var(--text-primary);
   position: sticky;
   left: 0;
   z-index: 1;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.15);
 }
 
 /* Highlight cost column */
@@ -165,7 +163,7 @@
 }
 
 .tr:nth-child(even) .tdName {
-  background: color-mix(in srgb, var(--bg-primary) 96%, var(--text-primary));
+  background: rgba(255, 255, 255, 0.02);
 }
 
 /* Sorted-column highlight preserved on even rows */
