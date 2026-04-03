@@ -1,0 +1,141 @@
+/* ── JSON Viewer ── */
+.viewer {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-family: var(--font-sans, inherit);
+}
+
+.copyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-sans, inherit);
+
+  &:hover {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+  }
+}
+
+.tree {
+  padding: 10px 12px;
+  overflow-x: auto;
+}
+
+/* ── Node structure ── */
+.node {
+  user-select: text;
+}
+
+.row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  white-space: pre;
+  padding: 0 0 0 2px;
+  border-radius: 2px;
+  transition: background 0.1s;
+
+  &:hover {
+    background: var(--accent-glow);
+  }
+}
+
+.children {
+  padding-left: 18px;
+  border-left: 1px solid var(--border-subtle);
+  margin-left: 6px;
+}
+
+/* ── Chevron ── */
+.chevron {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+  margin-right: 2px;
+  flex-shrink: 0;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+/* ── Key ── */
+.key {
+  color: #c792ea;
+}
+
+/* ── Brackets ── */
+.bracket {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.comma {
+  color: var(--text-muted);
+}
+
+/* ── Collapsed preview ── */
+.collapsed {
+  color: var(--text-secondary);
+}
+
+.ellipsis {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 11px;
+  padding: 0 4px;
+}
+
+/* ── Value types ── */
+.val_string {
+  color: #a9dc76;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.val_number {
+  color: #78dce8;
+}
+
+.val_boolean {
+  color: #ff6188;
+  font-weight: 600;
+}
+
+.val_null {
+  color: var(--text-muted);
+  font-style: italic;
+}

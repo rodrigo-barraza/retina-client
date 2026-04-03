@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Download, MessageSquare, GitBranch, FolderOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import HistoryItemComponent from "../../../components/HistoryItemComponent";
+import JsonViewerComponent from "../../../components/JsonViewerComponent";
 import IrisService from "../../../services/IrisService";
 import {
   formatNumber,
@@ -726,20 +727,22 @@ export default function RequestsPage() {
             })()}
             {selectedRequest.requestPayload && (
               <div className={styles.detailSection}>
-                <div className={styles.detailSectionTitle}>Request Payload</div>
-                <pre className={styles.payloadBlock}>
-                  {JSON.stringify(selectedRequest.requestPayload, null, 2)}
-                </pre>
+                <JsonViewerComponent
+                  data={selectedRequest.requestPayload}
+                  label="Request Payload"
+                  collapsed={1}
+                  maxHeight="400px"
+                />
               </div>
             )}
             {selectedRequest.responsePayload && (
               <div className={styles.detailSection}>
-                <div className={styles.detailSectionTitle}>
-                  Response Payload
-                </div>
-                <pre className={styles.payloadBlock}>
-                  {JSON.stringify(selectedRequest.responsePayload, null, 2)}
-                </pre>
+                <JsonViewerComponent
+                  data={selectedRequest.responsePayload}
+                  label="Response Payload"
+                  collapsed={1}
+                  maxHeight="400px"
+                />
               </div>
             )}
           </>

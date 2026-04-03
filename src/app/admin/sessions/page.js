@@ -13,7 +13,7 @@ import useProjectFilter from "../../../hooks/useProjectFilter";
 import styles from "./page.module.css";
 
 const PAGE_SIZE = 30;
-const POLL_INTERVAL = 1000; // 1s
+const POLL_INTERVAL = 5000; // 5s
 
 export default function SessionsPage() {
   const { projectFilter, projectOptions, handleProjectChange } =
