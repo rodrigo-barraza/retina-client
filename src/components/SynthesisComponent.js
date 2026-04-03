@@ -350,11 +350,7 @@ export default function SynthesisComponent() {
           if (abortedRef.current) break;
 
           // Append the generated user message to the conversation in Prism
-          const userMsg = {
-            role: "user",
-            content: userContent,
-            timestamp: new Date().toISOString(),
-          };
+          const userMsg = { role: "user", content: userContent };
           conversation.push(userMsg);
           try {
             // Pass meta on the first call to create the conversation record
