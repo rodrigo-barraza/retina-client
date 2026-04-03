@@ -11,6 +11,7 @@ import ModalityIconComponent from "./ModalityIconComponent";
 import { DateTime } from "luxon";
 import styles from "./HistoryItemComponent.module.css";
 import CostBadgeComponent from "./CostBadgeComponent";
+import ModelBadgeComponent from "./ModelBadgeComponent";
 
 /**
  * HistoryItemComponent — a single row within HistoryList or any list that
@@ -95,9 +96,7 @@ export default function HistoryItemComponent({
           <CostBadgeComponent cost={item.totalCost} mini showIcon={false} />
         </div>
         {item.modelName && (
-          <span className={styles.modelTag} title={item.modelName}>
-            {item.modelName.split("/").pop()}
-          </span>
+          <ModelBadgeComponent models={[item.modelName]} className={styles.modelBadge} />
         )}
         <ModalityIconComponent modalities={mod} />
         {children}

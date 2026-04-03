@@ -3,14 +3,19 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 6px;
-  border-radius: 2px;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 3px;
   font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-weight: 500;
+  letter-spacing: 0.2px;
   white-space: nowrap;
-  line-height: 1.4;
+  border: 1px solid transparent;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.badge svg {
+  flex-shrink: 0;
 }
 
 /* ── Variants ─────────────────────────────────────── */
@@ -18,41 +23,73 @@
 .provider {
   color: var(--info);
   background: var(--info-subtle);
+  border-color: color-mix(in srgb, var(--info) 20%, transparent);
+}
+.provider:hover {
+  border-color: color-mix(in srgb, var(--info) 45%, transparent);
 }
 
 .endpoint {
   color: var(--accent-color);
   background: var(--accent-subtle);
+  border-color: color-mix(in srgb, var(--accent-color) 20%, transparent);
+}
+.endpoint:hover {
+  border-color: color-mix(in srgb, var(--accent-color) 45%, transparent);
 }
 
 .modality {
   color: var(--accent-color);
   background: var(--accent-subtle);
+  border-color: color-mix(in srgb, var(--accent-color) 20%, transparent);
+}
+.modality:hover {
+  border-color: color-mix(in srgb, var(--accent-color) 45%, transparent);
 }
 
 .success {
   color: var(--success);
   background: var(--success-subtle);
+  border-color: color-mix(in srgb, var(--success) 20%, transparent);
+}
+.success:hover {
+  border-color: color-mix(in srgb, var(--success) 45%, transparent);
 }
 
 .error {
   color: var(--danger);
   background: var(--danger-subtle);
+  border-color: color-mix(in srgb, var(--danger) 20%, transparent);
+}
+.error:hover {
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
 }
 
 .info {
   color: var(--info);
   background: var(--info-subtle);
+  border-color: color-mix(in srgb, var(--info) 20%, transparent);
+}
+.info:hover {
+  border-color: color-mix(in srgb, var(--info) 45%, transparent);
 }
 
 .accent {
   color: var(--accent-color);
   background: var(--accent-subtle);
+  border-color: color-mix(in srgb, var(--accent-color) 20%, transparent);
+}
+.accent:hover {
+  border-color: color-mix(in srgb, var(--accent-color) 45%, transparent);
 }
 
 .warning {
   color: var(--warning);
   background: var(--warning-subtle);
+  border-color: color-mix(in srgb, var(--warning) 20%, transparent);
+}
+.warning:hover {
+  border-color: color-mix(in srgb, var(--warning) 45%, transparent);
 }
 
 /* ── Mini ─────────────────────────────────────────── */
@@ -60,5 +97,5 @@
 .mini {
   font-size: 7px;
   padding: 1px 4px;
-  letter-spacing: 0.03em;
+  gap: 2px;
 }

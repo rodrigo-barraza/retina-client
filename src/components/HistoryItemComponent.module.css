@@ -79,15 +79,13 @@
 }
 
 
-.modelTag {
-  display: inline-flex;
-  padding: 1px 5px;
-  border-radius: 2px;
-  font-size: 10px;
-  font-weight: 500;
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
-  white-space: nowrap;
+.modelBadge {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.modelBadge span {
+  max-width: none;
 }
 
 .tag {
