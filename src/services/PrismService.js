@@ -736,4 +736,98 @@ export default class PrismService {
       body: { model, ...config },
     });
   }
+
+  // ---------------------------------------------------------------------------
+  // Benchmarks
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List all benchmark tests.
+   * @returns {Promise<{ benchmarks: Array, count: number }>}
+   */
+  static async getBenchmarks() {
+    return PrismService._request("/benchmark", { method: "GET" });
+  }
+
+  /**
+   * Get available conversation models for benchmarking.
+   * @returns {Promise<{ models: Array, count: number }>}
+   */
+  static async getBenchmarkModels() {
+    return PrismService._request("/benchmark/models", { method: "GET" });
+  }
+
+  /**
+   * Create a new benchmark test.
+   * @param {object} data - { name, prompt, systemPrompt?, expectedValue, matchMode?, temperature?, maxTokens?, tags? }
+   * @returns {Promise<object>}
+   */
+  static async createBenchmark(data) {
+    return PrismService._request("/benchmark", { body: data });
+  }
+
+  /**
+   * Get a single benchmark test with its latest run.
+   * @param {string} id
+   * @returns {Promise<object>}
+   */
+  static async getBenchmark(id) {
+    return PrismService._request(`/benchmark/${id}`, { method: "GET" });
+  }
+
+  /**
+   * Update a benchmark test.
+   * @param {string} id
+   * @param {object} updates
+   * @returns {Promise<object>}
+   */
+  static async updateBenchmark(id, updates) {
+    return PrismService._request(`/benchmark/${id}`, {
+      method: "PUT",
+      body: updates,
+    });
+  }
+
+  /**
+   * Delete a benchmark test and all its runs.
+   * @param {string} id
+   * @returns {Promise<object>}
+   */
+  static async deleteBenchmark(id) {
+    return PrismService._request(`/benchmark/${id}`, { method: "DELETE" });
+  }
+
+  /**
+   * Run a benchmark against selected models (or all).
+   * @param {string} id - Benchmark ID
+   * @param {Array} [models] - Optional array of { provider, model } to test
+   * @returns {Promise<object>} The run result
+   */
+  static async runBenchmark(id, models) {
+    return PrismService._request(`/benchmark/${id}/run`, {
+      body: models ? { models } : {},
+    });
+  }
+
+  /**
+   * Get all past runs for a benchmark.
+   * @param {string} id - Benchmark ID
+   * @returns {Promise<{ runs: Array, count: number }>}
+   */
+  static async getBenchmarkRuns(id) {
+    return PrismService._request(`/benchmark/${id}/runs`, { method: "GET" });
+  }
+
+  /**
+   * Re-run a specific past run with the same model set.
+   * @param {string} benchmarkId
+   * @param {string} runId
+   * @returns {Promise<object>}
+   */
+  static async rerunBenchmark(benchmarkId, runId) {
+    return PrismService._request(
+      `/benchmark/${benchmarkId}/runs/${runId}/rerun`,
+      { body: {} },
+    );
+  }
 }
