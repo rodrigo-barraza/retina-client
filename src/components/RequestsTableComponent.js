@@ -40,9 +40,14 @@ export default function RequestsTableComponent({
     [requests],
   );
 
+  const totalDuration = useMemo(
+    () => requests.reduce((sum, r) => sum + (r.totalTime || 0), 0) || 1,
+    [requests],
+  );
+
   const allColumns = useMemo(
-    () => getRequestsColumns({ totalCost, mini }),
-    [totalCost, mini],
+    () => getRequestsColumns({ totalCost, totalDuration, mini }),
+    [totalCost, totalDuration, mini],
   );
 
   const COMPACT_KEYS = [

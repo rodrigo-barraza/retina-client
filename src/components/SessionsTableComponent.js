@@ -30,6 +30,7 @@ import styles from "./SessionsTableComponent.module.css";
  * @param {boolean} [props.mini]         - Mini density mode
  * @param {string}  [props.title]        - Optional table title
  * @param {number}  [props.maxHeight]    - Optional max height for scrollable body
+ * @param {Function} [props.onRequestRowClick] - (request) => void, opens detail drawer
  */
 export default function SessionsTableComponent({
   sessions = [],
@@ -38,6 +39,7 @@ export default function SessionsTableComponent({
   mini = false,
   title,
   maxHeight,
+  onRequestRowClick,
 }) {
   const SESSION_COLUMNS = [
     sessionIdColumn(),
@@ -85,9 +87,8 @@ export default function SessionsTableComponent({
           <RequestsTableComponent
             requests={session.requests || []}
             emptyText="No requests"
-            compact
-            mini
             title="Requests"
+            onRowClick={onRequestRowClick}
           />
         </div>
       )}

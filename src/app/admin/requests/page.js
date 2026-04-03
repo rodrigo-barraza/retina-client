@@ -29,7 +29,7 @@ import {
 import BadgeComponent from "../../../components/BadgeComponent";
 import CostBadgeComponent from "../../../components/CostBadgeComponent";
 import ButtonComponent from "../../../components/ButtonComponent";
-import DetailDrawerComponent from "../../../components/DetailDrawerComponent";
+import RequestDetailsComponent from "../../../components/RequestDetailsComponent";
 import MessageList, { prepareDisplayMessages } from "../../../components/MessageList";
 import MediaCardComponent from "../../../components/MediaCardComponent";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
@@ -363,7 +363,7 @@ export default function RequestsPage() {
         />
       </div>
 
-      <DetailDrawerComponent
+      <RequestDetailsComponent
         open={!!selectedRequest}
         onClose={() => setSelectedRequest(null)}
         title="Request Detail"
@@ -753,7 +753,7 @@ export default function RequestsPage() {
             )}
           </>
         )}
-      </DetailDrawerComponent>
+      </RequestDetailsComponent>
     </div>
   );
 }

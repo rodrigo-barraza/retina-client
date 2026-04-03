@@ -1,10 +1,10 @@
 "use client";
 
 import CloseButtonComponent from "./CloseButtonComponent";
-import styles from "./DetailDrawerComponent.module.css";
+import styles from "./RequestDetailsComponent.module.css";
 
 /**
- * DetailDrawerComponent — a slide-in drawer for displaying detail views.
+ * RequestDetailsComponent — a slide-in drawer for displaying request detail views.
  *
  * @param {boolean} open — whether the drawer is visible
  * @param {Function} onClose — callback to close the drawer
@@ -12,7 +12,7 @@ import styles from "./DetailDrawerComponent.module.css";
  * @param {Array<{title: string, items: Array<{label: string, value: React.ReactNode}>}>} sections
  * @param {React.ReactNode} [children] — additional content rendered after sections
  */
-export default function DetailDrawerComponent({
+export default function RequestDetailsComponent({
   open,
   onClose,
   title = "Detail",
