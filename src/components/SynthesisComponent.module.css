@@ -191,6 +191,55 @@
   gap: 16px;
 }
 
+/* ── Config Bar (length + category inline) ── */
+
+.configBar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-secondary);
+}
+
+.configBarItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.configBarLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.configBarControl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Persona Row (side-by-side) ── */
+
+.personaRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
 /* ── Prompt Sections ── */
 
 .promptSection {
@@ -220,7 +269,7 @@
 .promptTextarea {
   resize: vertical;
   min-height: 60px;
-  max-height: 200px;
+  flex: 1;
   padding: 10px 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -802,5 +851,11 @@
 @media (max-width: 1200px) {
   .sidePanel {
     display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .personaRow {
+    grid-template-columns: 1fr;
   }
 }

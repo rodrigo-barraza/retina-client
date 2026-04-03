@@ -17,7 +17,6 @@ import {
   MessageSquare,
   User,
   Bot,
-  Settings2,
   Split,
 } from "lucide-react";
 import PrismService from "../services/PrismService.js";
@@ -521,40 +520,7 @@ export default function SynthesisComponent() {
             hideProviderModel={false}
           />
 
-          {/* Turns slider */}
-          <div className={styles.formSection}>
-            <div className={styles.sectionHeader}>
-              <MessageSquare size={14} />
-              Conversation Length
-            </div>
-            <div className={styles.turnsControl}>
-              <SliderComponent
-                value={targetTurns}
-                min={MIN_TURNS}
-                max={MAX_TURNS}
-                step={1}
-                onChange={(v) => setTargetTurns(v)}
-              />
-              <span className={styles.turnsValue}>{targetTurns} turns</span>
-            </div>
-            <span className={styles.turnsHint}>
-              Always ends with an assistant message
-            </span>
-          </div>
 
-          {/* Category */}
-          <div className={styles.formSection}>
-            <div className={styles.sectionHeader}>
-              <Sparkles size={14} />
-              Category
-            </div>
-            <SelectDropdown
-              value={category}
-              options={CATEGORY_OPTIONS}
-              onChange={setCategory}
-              placeholder="Select category"
-            />
-          </div>
         </div>
       )}
 
@@ -661,35 +627,70 @@ export default function SynthesisComponent() {
 
         {/* Main area */}
         <div className={styles.workspace}>
-          {/* System Prompt */}
-          <div className={styles.promptSection}>
-            <div className={styles.promptHeader}>
-              <Settings2 size={14} />
-              <span>System Prompt</span>
+          {/* Conversation Length & Category bar */}
+          <div className={styles.configBar}>
+            <div className={styles.configBarItem}>
+              <div className={styles.configBarLabel}>
+                <MessageSquare size={13} />
+                Length
+              </div>
+              <div className={styles.configBarControl}>
+                <SliderComponent
+                  value={targetTurns}
+                  min={MIN_TURNS}
+                  max={MAX_TURNS}
+                  step={1}
+                  onChange={(v) => setTargetTurns(v)}
+                />
+                <span className={styles.turnsValue}>{targetTurns} turns</span>
+              </div>
             </div>
-            <textarea
-              className={styles.promptTextarea}
-              value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
-              placeholder="Define the assistant's personality and behavior..."
-              rows={3}
-            />
+            <div className={styles.configBarItem}>
+              <div className={styles.configBarLabel}>
+                <Sparkles size={13} />
+                Category
+              </div>
+              <SelectDropdown
+                value={category}
+                options={CATEGORY_OPTIONS}
+                onChange={setCategory}
+                placeholder="Select category"
+              />
+            </div>
           </div>
 
-          {/* User Persona */}
-          <div className={styles.promptSection}>
-            <div className={styles.promptHeader}>
-              <User size={14} />
-              <span>User Persona</span>
-              <span className={styles.optionalTag}>Optional</span>
+          {/* Personas side-by-side */}
+          <div className={styles.personaRow}>
+            {/* Assistant Persona */}
+            <div className={styles.promptSection}>
+              <div className={styles.promptHeader}>
+                <Bot size={14} />
+                <span>Assistant Persona</span>
+              </div>
+              <textarea
+                className={styles.promptTextarea}
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                placeholder="Define the assistant's personality and behavior..."
+                rows={3}
+              />
             </div>
-            <textarea
-              className={styles.promptTextarea}
-              value={userPersona}
-              onChange={(e) => setUserPersona(e.target.value)}
-              placeholder="Describe the user's personality, tone, and conversation style..."
-              rows={2}
-            />
+
+            {/* User Persona */}
+            <div className={styles.promptSection}>
+              <div className={styles.promptHeader}>
+                <User size={14} />
+                <span>User Persona</span>
+                <span className={styles.optionalTag}>Optional</span>
+              </div>
+              <textarea
+                className={styles.promptTextarea}
+                value={userPersona}
+                onChange={(e) => setUserPersona(e.target.value)}
+                placeholder="Describe the user's personality, tone, and conversation style..."
+                rows={3}
+              />
+            </div>
           </div>
 
           {/* Seed Templates */}
