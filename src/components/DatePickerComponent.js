@@ -1,65 +1,9 @@
-"use client";
-
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { DATE_PRESETS, fmtDate as fmt, parseDateValue as parseDate, formatDateDisplay, getActiveDatePreset } from "../utils/datePresets";
 import styles from "./DatePickerComponent.module.css";
 
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-
-const PRESETS = [
-  { label: "All Time", getValue: () => ({ from: "", to: "" }) },
-  {
-    label: "Today",
-    getValue: () => {
-      const d = fmt(new Date());
-      return { from: d, to: d };
-    },
-  },
-  {
-    label: "Last 7 days",
-    getValue: () => ({ from: fmt(daysAgo(6)), to: fmt(new Date()) }),
-  },
-  {
-    label: "Last 30 days",
-    getValue: () => ({ from: fmt(daysAgo(29)), to: fmt(new Date()) }),
-  },
-  {
-    label: "This month",
-    getValue: () => {
-      const now = new Date();
-      return {
-        from: fmt(new Date(now.getFullYear(), now.getMonth(), 1)),
-        to: fmt(now),
-      };
-    },
-  },
-  {
-    label: "This year",
-    getValue: () => {
-      const now = new Date();
-      return { from: fmt(new Date(now.getFullYear(), 0, 1)), to: fmt(now) };
-    },
-  },
-];
-
-function fmt(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function daysAgo(n) {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d;
-}
-
-function parseDate(str) {
-  if (!str) return null;
-  const [y, m, d] = str.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
 
 function isSameDay(a, b) {
   if (!a || !b) return false;
@@ -73,27 +17,6 @@ function isSameDay(a, b) {
 function isInRange(date, from, to) {
   if (!from || !to || !date) return false;
   return date >= from && date <= to;
-}
-
-function formatDisplay(from, to) {
-  if (!from && !to) return null;
-  const opts = { month: "short", day: "numeric" };
-  const fromDate = parseDate(from);
-  const toDate = parseDate(to);
-  if (fromDate && toDate) {
-    if (isSameDay(fromDate, toDate))
-      return fromDate.toLocaleDateString("en-US", opts);
-    const fromStr = fromDate.toLocaleDateString("en-US", opts);
-    const toStr = toDate.toLocaleDateString("en-US", {
-      ...opts,
-      year:
-        fromDate.getFullYear() !== toDate.getFullYear() ? "numeric" : undefined,
-    });
-    return `${fromStr} – ${toStr}`;
-  }
-  if (fromDate) return `From ${fromDate.toLocaleDateString("en-US", opts)}`;
-  if (toDate) return `Until ${toDate.toLocaleDateString("en-US", opts)}`;
-  return null;
 }
 
 function MonthGrid({
@@ -386,7 +309,7 @@ export default function DatePickerComponent({
     onClose?.();
   }, [onChange, onClose]);
 
-  const displayText = formatDisplay(from, to);
+  const displayText = formatDateDisplay(from, to);
   const hasValue = !!(from || to);
 
   // Current "from" during selection: either the selecting state or the committed from
@@ -436,11 +359,8 @@ export default function DatePickerComponent({
         >
           {/* Presets */}
           <div className={styles.presets}>
-            {PRESETS.map((p) => {
-              const isActive =
-                p.label === "All Time"
-                  ? !hasValue
-                  : p.getValue().from === from && p.getValue().to === to;
+            {DATE_PRESETS.map((p) => {
+              const isActive = getActiveDatePreset(from, to) === p.label;
               return (
                 <button
                   key={p.label}

@@ -76,8 +76,17 @@ export function renderToolName(name) {
  */
 export function buildDateRangeParams(dateRange) {
   const p = {};
-  if (dateRange?.from) p.from = new Date(dateRange.from).toISOString();
-  if (dateRange?.to) p.to = new Date(dateRange.to + "T23:59:59").toISOString();
+  if (dateRange?.from) {
+    // ISO datetime (sub-day presets) passes through; day-only gets midnight
+    p.from = dateRange.from.includes("T")
+      ? dateRange.from
+      : new Date(dateRange.from).toISOString();
+  }
+  if (dateRange?.to) {
+    p.to = dateRange.to.includes("T")
+      ? dateRange.to
+      : new Date(dateRange.to + "T23:59:59").toISOString();
+  }
   return p;
 }
 

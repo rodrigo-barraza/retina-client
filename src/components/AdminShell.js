@@ -13,6 +13,9 @@ import styles from "./AdminShell.module.css";
 function AdminShellInner({ children }) {
   const [newCount, setNewCount] = useState(0);
   const [newSessionsCount, setNewSessionsCount] = useState(0);
+  const [newRequestsCount, setNewRequestsCount] = useState(0);
+  const [newMediaCount, setNewMediaCount] = useState(0);
+  const [newTextCount, setNewTextCount] = useState(0);
   const [generatingCount, setGeneratingCount] = useState(0);
   const [systemStatus, setSystemStatus] = useState("connected");
   const pathname = usePathname();
@@ -20,22 +23,43 @@ function AdminShellInner({ children }) {
 
   // Track conversations by ID → messageCount to detect both new convos and updates
   const knownConvsRef = useRef(null); // null = not initialized
-  const knownSessionsRef = useRef(null); // null = not initialized
+  const knownSessionsRef = useRef(null);
+  const knownRequestsRef = useRef(null);
+  const knownMediaRef = useRef(null);
+  const knownTextRef = useRef(null);
   const isOnConversationsRef = useRef(
     pathname.startsWith("/admin/conversations"),
   );
   const isOnSessionsRef = useRef(
     pathname.startsWith("/admin/sessions"),
   );
+  const isOnRequestsRef = useRef(
+    pathname.startsWith("/admin/requests"),
+  );
+  const isOnMediaRef = useRef(
+    pathname.startsWith("/admin/media"),
+  );
+  const isOnTextRef = useRef(
+    pathname.startsWith("/admin/text"),
+  );
 
-  // Keep ref in sync with pathname
+  // Keep refs in sync with pathname
   useEffect(() => {
     const onConvs = pathname.startsWith("/admin/conversations");
     const onSessions = pathname.startsWith("/admin/sessions");
+    const onRequests = pathname.startsWith("/admin/requests");
+    const onMedia = pathname.startsWith("/admin/media");
+    const onText = pathname.startsWith("/admin/text");
     isOnConversationsRef.current = onConvs;
     isOnSessionsRef.current = onSessions;
+    isOnRequestsRef.current = onRequests;
+    isOnMediaRef.current = onMedia;
+    isOnTextRef.current = onText;
     if (onConvs) setNewCount(0);
     if (onSessions) setNewSessionsCount(0);
+    if (onRequests) setNewRequestsCount(0);
+    if (onMedia) setNewMediaCount(0);
+    if (onText) setNewTextCount(0);
   }, [pathname]);
 
   // SSE subscription for real-time generatingCount across all projects
@@ -141,9 +165,73 @@ function AdminShellInner({ children }) {
       }
     }
 
+    async function fetchRequests() {
+      try {
+        const data = await IrisService.getRequests({ limit: 50, sort: "timestamp", order: "desc" });
+        const list = data.data || [];
+        const currentIds = new Set(list.map((r) => r.requestId || r._id));
+
+        if (knownRequestsRef.current === null) {
+          knownRequestsRef.current = currentIds;
+        } else if (!isOnRequestsRef.current) {
+          let newOnes = 0;
+          for (const id of currentIds) {
+            if (!knownRequestsRef.current.has(id)) newOnes++;
+          }
+          if (newOnes > 0) setNewRequestsCount((prev) => prev + newOnes);
+          knownRequestsRef.current = currentIds;
+        } else {
+          knownRequestsRef.current = currentIds;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    async function fetchMedia() {
+      try {
+        const data = await IrisService.getMedia({ limit: 50 });
+        const list = data.data || data.media || [];
+        const count = list.length;
+
+        if (knownMediaRef.current === null) {
+          knownMediaRef.current = count;
+        } else if (!isOnMediaRef.current && count > knownMediaRef.current) {
+          setNewMediaCount((prev) => prev + (count - knownMediaRef.current));
+          knownMediaRef.current = count;
+        } else {
+          knownMediaRef.current = count;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    async function fetchText() {
+      try {
+        const data = await IrisService.getText({ limit: 50 });
+        const list = data.data || data.text || [];
+        const count = list.length;
+
+        if (knownTextRef.current === null) {
+          knownTextRef.current = count;
+        } else if (!isOnTextRef.current && count > knownTextRef.current) {
+          setNewTextCount((prev) => prev + (count - knownTextRef.current));
+          knownTextRef.current = count;
+        } else {
+          knownTextRef.current = count;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     // Initial loads
     fetchConversations();
     fetchSessions();
+    fetchRequests();
+    fetchMedia();
+    fetchText();
     fetchHealth();
 
     // Health check on a long interval (doesn't need real-time)
@@ -163,9 +251,14 @@ function AdminShellInner({ children }) {
       onChange: (event) => {
         if (event.collection === "conversations") {
           fetchConversations();
+          fetchMedia();
+          fetchText();
         }
         if (event.collection === "sessions") {
           fetchSessions();
+        }
+        if (event.collection === "requests") {
+          fetchRequests();
         }
       },
     });
@@ -178,12 +271,11 @@ function AdminShellInner({ children }) {
   }, []);
 
   const handleNavClick = useCallback((href) => {
-    if (href.startsWith("/admin/conversations")) {
-      setNewCount(0);
-    }
-    if (href.startsWith("/admin/sessions")) {
-      setNewSessionsCount(0);
-    }
+    if (href.startsWith("/admin/conversations")) setNewCount(0);
+    if (href.startsWith("/admin/sessions")) setNewSessionsCount(0);
+    if (href.startsWith("/admin/requests")) setNewRequestsCount(0);
+    if (href.startsWith("/admin/media")) setNewMediaCount(0);
+    if (href.startsWith("/admin/text")) setNewTextCount(0);
   }, []);
 
   const { controls, titleBadge, dateRange, setDateRange, sessionFilter, setSessionFilter } = useAdminHeader();
@@ -209,6 +301,9 @@ function AdminShellInner({ children }) {
         mode="admin"
         liveCount={newCount}
         sessionsCount={newSessionsCount}
+        requestsCount={newRequestsCount}
+        mediaCount={newMediaCount}
+        textCount={newTextCount}
         systemStatus={systemStatus}
         isGenerating={generatingCount > 0}
         onNavClick={handleNavClick}

@@ -57,7 +57,7 @@ const USER_EXPERIMENT_ITEMS = [
 
 const ADMIN_NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/requests", label: "Requests", icon: ScrollText },
+  { href: "/admin/requests", label: "Requests", icon: ScrollText, showBadge: "requests" },
   {
     href: "/admin/conversations",
     label: "Conversations",
@@ -66,8 +66,8 @@ const ADMIN_NAV_ITEMS = [
   },
   { href: "/admin/sessions", label: "Sessions", icon: FolderOpen, showBadge: "sessions" },
   { href: "/admin/providers", label: "Providers", icon: Layers },
-  { href: "/admin/media", label: "Media", icon: ImageIcon },
-  { href: "/admin/text", label: "Text", icon: Type },
+  { href: "/admin/media", label: "Media", icon: ImageIcon, showBadge: "media" },
+  { href: "/admin/text", label: "Text", icon: Type, showBadge: "text" },
   { href: "/admin/models", label: "Models", icon: Server },
 ];
 
@@ -80,10 +80,20 @@ export default function NavigationSidebarComponent({
   mode = "user",
   liveCount = 0,
   sessionsCount = 0,
+  requestsCount = 0,
+  mediaCount = 0,
+  textCount = 0,
   systemStatus = "connected",
   isGenerating = false,
   onNavClick,
 }) {
+  const badgeCounts = {
+    conversations: liveCount,
+    sessions: sessionsCount,
+    requests: requestsCount,
+    media: mediaCount,
+    text: textCount,
+  };
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const [showNav, setShowNav] = useState(true);
@@ -175,14 +185,9 @@ export default function NavigationSidebarComponent({
                     >
                       <Icon className={styles.navIcon} />
                       <span className={styles.navLabel}>{item.label}</span>
-                      {item.showBadge === "conversations" && liveCount > 0 && (
+                      {item.showBadge && badgeCounts[item.showBadge] > 0 && (
                         <span className={`${styles.badge} ${styles.live}`}>
-                          {liveCount}
-                        </span>
-                      )}
-                      {item.showBadge === "sessions" && sessionsCount > 0 && (
-                        <span className={`${styles.badge} ${styles.live}`}>
-                          {sessionsCount}
+                          {badgeCounts[item.showBadge]}
                         </span>
                       )}
                     </Link>
@@ -310,14 +315,9 @@ export default function NavigationSidebarComponent({
               >
                 <Icon className={styles.navIcon} />
                 <span className={styles.navLabel}>{item.label}</span>
-                {item.showBadge === "conversations" && liveCount > 0 && (
+                {item.showBadge && badgeCounts[item.showBadge] > 0 && (
                   <span className={`${styles.badge} ${styles.live}`}>
-                    {liveCount}
-                  </span>
-                )}
-                {item.showBadge === "sessions" && sessionsCount > 0 && (
-                  <span className={`${styles.badge} ${styles.live}`}>
-                    {sessionsCount}
+                    {badgeCounts[item.showBadge]}
                   </span>
                 )}
               </Link>

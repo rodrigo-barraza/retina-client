@@ -8,54 +8,8 @@ import {
   Calendar,
 } from "lucide-react";
 import DatePickerComponent from "./DatePickerComponent";
+import { DATE_PRESETS, formatDateDisplay, getActiveDatePreset } from "../utils/datePresets";
 import styles from "./FilterDropdownComponent.module.css";
-
-/**
- * DATE_PRESETS used in the Date Range section of the dropdown.
- */
-function fmtDate(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function daysAgo(n) {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d;
-}
-
-const DATE_PRESETS = [
-  { label: "All Time", getValue: () => ({ from: "", to: "" }) },
-  { label: "Today", getValue: () => { const d = fmtDate(new Date()); return { from: d, to: d }; } },
-  { label: "Last 7 days", getValue: () => ({ from: fmtDate(daysAgo(6)), to: fmtDate(new Date()) }) },
-  { label: "Last 30 days", getValue: () => ({ from: fmtDate(daysAgo(29)), to: fmtDate(new Date()) }) },
-  { label: "This month", getValue: () => ({ from: fmtDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), to: fmtDate(new Date()) }) },
-  { label: "This year", getValue: () => ({ from: fmtDate(new Date(new Date().getFullYear(), 0, 1)), to: fmtDate(new Date()) }) },
-];
-
-function formatDateDisplay(from, to) {
-  if (!from && !to) return null;
-  const opts = { month: "short", day: "numeric" };
-  const fromDate = from ? new Date(from + "T00:00:00") : null;
-  const toDate = to ? new Date(to + "T00:00:00") : null;
-  if (fromDate && toDate) {
-    if (from === to) return fromDate.toLocaleDateString("en-US", opts);
-    return `${fromDate.toLocaleDateString("en-US", opts)} – ${toDate.toLocaleDateString("en-US", opts)}`;
-  }
-  if (fromDate) return `From ${fromDate.toLocaleDateString("en-US", opts)}`;
-  if (toDate) return `Until ${toDate.toLocaleDateString("en-US", opts)}`;
-  return null;
-}
-
-function getActiveDatePreset(from, to) {
-  for (const p of DATE_PRESETS) {
-    const v = p.getValue();
-    if (v.from === (from || "") && v.to === (to || "")) return p.label;
-  }
-  return null;
-}
 
 /**
  * FilterDropdownComponent — generic dropdown + badge (chip) filter.
