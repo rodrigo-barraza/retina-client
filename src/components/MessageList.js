@@ -583,16 +583,28 @@ function MediaPreview({ dataUrl: rawUrl, onClick }) {
   );
 }
 
-/* ── Inline edit for user messages ───────────────────────────── */
+/* ── Inline edit for messages ────────────────────────────────── */
 
-function EditableUserMessage({
+function EditableMessage({
   content,
   index,
+  role,
   onEdit,
   editing,
   onCancelEdit,
 }) {
   const [editValue, setEditValue] = useState(content);
+  const textareaRef = useRef(null);
+  const isAssistant = role === "assistant";
+
+  // Auto-resize textarea to fit content on open
+  useEffect(() => {
+    if (editing && textareaRef.current) {
+      const el = textareaRef.current;
+      el.style.height = "auto";
+      el.style.height = Math.min(el.scrollHeight, 600) + "px";
+    }
+  }, [editing]);
 
   const cancel = () => {
     onCancelEdit();
@@ -604,7 +616,9 @@ function EditableUserMessage({
   };
   const handleKey = (e) => {
     if (e.key === "Escape") cancel();
-    else if (e.key === "Enter" && !e.shiftKey) {
+    // Only user messages submit on plain Enter; assistant messages
+    // always use Shift+Enter or the Save button (since content is long)
+    else if (e.key === "Enter" && !e.shiftKey && !isAssistant) {
       e.preventDefault();
       save();
     }
@@ -621,28 +635,36 @@ function EditableUserMessage({
         }}
       >
         <textarea
+          ref={textareaRef}
           autoFocus
           value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
+          onChange={(e) => {
+            setEditValue(e.target.value);
+            // Auto-resize as content changes
+            const el = e.target;
+            el.style.height = "auto";
+            el.style.height = Math.min(el.scrollHeight, 600) + "px";
+          }}
           onKeyDown={handleKey}
-          rows={3}
+          rows={isAssistant ? 8 : 3}
           style={{
             width: "100%",
-            minHeight: 60,
-            maxHeight: 300,
+            minHeight: isAssistant ? 120 : 60,
+            maxHeight: 600,
             padding: "10px 12px",
-            fontSize: 14,
+            fontSize: isAssistant ? 13 : 14,
             lineHeight: 1.55,
             color: "var(--text-primary)",
             background: "var(--bg-secondary)",
             border: "1px solid var(--accent-color)",
             borderRadius: 8,
             resize: "vertical",
-            fontFamily: "inherit",
+            fontFamily: isAssistant ? "var(--font-mono, monospace)" : "inherit",
             boxShadow: "0 0 0 2px var(--accent-glow)",
+            tabSize: 2,
           }}
         />
-        <div style={{ display: "flex", gap: 6 }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <button
             onClick={save}
             style={{
@@ -679,12 +701,27 @@ function EditableUserMessage({
           >
             <XIcon size={14} /> Cancel
           </button>
+          {isAssistant && (
+            <span
+              style={{
+                marginLeft: "auto",
+                fontSize: 11,
+                color: "var(--text-muted)",
+              }}
+            >
+              Raw markdown • Esc to cancel
+            </span>
+          )}
         </div>
       </div>
     );
   }
 
-  return <div className={styles.text}>{content}</div>;
+  // Non-editing: user messages show plain text, assistant uses caller's rendering
+  if (!isAssistant) {
+    return <div className={styles.text}>{content}</div>;
+  }
+  return null; // Assistant non-editing rendering is handled by the caller
 }
 
 /* ── Main export ─────────────────────────────────────────────── */
@@ -844,6 +881,17 @@ export default function MessageList({
                           />
                         </>
                       )}
+                      {msg.role === "assistant" && msg.content && (
+                        <IconButtonComponent
+                          icon={<Pencil size={14} />}
+                          onClick={() =>
+                            setEditingIndex(editingIndex === i ? null : i)
+                          }
+                          disabled={isGenerating}
+                          tooltip="Edit response"
+                          className={styles.actionBtn}
+                        />
+                      )}
                       {msg.content && (
                         <CopyButtonComponent
                           text={msg.content}
@@ -972,11 +1020,21 @@ export default function MessageList({
 
                 {/* Text content */}
                 {msg.role === "user" && !readOnly ? (
-                  <EditableUserMessage
+                  <EditableMessage
                     content={msg.content}
                     index={i}
+                    role="user"
                     onEdit={onEdit}
                     editing={editingIndex === i}
+                    onCancelEdit={() => setEditingIndex(null)}
+                  />
+                ) : msg.role === "assistant" && !readOnly && editingIndex === i ? (
+                  <EditableMessage
+                    content={msg.content}
+                    index={i}
+                    role="assistant"
+                    onEdit={onEdit}
+                    editing={true}
                     onCancelEdit={() => setEditingIndex(null)}
                   />
                 ) : msg.content ? (
