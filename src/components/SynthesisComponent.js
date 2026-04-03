@@ -342,6 +342,9 @@ export default function SynthesisComponent() {
               setGenerationProgress(partial);
             },
             abortRef,
+            undefined,
+            undefined,
+            { skipConversation: true },
           );
 
           if (abortedRef.current) break;
@@ -881,7 +884,7 @@ export default function SynthesisComponent() {
  * Each turn is a real /chat call — the model genuinely responds to the context.
  * When conversationId is provided, the messages are persisted to that conversation.
  */
-function streamTurn(settings, turnSystemPrompt, history, onPartial, abortRef, conversationId, conversationMeta) {
+function streamTurn(settings, turnSystemPrompt, history, onPartial, abortRef, conversationId, conversationMeta, { skipConversation = false } = {}) {
   return new Promise((resolve, reject) => {
     let collected = "";
 
@@ -896,8 +899,11 @@ function streamTurn(settings, turnSystemPrompt, history, onPartial, abortRef, co
       maxTokens: settings.maxTokens,
     };
 
-    // Attach conversation ID for persistence when available
-    if (conversationId) {
+    // Skip conversation persistence entirely (used for user-simulation turns)
+    if (skipConversation) {
+      payload.skipConversation = true;
+    } else if (conversationId) {
+      // Attach conversation ID for persistence when available
       payload.conversationId = conversationId;
       if (conversationMeta) payload.conversationMeta = conversationMeta;
     }
