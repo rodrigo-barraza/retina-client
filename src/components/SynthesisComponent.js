@@ -18,6 +18,7 @@ import {
   User,
   Bot,
   Settings2,
+  Split,
 } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import NavigationSidebarComponent from "./NavigationSidebarComponent.js";
@@ -111,6 +112,12 @@ export default function SynthesisComponent() {
     "You are a helpful AI assistant.",
   );
   const [userPersona, setUserPersona] = useState("");
+  const [useUserSimModel, setUseUserSimModel] = useState(false);
+  const [userSimSettings, setUserSimSettings] = useState({
+    provider: "",
+    model: "",
+    temperature: 0.9,
+  });
   const [targetTurns, setTargetTurns] = useState(DEFAULT_TURNS);
   const [category, setCategory] = useState("Chat");
   const [seedMessages, setSeedMessages] = useState([]);
@@ -162,6 +169,10 @@ export default function SynthesisComponent() {
   // ── Model selection handler ───────────────────────────────────
   const handleSelectModel = useCallback((provider, model) => {
     setSettings((s) => ({ ...s, provider, model }));
+  }, []);
+
+  const handleSelectUserSimModel = useCallback((provider, model) => {
+    setUserSimSettings((s) => ({ ...s, provider, model }));
   }, []);
 
   // ── Compute final messages array (SFT format) ─────────────────
@@ -330,8 +341,13 @@ export default function SynthesisComponent() {
               }))
             : [{ role: "user", content: "Start the conversation. Send the first message as the user." }];
 
+          // Use separate model for user simulation when enabled
+          const userTurnSettings = useUserSimModel && userSimSettings.provider && userSimSettings.model
+            ? { ...settings, provider: userSimSettings.provider, model: userSimSettings.model, temperature: userSimSettings.temperature }
+            : settings;
+
           const userContent = await streamTurn(
-            settings,
+            userTurnSettings,
             userSystemPrompt,
             simulatorHistory,
             (partial) => {
@@ -417,6 +433,8 @@ export default function SynthesisComponent() {
     userPersona,
     targetTurns,
     seedMessages,
+    useUserSimModel,
+    userSimSettings,
   ]);
 
   const handleStop = useCallback(() => {
@@ -435,6 +453,8 @@ export default function SynthesisComponent() {
     setGeneratedMessages([]);
     setSystemPrompt("You are a helpful AI assistant.");
     setUserPersona("");
+    setUseUserSimModel(false);
+    setUserSimSettings({ provider: "", model: "", temperature: 0.9 });
     setTargetTurns(DEFAULT_TURNS);
     setCategory("Chat");
     setGenerationProgress("");
@@ -591,6 +611,25 @@ export default function SynthesisComponent() {
               settings={settings}
               onSelectModel={handleSelectModel}
             />
+            <button
+              className={`${styles.splitModelToggle} ${useUserSimModel ? styles.splitModelToggleActive : ""}`}
+              onClick={() => setUseUserSimModel((v) => !v)}
+              title={useUserSimModel ? "Using separate model for user simulation" : "Use same model for both roles"}
+            >
+              <Split size={14} />
+            </button>
+            {useUserSimModel && (
+              <>
+                <span className={styles.userSimLabel}>
+                  <User size={12} />
+                </span>
+                <ModelPickerPopoverComponent
+                  config={filteredConfig}
+                  settings={userSimSettings}
+                  onSelectModel={handleSelectUserSimModel}
+                />
+              </>
+            )}
           </div>
           <div className={styles.headerActions}>
             <button

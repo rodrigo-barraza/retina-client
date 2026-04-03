@@ -76,6 +76,47 @@
   max-width: 200px;
 }
 
+.splitModelToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+
+  &:hover {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    background: var(--accent-subtle);
+  }
+}
+
+.splitModelToggleActive {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  background: var(--accent-subtle);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.userSimLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--info-subtle);
+  color: var(--info);
+  flex-shrink: 0;
+}
+
 .headerActions {
   display: flex;
   align-items: center;
