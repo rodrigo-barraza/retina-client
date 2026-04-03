@@ -333,12 +333,32 @@ export default function SynthesisComponent() {
             userPersona,
           );
 
-          const simulatorHistory = conversation.length > 0
-            ? conversation.map((m) => ({
-                role: m.role === "user" ? "assistant" : "user",
-                content: m.content,
-              }))
-            : [{ role: "user", content: "Start the conversation. Send the first message as the user." }];
+          // Role-swap the conversation so the user-simulator model sees the
+          // assistant's messages as "user" prompts and vice versa.
+          // IMPORTANT: Many local models (Gemma, Llama, etc.) have strict
+          // Jinja chat templates that require messages to alternate
+          // user → assistant → user, with the first non-system message being
+          // "user".  After role-swapping, the history may start with
+          // "assistant" (when the real conversation started with a user msg).
+          // We fix this by ensuring the first message is always role "user".
+          let simulatorHistory;
+          if (conversation.length > 0) {
+            const swapped = conversation.map((m) => ({
+              role: m.role === "user" ? "assistant" : "user",
+              content: m.content,
+            }));
+            // If the swapped history starts with "assistant", prepend a
+            // contextual user message so the template stays happy.
+            if (swapped[0].role === "assistant") {
+              swapped.unshift({
+                role: "user",
+                content: "Continue the conversation. Generate the next natural user message.",
+              });
+            }
+            simulatorHistory = swapped;
+          } else {
+            simulatorHistory = [{ role: "user", content: "Start the conversation. Send the first message as the user." }];
+          }
 
           // Use separate model for user simulation when enabled
           const userTurnSettings = useUserSimModel && userSimSettings.provider && userSimSettings.model
