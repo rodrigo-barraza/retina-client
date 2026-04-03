@@ -17,6 +17,7 @@ import {
   MessageSquare,
   User,
   Bot,
+  Settings2,
   Split,
 } from "lucide-react";
 import PrismService from "../services/PrismService.js";
@@ -110,6 +111,7 @@ export default function SynthesisComponent() {
   const [systemPrompt, setSystemPrompt] = useState(
     "You are a helpful AI assistant.",
   );
+  const [assistantPersona, setAssistantPersona] = useState("");
   const [userPersona, setUserPersona] = useState("");
   const [useUserSimModel, setUseUserSimModel] = useState(false);
   const [userSimSettings, setUserSimSettings] = useState({
@@ -174,28 +176,40 @@ export default function SynthesisComponent() {
     setUserSimSettings((s) => ({ ...s, provider, model }));
   }, []);
 
+  // ── Build the effective system prompt for assistant turns ──────
+  // Combines the raw system prompt with the assistant persona.
+  // The assistant never sees the user persona.
+  const effectiveAssistantPrompt = useMemo(() => {
+    const parts = [];
+    if (systemPrompt.trim()) parts.push(systemPrompt.trim());
+    if (assistantPersona.trim()) {
+      parts.push(`## Your Personality\n${assistantPersona.trim()}`);
+    }
+    return parts.join("\n\n");
+  }, [systemPrompt, assistantPersona]);
+
   // ── Compute final messages array (SFT format) ─────────────────
   const sftOutput = useMemo(() => {
     const msgs = [];
-    if (systemPrompt.trim()) {
-      msgs.push({ role: "system", content: systemPrompt.trim() });
+    if (effectiveAssistantPrompt) {
+      msgs.push({ role: "system", content: effectiveAssistantPrompt });
     }
     // Filter out any internal _streaming flag
     for (const m of generatedMessages) {
       msgs.push({ role: m.role, content: m.content });
     }
     return msgs;
-  }, [systemPrompt, generatedMessages]);
+  }, [effectiveAssistantPrompt, generatedMessages]);
 
   const sftJsonString = useMemo(() => {
     const dataset = {
-      prompt: systemPrompt.trim(),
+      prompt: effectiveAssistantPrompt,
       prompt_id: crypto.randomUUID().replace(/-/g, ""),
       messages: sftOutput,
       category,
     };
     return JSON.stringify(dataset, null, 2);
-  }, [sftOutput, category, systemPrompt]);
+  }, [sftOutput, category, effectiveAssistantPrompt]);
 
   // ── Auto-scroll messages ──────────────────────────────────────
   useEffect(() => {
@@ -219,6 +233,7 @@ export default function SynthesisComponent() {
 
   const loadSeedTemplate = useCallback((seed) => {
     setSystemPrompt(seed.system);
+    setAssistantPersona("");
     setSeedMessages(seed.messages.map((m) => ({ ...m })));
     setCategory(seed.category);
     setGeneratedMessages([]);
@@ -250,7 +265,7 @@ export default function SynthesisComponent() {
       try {
         await PrismService.appendMessages(convId, conversation, undefined, {
           title: `Synthesis: ${systemPrompt.slice(0, 60)}`,
-          systemPrompt,
+          systemPrompt: effectiveAssistantPrompt,
           settings: {
             provider: settings.provider,
             model: settings.model,
@@ -266,7 +281,7 @@ export default function SynthesisComponent() {
     // time we need to create the conversation record in the backend.
     const convMeta = {
       title: `Synthesis: ${systemPrompt.slice(0, 60)}`,
-      systemPrompt,
+      systemPrompt: effectiveAssistantPrompt,
       settings: {
         provider: settings.provider,
         model: settings.model,
@@ -305,7 +320,7 @@ export default function SynthesisComponent() {
 
           const assistantContent = await streamTurn(
             settings,
-            systemPrompt,
+            effectiveAssistantPrompt,
             conversation,
             (partial) => {
               setGeneratedMessages([
@@ -328,10 +343,7 @@ export default function SynthesisComponent() {
           nextRole = "user";
         } else {
           // ─── USER TURN: simulated user message ───────────────
-          const userSystemPrompt = buildUserSimulationPrompt(
-            systemPrompt,
-            userPersona,
-          );
+          const userSystemPrompt = buildUserSimulationPrompt(userPersona);
 
           // Role-swap the conversation so the user-simulator model sees the
           // assistant's messages as "user" prompts and vice versa.
@@ -409,7 +421,7 @@ export default function SynthesisComponent() {
       ) {
         const assistantContent = await streamTurn(
           settings,
-          systemPrompt,
+          effectiveAssistantPrompt,
           conversation,
           (partial) => {
             setGeneratedMessages([
@@ -449,6 +461,7 @@ export default function SynthesisComponent() {
   }, [
     settings,
     systemPrompt,
+    effectiveAssistantPrompt,
     userPersona,
     targetTurns,
     seedMessages,
@@ -471,6 +484,7 @@ export default function SynthesisComponent() {
     setSeedMessages([]);
     setGeneratedMessages([]);
     setSystemPrompt("You are a helpful AI assistant.");
+    setAssistantPersona("");
     setUserPersona("");
     setUseUserSimModel(false);
     setUserSimSettings({ provider: "", model: "", temperature: 0.9 });
@@ -679,6 +693,21 @@ export default function SynthesisComponent() {
             </div>
           </div>
 
+          {/* System Prompt */}
+          <div className={styles.promptSection}>
+            <div className={styles.promptHeader}>
+              <Settings2 size={14} />
+              <span>System Prompt</span>
+            </div>
+            <textarea
+              className={styles.promptTextarea}
+              value={systemPrompt}
+              onChange={(e) => setSystemPrompt(e.target.value)}
+              placeholder="Core instructions for the assistant model..."
+              rows={2}
+            />
+          </div>
+
           {/* Personas side-by-side */}
           <div className={styles.personaRow}>
             {/* Assistant Persona */}
@@ -686,12 +715,13 @@ export default function SynthesisComponent() {
               <div className={styles.promptHeader}>
                 <Bot size={14} />
                 <span>Assistant Persona</span>
+                <span className={styles.optionalTag}>Optional</span>
               </div>
               <textarea
                 className={styles.promptTextarea}
-                value={systemPrompt}
-                onChange={(e) => setSystemPrompt(e.target.value)}
-                placeholder="Define the assistant's personality and behavior..."
+                value={assistantPersona}
+                onChange={(e) => setAssistantPersona(e.target.value)}
+                placeholder="The assistant's personality, tone, and style..."
                 rows={3}
               />
             </div>
@@ -707,7 +737,7 @@ export default function SynthesisComponent() {
                 className={styles.promptTextarea}
                 value={userPersona}
                 onChange={(e) => setUserPersona(e.target.value)}
-                placeholder="Describe the user's personality, tone, and conversation style..."
+                placeholder="The simulated user's personality, tone, and style..."
                 rows={3}
               />
             </div>
@@ -986,26 +1016,20 @@ function streamTurn(settings, turnSystemPrompt, history, onPartial, abortRef, co
  * Instructs the model to role-play as the user persona and
  * generate a single natural follow-up user message.
  */
-function buildUserSimulationPrompt(assistantSystemPrompt, userPersona) {
+function buildUserSimulationPrompt(userPersona) {
   let prompt = `You are simulating a human user in a conversation with an AI assistant. Your job is to generate the NEXT single message that this user would naturally say.
-
-## Context
-The user is talking to an AI assistant that has the following personality:
-"""
-${assistantSystemPrompt}
-"""
 
 `;
 
   if (userPersona.trim()) {
-    prompt += `## Your Personality (as the user)
+    prompt += `## Your Personality
 """
 ${userPersona}
 """
 
 `;
   } else {
-    prompt += `## Your Personality (as the user)
+    prompt += `## Your Personality
 You are a casual, curious human chatting naturally. Ask follow-up questions, share reactions, and keep the conversation flowing organically.
 
 `;
