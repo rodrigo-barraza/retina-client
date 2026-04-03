@@ -227,7 +227,7 @@ export default function ModelPickerPopoverComponent({
   const currentModel = allModels.find(
     (m) => m.provider === settings?.provider && m.name === settings?.model,
   );
-  const LOCAL_PROVIDERS = new Set(["lm-studio", "ollama", "vllm"]);
+  const LOCAL_PROVIDERS = new Set(["lm-studio", "ollama", "vllm", "llama-cpp"]);
   const rawLabel = currentModel?.label || settings?.model || "Select Model";
   const displayLabel = (() => {
     const provider = currentModel?.provider || settings?.provider;
@@ -387,6 +387,7 @@ const PROVIDER_ORG_MAP = {
   "together-ai": "Together AI",
   "lm-studio": null,
   ollama: null,
+  "llama-cpp": null,
 };
 
 function inferOrganization(modelName, provider) {

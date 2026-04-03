@@ -125,6 +125,17 @@ const LOGOS = {
       <path d="M12 2C8.69 2 6 4.69 6 8v2.17c-1.16.41-2 1.52-2 2.83v5c0 1.66 1.34 3 3 3h1v-7H7v-4c0-2.76 2.24-5 5-5s5 2.24 5 5v4h-1v7h1c1.66 0 3-1.34 3-3v-5c0-1.31-.84-2.42-2-2.83V8c0-3.31-2.69-6-6-6zm-2 14v4h4v-4h-4z" />
     </svg>
   ),
+  "llama-cpp": (size) => (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      style={{ flexShrink: 0 }}
+    >
+      <path d="M12 2C9.5 2 7.5 4 7.5 6.5c0 1.1.4 2.1 1 2.9L7 11l-2 1v4l2 1v3h2v-2.5l1-.5V19h4v-2.5l1 .5V19h2v-3l2-1v-4l-2-1-1.5-1.6c.6-.8 1-1.8 1-2.9C16.5 4 14.5 2 12 2zm-1.5 4a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+    </svg>
+  ),
 };
 
 export default function ProviderLogo({ provider, size = 16, className = "" }) {
@@ -152,4 +163,5 @@ export const PROVIDER_LABELS = {
   "lm-studio": "LM Studio",
   vllm: "vLLM",
   ollama: "Ollama",
+  "llama-cpp": "llama.cpp",
 };

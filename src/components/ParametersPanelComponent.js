@@ -188,7 +188,7 @@ export default function ParametersPanelComponent({
         !selectedModelDef?.responsesAPI &&
         (settings.thinkingEnabled || settings.provider === "lm-studio") && (
           <>
-            {["openai", "lm-studio", "vllm", "anthropic", "ollama"].includes(
+            {["openai", "lm-studio", "vllm", "anthropic", "ollama", "llama-cpp"].includes(
               settings.provider,
             ) && (
               <div className={styles.formGroup}>
@@ -275,7 +275,7 @@ export default function ParametersPanelComponent({
             />
           </div>
 
-          {["anthropic", "google"].includes(settings.provider) && (
+          {["anthropic", "google", "llama-cpp"].includes(settings.provider) && (
             <div className={styles.formGroup}>
               <label>Top K ({settings.topK})</label>
               <SliderComponent
@@ -288,7 +288,7 @@ export default function ParametersPanelComponent({
             </div>
           )}
 
-          {["openai", "lm-studio", "vllm", "google"].includes(
+          {["openai", "lm-studio", "vllm", "google", "llama-cpp"].includes(
             settings.provider,
           ) && (
             <>
