@@ -12,6 +12,7 @@ import styles from "./AdminShell.module.css";
 
 function AdminShellInner({ children }) {
   const [newCount, setNewCount] = useState(0);
+  const [newSessionsCount, setNewSessionsCount] = useState(0);
   const [generatingCount, setGeneratingCount] = useState(0);
   const [systemStatus, setSystemStatus] = useState("connected");
   const pathname = usePathname();
@@ -19,31 +20,80 @@ function AdminShellInner({ children }) {
 
   // Track conversations by ID → messageCount to detect both new convos and updates
   const knownConvsRef = useRef(null); // null = not initialized
+  const knownSessionsRef = useRef(null); // null = not initialized
   const isOnConversationsRef = useRef(
     pathname.startsWith("/admin/conversations"),
+  );
+  const isOnSessionsRef = useRef(
+    pathname.startsWith("/admin/sessions"),
   );
 
   // Keep ref in sync with pathname
   useEffect(() => {
     const onConvs = pathname.startsWith("/admin/conversations");
+    const onSessions = pathname.startsWith("/admin/sessions");
     isOnConversationsRef.current = onConvs;
-    if (onConvs) {
-      // Clear badge when navigating to conversations (any sub-route)
-      setNewCount(0);
-    }
+    isOnSessionsRef.current = onSessions;
+    if (onConvs) setNewCount(0);
+    if (onSessions) setNewSessionsCount(0);
   }, [pathname]);
 
   // SSE subscription for real-time generatingCount across all projects
+  // Minimum visual duration: keep the rainbow animation alive for at least 3s
+  // so it's visible (Change Streams push transitions faster than old polling).
+  const generatingTimerRef = useRef(null);
   useEffect(() => {
     const es = IrisService.subscribeConversationStats((data) => {
-      setGeneratingCount(data.generatingCount || 0);
+      const count = data.generatingCount || 0;
+      if (count > 0) {
+        // Clear any pending "stop generating" timer
+        if (generatingTimerRef.current) {
+          clearTimeout(generatingTimerRef.current);
+          generatingTimerRef.current = null;
+        }
+        setGeneratingCount(count);
+      } else {
+        // Delay clearing to give the animation time to ramp up
+        if (!generatingTimerRef.current) {
+          generatingTimerRef.current = setTimeout(() => {
+            setGeneratingCount(0);
+            generatingTimerRef.current = null;
+          }, 3000);
+        }
+      }
     });
-    return () => es.close();
+    return () => {
+      es.close();
+      if (generatingTimerRef.current) clearTimeout(generatingTimerRef.current);
+    };
   }, []);
 
   // ── Change Stream SSE: detect new conversations in real time ────
   // Falls back to polling if Change Streams aren't available.
   useEffect(() => {
+    async function fetchSessions() {
+      try {
+        const data = await IrisService.getSessions({ page: 1, limit: 50 });
+        const list = data.data || data.sessions || [];
+        const currentIds = new Set(list.map((s) => s.id));
+
+        if (knownSessionsRef.current === null) {
+          knownSessionsRef.current = currentIds;
+        } else if (!isOnSessionsRef.current) {
+          let newOnes = 0;
+          for (const id of currentIds) {
+            if (!knownSessionsRef.current.has(id)) newOnes++;
+          }
+          if (newOnes > 0) setNewSessionsCount((prev) => prev + newOnes);
+          knownSessionsRef.current = currentIds;
+        } else {
+          knownSessionsRef.current = currentIds;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     async function fetchConversations() {
       try {
         const data = await IrisService.getConversations({
@@ -93,6 +143,7 @@ function AdminShellInner({ children }) {
 
     // Initial loads
     fetchConversations();
+    fetchSessions();
     fetchHealth();
 
     // Health check on a long interval (doesn't need real-time)
@@ -113,6 +164,9 @@ function AdminShellInner({ children }) {
         if (event.collection === "conversations") {
           fetchConversations();
         }
+        if (event.collection === "sessions") {
+          fetchSessions();
+        }
       },
     });
 
@@ -126,6 +180,9 @@ function AdminShellInner({ children }) {
   const handleNavClick = useCallback((href) => {
     if (href.startsWith("/admin/conversations")) {
       setNewCount(0);
+    }
+    if (href.startsWith("/admin/sessions")) {
+      setNewSessionsCount(0);
     }
   }, []);
 
@@ -151,6 +208,7 @@ function AdminShellInner({ children }) {
       <NavigationSidebarComponent
         mode="admin"
         liveCount={newCount}
+        sessionsCount={newSessionsCount}
         systemStatus={systemStatus}
         isGenerating={generatingCount > 0}
         onNavClick={handleNavClick}

@@ -62,9 +62,9 @@ const ADMIN_NAV_ITEMS = [
     href: "/admin/conversations",
     label: "Conversations",
     icon: MessageSquare,
-    showBadge: true,
+    showBadge: "conversations",
   },
-  { href: "/admin/sessions", label: "Sessions", icon: FolderOpen },
+  { href: "/admin/sessions", label: "Sessions", icon: FolderOpen, showBadge: "sessions" },
   { href: "/admin/providers", label: "Providers", icon: Layers },
   { href: "/admin/media", label: "Media", icon: ImageIcon },
   { href: "/admin/text", label: "Text", icon: Type },
@@ -79,6 +79,7 @@ const ADMIN_EXPERIMENT_ITEMS = [
 export default function NavigationSidebarComponent({
   mode = "user",
   liveCount = 0,
+  sessionsCount = 0,
   systemStatus = "connected",
   isGenerating = false,
   onNavClick,
@@ -174,9 +175,14 @@ export default function NavigationSidebarComponent({
                     >
                       <Icon className={styles.navIcon} />
                       <span className={styles.navLabel}>{item.label}</span>
-                      {item.showBadge && liveCount > 0 && (
+                      {item.showBadge === "conversations" && liveCount > 0 && (
                         <span className={`${styles.badge} ${styles.live}`}>
                           {liveCount}
+                        </span>
+                      )}
+                      {item.showBadge === "sessions" && sessionsCount > 0 && (
+                        <span className={`${styles.badge} ${styles.live}`}>
+                          {sessionsCount}
                         </span>
                       )}
                     </Link>
@@ -304,9 +310,14 @@ export default function NavigationSidebarComponent({
               >
                 <Icon className={styles.navIcon} />
                 <span className={styles.navLabel}>{item.label}</span>
-                {item.showBadge && liveCount > 0 && (
+                {item.showBadge === "conversations" && liveCount > 0 && (
                   <span className={`${styles.badge} ${styles.live}`}>
                     {liveCount}
+                  </span>
+                )}
+                {item.showBadge === "sessions" && sessionsCount > 0 && (
+                  <span className={`${styles.badge} ${styles.live}`}>
+                    {sessionsCount}
                   </span>
                 )}
               </Link>
