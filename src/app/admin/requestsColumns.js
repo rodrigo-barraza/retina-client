@@ -3,6 +3,7 @@ import CostBadgeComponent from "../../components/CostBadgeComponent";
 import {
   modelColumn,
   providerColumn,
+  projectColumn,
   modalitiesColumn,
   endpointColumn,
   tokenColumns,
@@ -14,7 +15,7 @@ import {
 
 export const getRequestsColumns = () => [
   createdAtColumn("timestamp"),
-  { key: "project", label: "Project" },
+  projectColumn(),
   modalitiesColumn(),
   endpointColumn(),
   providerColumn(),
