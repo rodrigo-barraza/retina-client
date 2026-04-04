@@ -149,6 +149,9 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
 
         // Connect to the follow SSE for live updates
         abortRef.current = PrismService.followBenchmarkRun(benchmarkId, {
+          onRunInfo: (data) => {
+            setStreamingTotal(data.totalModels || 0);
+          },
           onModelStart: (data) => {
             setActiveModel(data);
             setActiveProgress(0);
@@ -212,6 +215,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
             setRunning(false);
             setStreamingResults([]);
             setActiveModel(null);
+            setStreamingTotal(0);
             abortRef.current = null;
 
             try {
@@ -343,6 +347,9 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
         : undefined;
 
     abortRef.current = PrismService.streamBenchmarkRun(benchmarkId, models, {
+      onRunInfo: (data) => {
+        setStreamingTotal(data.totalModels || 0);
+      },
       onModelStart: (data) => {
         setActiveModel(data);
         setActiveProgress(0);
@@ -417,6 +424,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
         setRunning(false);
         setStreamingResults([]);
         setActiveModel(null);
+        setStreamingTotal(0);
         abortRef.current = null;
 
         try {
@@ -465,6 +473,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
     setActivePhase("");
     setRunning(false);
     setActiveModel(null);
+    setStreamingTotal(0);
 
     // Synthesize a partial run from whatever streaming results we have
     if (streamingResults.length > 0) {

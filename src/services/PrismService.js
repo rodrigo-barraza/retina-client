@@ -878,7 +878,7 @@ export default class PrismService {
    * @returns {Function} abort — call to cancel the stream
    */
   static streamBenchmarkRun(id, models, callbacks = {}) {
-    const { onModelStart, onModelComplete, onRunComplete, onError } = callbacks;
+    const { onRunInfo, onModelStart, onModelComplete, onRunComplete, onError } = callbacks;
     const controller = new AbortController();
 
     (async () => {
@@ -915,7 +915,9 @@ export default class PrismService {
 
             try {
               const data = JSON.parse(json);
-              if (data.type === "model_start" && onModelStart) {
+              if (data.type === "run_info" && onRunInfo) {
+                onRunInfo(data);
+              } else if (data.type === "model_start" && onModelStart) {
                 onModelStart(data);
               } else if (data.type === "model_complete" && onModelComplete) {
                 onModelComplete(data);
@@ -993,7 +995,7 @@ export default class PrismService {
    * @returns {Function} abort — call to disconnect
    */
   static followBenchmarkRun(id, callbacks = {}) {
-    const { onModelStart, onModelComplete, onRunComplete, onError } = callbacks;
+    const { onRunInfo, onModelStart, onModelComplete, onRunComplete, onError } = callbacks;
     const controller = new AbortController();
 
     (async () => {
@@ -1029,7 +1031,9 @@ export default class PrismService {
 
             try {
               const data = JSON.parse(json);
-              if (data.type === "model_start" && onModelStart) {
+              if (data.type === "run_info" && onRunInfo) {
+                onRunInfo(data);
+              } else if (data.type === "model_start" && onModelStart) {
                 onModelStart(data);
               } else if (data.type === "model_complete" && onModelComplete) {
                 onModelComplete(data);
