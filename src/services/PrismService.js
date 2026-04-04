@@ -964,4 +964,15 @@ export default class PrismService {
       { body: {} },
     );
   }
+
+  /**
+   * Explicitly abort a running benchmark.
+   * @param {string} benchmarkId
+   * @returns {Promise<{ aborted: boolean }>}
+   */
+  static async abortBenchmarkRun(benchmarkId) {
+    return PrismService._request(`/benchmark/${benchmarkId}/abort`, {
+      body: {},
+    });
+  }
 }

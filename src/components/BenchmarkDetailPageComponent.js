@@ -334,7 +334,12 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
 
   // ── Stop benchmark ─────────────────────────────────────────
   const handleStop = useCallback(async () => {
-    // Abort the SSE fetch connection
+    // 1. Explicitly tell the server to abort (reliable — dedicated HTTP POST)
+    try {
+      await PrismService.abortBenchmarkRun(benchmarkId);
+    } catch { /* server might already be done */ }
+
+    // 2. Also abort the client-side SSE fetch connection (secondary cleanup)
     if (abortRef.current) {
       abortRef.current();
       abortRef.current = null;
