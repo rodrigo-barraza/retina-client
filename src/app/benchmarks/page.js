@@ -4,7 +4,7 @@ import NavigationSidebarComponent from "../../components/NavigationSidebarCompon
 import BenchmarkPageComponent from "../../components/BenchmarkPageComponent";
 import styles from "./page.module.css";
 
-export default function BenchmarkPage() {
+export default function BenchmarksPage() {
   return (
     <div className={styles.pageWrapper}>
       <NavigationSidebarComponent mode="user" />

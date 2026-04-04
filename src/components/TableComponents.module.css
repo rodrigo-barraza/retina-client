@@ -110,3 +110,87 @@
 .conversationTitleMini {
   gap: 4px;
 }
+
+/* ── Benchmark result cells ──────────────────────────── */
+
+.benchmarkStatusCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.benchmarkPassIcon {
+  color: var(--success);
+}
+
+.benchmarkFailIcon {
+  color: var(--danger);
+}
+
+.benchmarkErrorIcon {
+  color: var(--warning);
+}
+
+.benchmarkModelCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.benchmarkModelName {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.benchmarkModelProvider {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.benchmarkResponseCell {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.benchmarkErrorMessage {
+  font-size: 11px;
+  color: var(--danger);
+  font-style: italic;
+}
+
+.benchmarkTpsCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+
+  & svg {
+    opacity: 0.5;
+    flex-shrink: 0;
+    color: var(--accent-color);
+  }
+}
+
+.monoCell {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* Highlighted expected-value match inside response text */
+.benchmarkHighlight {
+  background: color-mix(in srgb, var(--success) 20%, transparent);
+  color: var(--success);
+  border-radius: 2px;
+  padding: 1px 2px;
+  font-weight: 600;
+}

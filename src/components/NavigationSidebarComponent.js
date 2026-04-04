@@ -52,7 +52,7 @@ const USER_NAV_ITEMS = [
 ];
 
 const USER_EXPERIMENT_ITEMS = [
-  { href: "/benchmark", label: "Benchmark", icon: Target },
+  { href: "/benchmarks", label: "Benchmarks", icon: Target },
   { href: "/synthesis", label: "Synthesis", icon: FlaskConical },
   { href: "/workflows", label: "Workflows", icon: Workflow },
 ];

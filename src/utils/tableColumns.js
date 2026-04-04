@@ -14,6 +14,11 @@ import {
   Workflow,
   Zap,
   Clock,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Timer,
+  Gauge,
 } from "lucide-react";
 import ModelBadgeComponent from "../components/ModelBadgeComponent";
 import ProvidersBadgeComponent from "../components/ProvidersBadgeComponent";
@@ -30,6 +35,7 @@ import {
   formatLatency,
   formatTokensPerSec,
   formatDateTime,
+  getTotalInputTokens,
 } from "./utilities";
 import styles from "../components/TableComponents.module.css";
 
@@ -535,4 +541,236 @@ export const statusColumn = () => ({
       {r.success ? "OK" : "ERR"}
     </BadgeComponent>
   ),
+});
+
+/* ── Benchmark result columns ──────────────────────────── */
+
+export const benchmarkStatusColumn = () => ({
+  key: "status",
+  label: "Status",
+  description: "Whether the model passed, failed, or errored on this benchmark",
+  sortValue: (r) => (r.error ? -1 : r.passed ? 1 : 0),
+  render: (r) => {
+    if (r.error) {
+      return (
+        <span className={styles.benchmarkStatusCell}>
+          <AlertTriangle size={16} className={styles.benchmarkErrorIcon} />
+          <span>Error</span>
+        </span>
+      );
+    }
+    if (r.passed) {
+      return (
+        <span className={styles.benchmarkStatusCell}>
+          <CheckCircle2 size={16} className={styles.benchmarkPassIcon} />
+          <span>Pass</span>
+        </span>
+      );
+    }
+    return (
+      <span className={styles.benchmarkStatusCell}>
+        <XCircle size={16} className={styles.benchmarkFailIcon} />
+        <span>Fail</span>
+      </span>
+    );
+  },
+});
+
+export const benchmarkModelColumn = () => ({
+  key: "label",
+  label: "Model",
+  description: "The model and provider tested",
+  render: (r) => (
+    <span className={styles.benchmarkModelCell}>
+      <span className={styles.benchmarkModelName}>{r.label}</span>
+      <span className={styles.benchmarkModelProvider}>{r.provider}</span>
+    </span>
+  ),
+});
+
+/**
+ * Highlight the expected value substring inside a response string.
+ * Returns an array of React nodes with <mark> wrapping matched portions.
+ */
+function highlightExpected(text, expected, matchMode) {
+  if (!text || !expected) return text || "—";
+
+  const norm = (s) => s.trim().toLowerCase();
+  const normText = norm(text);
+  const normExpected = norm(expected);
+
+  // For regex mode, find the first match in the original text
+  if (matchMode === "regex") {
+    try {
+      const re = new RegExp(`(${expected})`, "i");
+      const match = text.match(re);
+      if (!match) return text;
+      const idx = match.index;
+      const len = match[0].length;
+      return (
+        <>
+          {text.slice(0, idx)}
+          <mark className={styles.benchmarkHighlight}>{text.slice(idx, idx + len)}</mark>
+          {text.slice(idx + len)}
+        </>
+      );
+    } catch {
+      return text;
+    }
+  }
+
+  // For exact mode — highlight the entire response if it matches
+  if (matchMode === "exact" && normText === normExpected) {
+    return <mark className={styles.benchmarkHighlight}>{text}</mark>;
+  }
+
+  // For contains / startsWith — find the substring position (case-insensitive)
+  const idx = normText.indexOf(normExpected);
+  if (idx === -1) return text;
+
+  const before = text.slice(0, idx);
+  const matched = text.slice(idx, idx + expected.trim().length);
+  const after = text.slice(idx + expected.trim().length);
+
+  return (
+    <>
+      {before}
+      <mark className={styles.benchmarkHighlight}>{matched}</mark>
+      {after}
+    </>
+  );
+}
+
+export const benchmarkResponseColumn = ({ expectedValue, matchMode } = {}) => ({
+  key: "response",
+  label: "Response",
+  description: "The model's output text (or error message)",
+  sortable: false,
+  render: (r) => {
+    if (r.error) {
+      return <span className={styles.benchmarkErrorMessage}>{r.error}</span>;
+    }
+    return (
+      <span className={styles.benchmarkResponseCell} title={r.response}>
+        {expectedValue
+          ? highlightExpected(r.response, expectedValue, matchMode || r.matchMode)
+          : (r.response || "—")}
+      </span>
+    );
+  },
+});
+
+export const benchmarkLatencyColumn = () => ({
+  key: "latency",
+  label: "Latency",
+  description: "Time taken for the model to respond",
+  sortable: true,
+  align: "right",
+  render: (r) =>
+    r.latency ? (
+      <span className={styles.monoCell}>{formatLatency(r.latency)}</span>
+    ) : (
+      emptyDash()
+    ),
+});
+
+export const benchmarkDurationColumn = () => ({
+  key: "duration",
+  label: "Duration",
+  description: "Wall-clock time from request start to finish",
+  sortable: true,
+  sortValue: (r) => r.latency || 0,
+  align: "right",
+  render: (r) => {
+    if (!r.latency) return emptyDash();
+    return (
+      <span className={styles.durationCell}>
+        <Timer size={10} />
+        {formatLatency(r.latency)}
+      </span>
+    );
+  },
+});
+
+export const benchmarkTokensInColumn = () => ({
+  key: "tokensIn",
+  label: "Tokens In",
+  description: "Input (prompt) tokens consumed by this model",
+  sortable: true,
+  sortValue: (r) => getTotalInputTokens(r.usage) || 0,
+  align: "right",
+  render: (r) => {
+    const v = getTotalInputTokens(r.usage);
+    return v > 0 ? <span className={styles.monoCell}>{formatTokenCount(v)}</span> : emptyDash();
+  },
+});
+
+export const benchmarkTokensOutColumn = () => ({
+  key: "tokensOut",
+  label: "Tokens Out",
+  description: "Output (completion) tokens generated by this model",
+  sortable: true,
+  sortValue: (r) => r.usage?.outputTokens || 0,
+  align: "right",
+  render: (r) => {
+    const v = r.usage?.outputTokens || 0;
+    return v > 0 ? <span className={styles.monoCell}>{formatTokenCount(v)}</span> : emptyDash();
+  },
+});
+
+export const benchmarkTokPerSecColumn = () => ({
+  key: "tokPerSec",
+  label: "Tok/s",
+  description: "Output throughput — completion tokens per second",
+  sortable: true,
+  sortValue: (r) => {
+    const out = r.usage?.outputTokens || 0;
+    return r.latency > 0 && out > 0 ? out / r.latency : 0;
+  },
+  align: "right",
+  render: (r) => {
+    const out = r.usage?.outputTokens || 0;
+    if (!r.latency || r.latency <= 0 || out <= 0) return emptyDash();
+    const tps = out / r.latency;
+    return (
+      <span className={styles.benchmarkTpsCell}>
+        <Gauge size={10} />
+        {tps.toFixed(1)}
+      </span>
+    );
+  },
+});
+
+export const benchmarkCostColumn = () => ({
+  key: "estimatedCost",
+  label: "Cost",
+  description: "Estimated cost for this individual model run",
+  sortable: true,
+  align: "right",
+  render: (r) =>
+    r.estimatedCost != null ? (
+      <span className={styles.monoCell}>${r.estimatedCost.toFixed(6)}</span>
+    ) : (
+      emptyDash()
+    ),
+});
+
+export const benchmarkMatchModeColumn = () => ({
+  key: "matchMode",
+  label: "Match",
+  description: "Evaluation strategy used to compare response against expected value",
+  sortable: false,
+  render: (r) => {
+    const labels = {
+      contains: "Contains",
+      exact: "Exact",
+      startsWith: "Starts With",
+      regex: "Regex",
+    };
+    return (
+      <BadgeComponent variant="info" mini>
+        {labels[r.matchMode] || r.matchMode || "—"}
+      </BadgeComponent>
+    );
+  },
 });

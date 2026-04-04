@@ -1,0 +1,794 @@
+"use client";
+
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Plus,
+  Play,
+  Pencil,
+  CheckCircle2,
+  Target,
+  ChevronLeft,
+  History,
+  X,
+  Check,
+  DollarSign,
+  Cpu,
+  Coins,
+} from "lucide-react";
+import PrismService from "../services/PrismService";
+import PageHeaderComponent from "./PageHeaderComponent";
+import ButtonComponent from "./ButtonComponent";
+import BadgeComponent from "./BadgeComponent";
+import FormGroupComponent from "./FormGroupComponent";
+import ModalOverlayComponent from "./ModalOverlayComponent";
+import ModelsTableComponent from "./ModelsTableComponent";
+import BenchmarksTableComponent from "./BenchmarksTableComponent";
+import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
+import { formatContextTokens, formatCost } from "../utils/utilities";
+import styles from "./BenchmarkPageComponent.module.css";
+
+const MATCH_MODES = [
+  { value: "contains", label: "Contains" },
+  { value: "exact", label: "Exact" },
+  { value: "startsWith", label: "Starts With" },
+  { value: "regex", label: "Regex" },
+];
+
+/**
+ * Flatten all conversation models from the Prism config into a single array,
+ * tagged with their provider. Filters to text-output conversation models only.
+ */
+function flattenConversationModels(config) {
+  if (!config) return [];
+  const providers = config.textToText?.models || {};
+  const results = [];
+  for (const [provider, models] of Object.entries(providers)) {
+    for (const m of models) {
+      if (m.listed === false) continue;
+      if (m.outputTypes && !m.outputTypes.includes("text")) continue;
+      results.push({ ...m, provider });
+    }
+  }
+  return results;
+}
+
+export default function BenchmarkDetailPageComponent({ benchmarkId }) {
+  const router = useRouter();
+  // ── State ──────────────────────────────────────────────────
+  const [benchmark, setBenchmark] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [latestRun, setLatestRun] = useState(null);
+  const [runHistory, setRunHistory] = useState([]);
+  const [activeRunId, setActiveRunId] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    prompt: "",
+    systemPrompt: "",
+    expectedValue: "",
+    matchMode: "contains",
+    temperature: 0,
+    maxTokens: 256,
+    tags: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [running, setRunning] = useState(false);
+
+  // Model selection
+  const [allModels, setAllModels] = useState([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [selectedModelKeys, setSelectedModelKeys] = useState(new Set());
+  const [showModelPicker, setShowModelPicker] = useState(false);
+
+  // ── Load benchmark detail ──────────────────────────────────
+  const loadBenchmark = useCallback(async () => {
+    setLoading(true);
+    try {
+      const detail = await PrismService.getBenchmark(benchmarkId);
+      setBenchmark(detail);
+      if (detail.latestRun) {
+        setLatestRun(detail.latestRun);
+        setActiveRunId(detail.latestRun.id);
+      }
+    } catch (err) {
+      console.error("Failed to load benchmark detail:", err);
+    } finally {
+      setLoading(false);
+    }
+
+    try {
+      const { runs } = await PrismService.getBenchmarkRuns(benchmarkId);
+      setRunHistory(runs || []);
+    } catch (err) {
+      console.error("Failed to load run history:", err);
+    }
+  }, [benchmarkId]);
+
+  useEffect(() => {
+    loadBenchmark();
+  }, [loadBenchmark]);
+
+  // ── Load all conversation models (cloud + local) ───────────
+  const loadModels = useCallback(async () => {
+    if (allModels.length > 0) return;
+    setModelsLoading(true);
+    try {
+      const config = await PrismService.getConfig();
+      const cloudModels = flattenConversationModels(config);
+      setAllModels(cloudModels);
+
+      if (config?.localProviders?.length > 0) {
+        PrismService.getLocalConfig()
+          .then(({ models: localModels }) => {
+            const merged = PrismService.mergeLocalModels(config, localModels);
+            setAllModels(flattenConversationModels(merged));
+          })
+          .catch(() => {});
+      }
+    } catch (err) {
+      console.error("Failed to load models:", err);
+    } finally {
+      setModelsLoading(false);
+    }
+  }, [allModels.length]);
+
+  // ── Selected model objects (derived) ───────────────────────
+  const selectedModels = useMemo(
+    () =>
+      allModels.filter((m) =>
+        selectedModelKeys.has(`${m.provider}:${m.name}`),
+      ),
+    [allModels, selectedModelKeys],
+  );
+
+  // ── Edit ───────────────────────────────────────────────────
+  const openEdit = useCallback(() => {
+    if (!benchmark) return;
+    setForm({
+      name: benchmark.name,
+      prompt: benchmark.prompt,
+      systemPrompt: benchmark.systemPrompt || "",
+      expectedValue: benchmark.expectedValue,
+      matchMode: benchmark.matchMode || "contains",
+      temperature: benchmark.temperature ?? 0,
+      maxTokens: benchmark.maxTokens ?? 256,
+      tags: (benchmark.tags || []).join(", "),
+    });
+    setShowModal(true);
+  }, [benchmark]);
+
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        temperature: parseFloat(form.temperature) || 0,
+        maxTokens: parseInt(form.maxTokens, 10) || 256,
+        tags: form.tags
+          ? form.tags
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : [],
+      };
+
+      await PrismService.updateBenchmark(benchmarkId, payload);
+      setShowModal(false);
+      await loadBenchmark();
+    } catch (err) {
+      console.error("Failed to save benchmark:", err);
+    } finally {
+      setSaving(false);
+    }
+  }, [form, benchmarkId, loadBenchmark]);
+
+  // ── Run benchmark ──────────────────────────────────────────
+  const handleRun = useCallback(async () => {
+    if (!benchmark) return;
+    setRunning(true);
+
+    try {
+      const models =
+        selectedModels.length > 0
+          ? selectedModels.map((m) => ({ provider: m.provider, model: m.name }))
+          : undefined;
+
+      const run = await PrismService.runBenchmark(benchmarkId, models);
+      setLatestRun(run);
+      setActiveRunId(run.id);
+
+      const { runs } = await PrismService.getBenchmarkRuns(benchmarkId);
+      setRunHistory(runs || []);
+    } catch (err) {
+      console.error("Failed to run benchmark:", err);
+    } finally {
+      setRunning(false);
+    }
+  }, [benchmark, selectedModels, benchmarkId]);
+
+  // ── View a past run ────────────────────────────────────────
+  const viewRun = useCallback((run) => {
+    setLatestRun(run);
+    setActiveRunId(run.id);
+  }, []);
+
+  // ── Toggle model in selection ──────────────────────────────
+  const handleModelSelect = useCallback((rawModel) => {
+    const key = `${rawModel.provider}:${rawModel.name}`;
+    setSelectedModelKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
+
+  const removeModel = useCallback((key) => {
+    setSelectedModelKeys((prev) => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  }, []);
+
+  const clearModelSelection = useCallback(() => {
+    setSelectedModelKeys(new Set());
+  }, []);
+
+  // ── Open model picker (lazy-load) ──────────────────────────
+  const toggleModelPicker = useCallback(() => {
+    if (allModels.length === 0) loadModels();
+    setShowModelPicker((v) => !v);
+  }, [allModels.length, loadModels]);
+
+  // ── Selected model card ────────────────────────────────────
+  function SelectedModelCard({ model }) {
+    const key = `${model.provider}:${model.name}`;
+    const label = model.display_name || model.label || model.name;
+    const ctx = model.contextLength || model.max_context_length;
+    const hasInput = model.pricing?.inputPerMillion != null;
+    const hasOutput = model.pricing?.outputPerMillion != null;
+
+    return (
+      <div className={styles.selectedCard}>
+        <div className={styles.selectedCardHeader}>
+          <ProviderLogo provider={model.provider} size={16} />
+          <span className={styles.selectedCardName}>{label}</span>
+          <button
+            className={styles.selectedCardRemove}
+            onClick={() => removeModel(key)}
+            title="Remove"
+          >
+            <X size={12} />
+          </button>
+        </div>
+        <div className={styles.selectedCardMeta}>
+          <span className={styles.selectedCardProvider}>
+            {PROVIDER_LABELS[model.provider] || model.provider}
+          </span>
+          {ctx && (
+            <span className={styles.selectedCardStat}>
+              <Cpu size={10} />
+              {formatContextTokens(ctx)}
+            </span>
+          )}
+          {hasInput && (
+            <span className={styles.selectedCardStat}>
+              <DollarSign size={10} />
+              ${model.pricing.inputPerMillion}/{hasOutput ? model.pricing.outputPerMillion : "—"}
+            </span>
+          )}
+          {model.tools?.length > 0 && (
+            <span className={styles.selectedCardStat}>
+              {model.tools.length} tools
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Loading state ──────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <PageHeaderComponent
+          title="Benchmarks"
+          subtitle="Loading…"
+          backHref="/benchmarks"
+        />
+        <div className={styles.content}>
+          <div className={styles.runProgress}>
+            <div className={styles.progressSpinner} />
+            <div className={styles.progressText}>Loading benchmark…</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!benchmark) {
+    return (
+      <div className={styles.container}>
+        <PageHeaderComponent
+          title="Benchmarks"
+          subtitle="Not found"
+          backHref="/benchmarks"
+        />
+        <div className={styles.content}>
+          <div className={styles.runProgress}>
+            <div className={styles.progressText}>Benchmark not found.</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Render ─────────────────────────────────────────────────
+  return (
+    <div className={styles.container}>
+      <PageHeaderComponent
+        title="Benchmarks"
+        subtitle={benchmark.name}
+        backHref="/benchmarks"
+      >
+        <ButtonComponent
+          variant="ghost"
+          size="sm"
+          icon={ChevronLeft}
+          onClick={() => router.push("/benchmarks")}
+        >
+          Back
+        </ButtonComponent>
+      </PageHeaderComponent>
+
+      <div className={styles.content}>
+        <div className={styles.detailPanel}>
+          {/* ── Benchmark Info ── */}
+          <div className={styles.detailHeader}>
+            <div className={styles.detailTitle}>
+              {benchmark.name}
+            </div>
+            <div className={styles.detailMeta}>
+              <BadgeComponent variant="accent">
+                {benchmark.matchMode || "contains"}
+              </BadgeComponent>
+              <span className={styles.expectedValue}>
+                Expected: {benchmark.expectedValue}
+              </span>
+              {benchmark.tags?.map((tag) => (
+                <span key={tag} className={styles.tag}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.detailPrompt}>
+            {benchmark.prompt}
+          </div>
+
+          {/* ── Actions ── */}
+          <div className={styles.detailActions}>
+            <ButtonComponent
+              variant="primary"
+              size="sm"
+              icon={Play}
+              onClick={handleRun}
+              loading={running}
+              disabled={running}
+            >
+              {selectedModels.length > 0
+                ? `Run (${selectedModels.length} models)`
+                : "Run All Models"}
+            </ButtonComponent>
+            <ButtonComponent
+              variant="secondary"
+              size="sm"
+              icon={Target}
+              onClick={toggleModelPicker}
+            >
+              {showModelPicker ? "Hide Model Picker" : "Select Models"}
+            </ButtonComponent>
+            {selectedModels.length > 0 && (
+              <ButtonComponent
+                variant="ghost"
+                size="xs"
+                onClick={clearModelSelection}
+              >
+                Clear Selection
+              </ButtonComponent>
+            )}
+            <ButtonComponent
+              variant="ghost"
+              size="sm"
+              icon={Pencil}
+              onClick={openEdit}
+            >
+              Edit
+            </ButtonComponent>
+          </div>
+
+          {/* ── Selected Model Cards ── */}
+          {selectedModels.length > 0 && (
+            <div className={styles.selectedModelsSection}>
+              <div className={styles.selectedModelsLabel}>
+                <Check size={14} />
+                {selectedModels.length} model{selectedModels.length !== 1 ? "s" : ""} selected
+              </div>
+              <div className={styles.selectedModelsGrid}>
+                {selectedModels.map((m) => (
+                  <SelectedModelCard
+                    key={`${m.provider}:${m.name}`}
+                    model={m}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Model Picker (Table) ── */}
+          {showModelPicker && (
+            <div className={styles.modelPickerSection}>
+              {modelsLoading ? (
+                <div className={styles.runProgress}>
+                  <div className={styles.progressSpinner} />
+                  <div className={styles.progressText}>
+                    Loading models…
+                  </div>
+                </div>
+              ) : (
+                <ModelsTableComponent
+                  models={allModels}
+                  onSelect={handleModelSelect}
+                  showSearch
+                  showProviderFilter
+                  renderActions={(rawModel) => {
+                    const key = `${rawModel.provider}:${rawModel.name}`;
+                    const isSelected = selectedModelKeys.has(key);
+                    return (
+                      <button
+                        className={`${styles.selectBtn} ${isSelected ? styles.selectBtnActive : ""}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleModelSelect(rawModel);
+                        }}
+                      >
+                        {isSelected ? (
+                          <>
+                            <CheckCircle2 size={12} /> Selected
+                          </>
+                        ) : (
+                          <>
+                            <Plus size={12} /> Select
+                          </>
+                        )}
+                      </button>
+                    );
+                  }}
+                />
+              )}
+            </div>
+          )}
+
+          {/* ── Running Progress ── */}
+          {running && (
+            <div className={styles.runProgress}>
+              <div className={styles.progressSpinner} />
+              <div className={styles.progressText}>
+                Running benchmark against{" "}
+                {selectedModels.length > 0
+                  ? `${selectedModels.length} models`
+                  : "all models"}
+                …
+              </div>
+            </div>
+          )}
+
+          {/* ── Results ── */}
+          {latestRun && !running && (
+            <div className={styles.resultsSection}>
+              <div className={styles.resultsSectionHeader}>
+                <div className={styles.resultsSectionTitle}>Results</div>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: "var(--text-tertiary)",
+                  }}
+                >
+                  {new Date(latestRun.completedAt).toLocaleString()}
+                </span>
+              </div>
+
+              {/* Summary Bar */}
+              <div className={styles.summaryBar}>
+                <div className={styles.summaryItem}>
+                  <span
+                    className={styles.summaryValue}
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {latestRun.summary.total}
+                  </span>
+                  <span className={styles.summaryLabel}>Total</span>
+                </div>
+                <div className={styles.summaryDivider} />
+                <div className={styles.summaryItem}>
+                  <span
+                    className={styles.summaryValue}
+                    style={{ color: "var(--success)" }}
+                  >
+                    {latestRun.summary.passed}
+                  </span>
+                  <span className={styles.summaryLabel}>Passed</span>
+                </div>
+                <div className={styles.summaryDivider} />
+                <div className={styles.summaryItem}>
+                  <span
+                    className={styles.summaryValue}
+                    style={{ color: "var(--danger)" }}
+                  >
+                    {latestRun.summary.failed}
+                  </span>
+                  <span className={styles.summaryLabel}>Failed</span>
+                </div>
+                {latestRun.summary.errored > 0 && (
+                  <>
+                    <div className={styles.summaryDivider} />
+                    <div className={styles.summaryItem}>
+                      <span
+                        className={styles.summaryValue}
+                        style={{ color: "var(--warning)" }}
+                      >
+                        {latestRun.summary.errored}
+                      </span>
+                      <span className={styles.summaryLabel}>Errors</span>
+                    </div>
+                  </>
+                )}
+                <div className={styles.summaryDivider} />
+                <div className={styles.summaryItem}>
+                  <div className={styles.passBar}>
+                    <div
+                      className={styles.passBarFill}
+                      style={{
+                        width: `${(latestRun.summary.passed / latestRun.summary.total) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <span className={styles.summaryLabel}>
+                    {Math.round(
+                      (latestRun.summary.passed / latestRun.summary.total) *
+                        100,
+                    )}
+                    %
+                  </span>
+                </div>
+                {(latestRun.summary.totalCost > 0 || latestRun.models?.some(r => r.estimatedCost > 0)) && (
+                  <>
+                    <div className={styles.summaryDivider} />
+                    <div className={styles.summaryItem}>
+                      <Coins size={14} className={styles.costIcon} />
+                      <span
+                        className={styles.summaryValue}
+                        style={{ color: "var(--success)" }}
+                      >
+                        {formatCost(
+                          latestRun.summary.totalCost ??
+                          latestRun.models.reduce((s, r) => s + (r.estimatedCost || 0), 0)
+                        )}
+                      </span>
+                      <span className={styles.summaryLabel}>Cost</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Results Table */}
+              <BenchmarksTableComponent results={latestRun.models} expectedValue={benchmark.expectedValue} />
+            </div>
+          )}
+
+          {/* ── Run History ── */}
+          {runHistory.length > 0 && (
+            <div className={styles.resultsSection}>
+              <div className={styles.resultsSectionTitle}>
+                <History size={14} style={{ marginRight: 6 }} />
+                Run History ({runHistory.length})
+              </div>
+              <div className={styles.runHistoryList}>
+                {runHistory.map((run) => (
+                  <div
+                    key={run.id}
+                    className={`${styles.runHistoryItem} ${activeRunId === run.id ? styles.activeRun : ""}`}
+                    onClick={() => viewRun(run)}
+                  >
+                    <div className={styles.runHistoryMeta}>
+                      <span className={styles.runHistoryDate}>
+                        {new Date(run.completedAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className={styles.runHistoryStats}>
+                      <span className={styles.passCount}>
+                        {run.summary.passed} ✓
+                      </span>
+                      <span className={styles.failCount}>
+                        {run.summary.failed + (run.summary.errored || 0)} ✗
+                      </span>
+                      {(run.summary.totalCost > 0 || run.models?.some(r => r.estimatedCost > 0)) && (
+                        <span className={styles.runCost}>
+                          <Coins size={10} />
+                          {formatCost(
+                            run.summary.totalCost ??
+                            run.models.reduce((s, r) => s + (r.estimatedCost || 0), 0)
+                          )}
+                        </span>
+                      )}
+                      <div className={styles.passBar}>
+                        <div
+                          className={styles.passBarFill}
+                          style={{
+                            width: `${(run.summary.passed / run.summary.total) * 100}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Edit Modal ── */}
+      {showModal && (
+        <ModalOverlayComponent onClose={() => setShowModal(false)} portal>
+          <div className={styles.modalPanel}>
+            <div className={styles.modalHeader}>
+              <span className={styles.modalTitle}>Edit Benchmark</span>
+              <button
+                className={styles.cardActionBtn}
+                onClick={() => setShowModal(false)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <FormGroupComponent label="Name">
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
+                  placeholder="e.g. Capital of France"
+                />
+              </FormGroupComponent>
+
+              <FormGroupComponent label="Prompt">
+                <textarea
+                  value={form.prompt}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, prompt: e.target.value }))
+                  }
+                  placeholder="What is the capital of France? Reply with just the city name."
+                  rows={3}
+                />
+              </FormGroupComponent>
+
+              <FormGroupComponent label="System Prompt (optional)">
+                <textarea
+                  value={form.systemPrompt}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, systemPrompt: e.target.value }))
+                  }
+                  placeholder="You are a geography expert. Answer concisely."
+                  rows={2}
+                />
+              </FormGroupComponent>
+
+              <div className={styles.formRow}>
+                <FormGroupComponent label="Expected Value">
+                  <input
+                    type="text"
+                    value={form.expectedValue}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        expectedValue: e.target.value,
+                      }))
+                    }
+                    placeholder="Paris"
+                  />
+                </FormGroupComponent>
+
+                <FormGroupComponent label="Match Mode">
+                  <select
+                    value={form.matchMode}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, matchMode: e.target.value }))
+                    }
+                  >
+                    {MATCH_MODES.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </FormGroupComponent>
+              </div>
+
+              <div className={styles.formRow}>
+                <FormGroupComponent label="Temperature">
+                  <input
+                    type="number"
+                    value={form.temperature}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        temperature: e.target.value,
+                      }))
+                    }
+                    min={0}
+                    max={2}
+                    step={0.1}
+                  />
+                </FormGroupComponent>
+
+                <FormGroupComponent label="Max Tokens">
+                  <input
+                    type="number"
+                    value={form.maxTokens}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        maxTokens: e.target.value,
+                      }))
+                    }
+                    min={1}
+                    max={4096}
+                  />
+                </FormGroupComponent>
+              </div>
+
+              <FormGroupComponent label="Tags (comma-separated)">
+                <input
+                  type="text"
+                  value={form.tags}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, tags: e.target.value }))
+                  }
+                  placeholder="geography, factual"
+                />
+              </FormGroupComponent>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <ButtonComponent
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowModal(false)}
+              >
+                Cancel
+              </ButtonComponent>
+              <ButtonComponent
+                variant="primary"
+                size="sm"
+                onClick={handleSave}
+                loading={saving}
+                disabled={!form.name || !form.prompt || !form.expectedValue}
+              >
+                Save Changes
+              </ButtonComponent>
+            </div>
+          </div>
+        </ModalOverlayComponent>
+      )}
+    </div>
+  );
+}
