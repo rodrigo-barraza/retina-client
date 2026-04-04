@@ -185,6 +185,19 @@
   background: rgba(16, 185, 129, 0.1);
 }
 
+.loadingBadge {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.loadingSpin {
+  animation: loadingSpin 1s linear infinite;
+}
+
+@keyframes loadingSpin {
+  to { transform: rotate(360deg); }
+}
+
 .availableBadge {
   color: var(--text-muted);
   background: var(--bg-tertiary);

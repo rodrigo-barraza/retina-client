@@ -33,6 +33,8 @@ import HistoryPanel from "../components/HistoryPanel";
 import ThreePanelLayout from "../components/ThreePanelLayout";
 import TabBarComponent from "../components/TabBarComponent";
 import ModelPickerPopoverComponent from "../components/ModelPickerPopoverComponent";
+import ModelLoadConfigPanel from "../components/ModelLoadConfigPanel";
+import { useToast } from "../components/ToastComponent";
 import useToolToggles from "../hooks/useToolToggles";
 
 // All tool-toggle keys that must be explicitly reset when switching conversations
@@ -123,6 +125,13 @@ export default function HomePage({ initialConversationId = null }) {
   const [convFavoriteKeys, setConvFavoriteKeys] = useState([]);
   const [originalMessageCount, setOriginalMessageCount] = useState(0);
   const [originalTotalCost, setOriginalTotalCost] = useState(0);
+
+  // ── LM Studio Model Load Config ────────────────────────────
+  const [lmConfigModel, setLmConfigModel] = useState(null);
+  const [lmConfigLoading, setLmConfigLoading] = useState(false);
+  const [lmLoadProgress, setLmLoadProgress] = useState(null); // null = idle, 0–1 = loading
+  const lmLoadAbortRef = useRef(null);
+  const [toastElement, showToast] = useToast(4000);
 
   // ── Function Calling state ──────────────────────────────────
   const [leftTab, setLeftTab] = useState("settings");
@@ -1945,6 +1954,21 @@ export default function HomePage({ initialConversationId = null }) {
                 temperature: temp,
               }));
             }}
+            onLmStudioSelect={async (rawModel) => {
+              // Fetch full LM Studio API data so the config panel has
+              // size_bytes, archParams, max_context_length, etc.
+              try {
+                const lmData = await PrismService.getLmStudioModels();
+                const apiModel = (lmData?.models || []).find(
+                  (m) => m.key === rawModel.name || m.key === rawModel.key,
+                );
+                setLmConfigModel(apiModel || { ...rawModel, key: rawModel.name });
+              } catch {
+                // Fallback: use whatever we have from config
+                setLmConfigModel({ ...rawModel, key: rawModel.name });
+              }
+            }}
+            loadingProgress={lmLoadProgress}
             favorites={favoriteKeys}
             onToggleFavorite={async (key) => {
               if (favoriteKeys.includes(key)) {
@@ -2272,6 +2296,58 @@ export default function HomePage({ initialConversationId = null }) {
           }}
         />
       </ThreePanelLayout>
+
+      {/* LM Studio Model Load Config Modal */}
+      {lmConfigModel && (
+        <ModelLoadConfigPanel
+          model={lmConfigModel}
+          service={PrismService}
+          loading={lmConfigLoading}
+          onClose={() => setLmConfigModel(null)}
+          onLoad={(modelKey, options) => {
+            setLmConfigLoading(true);
+            setLmConfigModel(null);
+            setLmLoadProgress(0);
+
+            // Select the model immediately so the user can start chatting
+            const modelDef =
+              (config?.textToText?.models?.["lm-studio"] || []).find(
+                (m) => m.name === modelKey,
+              );
+            const temp = modelDef?.defaultTemperature ?? 1.0;
+            setSettings((s) => ({
+              ...s,
+              provider: "lm-studio",
+              model: modelKey,
+              temperature: temp,
+            }));
+
+            // Stream the load with real-time progress
+            if (lmLoadAbortRef.current) lmLoadAbortRef.current();
+            lmLoadAbortRef.current = PrismService.loadLmStudioModelStream(
+              modelKey,
+              options,
+              {
+                onProgress: (progress) => setLmLoadProgress(progress),
+                onComplete: () => {
+                  setLmLoadProgress(null);
+                  setLmConfigLoading(false);
+                  lmLoadAbortRef.current = null;
+                  showToast(`Loaded ${modelKey}`, "success");
+                },
+                onError: (err) => {
+                  setLmLoadProgress(null);
+                  setLmConfigLoading(false);
+                  lmLoadAbortRef.current = null;
+                  showToast(`Failed to load: ${err.message}`, "error");
+                },
+              },
+            );
+          }}
+        />
+      )}
+
+      {toastElement}
     </main>
   );
 }

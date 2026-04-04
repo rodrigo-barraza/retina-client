@@ -49,6 +49,45 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 20%, transparent);
 }
 
+/* ── Loading state ──────────────────────────────────────────────────── */
+
+.triggerLoading {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--accent-color) 40%, transparent);
+  animation: triggerPulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.triggerSpinner {
+  animation: spin 1s linear infinite;
+  color: var(--accent-color);
+  flex-shrink: 0;
+}
+
+.triggerProgressBar {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent-color) 12%, transparent),
+    color-mix(in srgb, var(--accent-color) 20%, transparent)
+  );
+  transform-origin: left center;
+  transition: transform 0.3s ease-out;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+@keyframes triggerPulse {
+  0%, 100% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 10%, transparent); }
+  50%      { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 30%, transparent), 0 0 12px color-mix(in srgb, var(--accent-color) 15%, transparent); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .triggerContent {
   display: flex;
   align-items: center;

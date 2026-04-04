@@ -737,6 +737,74 @@ export default class PrismService {
     });
   }
 
+  /**
+   * Load an LM Studio model with streaming progress via SSE.
+   * @param {string} model — model key/path
+   * @param {object} options — { contextLength, flashAttention, offloadKvCache }
+   * @param {object} callbacks — { onProgress(0-1), onComplete(), onError(err) }
+   * @returns {Function} abort — call to cancel
+   */
+  static loadLmStudioModelStream(model, options = {}, callbacks = {}) {
+    const { onProgress, onComplete, onError } = callbacks;
+    const controller = new AbortController();
+
+    const body = { model };
+    if (options.contextLength != null) body.context_length = options.contextLength;
+    if (options.flashAttention != null) body.flash_attention = options.flashAttention;
+    if (options.offloadKvCache != null) body.offload_kv_cache_to_gpu = options.offloadKvCache;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/lm-studio/load-stream`, {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          if (onError) onError(new Error(err.message || `HTTP ${res.status}`));
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.type === "progress" && onProgress) {
+                onProgress(data.progress);
+              } else if (data.type === "complete" && onComplete) {
+                onComplete();
+              } else if (data.type === "error" && onError) {
+                onError(new Error(data.message));
+              }
+            } catch {
+              // skip malformed
+            }
+          }
+        }
+      } catch (err) {
+        if (err.name === "AbortError") return;
+        if (onError) onError(err);
+      }
+    })();
+
+    return () => controller.abort();
+  }
+
   // ---------------------------------------------------------------------------
   // Benchmarks
   // ---------------------------------------------------------------------------

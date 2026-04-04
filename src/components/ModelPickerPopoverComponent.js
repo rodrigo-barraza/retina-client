@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Search, X } from "lucide-react";
+import { ChevronDown, Search, X, Loader2 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import ModelGrid from "./ModelGrid";
 import CloseButtonComponent from "./CloseButtonComponent";
@@ -26,6 +26,8 @@ export default function ModelPickerPopoverComponent({
   config,
   settings,
   onSelectModel,
+  onLmStudioSelect,
+  loadingProgress,
   favorites = [],
   onToggleFavorite,
   readOnly = false,
@@ -123,11 +125,20 @@ export default function ModelPickerPopoverComponent({
     (rawModel) => {
       const provider = rawModel.provider || "lm-studio";
       const name = rawModel.name || rawModel.key;
+
+      // Intercept lm-studio models → show config panel first
+      if (provider === "lm-studio" && onLmStudioSelect) {
+        onLmStudioSelect(rawModel);
+        setOpen(false);
+        setHighlightIndex(-1);
+        return;
+      }
+
       onSelectModel(provider, name);
       setOpen(false);
       setHighlightIndex(-1);
     },
-    [onSelectModel],
+    [onSelectModel, onLmStudioSelect],
   );
 
   // Keyboard navigation (Escape / ArrowUp / ArrowDown / Enter)
@@ -241,7 +252,7 @@ export default function ModelPickerPopoverComponent({
       {/* ── Trigger pill ─────────────────────────────────────────── */}
       <button
         ref={triggerRef}
-        className={`${styles.trigger} ${open ? styles.triggerOpen : ""} ${readOnly ? styles.triggerReadOnly : ""}`}
+        className={`${styles.trigger} ${open ? styles.triggerOpen : ""} ${readOnly ? styles.triggerReadOnly : ""} ${loadingProgress != null ? styles.triggerLoading : ""}`}
         onClick={
           readOnly ? undefined : open ? () => setOpen(false) : openPopover
         }
@@ -250,15 +261,30 @@ export default function ModelPickerPopoverComponent({
         style={readOnly ? { cursor: "default" } : undefined}
       >
         <span className={styles.triggerContent}>
-          {settings?.provider && (
-            <ProviderLogo provider={settings.provider} size={16} />
+          {loadingProgress != null ? (
+            <Loader2 size={14} className={styles.triggerSpinner} />
+          ) : (
+            settings?.provider && (
+              <ProviderLogo provider={settings.provider} size={16} />
+            )
           )}
-          <span className={styles.triggerLabel}>{displayLabel}</span>
+          <span className={styles.triggerLabel}>
+            {loadingProgress != null
+              ? `Loading… ${Math.round((loadingProgress ?? 0) * 100)}%`
+              : displayLabel}
+          </span>
         </span>
-        {!readOnly && (
+        {!readOnly && loadingProgress == null && (
           <ChevronDown
             size={14}
             className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`}
+          />
+        )}
+        {/* Progress bar overlay */}
+        {loadingProgress != null && (
+          <span
+            className={styles.triggerProgressBar}
+            style={{ transform: `scaleX(${loadingProgress ?? 0})` }}
           />
         )}
       </button>

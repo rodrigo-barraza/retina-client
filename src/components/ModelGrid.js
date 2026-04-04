@@ -12,6 +12,7 @@ import {
   FileSearch,
   Link,
   ImagePlus,
+  Loader2,
 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import {
@@ -209,6 +210,7 @@ export default function ModelGrid({
   activeRowKey,
   highlightedRowKey,
   highlightedRowRef,
+  loadingModelKey,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeProvider, setActiveProvider] = useState(null);
@@ -369,6 +371,12 @@ export default function ModelGrid({
                   <span className={styles.loadedBadge}>
                     <span className={`${styles.statusDot} ${styles.active}`} />
                     Loaded
+                  </span>
+                )}
+                {model.provider === "lm-studio" && !model.isLoaded && loadingModelKey === model.key && (
+                  <span className={styles.loadingBadge}>
+                    <Loader2 size={9} className={styles.loadingSpin} />
+                    Loading
                   </span>
                 )}
                 {hasActions && (
@@ -603,6 +611,7 @@ export default function ModelGrid({
     hasActions,
     renderActions,
     arenaCols,
+    loadingModelKey,
   ]);
 
   return (
