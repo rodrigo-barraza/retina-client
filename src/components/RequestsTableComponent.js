@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import SortableTableComponent from "./SortableTableComponent";
+import TableComponent from "./TableComponent";
 import { getRequestsColumns } from "../app/admin/requestsColumns";
 
 /**
@@ -64,7 +64,7 @@ export default function RequestsTableComponent({
     : allColumns;
 
   return (
-    <SortableTableComponent
+    <TableComponent
       title={title}
       maxHeight={maxHeight}
       columns={columns}

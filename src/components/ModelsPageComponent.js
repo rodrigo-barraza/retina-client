@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Loader2, Power, PowerOff, RefreshCw } from "lucide-react";
 import IrisService from "../services/IrisService";
 import PrismService from "../services/PrismService";
-import ModelGrid from "./ModelGrid";
+import ModelsTableComponent from "./ModelsTableComponent";
 import ModelLoadConfigPanel from "./ModelLoadConfigPanel";
 import PageHeaderComponent from "./PageHeaderComponent";
 import { ErrorMessage } from "./StateMessageComponent";
@@ -342,7 +342,7 @@ export default function ModelsPageComponent({ mode = "user", onCountChange }) {
             <span>Loading models...</span>
           </div>
         ) : (
-          <ModelGrid
+          <ModelsTableComponent
             models={allModels}
             renderActions={renderActions}
             favorites={favoriteKeys}

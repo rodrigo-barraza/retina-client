@@ -223,7 +223,7 @@
   flex-direction: column;
 }
 
-/* ModelGrid .container — flex column filling remaining space */
+/* ModelsTableComponent .container — flex column filling remaining space */
 .popoverBody > div {
   border-radius: 0;
   gap: 0;
@@ -244,7 +244,7 @@
   flex-shrink: 0;
 }
 
-/* SortableTableComponent .container — flex fill */
+/* TableComponent .container — flex fill */
 .popoverBody > div > div:last-child {
   flex: 1;
   min-height: 0;
@@ -253,7 +253,7 @@
 }
 
 /* [data-table-scroll] — both-axis scroll, fills remaining space.
-   SortableTableComponent's built-in drag-to-scroll handles both axes. */
+   TableComponent's built-in drag-to-scroll handles both axes. */
 .popoverBody [data-table-scroll] {
   border: none;
   border-radius: 0;

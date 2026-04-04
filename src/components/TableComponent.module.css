@@ -1,4 +1,4 @@
-/* ── SortableTable ─────────────────────────────────── */
+/* ── Table ─────────────────────────────────────────── */
 
 .container {
   display: flex;
@@ -55,6 +55,10 @@
   &:hover {
     color: var(--text-primary);
   }
+
+  &:hover .headerInfoIcon {
+    opacity: 0.6;
+  }
 }
 
 .thActive {
@@ -66,6 +70,20 @@
   vertical-align: middle;
   margin-left: 2px;
   opacity: 0.7;
+}
+
+/* Info icon next to column label — reveals on header hover */
+.headerInfoIcon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 3px;
+  opacity: 0.25;
+  transition: opacity 0.15s ease;
+  cursor: help;
+
+  &:hover {
+    opacity: 1;
+  }
 }
 
 /* ── Rows ─────────────────────────────────────────── */

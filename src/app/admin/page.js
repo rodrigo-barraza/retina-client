@@ -483,6 +483,7 @@ export default function DashboardPage() {
 
       {/* ── Models ── */}
       <ModelsTableComponent
+        mode="stats"
         models={topModels}
         configModels={configModels}
         totalRequests={totalModelRequests}

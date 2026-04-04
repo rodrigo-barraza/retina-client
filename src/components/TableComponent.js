@@ -1,17 +1,19 @@
 "use client";
 
 import { useState, useRef, useCallback, Fragment } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import styles from "./SortableTableComponent.module.css";
+import { createPortal } from "react-dom";
+import { ChevronDown, ChevronUp, Info } from "lucide-react";
+import tooltipStyles from "./TooltipComponent.module.css";
+import styles from "./TableComponent.module.css";
 
 /**
- * SortableTableComponent — a reusable, sortable table component matching the ModelGrid
- * aesthetic. Supports sortable columns, custom cell rendering, and expandable
- * sub-rows.
+ * TableComponent — a reusable, sortable table component matching the
+ * aesthetic. Supports sortable columns, custom cell rendering, expandable
+ * sub-rows, and per-column description tooltips.
  *
  * @param {Object} props
  * @param {string} [props.title] — Section title above the table
- * @param {Array<{key: string, label: string, sortable?: boolean, align?: string, render?: Function, sortValue?: Function, className?: string}>} props.columns
+ * @param {Array<{key: string, label: string, description?: string, sortable?: boolean, align?: string, render?: Function, sortValue?: Function, className?: string}>} props.columns
  * @param {Array} props.data — Array of row objects
  * @param {Function} [props.getRowKey] — (row, i) => unique key
  * @param {Function} [props.getSubRows] — (row) => array of sub-row objects
@@ -22,7 +24,83 @@ import styles from "./SortableTableComponent.module.css";
  * @param {string} [props.sortDir] — External sort direction ('asc' | 'desc')
  * @param {Function} [props.onSort] — (key, dir) => void
  */
-export default function SortableTableComponent({
+/**
+ * HeaderCell — a `<th>` that optionally renders a portal-based tooltip
+ * when the column has a `description`. The tooltip is triggered by
+ * hovering the th itself (no wrapper span), so sorting clicks and
+ * cursor styles work without interference.
+ */
+function HeaderCell({ col, thClasses, isSortable, handleSort, sort }) {
+  const thRef = useRef(null);
+  const [tipMounted, setTipMounted] = useState(false);
+  const [tipVisible, setTipVisible] = useState(false);
+  const [tipCoords, setTipCoords] = useState({ top: 0, left: 0 });
+  const enterTimer = useRef(null);
+  const showTimer = useRef(null);
+  const unmountTimer = useRef(null);
+
+  const showTip = useCallback(() => {
+    if (!thRef.current || !col.description) return;
+    clearTimeout(unmountTimer.current);
+    const rect = thRef.current.getBoundingClientRect();
+    setTipCoords({ top: rect.bottom + 8, left: rect.left + rect.width / 2 });
+    setTipMounted(true);
+    showTimer.current = setTimeout(() => setTipVisible(true), 10);
+  }, [col.description]);
+
+  const hideTip = useCallback(() => {
+    clearTimeout(enterTimer.current);
+    clearTimeout(showTimer.current);
+    setTipVisible(false);
+    unmountTimer.current = setTimeout(() => setTipMounted(false), 200);
+  }, []);
+
+  const onEnter = useCallback(() => {
+    if (!col.description) return;
+    clearTimeout(enterTimer.current);
+    enterTimer.current = setTimeout(showTip, 400);
+  }, [col.description, showTip]);
+
+  const onLeave = useCallback(() => {
+    hideTip();
+  }, [hideTip]);
+
+  const isActive = sort.key === col.key;
+  const sortIcon = isActive
+    ? sort.dir === "desc"
+      ? <ChevronDown size={12} className={styles.sortIcon} />
+      : <ChevronUp size={12} className={styles.sortIcon} />
+    : null;
+
+  return (
+    <th
+      ref={thRef}
+      className={thClasses}
+      style={{ textAlign: col.align || "left" }}
+      onClick={isSortable ? () => handleSort(col.key) : undefined}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+    >
+      {col.label}
+      {col.description && (
+        <Info size={10} className={styles.headerInfoIcon} />
+      )}
+      {isSortable && sortIcon}
+      {tipMounted &&
+        createPortal(
+          <span
+            className={`${tooltipStyles.bubble} ${tooltipStyles.bottom} ${tipVisible ? tooltipStyles.visible : ""}`}
+            style={{ top: tipCoords.top, left: tipCoords.left }}
+          >
+            {col.description}
+          </span>,
+          document.body,
+        )}
+    </th>
+  );
+}
+
+export default function TableComponent({
   title,
   columns,
   data = [],
@@ -166,15 +244,6 @@ export default function SortableTableComponent({
         })
       : data;
 
-  const SortIcon = ({ colKey }) => {
-    if (sort.key !== colKey) return null;
-    return sort.dir === "desc" ? (
-      <ChevronDown size={12} className={styles.sortIcon} />
-    ) : (
-      <ChevronUp size={12} className={styles.sortIcon} />
-    );
-  };
-
   const hasSubRows = !!getSubRows;
   const hasExpandedContent = !!renderExpandedContent;
 
@@ -207,16 +276,14 @@ export default function SortableTableComponent({
                   .join(" ");
 
                 return (
-                  <th
+                  <HeaderCell
                     key={col.key}
-                    className={thClasses}
-                    style={{ textAlign: col.align || "left" }}
-                    onClick={
-                      isSortable ? () => handleSort(col.key) : undefined
-                    }
-                  >
-                    {col.label} {isSortable && <SortIcon colKey={col.key} />}
-                  </th>
+                    col={col}
+                    thClasses={thClasses}
+                    isSortable={isSortable}
+                    handleSort={handleSort}
+                    sort={sort}
+                  />
                 );
               })}
             </tr>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import IrisService from "../../../services/IrisService";
-import SortableTableComponent from "../../../components/SortableTableComponent";
+import TableComponent from "../../../components/TableComponent";
 
 
 import SelectDropdown from "../../../components/SelectDropdown";
@@ -236,7 +236,7 @@ export default function ProvidersPage() {
               </button>
               {isExpanded && (
                 <div className={styles.modelList}>
-                  <SortableTableComponent
+                  <TableComponent
                     columns={modelColumns}
                     data={p.models}
                     getRowKey={(m) => m.model}

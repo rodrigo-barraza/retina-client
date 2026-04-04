@@ -23,7 +23,7 @@ import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import ImagePreviewComponent from "./ImagePreviewComponent";
 import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import PaginationComponent from "./PaginationComponent";
-import SortableTableComponent from "./SortableTableComponent";
+import TableComponent from "./TableComponent";
 import PageHeaderComponent from "./PageHeaderComponent";
 import SearchInputComponent from "./SearchInputComponent";
 import FilterDropdownComponent from "./FilterDropdownComponent";
@@ -485,7 +485,7 @@ export default function MediaPageComponent({
         {/* ── List View ── */}
         {!loading && viewMode === "list" && (
           <div className={styles.listWrapper}>
-            <SortableTableComponent
+            <TableComponent
               columns={listColumns}
               data={displayMedia}
               getRowKey={(m, i) => `${m.convId}-${i}`}

@@ -1,4 +1,4 @@
-import SortableTableComponent from "./SortableTableComponent";
+import TableComponent from "./TableComponent";
 import {
   projectColumn,
   requestsColumn,
@@ -63,7 +63,7 @@ export default function ProjectsTableComponent({
     : allColumns;
 
   return (
-    <SortableTableComponent
+    <TableComponent
       title={title}
       maxHeight={maxHeight}
       columns={columns}

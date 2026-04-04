@@ -25,7 +25,7 @@ import BadgeComponent from "./BadgeComponent";
 import EmptyStateComponent from "./EmptyStateComponent";
 import FormGroupComponent from "./FormGroupComponent";
 import ModalOverlayComponent from "./ModalOverlayComponent";
-import ModelGrid from "./ModelGrid";
+import ModelsTableComponent from "./ModelsTableComponent";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import { formatContextTokens } from "../utils/utilities";
 import styles from "./BenchmarkPageComponent.module.css";
@@ -473,7 +473,7 @@ export default function BenchmarkPageComponent() {
                     </div>
                   </div>
                 ) : (
-                  <ModelGrid
+                  <ModelsTableComponent
                     models={allModels}
                     onSelect={handleModelSelect}
                     showSearch

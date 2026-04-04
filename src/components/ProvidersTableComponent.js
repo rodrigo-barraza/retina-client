@@ -1,4 +1,4 @@
-import SortableTableComponent from "./SortableTableComponent";
+import TableComponent from "./TableComponent";
 import ProportionBarComponent from "./ProportionBarComponent";
 import {
   providerColumn,
@@ -74,7 +74,7 @@ export default function ProvidersTableComponent({
     : allColumns;
 
   return (
-    <SortableTableComponent
+    <TableComponent
       title={title}
       maxHeight={maxHeight}
       columns={columns}

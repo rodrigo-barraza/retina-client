@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Search, X, Loader2 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
-import ModelGrid from "./ModelGrid";
+import ModelsTableComponent from "./ModelsTableComponent";
 import CloseButtonComponent from "./CloseButtonComponent";
 import styles from "./ModelPickerPopoverComponent.module.css";
 
@@ -12,7 +12,7 @@ import styles from "./ModelPickerPopoverComponent.module.css";
  * ModelPickerPopoverComponent
  *
  * A single trigger pill in the header that opens a rich, LM-Studio-style
- * model picker popover with a hoisted search field and a full ModelGrid
+ * model picker popover with a hoisted search field and a full ModelsTableComponent
  * (search, modality/tool/provider filter chips, sortable table).
  *
  * Props:
@@ -298,9 +298,9 @@ export default function ModelPickerPopoverComponent({
               <CloseButtonComponent onClick={() => setOpen(false)} size={16} />
             </div>
 
-            {/* Body: ModelGrid with search disabled (hoisted above) */}
+            {/* Body: ModelsTableComponent with search disabled (hoisted above) */}
             <div ref={bodyRef} className={styles.popoverBody}>
-              <ModelGrid
+              <ModelsTableComponent
                 models={filteredModels}
                 onSelect={handleSelect}
                 showSearch={false}

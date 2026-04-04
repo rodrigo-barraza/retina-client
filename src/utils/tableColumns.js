@@ -1,7 +1,7 @@
 /**
  * tableColumns.js — Shared column factory functions for all *TableComponent
  * wrappers. Each factory returns one or more column definition objects
- * compatible with SortableTableComponent's `columns` prop.
+ * compatible with TableComponent's `columns` prop.
  *
  * Usage:
  *   import { tokenColumns, costColumns, ... } from "../utils/tableColumns";
@@ -89,12 +89,14 @@ export const PROVIDER_COLORS = [
 export const modelColumn = () => ({
   key: "model",
   label: "Model",
+  description: "The AI model identifier used for the request",
   render: (row) => <ModelBadgeComponent models={row.model ? [row.model] : []} />,
 });
 
 export const providerColumn = () => ({
   key: "provider",
   label: "Provider",
+  description: "The API provider hosting this model (e.g. OpenAI, Google, Anthropic)",
   render: (row) => (
     <ProvidersBadgeComponent providers={row.provider ? [row.provider] : []} />
   ),
@@ -103,12 +105,14 @@ export const providerColumn = () => ({
 export const projectColumn = () => ({
   key: "project",
   label: "Project",
+  description: "The project or application this request belongs to",
   render: (row) => <ProjectBadgeComponent project={row.project} />,
 });
 
 export const userColumn = () => ({
   key: "username",
   label: "User",
+  description: "The user who initiated this request",
   sortable: false,
   render: (row) => <UserBadgeComponent username={row.username} />,
 });
@@ -118,6 +122,7 @@ export const userColumn = () => ({
 export const modelsListColumn = ({ mini = false } = {}) => ({
   key: "models",
   label: "Models",
+  description: "All distinct models used in this group",
   sortable: false,
   render: (row) => <ModelBadgeComponent models={row.models} mini={mini} />,
 });
@@ -125,6 +130,7 @@ export const modelsListColumn = ({ mini = false } = {}) => ({
 export const modelCountColumn = () => ({
   key: "modelCount",
   label: "Models",
+  description: "Number of distinct models used",
   sortValue: (row) => (row.models?.length || row.modelCount || 0),
   render: (row) => <ModelBadgeComponent models={row.models || []} />,
 });
@@ -132,6 +138,7 @@ export const modelCountColumn = () => ({
 export const providersListColumn = ({ mini = false } = {}) => ({
   key: "providers",
   label: "Providers",
+  description: "All distinct providers used in this group",
   sortable: false,
   render: (row) => <ProvidersBadgeComponent providers={row.providers} mini={mini} />,
 });
@@ -139,6 +146,7 @@ export const providersListColumn = ({ mini = false } = {}) => ({
 export const providerCountColumn = () => ({
   key: "providerCount",
   label: "Providers",
+  description: "Number of distinct API providers used",
   sortValue: (row) => (row.providers || []).length,
   render: (row) => <ProvidersBadgeComponent providers={row.providers || []} />,
 });
@@ -148,6 +156,7 @@ export const providerCountColumn = () => ({
 export const requestsColumn = () => ({
   key: "totalRequests",
   label: "Requests",
+  description: "Total number of API requests made",
   align: "right",
   render: (row) => row.totalRequests?.toLocaleString() || "0",
 });
@@ -155,6 +164,7 @@ export const requestsColumn = () => ({
 export const requestCountColumn = () => ({
   key: "requestCount",
   label: "Requests",
+  description: "Number of individual API calls",
   sortable: true,
   align: "right",
   render: (row) =>
@@ -171,8 +181,9 @@ export const requestCountColumn = () => ({
 export const usageColumn = (totalRequests, color) => ({
   key: "usage",
   label: "Usage",
+  description: "Proportional share of total requests",
   sortValue: (row) => row.totalRequests,
-  render: (row, i) => (
+  render: (row, _i) => (
     <ProportionBarComponent
       value={row.totalRequests}
       total={totalRequests}
@@ -186,7 +197,13 @@ export const usageColumn = (totalRequests, color) => ({
 export const modalitiesColumn = ({ mini = false, fromConversations = false } = {}) => ({
   key: "modalities",
   label: "Modalities",
-  sortable: false,
+  description: "Input/output types supported (text, image, audio, video)",
+  sortValue: (row) => {
+    const mods = fromConversations
+      ? mergeModalities(row.conversations || [])
+      : row.modalities;
+    return mods ? Object.values(mods).filter(Boolean).length : 0;
+  },
   render: (row) => {
     const mods = fromConversations
       ? mergeModalities(row.conversations || [])
@@ -201,6 +218,7 @@ export const modalitiesColumn = ({ mini = false, fromConversations = false } = {
 export const toolsColumn = ({ mini = false, configModels } = {}) => ({
   key: "toolNames",
   label: "Tools",
+  description: "External tools and capabilities configured for this model",
   sortable: false,
   align: "left",
   render: (row) => {
@@ -226,6 +244,7 @@ export const tokenColumns = ({
   {
     key: inputKey,
     label: "Tokens In",
+    description: "Total input (prompt) tokens consumed",
     align: "right",
     render: (row) => {
       const v = row[inputKey];
@@ -236,6 +255,7 @@ export const tokenColumns = ({
   {
     key: outputKey,
     label: "Tokens Out",
+    description: "Total output (completion) tokens generated",
     align: "right",
     render: (row) => {
       const v = row[outputKey];
@@ -246,6 +266,7 @@ export const tokenColumns = ({
   {
     key: "totalTokens",
     label: "Tokens",
+    description: "Combined input + output token count",
     align: "right",
     sortValue: (row) => (row[inputKey] || 0) + (row[outputKey] || 0),
     render: (row) => {
@@ -257,6 +278,7 @@ export const tokenColumns = ({
   {
     key: tpsKey,
     label: "Tok/s",
+    description: "Average output throughput in tokens per second",
     align: "right",
     render: (row) => formatTokensPerSec(row[tpsKey]),
   },
@@ -269,6 +291,7 @@ export const costColumns = (totalCost, { costKey = "totalCost", mini = false } =
   {
     key: costKey,
     label: "Cost",
+    description: "Total estimated cost in USD",
     sortable: true,
     align: "right",
     render: (row) => <CostBadgeComponent cost={row[costKey]} mini={mini} />,
@@ -276,6 +299,7 @@ export const costColumns = (totalCost, { costKey = "totalCost", mini = false } =
   {
     key: "costShare",
     label: "Cost %",
+    description: "Proportional share of total cost",
     sortable: true,
     sortValue: (row) => row[costKey],
     render: (row) => (
@@ -294,6 +318,7 @@ export const costColumns = (totalCost, { costKey = "totalCost", mini = false } =
 export const latencyColumn = (key = "avgLatency", label = "Avg Latency") => ({
   key,
   label,
+  description: "Average round-trip response time",
   sortable: true,
   align: "right",
   render: (row) => {
@@ -314,6 +339,7 @@ export const countLinkColumns = (entityKey, entityValue) => [
   {
     key: "sessionCount",
     label: "Sessions",
+    description: "Number of user sessions that used this entity",
     align: "right",
     render: (row) => (
       <CountLinkComponent
@@ -326,6 +352,7 @@ export const countLinkColumns = (entityKey, entityValue) => [
   {
     key: "conversationCount",
     label: "Conversations",
+    description: "Number of conversations that used this entity",
     align: "right",
     render: (row) => (
       <CountLinkComponent
@@ -338,6 +365,7 @@ export const countLinkColumns = (entityKey, entityValue) => [
   {
     key: "workflowCount",
     label: "Workflows",
+    description: "Number of workflows that used this entity",
     align: "right",
     render: (row) => (
       <CountLinkComponent
@@ -354,6 +382,7 @@ export const countLinkColumns = (entityKey, entityValue) => [
 export const conversationCountColumn = () => ({
   key: "conversationCount",
   label: "Convos",
+  description: "Total number of conversations",
   sortable: true,
   align: "right",
   render: (row) => {
@@ -372,6 +401,7 @@ export const conversationCountColumn = () => ({
 export const durationColumn = ({ useDurationMs = false } = {}) => ({
   key: "duration",
   label: "Duration",
+  description: "Elapsed wall-clock time from start to finish",
   sortable: false,
   align: "right",
   sortValue: (row) => useDurationMs ? getDurationMs(row) : 0,
@@ -395,6 +425,7 @@ export const durationColumn = ({ useDurationMs = false } = {}) => ({
 export const durationShareColumn = (totalDuration, { mini = false } = {}) => ({
   key: "durationShare",
   label: "Duration %",
+  description: "Proportional share of total duration",
   sortable: true,
   sortValue: (row) => getDurationMs(row),
   render: (row) => (
@@ -412,6 +443,7 @@ export const durationShareColumn = (totalDuration, { mini = false } = {}) => ({
 export const createdAtColumn = (key = "createdAt") => ({
   key,
   label: "Created",
+  description: "When this record was first created",
   sortable: true,
   align: "right",
   render: (row) => formatDateTime(row[key]),
@@ -422,6 +454,7 @@ export const createdAtColumn = (key = "createdAt") => ({
 export const sessionIdColumn = () => ({
   key: "id",
   label: "Session",
+  description: "Unique session identifier (click to view conversations)",
   sortable: false,
   render: (s) => (
     <a
@@ -441,6 +474,7 @@ export const sessionIdColumn = () => ({
 export const conversationTitleColumn = ({ mini = false } = {}) => ({
   key: "title",
   label: "Conversation",
+  description: "Auto-generated conversation title",
   sortable: false,
   render: (c) => (
     <span className={`${styles.conversationTitle} ${mini ? styles.conversationTitleMini : ""}`}>
@@ -455,6 +489,7 @@ export const conversationTitleColumn = ({ mini = false } = {}) => ({
 export const projectBadgeColumn = ({ mini = false } = {}) => ({
   key: "project",
   label: "Project",
+  description: "The project this conversation belongs to",
   sortable: false,
   render: (c) =>
     c.project ? (
@@ -467,6 +502,7 @@ export const projectBadgeColumn = ({ mini = false } = {}) => ({
 export const userBadgeColumn = ({ mini = false } = {}) => ({
   key: "username",
   label: "User",
+  description: "The user who started this conversation",
   sortable: false,
   render: (c) =>
     c.username && c.username !== "unknown" ? (
@@ -481,6 +517,7 @@ export const userBadgeColumn = ({ mini = false } = {}) => ({
 export const endpointColumn = () => ({
   key: "endpoint",
   label: "Endpoint",
+  description: "The API endpoint path called (e.g. /chat, /image, /audio)",
   render: (r) => (
     <BadgeComponent variant="endpoint">{r.endpoint || "-"}</BadgeComponent>
   ),
@@ -491,6 +528,7 @@ export const endpointColumn = () => ({
 export const statusColumn = () => ({
   key: "success",
   label: "Status",
+  description: "Whether the request completed successfully (OK) or failed (ERR)",
   align: "right",
   render: (r) => (
     <BadgeComponent variant={r.success ? "success" : "error"}>

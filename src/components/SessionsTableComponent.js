@@ -1,4 +1,4 @@
-import SortableTableComponent from "./SortableTableComponent";
+import TableComponent from "./TableComponent";
 import RequestsTableComponent from "./RequestsTableComponent";
 import {
   sessionIdColumn,
@@ -75,7 +75,7 @@ export default function SessionsTableComponent({
     : allColumns;
 
   return (
-    <SortableTableComponent
+    <TableComponent
       columns={columns}
       data={sessions}
       getRowKey={(s) => s.id}

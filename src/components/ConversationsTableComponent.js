@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import SortableTableComponent from "./SortableTableComponent";
+import TableComponent from "./TableComponent";
 import {
   conversationTitleColumn,
   projectBadgeColumn,
@@ -77,7 +77,7 @@ export default function ConversationsTableComponent({
   ], [mini, totalCost, totalDuration]);
 
   return (
-    <SortableTableComponent
+    <TableComponent
       columns={columns}
       data={conversations}
       sortKey={sortKey}
