@@ -7,7 +7,6 @@ import {
   Play,
   Pencil,
   CheckCircle2,
-  Target,
   ChevronLeft,
   History,
   X,
@@ -25,7 +24,7 @@ import ButtonComponent from "./ButtonComponent";
 import BadgeComponent from "./BadgeComponent";
 import FormGroupComponent from "./FormGroupComponent";
 import ModalOverlayComponent from "./ModalOverlayComponent";
-import ModelSelectorComponent from "./ModelSelectorComponent";
+import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent";
 import BenchmarksTableComponent from "./BenchmarksTableComponent";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import { formatContextTokens, formatCost } from "../utils/utilities";
@@ -39,21 +38,22 @@ const MATCH_MODES = [
 ];
 
 /**
- * Flatten all conversation models from the Prism config into a single array,
- * tagged with their provider. Filters to text-output conversation models only.
+ * Flatten config into a flat array for deriving selectedModels and modelConfigMap.
  */
-function flattenConversationModels(config) {
+function flattenAllModels(config) {
   if (!config) return [];
-  const providers = config.textToText?.models || {};
-  const results = [];
-  for (const [provider, models] of Object.entries(providers)) {
-    for (const m of models) {
-      if (m.listed === false) continue;
-      if (m.outputTypes && !m.outputTypes.includes("text")) continue;
-      results.push({ ...m, provider });
+  const seen = new Map();
+  const sections = ["textToText", "textToImage", "audioToText", "textToSpeech"];
+  for (const key of sections) {
+    const modelsMap = config[key]?.models || {};
+    for (const [provider, models] of Object.entries(modelsMap)) {
+      for (const m of models) {
+        const id = `${provider}:${m.name}`;
+        if (!seen.has(id)) seen.set(id, { ...m, provider });
+      }
     }
   }
-  return results;
+  return [...seen.values()];
 }
 
 export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningChange }) {
@@ -84,9 +84,8 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
   }, [running, onRunningChange]);
 
   // Model selection
-  const [allModels, setAllModels] = useState([]);
+  const [prismConfig, setPrismConfig] = useState(null);
   const [selectedModelKeys, setSelectedModelKeys] = useState(new Set());
-  const [showModelPicker, setShowModelPicker] = useState(false);
 
   // Streaming progress
   const [streamingResults, setStreamingResults] = useState([]);
@@ -121,33 +120,33 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
     loadBenchmark();
   }, [loadBenchmark]);
 
-  // ── Load all conversation models (cloud + local) ───────────
-  const loadModels = useCallback(async () => {
-    if (allModels.length > 0) return;
-    try {
-      const config = await PrismService.getConfig();
-      const cloudModels = flattenConversationModels(config);
-      setAllModels(cloudModels);
-
-      if (config?.localProviders?.length > 0) {
-        PrismService.getLocalConfig()
-          .then(({ models: localModels }) => {
-            const merged = PrismService.mergeLocalModels(config, localModels);
-            setAllModels(flattenConversationModels(merged));
-          })
-          .catch(() => {});
-      }
-    } catch (err) {
-      console.error("Failed to load models:", err);
-    }
-  }, [allModels.length]);
-
-
-  // Eagerly load model configs for the size column lookup
+  // ── Load Prism config (drives model picker + size column) ──
   useEffect(() => {
-    loadModels();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    (async () => {
+      try {
+        const config = await PrismService.getConfig();
+        setPrismConfig(config);
+
+        if (config?.localProviders?.length > 0) {
+          PrismService.getLocalConfig()
+            .then(({ models: localModels }) => {
+              setPrismConfig((prev) =>
+                PrismService.mergeLocalModels(prev, localModels),
+              );
+            })
+            .catch(() => {});
+        }
+      } catch (err) {
+        console.error("Failed to load config:", err);
+      }
+    })();
   }, []);
+
+  // All models flattened (for selected model derivation + size lookup)
+  const allModels = useMemo(
+    () => flattenAllModels(prismConfig),
+    [prismConfig],
+  );
 
   // ── Selected model objects (derived) ───────────────────────
   const selectedModels = useMemo(
@@ -282,12 +281,6 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
   const clearModelSelection = useCallback(() => {
     setSelectedModelKeys(new Set());
   }, []);
-
-  // ── Open model picker (lazy-load) ──────────────────────────
-  const toggleModelPicker = useCallback(() => {
-    if (allModels.length === 0) loadModels();
-    setShowModelPicker((v) => !v);
-  }, [allModels.length, loadModels]);
 
   // ── Selected model card ────────────────────────────────────
   function SelectedModelCard({ model }) {
@@ -430,14 +423,35 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
                 ? `Run (${selectedModels.length} models)`
                 : "Run All Models"}
             </ButtonComponent>
-            <ButtonComponent
-              variant="secondary"
-              size="sm"
-              icon={Target}
-              onClick={toggleModelPicker}
-            >
-              {showModelPicker ? "Hide Model Picker" : "Select Models"}
-            </ButtonComponent>
+            <ModelPickerPopoverComponent
+              config={prismConfig}
+              multiSelect
+              selectedKeys={selectedModelKeys}
+              onSelectModel={handleModelSelect}
+              renderActions={(rawModel) => {
+                const key = `${rawModel.provider}:${rawModel.name}`;
+                const isSelected = selectedModelKeys.has(key);
+                return (
+                  <button
+                    className={`${styles.selectBtn} ${isSelected ? styles.selectBtnActive : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleModelSelect(rawModel);
+                    }}
+                  >
+                    {isSelected ? (
+                      <>
+                        <CheckCircle2 size={12} /> Selected
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={12} /> Select
+                      </>
+                    )}
+                  </button>
+                );
+              }}
+            />
             {selectedModels.length > 0 && (
               <ButtonComponent
                 variant="ghost"
@@ -472,43 +486,6 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
                   />
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* ── Model Picker (Table) ── */}
-          {showModelPicker && (
-            <div className={styles.modelPickerSection}>
-              <ModelSelectorComponent
-                models={allModels}
-                selectedKeys={selectedModelKeys}
-                onSelect={handleModelSelect}
-                onClose={() => setShowModelPicker(false)}
-                maxHeight={380}
-                placeholder="Filter benchmark models…"
-                renderActions={(rawModel) => {
-                  const key = `${rawModel.provider}:${rawModel.name}`;
-                  const isSelected = selectedModelKeys.has(key);
-                  return (
-                    <button
-                      className={`${styles.selectBtn} ${isSelected ? styles.selectBtnActive : ""}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleModelSelect(rawModel);
-                      }}
-                    >
-                      {isSelected ? (
-                        <>
-                          <CheckCircle2 size={12} /> Selected
-                        </>
-                      ) : (
-                        <>
-                          <Plus size={12} /> Select
-                        </>
-                      )}
-                    </button>
-                  );
-                }}
-              />
             </div>
           )}
 
