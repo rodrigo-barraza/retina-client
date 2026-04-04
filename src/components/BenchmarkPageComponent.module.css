@@ -432,13 +432,10 @@
 /* ── Model Picker Section ─────────────────────────────────── */
 
 .modelPickerSection {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   overflow: hidden;
   animation: slideDown 0.2s ease-out;
   max-height: 420px;
-  overflow-y: auto;
 }
 
 .selectBtn {

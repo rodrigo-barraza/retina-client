@@ -11,16 +11,37 @@ import styles from "./ModelPickerPopoverComponent.module.css";
 /**
  * ModelPickerPopoverComponent
  *
- * A single trigger pill in the header that opens a rich, LM-Studio-style
- * model picker popover with a hoisted search field and a full ModelsTableComponent
+ * A single trigger pill that opens a rich, LM-Studio-style model picker
+ * popover with a hoisted search field and a full ModelsTableComponent
  * (search, modality/tool/provider filter chips, sortable table).
+ *
+ * Supports two modes:
+ *
+ * **Single-select** (default) — clicking a model row calls
+ * `onSelectModel(provider, name)` and closes the popover. The trigger
+ * pill shows the currently-selected model name.
+ *
+ * **Multi-select** (`multiSelect={true}`) — clicking a row toggles
+ * selection via `onSelectModel(rawModel)` and the popover stays open.
+ * The trigger pill shows a count label ("Select Models" / "3 Models
+ * Selected").  Provide `selectedKeys` (a Set of "provider:model" strings)
+ * and optionally `renderActions` to render custom per-row controls.
  *
  * Props:
  *   config          — Prism config object with textToText, textToImage, etc.
- *   settings        — { provider, model, ... }
- *   onSelectModel   — (provider, modelName) => void
+ *   settings        — { provider, model, ... } (single-select mode)
+ *   onSelectModel   — (provider, name) => void           (single-select)
+ *                    — (rawModel)      => void           (multi-select)
+ *   onLmStudioSelect — (rawModel) => void (lm-studio intercept)
+ *   loadingProgress — number | null (0–1 progress bar on trigger)
  *   favorites       — string[] of "provider:model" keys
  *   onToggleFavorite — (key) => void
+ *   readOnly        — boolean — disables trigger interaction
+ *   multiSelect     — boolean — enables multi-select mode
+ *   selectedKeys    — Set<string> of "provider:model" keys (multi-select)
+ *   renderActions   — (rawModel) => ReactNode — per-row actions
+ *   triggerLabel    — string — override the trigger label text
+ *   triggerIcon     — ReactNode — override the trigger icon
  */
 export default function ModelPickerPopoverComponent({
   config,
@@ -31,6 +52,11 @@ export default function ModelPickerPopoverComponent({
   favorites = [],
   onToggleFavorite,
   readOnly = false,
+  multiSelect = false,
+  selectedKeys,
+  renderActions,
+  triggerLabel: triggerLabelProp,
+  triggerIcon: triggerIconProp,
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -123,6 +149,13 @@ export default function ModelPickerPopoverComponent({
   // ── Handle model selection ─────────────────────────────────────────────
   const handleSelect = useCallback(
     (rawModel) => {
+      if (multiSelect) {
+        // Multi-select: toggle selection, keep popover open
+        onSelectModel(rawModel);
+        return;
+      }
+
+      // Single-select: select and close
       const provider = rawModel.provider || "lm-studio";
       const name = rawModel.name || rawModel.key;
 
@@ -138,7 +171,7 @@ export default function ModelPickerPopoverComponent({
       setOpen(false);
       setHighlightIndex(-1);
     },
-    [onSelectModel, onLmStudioSelect],
+    [onSelectModel, onLmStudioSelect, multiSelect],
   );
 
   // Keyboard navigation (Escape / ArrowUp / ArrowDown / Enter)
@@ -209,17 +242,54 @@ export default function ModelPickerPopoverComponent({
   }, [open, positionPopover]);
 
 
-  // ── Current selection display ─────────────────────────────────────────
+  // ── Trigger display ───────────────────────────────────────────────────
   const currentModel = allModels.find(
     (m) => m.provider === settings?.provider && m.name === settings?.model,
   );
   const LOCAL_PROVIDERS = new Set(["lm-studio", "ollama", "vllm", "llama-cpp"]);
-  const rawLabel = currentModel?.label || settings?.model || "Select Model";
+
+  // Build display label
   const displayLabel = (() => {
+    // Custom trigger label override
+    if (triggerLabelProp) return triggerLabelProp;
+
+    // Multi-select: show selection count
+    if (multiSelect) {
+      const count = selectedKeys?.size || 0;
+      if (count === 0) return "Select Models";
+      if (count === 1) return "1 Model Selected";
+      return `${count} Models Selected`;
+    }
+
+    // Single-select: show current model name
+    const rawLabel = currentModel?.label || settings?.model || "Select Model";
     const provider = currentModel?.provider || settings?.provider;
     if (!provider || LOCAL_PROVIDERS.has(provider)) return rawLabel;
     const providerName = PROVIDER_LABELS[provider] || provider;
     return `${providerName}'s ${rawLabel}`;
+  })();
+
+  // Trigger icon
+  const triggerIconElement = (() => {
+    if (triggerIconProp) return triggerIconProp;
+    if (multiSelect) return null;
+    if (loadingProgress != null) {
+      return <Loader2 size={14} className={styles.triggerSpinner} />;
+    }
+    return settings?.provider ? (
+      <ProviderLogo provider={settings.provider} size={16} />
+    ) : null;
+  })();
+
+  // Active row key(s) for highlighting selected models in the table
+  const activeRowKey = (() => {
+    if (!multiSelect) {
+      return currentModel
+        ? `${currentModel.provider}-${currentModel.name}`
+        : undefined;
+    }
+    // Multi-select: no single active row styling (handled by renderActions)
+    return undefined;
   })();
 
   return (
@@ -227,22 +297,16 @@ export default function ModelPickerPopoverComponent({
       {/* ── Trigger pill ─────────────────────────────────────────── */}
       <button
         ref={triggerRef}
-        className={`${styles.trigger} ${open ? styles.triggerOpen : ""} ${readOnly ? styles.triggerReadOnly : ""} ${loadingProgress != null ? styles.triggerLoading : ""}`}
+        className={`${styles.trigger} ${open ? styles.triggerOpen : ""} ${readOnly ? styles.triggerReadOnly : ""} ${loadingProgress != null ? styles.triggerLoading : ""} ${multiSelect && selectedKeys?.size > 0 ? styles.triggerActive : ""}`}
         onClick={
           readOnly ? undefined : open ? () => setOpen(false) : openPopover
         }
         data-model-picker-trigger
-        title={readOnly ? displayLabel : "Switch model"}
+        title={readOnly ? displayLabel : multiSelect ? "Select models" : "Switch model"}
         style={readOnly ? { cursor: "default" } : undefined}
       >
         <span className={styles.triggerContent}>
-          {loadingProgress != null ? (
-            <Loader2 size={14} className={styles.triggerSpinner} />
-          ) : (
-            settings?.provider && (
-              <ProviderLogo provider={settings.provider} size={16} />
-            )
-          )}
+          {triggerIconElement}
           <span className={styles.triggerLabel}>
             {loadingProgress != null
               ? `Loading… ${Math.round((loadingProgress ?? 0) * 100)}%`
@@ -307,11 +371,8 @@ export default function ModelPickerPopoverComponent({
                 showProviderFilter
                 favorites={favorites}
                 onToggleFavorite={onToggleFavorite}
-                activeRowKey={
-                  currentModel
-                    ? `${currentModel.provider}-${currentModel.name}`
-                    : undefined
-                }
+                renderActions={renderActions}
+                activeRowKey={activeRowKey}
                 highlightedRowKey={
                   highlightIndex >= 0 && filteredModels[highlightIndex]
                     ? `${filteredModels[highlightIndex].provider}-${filteredModels[highlightIndex].name}`

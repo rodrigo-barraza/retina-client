@@ -25,7 +25,7 @@ import ButtonComponent from "./ButtonComponent";
 import BadgeComponent from "./BadgeComponent";
 import FormGroupComponent from "./FormGroupComponent";
 import ModalOverlayComponent from "./ModalOverlayComponent";
-import ModelsTableComponent from "./ModelsTableComponent";
+import ModelSelectorComponent from "./ModelSelectorComponent";
 import BenchmarksTableComponent from "./BenchmarksTableComponent";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import { formatContextTokens, formatCost } from "../utils/utilities";
@@ -85,7 +85,6 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
 
   // Model selection
   const [allModels, setAllModels] = useState([]);
-  const [modelsLoading, setModelsLoading] = useState(false);
   const [selectedModelKeys, setSelectedModelKeys] = useState(new Set());
   const [showModelPicker, setShowModelPicker] = useState(false);
 
@@ -125,7 +124,6 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
   // ── Load all conversation models (cloud + local) ───────────
   const loadModels = useCallback(async () => {
     if (allModels.length > 0) return;
-    setModelsLoading(true);
     try {
       const config = await PrismService.getConfig();
       const cloudModels = flattenConversationModels(config);
@@ -141,10 +139,9 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       }
     } catch (err) {
       console.error("Failed to load models:", err);
-    } finally {
-      setModelsLoading(false);
     }
   }, [allModels.length]);
+
 
   // Eagerly load model configs for the size column lookup
   useEffect(() => {
@@ -481,44 +478,37 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
           {/* ── Model Picker (Table) ── */}
           {showModelPicker && (
             <div className={styles.modelPickerSection}>
-              {modelsLoading ? (
-                <div className={styles.runProgress}>
-                  <div className={styles.progressSpinner} />
-                  <div className={styles.progressText}>
-                    Loading models…
-                  </div>
-                </div>
-              ) : (
-                <ModelsTableComponent
-                  models={allModels}
-                  onSelect={handleModelSelect}
-                  showSearch
-                  showProviderFilter
-                  renderActions={(rawModel) => {
-                    const key = `${rawModel.provider}:${rawModel.name}`;
-                    const isSelected = selectedModelKeys.has(key);
-                    return (
-                      <button
-                        className={`${styles.selectBtn} ${isSelected ? styles.selectBtnActive : ""}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleModelSelect(rawModel);
-                        }}
-                      >
-                        {isSelected ? (
-                          <>
-                            <CheckCircle2 size={12} /> Selected
-                          </>
-                        ) : (
-                          <>
-                            <Plus size={12} /> Select
-                          </>
-                        )}
-                      </button>
-                    );
-                  }}
-                />
-              )}
+              <ModelSelectorComponent
+                models={allModels}
+                selectedKeys={selectedModelKeys}
+                onSelect={handleModelSelect}
+                onClose={() => setShowModelPicker(false)}
+                maxHeight={380}
+                placeholder="Filter benchmark models…"
+                renderActions={(rawModel) => {
+                  const key = `${rawModel.provider}:${rawModel.name}`;
+                  const isSelected = selectedModelKeys.has(key);
+                  return (
+                    <button
+                      className={`${styles.selectBtn} ${isSelected ? styles.selectBtnActive : ""}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleModelSelect(rawModel);
+                      }}
+                    >
+                      {isSelected ? (
+                        <>
+                          <CheckCircle2 size={12} /> Selected
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={12} /> Select
+                        </>
+                      )}
+                    </button>
+                  );
+                }}
+              />
             </div>
           )}
 
