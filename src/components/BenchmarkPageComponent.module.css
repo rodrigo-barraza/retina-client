@@ -429,14 +429,6 @@
   border-radius: 2px;
 }
 
-/* ── Model Picker Section ─────────────────────────────────── */
-
-.modelPickerSection {
-  border-radius: var(--border-radius-sm);
-  overflow: hidden;
-  animation: slideDown 0.2s ease-out;
-  max-height: 420px;
-}
 
 .selectBtn {
   display: inline-flex;
@@ -526,6 +518,32 @@
   background: var(--border-color);
 }
 
+/* ── Live Summary Bar (during run) ───────────────────────── */
+
+.summaryBarLive {
+  border-color: color-mix(in srgb, var(--accent-color) 30%, var(--border-color));
+  background: color-mix(in srgb, var(--accent-color) 4%, var(--bg-secondary));
+  position: relative;
+  overflow: hidden;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.summaryBarLive::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent-color);
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 /* ── Run Progress ─────────────────────────────────────────── */
 
 .runProgress {
@@ -543,6 +561,17 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.stopBtn {
+  margin-left: auto;
+  flex-shrink: 0;
+  animation: stopPulse 2s ease-in-out infinite;
+}
+
+@keyframes stopPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
 }
 
 .progressSpinner {
@@ -610,7 +639,33 @@
 .streamingActive {
   background: color-mix(in srgb, var(--accent-color) 6%, var(--bg-primary));
   border-color: color-mix(in srgb, var(--accent-color) 20%, transparent);
-  animation: streamSlideIn 0.25s ease-out both, streamPulse 2s ease-in-out infinite;
+  animation: streamSlideIn 0.25s ease-out both;
+  position: relative;
+  overflow: hidden;
+}
+
+.streamingActive > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Determinate progress bar fill (behind content) ──────── */
+
+.streamingProgressBar {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--success) 12%, transparent) 0%,
+    color-mix(in srgb, var(--success) 20%, transparent) 70%,
+    color-mix(in srgb, var(--success) 10%, transparent) 100%
+  );
+  border-right: 2px solid color-mix(in srgb, var(--success) 35%, transparent);
+  transition: width 0.12s linear;
+  will-change: width;
+  z-index: 0;
+  pointer-events: none;
 }
 
 @keyframes streamPulse {
@@ -667,10 +722,21 @@
   flex-shrink: 0;
 }
 
-.streamingStatus {
+.streamingPhase {
   font-size: 11px;
   color: var(--accent-color);
-  font-style: italic;
+  flex-shrink: 0;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.streamingPct {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--success);
+  min-width: 32px;
+  text-align: right;
   flex-shrink: 0;
 }
 

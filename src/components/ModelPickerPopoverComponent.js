@@ -137,7 +137,8 @@ export default function ModelPickerPopoverComponent({
     const handler = (e) => {
       if (
         !e.target.closest("[data-model-picker-popover]") &&
-        !e.target.closest("[data-model-picker-trigger]")
+        !e.target.closest("[data-model-picker-trigger]") &&
+        !e.target.closest("[data-column-filter]")
       ) {
         setOpen(false);
       }
