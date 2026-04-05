@@ -944,12 +944,15 @@ function streamTurn(settings, turnSystemPrompt, history, onPartial, abortRef, co
       maxTokens: settings.maxTokens,
     };
 
-    // Thinking / reasoning settings
-    if (settings.thinkingEnabled || settings.provider === "lm-studio") {
+    // Thinking / reasoning settings — respect the user's toggle
+    const thinkingOn = settings.thinkingEnabled ?? (settings.provider === "lm-studio");
+    if (thinkingOn) {
       payload.thinkingEnabled = true;
       if (settings.reasoningEffort) payload.reasoningEffort = settings.reasoningEffort;
       if (settings.thinkingLevel) payload.thinkingLevel = settings.thinkingLevel;
       if (settings.thinkingBudget) payload.thinkingBudget = settings.thinkingBudget;
+    } else {
+      payload.thinkingEnabled = false;
     }
 
     // Skip conversation persistence entirely (used for user-simulation turns)

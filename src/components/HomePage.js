@@ -793,6 +793,8 @@ export default function HomePage({ initialConversationId = null }) {
             enabledTools: allToolSchemas.map(t => t.name),
             maxTokens: settings.maxTokens,
             temperature: settings.temperature,
+            // Pass thinking toggle so the server respects it for local models
+            thinkingEnabled: settings.thinkingEnabled ?? false,
             conversationId: currentId,
             conversationMeta: {
               title: _currentTitle,
@@ -1506,6 +1508,8 @@ export default function HomePage({ initialConversationId = null }) {
             enabledTools: allToolSchemas.map(t => t.name),
             maxTokens: settings.maxTokens,
             temperature: settings.temperature,
+            // Pass thinking toggle so the server respects it for local models
+            thinkingEnabled: settings.thinkingEnabled ?? false,
             conversationId: currentId,
             conversationMeta: {
               title: currentTitle,
