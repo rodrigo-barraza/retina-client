@@ -631,22 +631,13 @@ export default function HomePage({ initialConversationId = null }) {
 
     // --- TTS rerun branch ---
     if (isTTSModel) {
-      const nextMsg = messages[userMsgIndex + 1];
-      const hadAssistantAfter = nextMsg && nextMsg.role === "assistant";
-
-      let newMessages;
-      if (hadAssistantAfter) {
-        const softDeleted = { ...nextMsg, deleted: true };
-        newMessages = [
-          ...messages.slice(0, userMsgIndex + 1),
-          softDeleted,
-          ...messages.slice(userMsgIndex + 2),
-        ];
-      } else {
-        newMessages = [...messages];
-      }
-
-      const ttsInsertIndex = hadAssistantAfter ? userMsgIndex + 2 : userMsgIndex + 1;
+      // Soft-delete ALL messages after this user message
+      const newMessages = [
+        ...messages.slice(0, userMsgIndex + 1),
+        ...messages.slice(userMsgIndex + 1).map((m) =>
+          m.deleted ? m : { ...m, deleted: true }
+        ),
+      ];
 
       setMessages(newMessages);
       setIsGenerating(true);
@@ -696,9 +687,8 @@ export default function HomePage({ initialConversationId = null }) {
           estimatedCost,
         };
 
-        // Insert at the position after the soft-deleted assistant (or after user msg)
-        const finalMessages = [...newMessages];
-        finalMessages.splice(ttsInsertIndex, 0, assistantMsg);
+        // Append new response at the end
+        const finalMessages = [...newMessages, assistantMsg];
         setMessages(finalMessages);
 
         try {
@@ -736,23 +726,17 @@ export default function HomePage({ initialConversationId = null }) {
     // Collect all messages up to and including this user message
     const historyUpToUser = messages.slice(0, userMsgIndex + 1);
 
-    // Soft-delete the old assistant response (if any) so it stays visible
-    // in the conversation as a collapsed "Deleted" message.
-    const nextMsg = messages[userMsgIndex + 1];
-    const hadAssistantAfter = nextMsg && nextMsg.role === "assistant";
+    // Soft-delete ALL messages after this user message so they stay visible
+    // as collapsed "Deleted" rows, and the new response appends at the end.
+    const newMessages = [
+      ...historyUpToUser,
+      ...messages.slice(userMsgIndex + 1).map((m) =>
+        m.deleted ? m : { ...m, deleted: true }
+      ),
+    ];
 
-    // Build newMessages: keep the old assistant (soft-deleted) + everything after it
-    let newMessages;
-    if (hadAssistantAfter) {
-      const softDeleted = { ...nextMsg, deleted: true };
-      newMessages = [...historyUpToUser, softDeleted, ...messages.slice(userMsgIndex + 2)];
-    } else {
-      newMessages = [...historyUpToUser, ...messages.slice(userMsgIndex + 1)];
-    }
-
-    // The new AI response inserts after the (potentially soft-deleted) old assistant.
-    // insertIndex = userMsgIndex + 1 when no old assistant, +2 when soft-deleted one is kept.
-    const rerunInsertIndex = hadAssistantAfter ? userMsgIndex + 2 : userMsgIndex + 1;
+    // New response always appends at the end
+    const rerunInsertIndex = newMessages.length;
 
     setMessages(newMessages);
     setIsGenerating(true);

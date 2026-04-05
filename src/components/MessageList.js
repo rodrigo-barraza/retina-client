@@ -740,11 +740,6 @@ function EditableMessage({
  * @param {Function} [props.onDocClick]    - (resolvedUrl) => void
  * @param {Map}      [props.streamingOutputs] - toolCallId → accumulated output string
  */
-const DEFAULT_PROMPTS = new Set([
-  "You are a helpful AI assistant",
-  "You are a helpful AI assistant.",
-]);
-
 export default function MessageList({
   messages = [],
   readOnly = false,
@@ -764,7 +759,7 @@ export default function MessageList({
   const [editingIndex, setEditingIndex] = useState(null);
   const [systemPromptExpanded, setSystemPromptExpanded] = useState(false);
   const [expandedDeletedSet, setExpandedDeletedSet] = useState(new Set());
-  const hasSystemPrompt = systemPrompt && !DEFAULT_PROMPTS.has(systemPrompt);
+  const hasSystemPrompt = !!(systemPrompt && systemPrompt.trim());
 
   const toggleDeletedExpanded = (index) => {
     setExpandedDeletedSet((prev) => {

@@ -15,7 +15,7 @@ export default function ChatPreviewComponent({
   // MessageList mode
   messages,
   readOnly = true,
-  // Prompt block mode
+  // Prompt block mode (when no messages array)
   systemPrompt,
   userPrompt,
   // Optional max-height override
@@ -30,7 +30,11 @@ export default function ChatPreviewComponent({
         className={`${styles.chatPreview}${className ? ` ${className}` : ""}`}
         style={maxHeight ? { maxHeight } : undefined}
       >
-        <MessageList messages={messages} readOnly={readOnly} />
+        <MessageList
+          messages={messages}
+          readOnly={readOnly}
+          systemPrompt={systemPrompt}
+        />
       </div>
     );
   }
