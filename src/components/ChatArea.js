@@ -1,12 +1,8 @@
 "use client";
 
 import {
-  ChevronDown,
-  ChevronRight,
   Paperclip,
   FileText,
-  Edit3,
-  Terminal,
   AlertCircle,
   X,
   Parentheses,
@@ -345,7 +341,7 @@ export default function ChatArea({
   const endRef = useRef(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
-  const [systemPromptExpanded, setSystemPromptExpanded] = useState(true);
+
   const [isDragging, setIsDragging] = useState(false);
   const [showDrawing, setShowDrawing] = useState(false);
   const [fcRandomPrompts, setFcRandomPrompts] = useState([]);
@@ -691,41 +687,6 @@ export default function ChatArea({
   return (
     <div className={styles.container}>
       <div className={styles.messagesList}>
-        {systemPrompt &&
-          systemPrompt !== "You are a helpful AI assistant" &&
-          systemPrompt !== "You are a helpful AI assistant." && (
-            <div className={styles.systemPromptBanner}>
-              <button
-                className={styles.systemPromptToggle}
-                onClick={() => setSystemPromptExpanded((v) => !v)}
-              >
-                {systemPromptExpanded ? (
-                  <ChevronDown size={14} />
-                ) : (
-                  <ChevronRight size={14} />
-                )}
-                <span className={styles.systemPromptLabel}>
-                  <Terminal size={13} />
-                  System Prompt
-                </span>
-                {!readOnly && onSystemPromptClick && (
-                  <span
-                    className={styles.systemPromptEditBtn}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSystemPromptClick();
-                    }}
-                    title="Edit system prompt"
-                  >
-                    <Edit3 size={13} />
-                  </span>
-                )}
-              </button>
-              {systemPromptExpanded && (
-                <div className={styles.systemPromptBody}>{systemPrompt}</div>
-              )}
-            </div>
-          )}
 
         {messages.length === 0 && activeTools.length > 0 && (
           <div className={styles.toolCardsStack}>
@@ -851,6 +812,9 @@ export default function ChatArea({
           onImageClick={(url) => setLightboxSrc(url)}
           onDocClick={(url) => setDocViewerSrc(url)}
           streamingOutputs={streamingOutputs}
+          systemPrompt={systemPrompt}
+          onSystemPromptEdit={onSystemPromptClick}
+          readOnly={readOnly}
         />
 
         {isGenerating &&

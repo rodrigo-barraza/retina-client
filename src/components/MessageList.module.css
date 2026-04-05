@@ -5,6 +5,80 @@
   gap: 24px;
 }
 
+/* ── System Prompt Banner ── */
+.systemPromptBanner {
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent-color);
+  border-radius: 2px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.systemPromptToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-color);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  transition: background 0.15s;
+}
+
+.systemPromptToggle:hover {
+  background: var(--bg-tertiary);
+}
+
+.systemPromptToggle svg {
+  flex-shrink: 0;
+}
+
+.systemPromptLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.systemPromptEditBtn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  padding: 3px 6px;
+  border-radius: 2px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.systemPromptEditBtn:hover {
+  color: var(--accent-color);
+  background: var(--accent-glow);
+}
+
+.systemPromptBody {
+  padding: 0 14px 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-top: 1px solid var(--border-color);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
 /* ── Per-message row ── */
 .message {
   display: flex;

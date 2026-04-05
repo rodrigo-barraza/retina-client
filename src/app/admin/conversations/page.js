@@ -522,6 +522,7 @@ export default function ConversationsPage({ initialId = null, sessionId = null }
               <MessageList
                 messages={prepareDisplayMessages(selectedConv.messages || [])}
                 readOnly
+                systemPrompt={selectedConv.systemPrompt}
               />
             )}
           </div>

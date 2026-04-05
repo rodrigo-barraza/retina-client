@@ -91,13 +91,7 @@
   min-width: 0;
 }
 
-/* ── Persona Row (side-by-side) ── */
 
-.personaRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
 
 /* ── Collapsible Sections ── */
 
@@ -406,10 +400,4 @@
   justify-content: center;
 }
 
-/* ── Responsive ── */
 
-@media (max-width: 900px) {
-  .personaRow {
-    grid-template-columns: 1fr;
-  }
-}

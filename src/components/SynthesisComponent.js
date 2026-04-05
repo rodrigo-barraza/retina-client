@@ -115,7 +115,7 @@ export default function SynthesisComponent() {
   const [systemPrompt, setSystemPrompt] = useState(
     "You are a helpful AI assistant.",
   );
-  const [assistantPersona, setAssistantPersona] = useState("");
+
   const [userPersona, setUserPersona] = useState("");
   const [useUserSimModel, setUseUserSimModel] = useState(true);
   const [userSimSettings, setUserSimSettings] = useState({
@@ -194,37 +194,27 @@ export default function SynthesisComponent() {
     setUserSimSettings((s) => ({ ...s, provider, model }));
   }, []);
 
-  // ── Build the effective system prompt for assistant turns ──────
-  // Combines the raw system prompt with the assistant persona.
-  // The assistant never sees the user persona.
-  const effectiveAssistantPrompt = useMemo(() => {
-    const parts = [];
-    if (systemPrompt.trim()) parts.push(systemPrompt.trim());
-    if (assistantPersona.trim()) {
-      parts.push(`## Your Personality\n${assistantPersona.trim()}`);
-    }
-    return parts.join("\n\n");
-  }, [systemPrompt, assistantPersona]);
+
 
   // ── Compute final messages array (SFT format) ─────────────────
   const sftOutput = useMemo(() => {
     const msgs = [];
-    if (effectiveAssistantPrompt) {
-      msgs.push({ role: "system", content: effectiveAssistantPrompt });
+    if (systemPrompt.trim()) {
+      msgs.push({ role: "system", content: systemPrompt.trim() });
     }
     // Filter out any internal _streaming flag
     for (const m of generatedMessages) {
       msgs.push({ role: m.role, content: m.content });
     }
     return msgs;
-  }, [effectiveAssistantPrompt, generatedMessages]);
+  }, [systemPrompt, generatedMessages]);
 
   const sftData = useMemo(() => ({
-    prompt: effectiveAssistantPrompt,
+    prompt: systemPrompt.trim(),
     prompt_id: crypto.randomUUID().replace(/-/g, ""),
     messages: sftOutput,
     category,
-  }), [sftOutput, category, effectiveAssistantPrompt]);
+  }), [sftOutput, category, systemPrompt]);
 
   const sftJsonString = useMemo(() => JSON.stringify(sftData, null, 2), [sftData]);
 
@@ -250,7 +240,7 @@ export default function SynthesisComponent() {
 
   const loadSeedTemplate = useCallback((seed) => {
     setSystemPrompt(seed.system);
-    setAssistantPersona("");
+
     setSeedMessages(seed.messages.map((m) => ({ ...m })));
     setCategory(seed.category);
     setGeneratedMessages([]);
@@ -282,7 +272,7 @@ export default function SynthesisComponent() {
       try {
         await PrismService.appendMessages(convId, conversation, undefined, {
           title: `Synthesis: ${systemPrompt.slice(0, 60)}`,
-          systemPrompt: effectiveAssistantPrompt,
+          systemPrompt: systemPrompt.trim(),
           synthetic: true,
           settings: {
             provider: settings.provider,
@@ -299,7 +289,7 @@ export default function SynthesisComponent() {
     // time we need to create the conversation record in the backend.
     const convMeta = {
       title: `Synthesis: ${systemPrompt.slice(0, 60)}`,
-      systemPrompt: effectiveAssistantPrompt,
+      systemPrompt: systemPrompt.trim(),
       synthetic: true,
       settings: {
         provider: settings.provider,
@@ -335,7 +325,7 @@ export default function SynthesisComponent() {
 
           const assistantContent = await streamTurn(
             settings,
-            effectiveAssistantPrompt,
+            systemPrompt.trim(),
             conversation,
             (partial) => {
               setGeneratedMessages([
@@ -446,7 +436,7 @@ export default function SynthesisComponent() {
         let finalThinking = "";
         const assistantContent = await streamTurn(
           settings,
-          effectiveAssistantPrompt,
+          systemPrompt.trim(),
           conversation,
           (partial) => {
             setGeneratedMessages([
@@ -485,7 +475,7 @@ export default function SynthesisComponent() {
             id: synthesisRunId,
             title: `Synthesis: ${systemPrompt.slice(0, 60)}`,
             systemPrompt,
-            assistantPersona,
+
             userPersona,
             category,
             targetTurns,
@@ -522,8 +512,7 @@ export default function SynthesisComponent() {
   }, [
     settings,
     systemPrompt,
-    effectiveAssistantPrompt,
-    assistantPersona,
+
     userPersona,
     category,
     targetTurns,
@@ -548,7 +537,7 @@ export default function SynthesisComponent() {
     setSeedMessages([]);
     setGeneratedMessages([]);
     setSystemPrompt("You are a helpful AI assistant.");
-    setAssistantPersona("");
+
     setUserPersona("");
     setUseUserSimModel(true);
     setUserSimSettings({ provider: "", model: "", temperature: 0.9 });
@@ -565,7 +554,7 @@ export default function SynthesisComponent() {
     try {
       // Restore the synthesis config
       if (run.systemPrompt) setSystemPrompt(run.systemPrompt);
-      if (run.assistantPersona !== undefined) setAssistantPersona(run.assistantPersona);
+
       if (run.userPersona !== undefined) setUserPersona(run.userPersona);
       if (run.category) setCategory(run.category);
       if (run.targetTurns) setTargetTurns(run.targetTurns);
@@ -699,7 +688,6 @@ export default function SynthesisComponent() {
               <JsonViewerComponent
                 data={sftData}
                 label="SFT Output"
-                collapsed={2}
               />
             </>
           ) : (
@@ -841,30 +829,16 @@ export default function SynthesisComponent() {
             rows={2}
           />
 
-          {/* Personas side-by-side */}
-          <div className={styles.personaRow}>
-            {/* Assistant Persona */}
-            <PromptSectionComponent
-              icon={<Bot size={14} />}
-              label="Assistant Persona"
-              badge="Optional"
-              value={assistantPersona}
-              onChange={setAssistantPersona}
-              placeholder="The assistant's personality, tone, and style..."
-              rows={3}
-            />
-
-            {/* User Persona */}
-            <PromptSectionComponent
-              icon={<User size={14} />}
-              label="User Persona"
-              badge="Optional"
-              value={userPersona}
-              onChange={setUserPersona}
-              placeholder="The simulated user's personality, tone, and style..."
-              rows={3}
-            />
-          </div>
+          {/* User Persona */}
+          <PromptSectionComponent
+            icon={<User size={14} />}
+            label="User Persona"
+            badge="Optional"
+            value={userPersona}
+            onChange={setUserPersona}
+            placeholder="The simulated user's personality, tone, and style..."
+            rows={3}
+          />
 
           {/* Seed Templates */}
           <CollapsibleBlockComponent
@@ -997,18 +971,18 @@ export default function SynthesisComponent() {
 
               <MessageList
                 messages={[
-                  ...(effectiveAssistantPrompt
-                    ? [{ role: "system", content: effectiveAssistantPrompt }]
+                  ...(systemPrompt.trim()
+                    ? [{ role: "system", content: systemPrompt.trim() }]
                     : []),
                   ...generatedMessages,
                 ]}
                 isGenerating={isGenerating}
                 onDelete={(index) => {
-                  const offset = effectiveAssistantPrompt ? 1 : 0;
+                  const offset = systemPrompt.trim() ? 1 : 0;
                   if (index >= offset) removeGeneratedMessage(index - offset);
                 }}
                 onEdit={(index, content) => {
-                  const offset = effectiveAssistantPrompt ? 1 : 0;
+                  const offset = systemPrompt.trim() ? 1 : 0;
                   if (index >= offset) updateGeneratedMessage(index - offset, content);
                 }}
                 readOnly={false}

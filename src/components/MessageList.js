@@ -740,12 +740,19 @@ function EditableMessage({
  * @param {Function} [props.onDocClick]    - (resolvedUrl) => void
  * @param {Map}      [props.streamingOutputs] - toolCallId → accumulated output string
  */
+const DEFAULT_PROMPTS = new Set([
+  "You are a helpful AI assistant",
+  "You are a helpful AI assistant.",
+]);
+
 export default function MessageList({
   messages = [],
   readOnly = false,
   isGenerating = false,
   streamingOutputs,
   headerContent,
+  systemPrompt,
+  onSystemPromptEdit,
 
   onDelete,
   onRestore,
@@ -755,6 +762,8 @@ export default function MessageList({
   onDocClick,
 }) {
   const [editingIndex, setEditingIndex] = useState(null);
+  const [systemPromptExpanded, setSystemPromptExpanded] = useState(false);
+  const hasSystemPrompt = systemPrompt && !DEFAULT_PROMPTS.has(systemPrompt);
 
   // ── Coalesce consecutive assistant messages into groups ────
   // Each group shares a single avatar + header. Only the first
@@ -780,6 +789,39 @@ export default function MessageList({
 
   return (
     <div className={styles.messagesList}>
+      {hasSystemPrompt && (
+        <div className={styles.systemPromptBanner}>
+          <button
+            className={styles.systemPromptToggle}
+            onClick={() => setSystemPromptExpanded((v) => !v)}
+          >
+            {systemPromptExpanded ? (
+              <ChevronDown size={14} />
+            ) : (
+              <ChevronRight size={14} />
+            )}
+            <span className={styles.systemPromptLabel}>
+              <Terminal size={13} />
+              System Prompt
+            </span>
+            {!readOnly && onSystemPromptEdit && (
+              <span
+                className={styles.systemPromptEditBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSystemPromptEdit();
+                }}
+                title="Edit system prompt"
+              >
+                <Pencil size={13} />
+              </span>
+            )}
+          </button>
+          {systemPromptExpanded && (
+            <div className={styles.systemPromptBody}>{systemPrompt}</div>
+          )}
+        </div>
+      )}
       {headerContent}
       {messages.map((msg, i) => {
         const roleClass =
