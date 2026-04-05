@@ -854,6 +854,14 @@
   width: 100%;
 }
 
+.modelChangeDividerFaded {
+  opacity: 0.4;
+}
+
+.modelChangeDividerFaded .modelChangeLabel {
+  color: var(--text-muted);
+}
+
 .modelChangeLine {
   flex: 1;
   height: 1px;

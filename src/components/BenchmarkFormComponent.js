@@ -6,6 +6,7 @@ import TextAreaComponent from "./TextAreaComponent";
 import IconButtonComponent from "./IconButtonComponent";
 import ButtonComponent from "./ButtonComponent";
 import BadgeComponent from "./BadgeComponent";
+import { benchmarkPresets } from "../utils/benchmarkPresets";
 import styles from "./BenchmarkFormComponent.module.css";
 
 /**
@@ -27,6 +28,23 @@ export default function BenchmarkFormComponent({ form, onChange, matchModes }) {
 
   const updateTextArea = (field) => (e) =>
     onChange((f) => ({ ...f, [field]: e.target.value }));
+
+  const handlePresetChange = (e) => {
+    const idx = parseInt(e.target.value, 10);
+    if (!isNaN(idx) && benchmarkPresets[idx]) {
+      const preset = benchmarkPresets[idx];
+      onChange((f) => ({
+        ...f,
+        name: preset.name,
+        systemPrompt: preset.systemPrompt,
+        prompt: preset.prompt,
+        assertions: preset.assertions.map(a => ({ ...a })), // deep copy
+        assertionOperator: preset.assertionOperator || "AND",
+      }));
+      // Reset the select back to default so it can be used again if needed
+      e.target.value = "";
+    }
+  };
 
   // ── Assertion helpers ─────────────────────────────────────
 
@@ -68,6 +86,17 @@ export default function BenchmarkFormComponent({ form, onChange, matchModes }) {
 
   return (
     <>
+      <FormGroupComponent label="Load Preset (Optional)">
+        <select onChange={handlePresetChange} defaultValue="">
+          <option value="" disabled>-- Select an industry standard benchmark --</option>
+          {benchmarkPresets.map((p, idx) => (
+            <option key={idx} value={idx}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </FormGroupComponent>
+
       <FormGroupComponent label="Name">
         <input
           type="text"

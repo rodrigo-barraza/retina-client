@@ -769,6 +769,31 @@ export default function MessageList({
     });
   };
 
+  const swapBefore = useMemo(() => {
+    const arr = new Array(messages.length).fill(false);
+    let lastModel = null;
+    let prospectiveSwapIndex = null;
+
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+      if (msg.role === "user") {
+        if (prospectiveSwapIndex === null) {
+          prospectiveSwapIndex = i; // The start of the user's turn
+        }
+      } else if (msg.role === "assistant" && msg.model) {
+        if (lastModel && lastModel !== msg.model) {
+          // Model changed! Show swap before the user's turn that led to this,
+          // or before this assistant message if no user message preceded it.
+          const swapIdx = prospectiveSwapIndex !== null ? prospectiveSwapIndex : i;
+          arr[swapIdx] = true;
+        }
+        lastModel = msg.model;
+        prospectiveSwapIndex = null;
+      }
+    }
+    return arr;
+  }, [messages]);
+
   // ── Coalesce consecutive deleted messages into groups ──────
   // Each group is keyed by the index of the first deleted message
   // in the run (the "leader"). Non-leader deleted messages are
@@ -817,12 +842,12 @@ export default function MessageList({
       const nextIsAssistant =
         i < messages.length - 1 && messages[i + 1].role === "assistant" && !messages[i + 1].deleted;
       meta[i] = {
-        isContinuation: prevIsAssistant,
-        isLastInGroup: !nextIsAssistant,
+        isContinuation: prevIsAssistant && !swapBefore[i],
+        isLastInGroup: !nextIsAssistant || (i < messages.length - 1 && swapBefore[i + 1]),
       };
     }
     return meta;
-  }, [messages]);
+  }, [messages, swapBefore]);
 
   return (
     <div className={styles.messagesList}>
@@ -864,37 +889,21 @@ export default function MessageList({
           (msg.role === "assistant" && msg._liveStreaming === true);
         const coalesce = coalesceMeta[i];
 
-        // Detect model swap: show divider above user message when the next
-        // assistant's model differs from the previous assistant's model
-        let showModelChange = false;
-        if (msg.role === "user") {
-          let prevAssistantModel = null;
-          let nextAssistantModel = null;
-          for (let j = i - 1; j >= 0; j--) {
-            if (messages[j].role === "assistant" && messages[j].model) {
-              prevAssistantModel = messages[j].model;
-              break;
-            }
-          }
-          for (let j = i + 1; j < messages.length; j++) {
-            if (messages[j].role === "assistant" && messages[j].model) {
-              nextAssistantModel = messages[j].model;
-              break;
-            }
-          }
-          if (
-            prevAssistantModel &&
-            nextAssistantModel &&
-            prevAssistantModel !== nextAssistantModel
-          ) {
-            showModelChange = true;
-          }
+        const showModelChange = swapBefore[i];
+        const isFadedSwap = showModelChange && i > 0 && messages[i - 1].deleted && messages[i].deleted;
+        const swapDividerClass = `${styles.modelChangeDivider} ${isFadedSwap ? styles.modelChangeDividerFaded : ""}`.trim();
+
+        // If message is a non-leader deleted message, skip rendering the whole 
+        // top-level block so we don't leak the model swap outside the group
+        const deletedGroupInfo = msg.deleted ? deletedGroups.get(i) : null;
+        if (msg.deleted && !deletedGroupInfo?.isLeader) {
+          return null;
         }
 
         return (
           <React.Fragment key={i}>
             {showModelChange && (
-              <div className={styles.modelChangeDivider}>
+              <div className={swapDividerClass}>
                 <span className={styles.modelChangeLine} />
                 <span className={styles.modelChangeLabel}>
                   <RefreshCw size={11} />
@@ -990,12 +999,29 @@ export default function MessageList({
                         : gMsg.role === "system"
                           ? styles.systemNode
                           : styles.aiNode;
+
+                    const gShowModelChange = swapBefore[gi];
+                    const gIsFadedSwap = gShowModelChange && gi > 0 && messages[gi - 1].deleted && messages[gi].deleted;
+                    const gSwapDividerClass = `${styles.modelChangeDivider} ${gIsFadedSwap ? styles.modelChangeDividerFaded : ""}`.trim();
+                    const shouldRenderInnerSwap = gShowModelChange && gi !== groupIndices[0];
+
                     return (
-                      <div key={gi} className={styles.deletedGroupItem}>
-                        <div className={styles.deletedGroupItemHeader}>
-                          <span className={styles.deletedRoleBadge}>
-                            {gMsg.role === "user" ? "User" : "Model"}
-                          </span>
+                      <React.Fragment key={gi}>
+                        {shouldRenderInnerSwap && (
+                          <div className={gSwapDividerClass}>
+                            <span className={styles.modelChangeLine} />
+                            <span className={styles.modelChangeLabel}>
+                              <RefreshCw size={11} />
+                              Model Swap
+                            </span>
+                            <span className={styles.modelChangeLine} />
+                          </div>
+                        )}
+                        <div className={styles.deletedGroupItem}>
+                          <div className={styles.deletedGroupItemHeader}>
+                            <span className={styles.deletedRoleBadge}>
+                              {gMsg.role === "user" ? "User" : "Model"}
+                            </span>
                           {gMsg.model && (
                             <span className={styles.deletedModelLabel}>{gMsg.model}</span>
                           )}
@@ -1061,11 +1087,12 @@ export default function MessageList({
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            );
+          })()}
             {/* ── Normal (non-deleted) message ── */}
             {!msg.deleted && (
             <div
