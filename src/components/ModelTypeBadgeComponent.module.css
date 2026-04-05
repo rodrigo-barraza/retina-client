@@ -1,0 +1,64 @@
+/* ── ModelTypeBadgeComponent ──────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  text-transform: capitalize;
+}
+
+.badge svg {
+  flex-shrink: 0;
+}
+
+/* ── Conversation ─────────────────────────────────── */
+
+.conversation {
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+.conversation:hover {
+  border-color: rgba(99, 102, 241, 0.45);
+  background: rgba(99, 102, 241, 0.12);
+}
+
+/* ── Audio ────────────────────────────────────────── */
+
+.audio {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+.audio:hover {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+/* ── Embed ────────────────────────────────────────── */
+
+.embed {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+.embed:hover {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+/* ── Mini ─────────────────────────────────────────── */
+
+.mini {
+  font-size: 7px;
+  padding: 1px 4px;
+  gap: 2px;
+}

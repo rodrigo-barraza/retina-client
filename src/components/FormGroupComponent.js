@@ -14,6 +14,7 @@ import styles from "./FormGroupComponent.module.css";
  */
 export default function FormGroupComponent({
   label,
+  hint,
   readOnly = false,
   readOnlyContent,
   children,
@@ -31,6 +32,7 @@ export default function FormGroupComponent({
       ) : (
         children
       )}
+      {hint && <span className={styles.hint}>{hint}</span>}
     </div>
   );
 }

@@ -22,8 +22,9 @@ import PrismService from "../services/PrismService";
 import PageHeaderComponent from "./PageHeaderComponent";
 import ButtonComponent from "./ButtonComponent";
 import BadgeComponent from "./BadgeComponent";
-import FormGroupComponent from "./FormGroupComponent";
-import ModalOverlayComponent from "./ModalOverlayComponent";
+import ModalDialogComponent from "./ModalDialogComponent";
+import BenchmarkFormComponent from "./BenchmarkFormComponent";
+import SummaryBarComponent from "./SummaryBarComponent";
 import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent";
 import BenchmarksTableComponent from "./BenchmarksTableComponent";
 import ChatPreviewComponent from "./ChatPreviewComponent";
@@ -760,93 +761,28 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
               </div>
 
               {/* ── Live Summary Bar ── */}
-              <div className={`${styles.summaryBar} ${styles.summaryBarLive}`}>
-                <div className={styles.summaryItem}>
-                  <span
-                    className={styles.summaryValue}
-                    style={{ color: "var(--text-primary)" }}
-                  >
-                    {completed}/{totalExpected}
-                  </span>
-                  <span className={styles.summaryLabel}>Completed</span>
-                </div>
-                <div className={styles.summaryDivider} />
-                {runningCount > 0 && (
-                  <>
-                    <div className={styles.summaryItem}>
-                      <Loader2 size={14} className={styles.spinIcon} style={{ color: "var(--accent-color)" }} />
-                      <span
-                        className={styles.summaryValue}
-                        style={{ color: "var(--accent-color)" }}
-                      >
-                        {runningCount}
-                      </span>
-                      <span className={styles.summaryLabel}>Running</span>
-                    </div>
-                    <div className={styles.summaryDivider} />
-                  </>
-                )}
-                <div className={styles.summaryItem}>
-                  <span
-                    className={styles.summaryValue}
-                    style={{ color: "var(--success)" }}
-                  >
-                    {passed}
-                  </span>
-                  <span className={styles.summaryLabel}>Passed</span>
-                </div>
-                <div className={styles.summaryDivider} />
-                <div className={styles.summaryItem}>
-                  <span
-                    className={styles.summaryValue}
-                    style={{ color: "var(--danger)" }}
-                  >
-                    {failed}
-                  </span>
-                  <span className={styles.summaryLabel}>Failed</span>
-                </div>
-                {errored > 0 && (
-                  <>
-                    <div className={styles.summaryDivider} />
-                    <div className={styles.summaryItem}>
-                      <span
-                        className={styles.summaryValue}
-                        style={{ color: "var(--warning)" }}
-                      >
-                        {errored}
-                      </span>
-                      <span className={styles.summaryLabel}>Errors</span>
-                    </div>
-                  </>
-                )}
-                <div className={styles.summaryDivider} />
-                <div className={styles.summaryItem}>
-                  <div className={styles.passBar}>
-                    <div
-                      className={styles.passBarFill}
-                      style={{ width: `${passRate}%` }}
-                    />
-                  </div>
-                  <span className={styles.summaryLabel}>
-                    {completed > 0 ? `${Math.round(passRate)}%` : "—"}
-                  </span>
-                </div>
-                {totalCost > 0 && (
-                  <>
-                    <div className={styles.summaryDivider} />
-                    <div className={styles.summaryItem}>
-                      <Coins size={14} className={styles.costIcon} />
-                      <span
-                        className={styles.summaryValue}
-                        style={{ color: "var(--success)" }}
-                      >
-                        {formatCost(totalCost)}
-                      </span>
-                      <span className={styles.summaryLabel}>Cost</span>
-                    </div>
-                  </>
-                )}
-              </div>
+              <SummaryBarComponent
+                live
+                items={[
+                  { value: `${completed}/${totalExpected}`, label: "Completed" },
+                  ...(runningCount > 0 ? [{
+                    value: runningCount,
+                    label: "Running",
+                    color: "var(--accent-color)",
+                    icon: <Loader2 size={14} className={styles.spinIcon} />,
+                  }] : []),
+                  { value: passed, label: "Passed", color: "var(--success)" },
+                  { value: failed, label: "Failed", color: "var(--danger)" },
+                  ...(errored > 0 ? [{ value: errored, label: "Errors", color: "var(--warning)" }] : []),
+                  { bar: passRate, label: completed > 0 ? `${Math.round(passRate)}%` : "\u2014" },
+                  ...(totalCost > 0 ? [{
+                    value: formatCost(totalCost),
+                    label: "Cost",
+                    color: "var(--success)",
+                    icon: <Coins size={14} className={styles.costIcon} />,
+                  }] : []),
+                ]}
+              />
 
               {/* Live model feed */}
               <div className={styles.streamingFeed}>
@@ -946,87 +882,21 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
               </div>
 
               {/* Summary Bar */}
-              <div className={styles.summaryBar}>
-                <div className={styles.summaryItem}>
-                  <span
-                    className={styles.summaryValue}
-                    style={{ color: "var(--text-primary)" }}
-                  >
-                    {latestRun.summary.total}
-                  </span>
-                  <span className={styles.summaryLabel}>Total</span>
-                </div>
-                <div className={styles.summaryDivider} />
-                <div className={styles.summaryItem}>
-                  <span
-                    className={styles.summaryValue}
-                    style={{ color: "var(--success)" }}
-                  >
-                    {latestRun.summary.passed}
-                  </span>
-                  <span className={styles.summaryLabel}>Passed</span>
-                </div>
-                <div className={styles.summaryDivider} />
-                <div className={styles.summaryItem}>
-                  <span
-                    className={styles.summaryValue}
-                    style={{ color: "var(--danger)" }}
-                  >
-                    {latestRun.summary.failed}
-                  </span>
-                  <span className={styles.summaryLabel}>Failed</span>
-                </div>
-                {latestRun.summary.errored > 0 && (
-                  <>
-                    <div className={styles.summaryDivider} />
-                    <div className={styles.summaryItem}>
-                      <span
-                        className={styles.summaryValue}
-                        style={{ color: "var(--warning)" }}
-                      >
-                        {latestRun.summary.errored}
-                      </span>
-                      <span className={styles.summaryLabel}>Errors</span>
-                    </div>
-                  </>
-                )}
-                <div className={styles.summaryDivider} />
-                <div className={styles.summaryItem}>
-                  <div className={styles.passBar}>
-                    <div
-                      className={styles.passBarFill}
-                      style={{
-                        width: `${(latestRun.summary.passed / latestRun.summary.total) * 100}%`,
-                      }}
-                    />
-                  </div>
-                  <span className={styles.summaryLabel}>
-                    {Math.round(
-                      (latestRun.summary.passed / latestRun.summary.total) *
-                        100,
-                    )}
-                    %
-                  </span>
-                </div>
-                {(latestRun.summary.totalCost > 0 || latestRun.models?.some(r => r.estimatedCost > 0)) && (
-                  <>
-                    <div className={styles.summaryDivider} />
-                    <div className={styles.summaryItem}>
-                      <Coins size={14} className={styles.costIcon} />
-                      <span
-                        className={styles.summaryValue}
-                        style={{ color: "var(--success)" }}
-                      >
-                        {formatCost(
-                          latestRun.summary.totalCost ??
-                          latestRun.models.reduce((s, r) => s + (r.estimatedCost || 0), 0)
-                        )}
-                      </span>
-                      <span className={styles.summaryLabel}>Cost</span>
-                    </div>
-                  </>
-                )}
-              </div>
+              <SummaryBarComponent
+                items={[
+                  { value: latestRun.summary.total, label: "Total" },
+                  { value: latestRun.summary.passed, label: "Passed", color: "var(--success)" },
+                  { value: latestRun.summary.failed, label: "Failed", color: "var(--danger)" },
+                  ...(latestRun.summary.errored > 0 ? [{ value: latestRun.summary.errored, label: "Errors", color: "var(--warning)" }] : []),
+                  { bar: (latestRun.summary.passed / latestRun.summary.total) * 100, label: `${Math.round((latestRun.summary.passed / latestRun.summary.total) * 100)}%` },
+                  ...((latestRun.summary.totalCost > 0 || latestRun.models?.some(r => r.estimatedCost > 0)) ? [{
+                    value: formatCost(latestRun.summary.totalCost ?? latestRun.models.reduce((s, r) => s + (r.estimatedCost || 0), 0)),
+                    label: "Cost",
+                    color: "var(--success)",
+                    icon: <Coins size={14} className={styles.costIcon} />,
+                  }] : []),
+                ]}
+              />
 
               {/* Results Table */}
               <BenchmarksTableComponent results={latestRun.models} expectedValue={benchmark.expectedValue} modelConfigMap={modelConfigMap} />
@@ -1095,85 +965,11 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
 
       {/* ── Clone Modal ── */}
       {showModal && (
-        <ModalOverlayComponent onClose={() => setShowModal(false)} portal>
-          <div className={styles.modalPanel}>
-            <div className={styles.modalHeader}>
-              <span className={styles.modalTitle}>Clone Benchmark</span>
-              <button
-                className={styles.cardActionBtn}
-                onClick={() => setShowModal(false)}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              <FormGroupComponent label="Name">
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, name: e.target.value }))
-                  }
-                  placeholder="e.g. Capital of France"
-                />
-              </FormGroupComponent>
-
-              <FormGroupComponent label="System Prompt (optional)">
-                <textarea
-                  value={form.systemPrompt}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, systemPrompt: e.target.value }))
-                  }
-                  placeholder="You are a geography expert. Answer concisely."
-                  rows={2}
-                />
-              </FormGroupComponent>
-
-              <FormGroupComponent label="User Prompt">
-                <textarea
-                  value={form.prompt}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, prompt: e.target.value }))
-                  }
-                  placeholder="What is the capital of France? Reply with just the city name."
-                  rows={3}
-                />
-              </FormGroupComponent>
-
-              <div className={styles.formRow}>
-                <FormGroupComponent label="Expected Value">
-                  <input
-                    type="text"
-                    value={form.expectedValue}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        expectedValue: e.target.value,
-                      }))
-                    }
-                    placeholder="Paris"
-                  />
-                </FormGroupComponent>
-
-                <FormGroupComponent label="Match Mode">
-                  <select
-                    value={form.matchMode}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, matchMode: e.target.value }))
-                    }
-                  >
-                    {MATCH_MODES.map((m) => (
-                      <option key={m.value} value={m.value}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </FormGroupComponent>
-              </div>
-            </div>
-
-            <div className={styles.modalFooter}>
+        <ModalDialogComponent
+          title="Clone Benchmark"
+          onClose={() => setShowModal(false)}
+          footer={
+            <>
               <ButtonComponent
                 variant="secondary"
                 size="sm"
@@ -1190,9 +986,15 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
               >
                 Create Clone
               </ButtonComponent>
-            </div>
-          </div>
-        </ModalOverlayComponent>
+            </>
+          }
+        >
+          <BenchmarkFormComponent
+            form={form}
+            onChange={setForm}
+            matchModes={MATCH_MODES}
+          />
+        </ModalDialogComponent>
       )}
     </div>
   );

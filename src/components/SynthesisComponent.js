@@ -11,8 +11,6 @@ import {
   Plus,
   Trash2,
   RotateCcw,
-  ChevronDown,
-  ChevronUp,
   Sparkles,
   MessageSquare,
   User,
@@ -28,6 +26,8 @@ import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent.js";
 import SelectDropdown from "./SelectDropdown.js";
 import TabBarComponent from "./TabBarComponent.js";
 import EmptyStateComponent from "./EmptyStateComponent.js";
+import PromptSectionComponent from "./PromptSectionComponent.js";
+import CollapsibleBlockComponent from "./CollapsibleBlockComponent.js";
 import MessageList from "./MessageList.js";
 import { SETTINGS_DEFAULTS } from "../constants.js";
 import styles from "./SynthesisComponent.module.css";
@@ -727,172 +727,135 @@ export default function SynthesisComponent() {
           </div>
 
           {/* System Prompt */}
-          <div className={styles.promptSection}>
-            <div className={styles.promptHeader}>
-              <Settings2 size={14} />
-              <span>System Prompt</span>
-            </div>
-            <textarea
-              className={styles.promptTextarea}
-              value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
-              placeholder="Core instructions for the assistant model..."
-              rows={2}
-            />
-          </div>
+          <PromptSectionComponent
+            icon={<Settings2 size={14} />}
+            label="System Prompt"
+            value={systemPrompt}
+            onChange={setSystemPrompt}
+            placeholder="Core instructions for the assistant model..."
+            rows={2}
+          />
 
           {/* Personas side-by-side */}
           <div className={styles.personaRow}>
             {/* Assistant Persona */}
-            <div className={styles.promptSection}>
-              <div className={styles.promptHeader}>
-                <Bot size={14} />
-                <span>Assistant Persona</span>
-                <span className={styles.optionalTag}>Optional</span>
-              </div>
-              <textarea
-                className={styles.promptTextarea}
-                value={assistantPersona}
-                onChange={(e) => setAssistantPersona(e.target.value)}
-                placeholder="The assistant's personality, tone, and style..."
-                rows={3}
-              />
-            </div>
+            <PromptSectionComponent
+              icon={<Bot size={14} />}
+              label="Assistant Persona"
+              badge="Optional"
+              value={assistantPersona}
+              onChange={setAssistantPersona}
+              placeholder="The assistant's personality, tone, and style..."
+              rows={3}
+            />
 
             {/* User Persona */}
-            <div className={styles.promptSection}>
-              <div className={styles.promptHeader}>
-                <User size={14} />
-                <span>User Persona</span>
-                <span className={styles.optionalTag}>Optional</span>
-              </div>
-              <textarea
-                className={styles.promptTextarea}
-                value={userPersona}
-                onChange={(e) => setUserPersona(e.target.value)}
-                placeholder="The simulated user's personality, tone, and style..."
-                rows={3}
-              />
-            </div>
+            <PromptSectionComponent
+              icon={<User size={14} />}
+              label="User Persona"
+              badge="Optional"
+              value={userPersona}
+              onChange={setUserPersona}
+              placeholder="The simulated user's personality, tone, and style..."
+              rows={3}
+            />
           </div>
 
           {/* Seed Templates */}
-          <div className={styles.collapsibleSection}>
-            <button
-              className={styles.collapsibleHeader}
-              onClick={() => setTemplateExpanded((v) => !v)}
-            >
-              <Sparkles size={14} />
-              <span>Seed Templates</span>
-              {templateExpanded ? (
-                <ChevronUp size={14} />
-              ) : (
-                <ChevronDown size={14} />
-              )}
-            </button>
-            {templateExpanded && (
-              <div className={styles.templateGrid}>
-                {SAMPLE_SEEDS.map((seed) => (
-                  <button
-                    key={seed.label}
-                    className={styles.templateCard}
-                    onClick={() => loadSeedTemplate(seed)}
-                  >
-                    <span className={styles.templateLabel}>{seed.label}</span>
-                    <span className={styles.templateCategory}>
-                      {seed.category}
-                    </span>
-                    <span className={styles.templateMsgCount}>
-                      {seed.messages.length} messages
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <CollapsibleBlockComponent
+            icon={<Sparkles size={14} />}
+            label="Seed Templates"
+            open={templateExpanded}
+            onToggle={setTemplateExpanded}
+            className={styles.collapsibleSection}
+          >
+            <div className={styles.templateGrid}>
+              {SAMPLE_SEEDS.map((seed) => (
+                <button
+                  key={seed.label}
+                  className={styles.templateCard}
+                  onClick={() => loadSeedTemplate(seed)}
+                >
+                  <span className={styles.templateLabel}>{seed.label}</span>
+                  <span className={styles.templateCategory}>
+                    {seed.category}
+                  </span>
+                  <span className={styles.templateMsgCount}>
+                    {seed.messages.length} messages
+                  </span>
+                </button>
+              ))}
+            </div>
+          </CollapsibleBlockComponent>
 
           {/* Seed Messages */}
-          <div className={styles.collapsibleSection}>
-            <button
-              className={styles.collapsibleHeader}
-              onClick={() => setSeedsExpanded((v) => !v)}
-            >
-              <MessageSquare size={14} />
-              <span>
-                Prefilled Messages
-                {seedMessages.length > 0 && (
-                  <span className={styles.msgCount}>
-                    {seedMessages.length}
-                  </span>
-                )}
-              </span>
-              {seedsExpanded ? (
-                <ChevronUp size={14} />
-              ) : (
-                <ChevronDown size={14} />
-              )}
-            </button>
-            {seedsExpanded && (
-              <div className={styles.seedMessages}>
-                {seedMessages.map((msg, i) => (
-                  <div key={i} className={styles.seedMessage}>
-                    <div className={styles.seedMessageHeader}>
-                      <button
-                        className={`${styles.roleToggle} ${styles[`role_${msg.role}`]}`}
-                        onClick={() =>
-                          updateSeedMessage(
-                            i,
-                            "role",
-                            msg.role === "user" ? "assistant" : "user",
-                          )
-                        }
-                        title="Toggle role"
-                      >
-                        {msg.role === "user" ? (
-                          <User size={12} />
-                        ) : (
-                          <Bot size={12} />
-                        )}
-                        {msg.role}
-                      </button>
-                      <button
-                        className={styles.removeSeedBtn}
-                        onClick={() => removeSeedMessage(i)}
-                        title="Remove message"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                    <textarea
-                      className={styles.seedTextarea}
-                      value={msg.content}
-                      onChange={(e) =>
-                        updateSeedMessage(i, "content", e.target.value)
+          <CollapsibleBlockComponent
+            icon={<MessageSquare size={14} />}
+            label="Prefilled Messages"
+            badge={seedMessages.length > 0 ? String(seedMessages.length) : undefined}
+            open={seedsExpanded}
+            onToggle={setSeedsExpanded}
+            className={styles.collapsibleSection}
+          >
+            <div className={styles.seedMessages}>
+              {seedMessages.map((msg, i) => (
+                <div key={i} className={styles.seedMessage}>
+                  <div className={styles.seedMessageHeader}>
+                    <button
+                      className={`${styles.roleToggle} ${styles[`role_${msg.role}`]}`}
+                      onClick={() =>
+                        updateSeedMessage(
+                          i,
+                          "role",
+                          msg.role === "user" ? "assistant" : "user",
+                        )
                       }
-                      placeholder={`${msg.role === "user" ? "User" : "Assistant"} message...`}
-                      rows={2}
-                    />
+                      title="Toggle role"
+                    >
+                      {msg.role === "user" ? (
+                        <User size={12} />
+                      ) : (
+                        <Bot size={12} />
+                      )}
+                      {msg.role}
+                    </button>
+                    <button
+                      className={styles.removeSeedBtn}
+                      onClick={() => removeSeedMessage(i)}
+                      title="Remove message"
+                    >
+                      <Trash2 size={12} />
+                    </button>
                   </div>
-                ))}
-                <div className={styles.addSeedRow}>
-                  <button
-                    className={styles.addSeedBtn}
-                    onClick={() => addSeedMessage("user")}
-                  >
-                    <Plus size={12} />
-                    User
-                  </button>
-                  <button
-                    className={styles.addSeedBtn}
-                    onClick={() => addSeedMessage("assistant")}
-                  >
-                    <Plus size={12} />
-                    Assistant
-                  </button>
+                  <textarea
+                    className={styles.seedTextarea}
+                    value={msg.content}
+                    onChange={(e) =>
+                      updateSeedMessage(i, "content", e.target.value)
+                    }
+                    placeholder={`${msg.role === "user" ? "User" : "Assistant"} message...`}
+                    rows={2}
+                  />
                 </div>
+              ))}
+              <div className={styles.addSeedRow}>
+                <button
+                  className={styles.addSeedBtn}
+                  onClick={() => addSeedMessage("user")}
+                >
+                  <Plus size={12} />
+                  User
+                </button>
+                <button
+                  className={styles.addSeedBtn}
+                  onClick={() => addSeedMessage("assistant")}
+                >
+                  <Plus size={12} />
+                  Assistant
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          </CollapsibleBlockComponent>
 
           {/* Generated Preview — live message bubbles */}
           {(generatedMessages.length > 0 || isGenerating) && (

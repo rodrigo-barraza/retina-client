@@ -242,10 +242,13 @@ export default function ChatArea({
     switch (tool) {
       case "Thinking": {
         const isLmStudio = settings?.provider === "lm-studio";
-        // LM Studio: thinking is always ON by default (models emit <think> tags).
-        // Models with explicit reasoning capability (thinking: true) allow toggling OFF.
-        // Models without it always emit think tags, so the toggle is force-locked ON.
-        const canToggle = isLmStudio && selectedModelDef?.thinking;
+        // LM Studio: thinking is toggleable whenever the model supports it.
+        // When selectedModelDef hasn't loaded yet (async local config), fall back
+        // to name-based detection matching the server-side THINKING_PATTERNS.
+        const modelName = (settings?.model || "").toLowerCase();
+        const nameBasedThinking = ["qwen3", "deepseek-r1", "deepseek-v3", "gpt-oss", "gemma-4"]
+          .some((p) => modelName.includes(p));
+        const canToggle = isLmStudio && (selectedModelDef?.thinking || nameBasedThinking);
         return {
           checked: isLmStudio
             ? (canToggle ? (settings?.thinkingEnabled !== false) : true)

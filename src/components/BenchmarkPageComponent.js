@@ -9,7 +9,6 @@ import {
   Copy,
   Target,
   Clock,
-  X,
   Coins,
   Loader2,
 } from "lucide-react";
@@ -18,8 +17,8 @@ import PageHeaderComponent from "./PageHeaderComponent";
 import ButtonComponent from "./ButtonComponent";
 import BadgeComponent from "./BadgeComponent";
 import EmptyStateComponent from "./EmptyStateComponent";
-import FormGroupComponent from "./FormGroupComponent";
-import ModalOverlayComponent from "./ModalOverlayComponent";
+import ModalDialogComponent from "./ModalDialogComponent";
+import BenchmarkFormComponent from "./BenchmarkFormComponent";
 import { formatCost } from "../utils/utilities";
 import styles from "./BenchmarkPageComponent.module.css";
 
@@ -309,85 +308,11 @@ export default function BenchmarkPageComponent({ sidebar }) {
 
       {/* ── Create / Clone Modal ── */}
       {showModal && (
-        <ModalOverlayComponent onClose={() => setShowModal(false)} portal>
-          <div className={styles.modalPanel}>
-            <div className={styles.modalHeader}>
-              <span className={styles.modalTitle}>New Benchmark</span>
-              <button
-                className={styles.cardActionBtn}
-                onClick={() => setShowModal(false)}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              <FormGroupComponent label="Name">
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, name: e.target.value }))
-                  }
-                  placeholder="e.g. Capital of France"
-                />
-              </FormGroupComponent>
-
-              <FormGroupComponent label="System Prompt (optional)">
-                <textarea
-                  value={form.systemPrompt}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, systemPrompt: e.target.value }))
-                  }
-                  placeholder="You are a geography expert. Answer concisely."
-                  rows={2}
-                />
-              </FormGroupComponent>
-
-              <FormGroupComponent label="User Prompt">
-                <textarea
-                  value={form.prompt}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, prompt: e.target.value }))
-                  }
-                  placeholder="What is the capital of France? Reply with just the city name."
-                  rows={3}
-                />
-              </FormGroupComponent>
-
-              <div className={styles.formRow}>
-                <FormGroupComponent label="Expected Value">
-                  <input
-                    type="text"
-                    value={form.expectedValue}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        expectedValue: e.target.value,
-                      }))
-                    }
-                    placeholder="Paris"
-                  />
-                </FormGroupComponent>
-
-                <FormGroupComponent label="Match Mode">
-                  <select
-                    value={form.matchMode}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, matchMode: e.target.value }))
-                    }
-                  >
-                    {MATCH_MODES.map((m) => (
-                      <option key={m.value} value={m.value}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </FormGroupComponent>
-              </div>
-            </div>
-
-            <div className={styles.modalFooter}>
+        <ModalDialogComponent
+          title="New Benchmark"
+          onClose={() => setShowModal(false)}
+          footer={
+            <>
               <ButtonComponent
                 variant="secondary"
                 size="sm"
@@ -404,9 +329,15 @@ export default function BenchmarkPageComponent({ sidebar }) {
               >
                 Create
               </ButtonComponent>
-            </div>
-          </div>
-        </ModalOverlayComponent>
+            </>
+          }
+        >
+          <BenchmarkFormComponent
+            form={form}
+            onChange={setForm}
+            matchModes={MATCH_MODES}
+          />
+        </ModalDialogComponent>
       )}
     </div>
   );

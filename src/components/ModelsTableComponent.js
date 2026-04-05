@@ -25,6 +25,7 @@ import {
 import TableComponent from "./TableComponent";
 import ProvidersBadgeComponent from "./ProvidersBadgeComponent";
 import ModelBadgeComponent from "./ModelBadgeComponent";
+import ModelTypeBadgeComponent from "./ModelTypeBadgeComponent";
 import ToolIconComponent from "./ToolIconComponent";
 import TooltipComponent from "./TooltipComponent";
 import SearchInputComponent from "./SearchInputComponent";
@@ -135,6 +136,7 @@ function normalizeModel(model) {
     key: model.key || model.name,
     name,
     provider: model.provider || "lm-studio",
+    modelType: model.modelType || null,
     size: model.size || formatFileSize(model.size_bytes) || null,
     params: model.params || model.params_string || null,
     contextLength: model.contextLength || model.max_context_length || null,
@@ -200,6 +202,7 @@ function buildRow(rawModel, favorites = []) {
       0,
     size: rawModel.size_bytes || parseSize(rawModel.size || model.size) || 0,
     params: parseParams(model.params),
+    modelType: (model.modelType || "").toLowerCase(),
     quant: (model.quantization || "").toLowerCase(),
     bpw: model.bitsPerWeight ?? 0,
     arch: (model.architecture || "").toLowerCase(),
@@ -507,6 +510,7 @@ function ModelsTableInner({
     (m) => m.inputTypes?.length > 0 || m.outputTypes?.length > 0,
   );
   const hasTools = filtered.some((m) => m.tools?.length > 0);
+  const hasModelType = filtered.some((m) => normalizeModel(m).modelType);
   const hasUsage = filtered.some((m) => m.usageCount > 0);
   const hasTokens = filtered.some((m) => (m.totalInputTokens || 0) + (m.totalOutputTokens || 0) > 0);
   const hasActions = !!renderActions;
@@ -685,6 +689,19 @@ function ModelsTableInner({
         <ProvidersBadgeComponent providers={[row._model.provider]} />
       ),
     });
+
+    // 5. TYPE — model type badge (conversation / audio / embed)
+    if (hasModelType) {
+      cols.push({
+        key: "modelType",
+        label: "Type",
+        description: "Endpoint-based model category: conversation, audio, or embed",
+        align: "left",
+        render: (row) => (
+          <ModelTypeBadgeComponent modelType={row._model.modelType} />
+        ),
+      });
+    }
 
     if (hasYear) {
       cols.push({
@@ -962,6 +979,7 @@ function ModelsTableInner({
     favorites,
     filtered,
     hasYear,
+    hasModelType,
     hasUsage,
     hasTokens,
     hasModalities,

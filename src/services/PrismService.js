@@ -447,6 +447,8 @@ export default class PrismService {
                   id: data.id,
                   name: data.name,
                   args: data.args,
+                  result: data.result,
+                  status: data.status,
                   thoughtSignature: data.thoughtSignature,
                 });
               } else if (data.type === "tool_execution" && onToolExecution) {

@@ -27,6 +27,7 @@ import ModalityIconComponent from "./ModalityIconComponent";
 import SystemPromptModal from "./SystemPromptModal";
 import styles from "./SettingsPanel.module.css";
 import CostBadgeComponent from "./CostBadgeComponent";
+import ModelTypeBadgeComponent from "./ModelTypeBadgeComponent";
 import { formatCost } from "../utils/utilities";
 import {
   MODALITY_COLORS,
@@ -126,19 +127,32 @@ export default function SettingsPanel({
           !selectedModelDef?.thinkingLevels ||
           selectedModelDef.thinkingLevels.includes("minimal");
         const alwaysOn = !canDisable && settings.provider === "google";
+
+        // LM Studio: allow toggling for models with explicit reasoning capability.
+        // Fall back to name-based detection when selectedModelDef hasn't loaded yet.
+        const modelName = (settings.model || "").toLowerCase();
+        const nameBasedThinking = ["qwen3", "deepseek-r1", "deepseek-v3", "gpt-oss", "gemma-4"]
+          .some((p) => modelName.includes(p));
+        const lmCanToggle = isLmStudio && (selectedModelDef?.thinking || nameBasedThinking);
+        const lmLocked = isLmStudio && !lmCanToggle;
+
         return {
           checked: isLive
             ? (settings.liveThinkingLevel || "none") !== "none"
-            : isLmStudio || alwaysOn || settings.thinkingEnabled || false,
+            : lmLocked || alwaysOn
+              ? true
+              : isLmStudio
+                ? (settings.thinkingEnabled !== false)
+                : (settings.thinkingEnabled || false),
           onChange: isLive
             ? (val) =>
                 onChange({
                   liveThinkingLevel: val ? "low" : "none",
                 })
-            : alwaysOn
+            : (lmLocked || alwaysOn)
               ? () => {} // can't disable
               : handleThinkingEnabledChange,
-          disabled: isLmStudio || alwaysOn,
+          disabled: lmLocked || alwaysOn,
         };
       }
       case "Web Search":
@@ -341,14 +355,7 @@ export default function SettingsPanel({
         )}
 
         {selectedModelDef?.modelType && (
-          <div className={styles.modelTypeBadge}>
-            {selectedModelDef.modelType === "conversation" && (
-              <Type size={12} />
-            )}
-            {selectedModelDef.modelType === "audio" && <Volume2 size={12} />}
-            {selectedModelDef.modelType === "embed" && <Cpu size={12} />}
-            {selectedModelDef.modelType} model
-          </div>
+          <ModelTypeBadgeComponent modelType={selectedModelDef.modelType} />
         )}
         {selectedModelDef &&
           (() => {
