@@ -1005,6 +1005,9 @@ export default function HomePage({ initialConversationId = null }) {
         frequencyPenalty: settings.frequencyPenalty,
         presencePenalty: settings.presencePenalty,
         stopSequences: stopArray?.length ? stopArray : undefined,
+        ...(settings.seed !== undefined && settings.seed !== "" && { seed: settings.seed }),
+        ...(settings.minP !== undefined && settings.minP > 0 && { minP: settings.minP }),
+        ...(settings.repeatPenalty !== undefined && settings.repeatPenalty !== 1 && { repeatPenalty: settings.repeatPenalty }),
         ...(selectedModelDef?.responsesAPI
           ? {
               reasoningEffort: settings.reasoningEffort || "high",
@@ -1756,6 +1759,9 @@ export default function HomePage({ initialConversationId = null }) {
         frequencyPenalty: settings.frequencyPenalty,
         presencePenalty: settings.presencePenalty,
         stopSequences: stopArray?.length ? stopArray : undefined,
+        ...(settings.seed !== undefined && settings.seed !== "" && { seed: settings.seed }),
+        ...(settings.minP !== undefined && settings.minP > 0 && { minP: settings.minP }),
+        ...(settings.repeatPenalty !== undefined && settings.repeatPenalty !== 1 && { repeatPenalty: settings.repeatPenalty }),
         ...(selectedModelDef?.responsesAPI
           ? {
               reasoningEffort: settings.reasoningEffort || "high",

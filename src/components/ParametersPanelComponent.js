@@ -67,6 +67,9 @@ export default function ParametersPanelComponent({
   const handleTopKChange = (val) => onChange({ topK: val });
   const handleFreqPenaltyChange = (val) => onChange({ frequencyPenalty: val });
   const handlePresPenaltyChange = (val) => onChange({ presencePenalty: val });
+  const handleMinPChange = (val) => onChange({ minP: val });
+  const handleRepeatPenaltyChange = (val) => onChange({ repeatPenalty: val });
+  const handleSeedChange = (e) => onChange({ seed: e.target.value });
   const handleStopSeqChange = (e) =>
     onChange({ stopSequences: e.target.value });
   const handleReasoningEffortChange = (val) =>
@@ -275,7 +278,7 @@ export default function ParametersPanelComponent({
             />
           </div>
 
-          {["anthropic", "google", "llama-cpp"].includes(settings.provider) && (
+          {["anthropic", "google", "llama-cpp", "lm-studio", "vllm"].includes(settings.provider) && (
             <div className={styles.formGroup}>
               <label>Top K ({settings.topK})</label>
               <SliderComponent
@@ -284,6 +287,45 @@ export default function ParametersPanelComponent({
                 step={1}
                 value={settings.topK}
                 onChange={handleTopKChange}
+              />
+            </div>
+          )}
+
+          {["llama-cpp", "lm-studio", "vllm"].includes(settings.provider) && (
+            <div className={styles.formGroup}>
+              <label>Min P ({settings.minP ?? 0})</label>
+              <SliderComponent
+                min={0}
+                max={1}
+                step={0.01}
+                value={settings.minP ?? 0}
+                onChange={handleMinPChange}
+              />
+            </div>
+          )}
+
+          {["llama-cpp", "lm-studio", "vllm"].includes(settings.provider) && (
+            <div className={styles.formGroup}>
+              <label>Repeat Penalty ({settings.repeatPenalty ?? 1})</label>
+              <SliderComponent
+                min={1}
+                max={2}
+                step={0.05}
+                value={settings.repeatPenalty ?? 1}
+                onChange={handleRepeatPenaltyChange}
+              />
+            </div>
+          )}
+
+          {["llama-cpp", "lm-studio", "vllm"].includes(settings.provider) && (
+            <div className={styles.formGroup}>
+              <label>Seed</label>
+              <input
+                type="number"
+                placeholder="Random"
+                value={settings.seed ?? ""}
+                onChange={handleSeedChange}
+                className={styles.inputField}
               />
             </div>
           )}
