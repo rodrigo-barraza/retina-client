@@ -775,10 +775,16 @@ export default function MessageList({
     const meta = new Array(messages.length).fill(null);
     for (let i = 0; i < messages.length; i++) {
       if (messages[i].role !== "assistant") continue;
+      // Deleted messages always break the coalesce chain —
+      // they render as their own standalone block.
+      if (messages[i].deleted) {
+        meta[i] = { isContinuation: false, isLastInGroup: true };
+        continue;
+      }
       const prevIsAssistant =
-        i > 0 && messages[i - 1].role === "assistant";
+        i > 0 && messages[i - 1].role === "assistant" && !messages[i - 1].deleted;
       const nextIsAssistant =
-        i < messages.length - 1 && messages[i + 1].role === "assistant";
+        i < messages.length - 1 && messages[i + 1].role === "assistant" && !messages[i + 1].deleted;
       meta[i] = {
         isContinuation: prevIsAssistant,
         isLastInGroup: !nextIsAssistant,
@@ -963,7 +969,19 @@ export default function MessageList({
                       />
                     </div>
                   )}
-                  {readOnly && msg.content && (
+                  {readOnly && msg.deleted && (
+                    <div className={styles.messageActions}>
+                      <span className={styles.deletedBadge}>Deleted</span>
+                      {msg.content && (
+                        <CopyButtonComponent
+                          text={msg.content}
+                          tooltip="Copy raw text"
+                          className={styles.actionBtn}
+                        />
+                      )}
+                    </div>
+                  )}
+                  {readOnly && !msg.deleted && msg.content && (
                     <div className={styles.messageActions}>
                       <CopyButtonComponent
                         text={msg.content}

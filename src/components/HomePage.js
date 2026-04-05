@@ -942,6 +942,25 @@ export default function HomePage({ initialConversationId = null }) {
             onError: (err) => reject(err),
           });
         });
+
+        // Persist the full messages array (including soft-deleted old assistant)
+        // so the deleted state survives a page refresh.
+        if (currentId) {
+          try {
+            setMessages((prev) => {
+              const { systemPrompt: sp, ...modelSettings } = settings;
+              PrismService.patchConversation(currentId, {
+                title: _currentTitle,
+                messages: prev,
+                systemPrompt: sp,
+                settings: modelSettings,
+              }).catch((e) => console.error("Failed to save FC rerun:", e));
+              return prev;
+            });
+          } catch (saveErr) {
+            console.error("Failed to save FC rerun:", saveErr);
+          }
+        }
         loadConversations();
       } catch (error) {
         console.error(error);
