@@ -874,6 +874,52 @@ export default function HomePage({ initialConversationId = null }) {
                 return updated;
               });
             },
+            // MCP native tool events from LM Studio
+            // Server injects position markers into the thinking stream;
+            // here we just track tool activity state for UI rendering.
+            onToolCall: (tc) => {
+              setToolActivity((prev) => {
+                let updated;
+                if (tc.status === "calling") {
+                  // Deduplicate: Prism may re-emit tool calls
+                  const alreadyTracked = prev.some((a) =>
+                    (tc.id && a.id === tc.id) ||
+                    (!tc.id && a.name === tc.name),
+                  );
+                  if (alreadyTracked) return prev;
+
+                  updated = [
+                    ...prev,
+                    {
+                      id: tc.id || `tc-${Date.now()}-${Math.random()}`,
+                      name: tc.name,
+                      args: tc.args || {},
+                      status: "calling",
+                      timestamp: Date.now(),
+                    },
+                  ];
+                } else {
+                  updated = prev.map((a) =>
+                    (tc.id && a.id === tc.id) ||
+                    (!tc.id && a.name === tc.name && a.status === "calling")
+                      ? { ...a, status: tc.status, result: tc.result, ...(tc.args && Object.keys(tc.args).length > 0 ? { args: tc.args } : {}) }
+                      : a,
+                  );
+                }
+                setMessages((msgPrev) => {
+                  const arr = [...msgPrev];
+                  const last = arr[arr.length - 1];
+                  if (last?.role === "assistant") {
+                    arr[arr.length - 1] = {
+                      ...last,
+                      toolCalls: updated,
+                    };
+                  }
+                  return arr;
+                });
+                return updated;
+              });
+            },
             onToolOutput: handleToolOutput,
             onDone: (data) => {
               setMessages((prev) => {
@@ -1535,6 +1581,52 @@ export default function HomePage({ initialConversationId = null }) {
                   const last = arr[arr.length - 1];
                   if (last?.role === "assistant") {
                     arr[arr.length - 1] = { ...last, toolCalls: updated };
+                  }
+                  return arr;
+                });
+                return updated;
+              });
+            },
+            // MCP native tool events from LM Studio
+            // Server injects position markers into the thinking stream;
+            // here we just track tool activity state for UI rendering.
+            onToolCall: (tc) => {
+              setToolActivity((prev) => {
+                let updated;
+                if (tc.status === "calling") {
+                  // Deduplicate: Prism may re-emit tool calls
+                  const alreadyTracked = prev.some((a) =>
+                    (tc.id && a.id === tc.id) ||
+                    (!tc.id && a.name === tc.name),
+                  );
+                  if (alreadyTracked) return prev;
+
+                  updated = [
+                    ...prev,
+                    {
+                      id: tc.id || `tc-${Date.now()}-${Math.random()}`,
+                      name: tc.name,
+                      args: tc.args || {},
+                      status: "calling",
+                      timestamp: Date.now(),
+                    },
+                  ];
+                } else {
+                  updated = prev.map((a) =>
+                    (tc.id && a.id === tc.id) ||
+                    (!tc.id && a.name === tc.name && a.status === "calling")
+                      ? { ...a, status: tc.status, result: tc.result, ...(tc.args && Object.keys(tc.args).length > 0 ? { args: tc.args } : {}) }
+                      : a,
+                  );
+                }
+                setMessages((msgPrev) => {
+                  const arr = [...msgPrev];
+                  const last = arr[arr.length - 1];
+                  if (last?.role === "assistant") {
+                    arr[arr.length - 1] = {
+                      ...last,
+                      toolCalls: updated,
+                    };
                   }
                   return arr;
                 });

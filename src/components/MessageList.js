@@ -939,7 +939,7 @@ export default function MessageList({
                   />
                 )}
 
-                {/* Tool calls indicator */}
+                {/* Tool calls */}
                 {msg.toolCalls && msg.toolCalls.length > 0 && (
                   <ToolCallsBlock toolCalls={msg.toolCalls} streamingOutputs={streamingOutputs} />
                 )}
