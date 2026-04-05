@@ -658,7 +658,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
 
           <ChatPreviewComponent
             messages={[
-              { role: "system", content: benchmark.systemPrompt || "" },
+              { role: "system", content: benchmark.systemPrompt || "\u00A0" },
               { role: "user", content: benchmark.prompt },
             ]}
           />
