@@ -95,8 +95,11 @@ export default function HistoryItemComponent({
           <span className={styles.time}>{dt}</span>
           <CostBadgeComponent cost={item.totalCost} mini showIcon={false} />
         </div>
-        {item.modelName && (
-          <ModelBadgeComponent models={[item.modelName]} className={styles.modelBadge} />
+        {(item.modelNames?.length > 0 || item.modelName) && (
+          <ModelBadgeComponent
+            models={item.modelNames?.length > 0 ? item.modelNames : [item.modelName]}
+            className={styles.modelBadge}
+          />
         )}
         <ModalityIconComponent modalities={mod} />
         {children}

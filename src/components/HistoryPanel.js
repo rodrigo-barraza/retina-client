@@ -166,17 +166,23 @@ export default function HistoryPanel({
         });
       }
 
-      // Extract the most recent model name from assistant messages
+      // Extract unique model names used in this conversation
       const msgs = conv.messages || [];
-      let modelName = conv.model || null;
-      if (!modelName) {
-        for (let i = msgs.length - 1; i >= 0; i--) {
-          if (msgs[i].role === "assistant" && msgs[i].model) {
-            modelName = msgs[i].model;
-            break;
-          }
+      const modelNamesSet = new Set();
+
+      // Look at messages from newest to oldest to order recent models first
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        if (msgs[i].role === "assistant" && msgs[i].model) {
+          modelNamesSet.add(msgs[i].model);
         }
       }
+
+      // If no models found in messages, fall back to conv.model
+      if (modelNamesSet.size === 0 && conv.model) {
+        modelNamesSet.add(conv.model);
+      }
+
+      const modelNames = Array.from(modelNamesSet);
 
       return {
         id: conv.id,
@@ -188,7 +194,7 @@ export default function HistoryPanel({
         providers: conv.providers || [],
         tags,
         username: conv.username,
-        modelName,
+        modelNames,
         searchText: (conv.messages || []).map((m) => m.content || "").join(" "),
       };
     });
