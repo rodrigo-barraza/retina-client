@@ -6,7 +6,6 @@ import {
   Play,
   Copy,
   CheckCircle2,
-  ChevronLeft,
   History,
   X,
   Check,
@@ -623,16 +622,15 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
         title="Benchmarks"
         subtitle={benchmark.name}
         backHref="/benchmarks"
-      >
-        <ButtonComponent
-          variant="ghost"
-          size="sm"
-          icon={ChevronLeft}
-          onClick={() => router.push("/benchmarks")}
-        >
-          Back
-        </ButtonComponent>
-      </PageHeaderComponent>
+        centerContent={
+          <ModelPickerPopoverComponent
+            config={prismConfig}
+            multiSelect
+            selectedKeys={selectedModelKeys}
+            onSelectModel={handleModelSelect}
+          />
+        }
+      />
 
       <div className={styles.content}>
         <div className={styles.contentMain}>
@@ -679,12 +677,6 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
 
           {/* ── Actions ── */}
           <div className={styles.detailActions}>
-            <ModelPickerPopoverComponent
-              config={prismConfig}
-              multiSelect
-              selectedKeys={selectedModelKeys}
-              onSelectModel={handleModelSelect}
-            />
             {selectedModels.length > 0 && (
               <ButtonComponent
                 variant="ghost"
