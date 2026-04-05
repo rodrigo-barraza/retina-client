@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Star,
   ArrowRight,
+  CheckSquare2,
+  Square,
   Brain,
   Parentheses,
   Globe,
@@ -290,6 +292,8 @@ function buildStatsColumns({ configModels, totalRequests, totalCost, compact }) 
  * @param {boolean}  [props.compact]         - Reduced column set (stats mode)
  * @param {string}   [props.title]           - Optional table title
  * @param {number}   [props.maxHeight]       - Max height for scrollable body
+ * @param {Set}      [props.selectedKeys]    - Set of "provider:model" keys for selection column
+ * @param {Function} [props.onToggleSelect]  - (rawModel) => void — toggle selection
  */
 export default function ModelsTableComponent({
   models = [],
@@ -311,6 +315,8 @@ export default function ModelsTableComponent({
   compact = false,
   title,
   maxHeight,
+  selectedKeys,
+  onToggleSelect,
 }) {
   /* ── Stats-only mode (simple passthrough) ── */
   if (mode === "stats") {
@@ -357,6 +363,8 @@ export default function ModelsTableComponent({
       emptyText={emptyText}
       title={title}
       maxHeight={maxHeight}
+      selectedKeys={selectedKeys}
+      onToggleSelect={onToggleSelect}
     />
   );
 }
@@ -382,6 +390,8 @@ function ModelsTableInner({
   emptyText,
   title,
   maxHeight,
+  selectedKeys,
+  onToggleSelect,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeProvider, setActiveProvider] = useState(null);
@@ -500,6 +510,7 @@ function ModelsTableInner({
   const hasUsage = filtered.some((m) => m.usageCount > 0);
   const hasTokens = filtered.some((m) => (m.totalInputTokens || 0) + (m.totalOutputTokens || 0) > 0);
   const hasActions = !!renderActions;
+  const hasSelection = !!selectedKeys && !!onToggleSelect;
   const isFull = mode === "full";
 
   const arenaCols = ARENA_COLUMNS.filter((col) =>
@@ -507,8 +518,83 @@ function ModelsTableInner({
   );
 
   // Build dynamic columns array for TableComponent
+  // Memoize select-all handler
+  const handleSelectAll = useCallback(() => {
+    if (!onToggleSelect || !selectedKeys) return;
+    // Check if all currently visible/filtered models are selected
+    const allSelected = filtered.length > 0 && filtered.every((m) => {
+      const key = `${normalizeModel(m).provider}:${normalizeModel(m).key}`;
+      return selectedKeys.has(key);
+    });
+    // Toggle: if all selected, deselect all visible; otherwise select all visible
+    for (const m of filtered) {
+      const key = `${normalizeModel(m).provider}:${normalizeModel(m).key}`;
+      if (allSelected) {
+        // Only deselect if currently selected
+        if (selectedKeys.has(key)) onToggleSelect(m);
+      } else {
+        // Only select if not already selected
+        if (!selectedKeys.has(key)) onToggleSelect(m);
+      }
+    }
+  }, [filtered, selectedKeys, onToggleSelect]);
+
   const columns = useMemo(() => {
     const cols = [];
+
+    // 0. SELECTION — checkbox column (non-hideable, non-sortable)
+    if (hasSelection) {
+      const allSelected = filtered.length > 0 && filtered.every((m) => {
+        const key = `${normalizeModel(m).provider}:${normalizeModel(m).key}`;
+        return selectedKeys.has(key);
+      });
+      const someSelected = !allSelected && filtered.some((m) => {
+        const key = `${normalizeModel(m).provider}:${normalizeModel(m).key}`;
+        return selectedKeys.has(key);
+      });
+
+      cols.push({
+        key: "_select",
+        label: (
+          <span
+            className={`${styles.selectWrap} ${allSelected ? styles.selectWrapActive : ""}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSelectAll();
+            }}
+          >
+            {allSelected
+              ? <CheckSquare2 size={14} className={styles.selectCheck} />
+              : someSelected
+                ? <CheckSquare2 size={14} className={styles.selectPartial} />
+                : <Square size={14} className={styles.selectBox} />
+            }
+          </span>
+        ),
+        description: allSelected ? "Deselect all visible models" : "Select all visible models",
+        align: "center",
+        sortable: false,
+        hideable: false,
+        render: (row) => {
+          const key = `${row._model.provider}:${row._model.key}`;
+          const isSelected = selectedKeys.has(key);
+          return (
+            <span
+              className={`${styles.selectWrap} ${isSelected ? styles.selectWrapActive : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSelect(row._raw);
+              }}
+            >
+              {isSelected
+                ? <CheckSquare2 size={14} className={styles.selectCheck} />
+                : <Square size={14} className={styles.selectBox} />
+              }
+            </span>
+          );
+        },
+      });
+    }
 
     // 1. FAVORITE — sortable star toggle
     cols.push({
@@ -890,6 +976,10 @@ function ModelsTableInner({
     hasInputPrice,
     hasOutputPrice,
     hasActions,
+    hasSelection,
+    selectedKeys,
+    onToggleSelect,
+    handleSelectAll,
     renderActions,
     arenaCols,
     loadingModelKey,

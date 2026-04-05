@@ -177,7 +177,7 @@ function ColumnFilter({ columns, hiddenColumns, onToggle, storageKey }) {
           >
             <div className={styles.columnFilterHeader}>Toggle Columns</div>
             <div className={styles.columnFilterList}>
-              {columns.map((col) => {
+              {columns.filter((col) => col.hideable !== false).map((col) => {
                 const visible = !hiddenColumns.has(col.key);
                 return (
                   <button

@@ -6,7 +6,7 @@ import {
   Plus,
   Play,
   Trash2,
-  Pencil,
+  Copy,
   Target,
   Clock,
   X,
@@ -36,9 +36,6 @@ const INITIAL_FORM = {
   systemPrompt: "",
   expectedValue: "",
   matchMode: "contains",
-  temperature: 0,
-  maxTokens: 256,
-  tags: "",
 };
 
 export default function BenchmarkPageComponent() {
@@ -48,7 +45,6 @@ export default function BenchmarkPageComponent() {
   const [benchmarks, setBenchmarks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
   const [saving, setSaving] = useState(false);
   const [activeBenchmarkIds, setActiveBenchmarkIds] = useState(new Set());
@@ -98,25 +94,20 @@ export default function BenchmarkPageComponent() {
     };
   }, []);
 
-  // ── Create / Edit ──────────────────────────────────────────
+  // ── Create / Clone ─────────────────────────────────────────
   const openCreate = useCallback(() => {
-    setEditingId(null);
     setForm(INITIAL_FORM);
     setShowModal(true);
   }, []);
 
-  const openEdit = useCallback((e, benchmark) => {
+  const openClone = useCallback((e, benchmark) => {
     e.stopPropagation();
-    setEditingId(benchmark.id);
     setForm({
-      name: benchmark.name,
+      name: `${benchmark.name} (copy)`,
       prompt: benchmark.prompt,
       systemPrompt: benchmark.systemPrompt || "",
       expectedValue: benchmark.expectedValue,
       matchMode: benchmark.matchMode || "contains",
-      temperature: benchmark.temperature ?? 0,
-      maxTokens: benchmark.maxTokens ?? 256,
-      tags: (benchmark.tags || []).join(", "),
     });
     setShowModal(true);
   }, []);
@@ -124,23 +115,8 @@ export default function BenchmarkPageComponent() {
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      const payload = {
-        ...form,
-        temperature: parseFloat(form.temperature) || 0,
-        maxTokens: parseInt(form.maxTokens, 10) || 256,
-        tags: form.tags
-          ? form.tags
-              .split(",")
-              .map((t) => t.trim())
-              .filter(Boolean)
-          : [],
-      };
-
-      if (editingId) {
-        await PrismService.updateBenchmark(editingId, payload);
-      } else {
-        await PrismService.createBenchmark(payload);
-      }
+      const payload = { ...form };
+      await PrismService.createBenchmark(payload);
 
       setShowModal(false);
       setForm(INITIAL_FORM);
@@ -150,7 +126,7 @@ export default function BenchmarkPageComponent() {
     } finally {
       setSaving(false);
     }
-  }, [form, editingId, loadBenchmarks]);
+  }, [form, loadBenchmarks]);
 
   // ── Delete ─────────────────────────────────────────────────
   const handleDelete = useCallback(
@@ -243,10 +219,10 @@ export default function BenchmarkPageComponent() {
                   <div className={styles.cardActions}>
                     <button
                       className={styles.cardActionBtn}
-                      onClick={(e) => openEdit(e, b)}
-                      title="Edit"
+                      onClick={(e) => openClone(e, b)}
+                      title="Clone"
                     >
-                      <Pencil size={14} />
+                      <Copy size={14} />
                     </button>
                     <button
                       className={`${styles.cardActionBtn} ${styles.danger}`}
@@ -322,14 +298,12 @@ export default function BenchmarkPageComponent() {
         )}
       </div>
 
-      {/* ── Create / Edit Modal ── */}
+      {/* ── Create / Clone Modal ── */}
       {showModal && (
         <ModalOverlayComponent onClose={() => setShowModal(false)} portal>
           <div className={styles.modalPanel}>
             <div className={styles.modalHeader}>
-              <span className={styles.modalTitle}>
-                {editingId ? "Edit Benchmark" : "New Benchmark"}
-              </span>
+              <span className={styles.modalTitle}>New Benchmark</span>
               <button
                 className={styles.cardActionBtn}
                 onClick={() => setShowModal(false)}
@@ -350,17 +324,6 @@ export default function BenchmarkPageComponent() {
                 />
               </FormGroupComponent>
 
-              <FormGroupComponent label="Prompt">
-                <textarea
-                  value={form.prompt}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, prompt: e.target.value }))
-                  }
-                  placeholder="What is the capital of France? Reply with just the city name."
-                  rows={3}
-                />
-              </FormGroupComponent>
-
               <FormGroupComponent label="System Prompt (optional)">
                 <textarea
                   value={form.systemPrompt}
@@ -369,6 +332,17 @@ export default function BenchmarkPageComponent() {
                   }
                   placeholder="You are a geography expert. Answer concisely."
                   rows={2}
+                />
+              </FormGroupComponent>
+
+              <FormGroupComponent label="User Prompt">
+                <textarea
+                  value={form.prompt}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, prompt: e.target.value }))
+                  }
+                  placeholder="What is the capital of France? Reply with just the city name."
+                  rows={3}
                 />
               </FormGroupComponent>
 
@@ -402,50 +376,6 @@ export default function BenchmarkPageComponent() {
                   </select>
                 </FormGroupComponent>
               </div>
-
-              <div className={styles.formRow}>
-                <FormGroupComponent label="Temperature">
-                  <input
-                    type="number"
-                    value={form.temperature}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        temperature: e.target.value,
-                      }))
-                    }
-                    min={0}
-                    max={2}
-                    step={0.1}
-                  />
-                </FormGroupComponent>
-
-                <FormGroupComponent label="Max Tokens">
-                  <input
-                    type="number"
-                    value={form.maxTokens}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        maxTokens: e.target.value,
-                      }))
-                    }
-                    min={1}
-                    max={4096}
-                  />
-                </FormGroupComponent>
-              </div>
-
-              <FormGroupComponent label="Tags (comma-separated)">
-                <input
-                  type="text"
-                  value={form.tags}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, tags: e.target.value }))
-                  }
-                  placeholder="geography, factual"
-                />
-              </FormGroupComponent>
             </div>
 
             <div className={styles.modalFooter}>
@@ -463,7 +393,7 @@ export default function BenchmarkPageComponent() {
                 loading={saving}
                 disabled={!form.name || !form.prompt || !form.expectedValue}
               >
-                {editingId ? "Save Changes" : "Create"}
+                Create
               </ButtonComponent>
             </div>
           </div>
