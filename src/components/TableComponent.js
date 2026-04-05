@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, Fragment } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronUp, Info, Columns3, Check } from "lucide-react";
+import { ChevronDown, ChevronUp, Columns3, Check } from "lucide-react";
 import tooltipStyles from "./TooltipComponent.module.css";
 import styles from "./TableComponent.module.css";
 
@@ -82,9 +82,6 @@ function HeaderCell({ col, thClasses, isSortable, handleSort, sort }) {
       onMouseLeave={onLeave}
     >
       {col.label}
-      {col.description && (
-        <Info size={10} className={styles.headerInfoIcon} />
-      )}
       {isSortable && sortIcon}
       {tipMounted &&
         createPortal(

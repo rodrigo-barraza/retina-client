@@ -14,12 +14,12 @@ export default function BenchmarkDetailPage() {
     <div className={styles.pageWrapper}>
       <NavigationSidebarComponent mode="user" isGenerating={isRunning} />
       <div className={styles.page}>
-        <BenchmarkDetailPageComponent benchmarkId={id} onRunningChange={setIsRunning} />
+        <BenchmarkDetailPageComponent
+          benchmarkId={id}
+          onRunningChange={setIsRunning}
+          sidebar={<BenchmarkSidebarComponent activeBenchmarkId={id} />}
+        />
       </div>
-      <aside className={styles.rightSidebar}>
-        <div className={styles.sidebarHeader}>Benchmarks</div>
-        <BenchmarkSidebarComponent activeBenchmarkId={id} />
-      </aside>
     </div>
   );
 }

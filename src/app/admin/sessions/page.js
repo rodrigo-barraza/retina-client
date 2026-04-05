@@ -20,7 +20,8 @@ import BadgeComponent from "../../../components/BadgeComponent";
 import CostBadgeComponent from "../../../components/CostBadgeComponent";
 import JsonViewerComponent from "../../../components/JsonViewerComponent";
 import HistoryItemComponent from "../../../components/HistoryItemComponent";
-import MessageList, { prepareDisplayMessages } from "../../../components/MessageList";
+import ChatPreviewComponent from "../../../components/ChatPreviewComponent";
+import { prepareDisplayMessages } from "../../../components/MessageList";
 import MediaCardComponent from "../../../components/MediaCardComponent";
 
 import styles from "./page.module.css";
@@ -643,9 +644,7 @@ export default function SessionsPage() {
               return (
                 <div className={styles.detailSection}>
                   <div className={styles.detailSectionTitle}>Chat Preview</div>
-                  <div className={styles.chatPreview}>
-                    <MessageList messages={displayMessages} readOnly />
-                  </div>
+                  <ChatPreviewComponent messages={displayMessages} readOnly />
                 </div>
               );
             })()}

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import TooltipComponent from "./TooltipComponent";
 import RainbowCanvasComponent from "./RainbowCanvasComponent";
+import SliderComponent from "./SliderComponent";
 import styles from "./AudioPlayerRecorderComponent.module.css";
 
 function formatTime(totalSeconds) {
@@ -336,16 +337,6 @@ export default function AudioPlayerRecorderComponent({
     setCurrentTime(ratio * duration);
   };
 
-  const handleVolumeChange = (e) => {
-    const val = parseFloat(e.target.value);
-    setVolume(val);
-    setMuted(val === 0);
-    if (audioRef.current) {
-      audioRef.current.volume = val;
-      audioRef.current.muted = val === 0;
-    }
-  };
-
   const toggleMute = () => {
     const next = !muted;
     setMuted(next);
@@ -508,16 +499,23 @@ export default function AudioPlayerRecorderComponent({
           {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
         </button>
 
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={muted ? 0 : volume}
-          onChange={handleVolumeChange}
-          className={styles.volumeSlider}
-          title="Volume"
-        />
+        <div className={styles.volumeSliderWrap}>
+          <SliderComponent
+            min={0}
+            max={1}
+            step={0.01}
+            value={muted ? 0 : volume}
+            onChange={(val) => {
+              setVolume(val);
+              setMuted(val === 0);
+              if (audioRef.current) {
+                audioRef.current.volume = val;
+                audioRef.current.muted = val === 0;
+              }
+            }}
+            compact
+          />
+        </div>
 
         <button
           type="button"

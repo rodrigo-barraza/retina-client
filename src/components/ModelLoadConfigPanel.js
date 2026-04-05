@@ -5,6 +5,7 @@ import { Cpu, HardDrive, Zap, Database, Loader2 } from "lucide-react";
 import ModalOverlayComponent from "./ModalOverlayComponent";
 import CloseButtonComponent from "./CloseButtonComponent";
 import ToggleSwitch from "./ToggleSwitch";
+import SliderComponent from "./SliderComponent";
 import ProviderLogo from "./ProviderLogos";
 import { formatFileSize, formatContextTokens } from "../utils/utilities";
 import styles from "./ModelLoadConfigPanel.module.css";
@@ -118,9 +119,7 @@ export default function ModelLoadConfigPanel({ model, onLoad, onClose, service, 
 
   const barMax = Math.max(maxMemory.totalGiB, memory.totalGiB, 1);
 
-  // Context slider fill percentage
-  const contextPct = maxContext > 0 ? ((contextLength - 2048) / (maxContext - 2048)) * 100 : 0;
-  const gpuPct = totalLayers > 0 ? (gpuLayers / totalLayers) * 100 : 0;
+
 
   const handleLoad = useCallback(() => {
     if (rememberSettings) {
@@ -274,21 +273,13 @@ export default function ModelLoadConfigPanel({ model, onLoad, onClose, service, 
             <span className={styles.sliderHint}>
               Model supports up to {maxContext.toLocaleString()} tokens
             </span>
-            <div className={styles.sliderTrackWrap}>
-              <div
-                className={styles.sliderFill}
-                style={{ width: `${Math.max(0, Math.min(contextPct, 100))}%` }}
-              />
-              <input
-                type="range"
-                className={styles.sliderTrack}
-                min={2048}
-                max={maxContext}
-                step={1024}
-                value={contextLength}
-                onChange={(e) => setContextLength(parseInt(e.target.value, 10))}
-              />
-            </div>
+            <SliderComponent
+              min={2048}
+              max={maxContext}
+              step={1024}
+              value={contextLength}
+              onChange={(v) => setContextLength(v)}
+            />
           </div>
 
           {/* GPU Offload Slider */}
@@ -313,21 +304,13 @@ export default function ModelLoadConfigPanel({ model, onLoad, onClose, service, 
             <span className={styles.sliderHint}>
               {gpuLayers} of {archParams.isKnown ? '' : '~'}{totalLayers} layers on GPU
             </span>
-            <div className={styles.sliderTrackWrap}>
-              <div
-                className={styles.sliderFill}
-                style={{ width: `${Math.max(0, Math.min(gpuPct, 100))}%` }}
-              />
-              <input
-                type="range"
-                className={styles.sliderTrack}
-                min={0}
-                max={totalLayers}
-                step={1}
-                value={gpuLayers}
-                onChange={(e) => setGpuLayers(parseInt(e.target.value, 10))}
-              />
-            </div>
+            <SliderComponent
+              min={0}
+              max={totalLayers}
+              step={1}
+              value={gpuLayers}
+              onChange={(v) => setGpuLayers(v)}
+            />
           </div>
 
           <div className={styles.divider} />

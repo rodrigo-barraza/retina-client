@@ -30,7 +30,8 @@ import BadgeComponent from "../../../components/BadgeComponent";
 import CostBadgeComponent from "../../../components/CostBadgeComponent";
 import ButtonComponent from "../../../components/ButtonComponent";
 import RequestDetailsComponent from "../../../components/RequestDetailsComponent";
-import MessageList, { prepareDisplayMessages } from "../../../components/MessageList";
+import ChatPreviewComponent from "../../../components/ChatPreviewComponent";
+import { prepareDisplayMessages } from "../../../components/MessageList";
 import MediaCardComponent from "../../../components/MediaCardComponent";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
 import useProjectFilter from "../../../hooks/useProjectFilter";
@@ -730,9 +731,7 @@ export default function RequestsPage() {
               return (
                 <div className={styles.detailSection}>
                   <div className={styles.detailSectionTitle}>Chat Preview</div>
-                  <div className={styles.chatPreview}>
-                    <MessageList messages={displayMessages} readOnly />
-                  </div>
+                  <ChatPreviewComponent messages={displayMessages} readOnly />
                 </div>
               );
             })()}

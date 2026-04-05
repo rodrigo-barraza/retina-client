@@ -26,6 +26,7 @@ import FormGroupComponent from "./FormGroupComponent";
 import ModalOverlayComponent from "./ModalOverlayComponent";
 import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent";
 import BenchmarksTableComponent from "./BenchmarksTableComponent";
+import ChatPreviewComponent from "./ChatPreviewComponent";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import { formatContextTokens, formatCost } from "../utils/utilities";
 import styles from "./BenchmarkPageComponent.module.css";
@@ -56,7 +57,7 @@ function flattenAllModels(config) {
   return [...seen.values()];
 }
 
-export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningChange }) {
+export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningChange, sidebar }) {
   const router = useRouter();
   // ── State ──────────────────────────────────────────────────
   const [benchmark, setBenchmark] = useState(null);
@@ -572,10 +573,18 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
           backHref="/benchmarks"
         />
         <div className={styles.content}>
-          <div className={styles.runProgress}>
-            <div className={styles.progressSpinner} />
-            <div className={styles.progressText}>Loading benchmark…</div>
+          <div className={styles.contentMain}>
+            <div className={styles.runProgress}>
+              <div className={styles.progressSpinner} />
+              <div className={styles.progressText}>Loading benchmark…</div>
+            </div>
           </div>
+          {sidebar && (
+            <aside className={styles.sidebarPanel}>
+              <div className={styles.sidebarHeader}>Benchmarks</div>
+              {sidebar}
+            </aside>
+          )}
         </div>
       </div>
     );
@@ -590,9 +599,17 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
           backHref="/benchmarks"
         />
         <div className={styles.content}>
-          <div className={styles.runProgress}>
-            <div className={styles.progressText}>Benchmark not found.</div>
+          <div className={styles.contentMain}>
+            <div className={styles.runProgress}>
+              <div className={styles.progressText}>Benchmark not found.</div>
+            </div>
           </div>
+          {sidebar && (
+            <aside className={styles.sidebarPanel}>
+              <div className={styles.sidebarHeader}>Benchmarks</div>
+              {sidebar}
+            </aside>
+          )}
         </div>
       </div>
     );
@@ -617,7 +634,8 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       </PageHeaderComponent>
 
       <div className={styles.content}>
-        <div className={styles.detailPanel}>
+        <div className={styles.contentMain}>
+          <div className={styles.detailPanel}>
           {/* ── Benchmark Info ── */}
           <div className={styles.detailHeader}>
             <div className={styles.detailTitle}>
@@ -638,9 +656,10 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
             </div>
           </div>
 
-          <div className={styles.detailPrompt}>
-            {benchmark.prompt}
-          </div>
+          <ChatPreviewComponent
+            systemPrompt={benchmark.systemPrompt}
+            userPrompt={benchmark.prompt}
+          />
 
           {/* ── Actions ── */}
           <div className={styles.detailActions}>
@@ -1061,6 +1080,14 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
             </div>
           )}
         </div>
+        </div>
+
+        {sidebar && (
+          <aside className={styles.sidebarPanel}>
+            <div className={styles.sidebarHeader}>Benchmarks</div>
+            {sidebar}
+          </aside>
+        )}
       </div>
 
       {/* ── Clone Modal ── */}

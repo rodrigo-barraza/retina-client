@@ -229,33 +229,9 @@
 }
 
 /* ── Volume slider ── */
-.volumeSlider {
-  width: 48px;
-  height: 4px;
-  appearance: none;
-  background: var(--border-color);
-  border-radius: 2px;
-  outline: none;
-  cursor: pointer;
+.volumeSliderWrap {
+  width: 52px;
   flex-shrink: 0;
-
-  &::-webkit-slider-thumb {
-    appearance: none;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--text-secondary);
-    cursor: pointer;
-  }
-
-  &::-moz-range-thumb {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--text-secondary);
-    border: none;
-    cursor: pointer;
-  }
 }
 
 /* ── Faded elements for recording state (mirror player icons) ── */

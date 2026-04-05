@@ -38,7 +38,7 @@ const INITIAL_FORM = {
   matchMode: "contains",
 };
 
-export default function BenchmarkPageComponent() {
+export default function BenchmarkPageComponent({ sidebar }) {
   const router = useRouter();
 
   // ── State ──────────────────────────────────────────────────
@@ -169,132 +169,141 @@ export default function BenchmarkPageComponent() {
       </PageHeaderComponent>
 
       <div className={styles.content}>
-        {totalCost > 0 && (
-          <div className={styles.totalCostBar}>
-            <Coins size={14} className={styles.costIcon} />
-            <span className={styles.totalCostLabel}>Total Cost · All Runs</span>
-            <span className={styles.totalCostValue}>{formatCost(totalCost)}</span>
-          </div>
-        )}
-        {loading ? (
-          <div className={styles.runProgress}>
-            <div className={styles.progressSpinner} />
-            <div className={styles.progressText}>Loading benchmarks…</div>
-          </div>
-        ) : benchmarks.length === 0 ? (
-          <EmptyStateComponent
-            icon={<Target size={36} />}
-            title="No Benchmarks Yet"
-            subtitle="Create your first benchmark test to evaluate LLM accuracy across models."
-          >
-            <ButtonComponent
-              variant="primary"
-              size="sm"
-              icon={Plus}
-              onClick={openCreate}
+        <div className={styles.contentMain}>
+          {totalCost > 0 && (
+            <div className={styles.totalCostBar}>
+              <Coins size={14} className={styles.costIcon} />
+              <span className={styles.totalCostLabel}>Total Cost · All Runs</span>
+              <span className={styles.totalCostValue}>{formatCost(totalCost)}</span>
+            </div>
+          )}
+          {loading ? (
+            <div className={styles.runProgress}>
+              <div className={styles.progressSpinner} />
+              <div className={styles.progressText}>Loading benchmarks…</div>
+            </div>
+          ) : benchmarks.length === 0 ? (
+            <EmptyStateComponent
+              icon={<Target size={36} />}
+              title="No Benchmarks Yet"
+              subtitle="Create your first benchmark test to evaluate LLM accuracy across models."
             >
-              Create Benchmark
-            </ButtonComponent>
-          </EmptyStateComponent>
-        ) : (
-          <div className={styles.benchmarkGrid}>
-            {benchmarks.map((b) => {
-              const isRunning = activeBenchmarkIds.has(b.id);
-              return (
-              <div
-                key={b.id}
-                className={`${styles.benchmarkCard} ${isRunning ? styles.benchmarkCardRunning : ""}`}
-                onClick={() => navigateToBenchmark(b)}
+              <ButtonComponent
+                variant="primary"
+                size="sm"
+                icon={Plus}
+                onClick={openCreate}
               >
-                <div className={styles.cardHeader}>
-                  <div className={styles.cardTitle}>
-                    {isRunning && (
-                      <span className={styles.runningIndicator}>
-                        <Loader2 size={12} className={styles.spinIcon} />
-                        Running
-                      </span>
-                    )}
-                    {b.name}
-                  </div>
-                  <div className={styles.cardActions}>
-                    <button
-                      className={styles.cardActionBtn}
-                      onClick={(e) => openClone(e, b)}
-                      title="Clone"
-                    >
-                      <Copy size={14} />
-                    </button>
-                    <button
-                      className={`${styles.cardActionBtn} ${styles.danger}`}
-                      onClick={(e) => handleDelete(e, b.id)}
-                      title="Delete"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className={styles.cardMeta}>
-                  <div className={styles.promptPreview}>{b.prompt}</div>
-                  <div className={styles.metaRow}>
-                    <span className={styles.metaLabel}>Expect</span>
-                    <span className={styles.expectedValue}>
-                      {b.expectedValue}
-                    </span>
-                    <BadgeComponent variant="accent" mini>
-                      {b.matchMode || "contains"}
-                    </BadgeComponent>
-                  </div>
-                </div>
-
-                {b.tags?.length > 0 && (
-                  <div className={styles.tagsRow}>
-                    {b.tags.map((tag) => (
-                      <span key={tag} className={styles.tag}>
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className={styles.cardFooter}>
-                  {b.latestRun ? (
-                    <div className={styles.runSummary}>
-                      <BadgeComponent variant="accent" mini>Latest</BadgeComponent>
-                      <span className={styles.passCount}>
-                        {b.latestRun.summary.passed} ✓
-                      </span>
-                      <span className={styles.failCount}>
-                        {b.latestRun.summary.failed + (b.latestRun.summary.errored || 0)} ✗
-                      </span>
-                      {b.latestRun.summary.totalCost > 0 && (
-                        <span className={styles.runCost}>
-                          {formatCost(b.latestRun.summary.totalCost)}
+                Create Benchmark
+              </ButtonComponent>
+            </EmptyStateComponent>
+          ) : (
+            <div className={styles.benchmarkGrid}>
+              {benchmarks.map((b) => {
+                const isRunning = activeBenchmarkIds.has(b.id);
+                return (
+                <div
+                  key={b.id}
+                  className={`${styles.benchmarkCard} ${isRunning ? styles.benchmarkCardRunning : ""}`}
+                  onClick={() => navigateToBenchmark(b)}
+                >
+                  <div className={styles.cardHeader}>
+                    <div className={styles.cardTitle}>
+                      {isRunning && (
+                        <span className={styles.runningIndicator}>
+                          <Loader2 size={12} className={styles.spinIcon} />
+                          Running
                         </span>
                       )}
-                      {b.cumulativeCost > 0 && (
-                        <>
-                          <span className={styles.footerDivider} />
-                          <span className={styles.cumulativeCost}>
-                            Σ {formatCost(b.cumulativeCost)}
-                          </span>
-                        </>
-                      )}
+                      {b.name}
                     </div>
-                  ) : (
-                    <div className={styles.runSummary}>
-                      <Clock size={12} />
-                      <span className={styles.noRuns}>No runs yet</span>
+                    <div className={styles.cardActions}>
+                      <button
+                        className={styles.cardActionBtn}
+                        onClick={(e) => openClone(e, b)}
+                        title="Clone"
+                      >
+                        <Copy size={14} />
+                      </button>
+                      <button
+                        className={`${styles.cardActionBtn} ${styles.danger}`}
+                        onClick={(e) => handleDelete(e, b.id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={styles.cardMeta}>
+                    <div className={styles.promptPreview}>{b.prompt}</div>
+                    <div className={styles.metaRow}>
+                      <span className={styles.metaLabel}>Expect</span>
+                      <span className={styles.expectedValue}>
+                        {b.expectedValue}
+                      </span>
+                      <BadgeComponent variant="accent" mini>
+                        {b.matchMode || "contains"}
+                      </BadgeComponent>
+                    </div>
+                  </div>
+
+                  {b.tags?.length > 0 && (
+                    <div className={styles.tagsRow}>
+                      {b.tags.map((tag) => (
+                        <span key={tag} className={styles.tag}>
+                          {tag}
+                        </span>
+                      ))}
                     </div>
                   )}
-                  <ButtonComponent variant="ghost" size="xs" icon={Play}>
-                    Run
-                  </ButtonComponent>
+
+                  <div className={styles.cardFooter}>
+                    {b.latestRun ? (
+                      <div className={styles.runSummary}>
+                        <BadgeComponent variant="accent" mini>Latest</BadgeComponent>
+                        <span className={styles.passCount}>
+                          {b.latestRun.summary.passed} ✓
+                        </span>
+                        <span className={styles.failCount}>
+                          {b.latestRun.summary.failed + (b.latestRun.summary.errored || 0)} ✗
+                        </span>
+                        {b.latestRun.summary.totalCost > 0 && (
+                          <span className={styles.runCost}>
+                            {formatCost(b.latestRun.summary.totalCost)}
+                          </span>
+                        )}
+                        {b.cumulativeCost > 0 && (
+                          <>
+                            <span className={styles.footerDivider} />
+                            <span className={styles.cumulativeCost}>
+                              Σ {formatCost(b.cumulativeCost)}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className={styles.runSummary}>
+                        <Clock size={12} />
+                        <span className={styles.noRuns}>No runs yet</span>
+                      </div>
+                    )}
+                    <ButtonComponent variant="ghost" size="xs" icon={Play}>
+                      Run
+                    </ButtonComponent>
+                  </div>
                 </div>
-              </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {sidebar && (
+          <aside className={styles.sidebarPanel}>
+            <div className={styles.sidebarHeader}>Benchmarks</div>
+            {sidebar}
+          </aside>
         )}
       </div>
 

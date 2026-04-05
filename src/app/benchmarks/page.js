@@ -10,12 +10,10 @@ export default function BenchmarksPage() {
     <div className={styles.pageWrapper}>
       <NavigationSidebarComponent mode="user" />
       <div className={styles.page}>
-        <BenchmarkPageComponent />
+        <BenchmarkPageComponent
+          sidebar={<BenchmarkSidebarComponent />}
+        />
       </div>
-      <aside className={styles.rightSidebar}>
-        <div className={styles.sidebarHeader}>Benchmarks</div>
-        <BenchmarkSidebarComponent />
-      </aside>
     </div>
   );
 }
