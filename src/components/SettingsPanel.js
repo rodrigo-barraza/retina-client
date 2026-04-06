@@ -403,6 +403,27 @@ export default function SettingsPanel({
               </div>
             );
           })()}
+        {(selectedModelDef?.contextLength || selectedModelDef?.maxOutputTokens) && (
+          <div className={styles.modalities}>
+            <div className={styles.modalitiesHeader}>Token Limits</div>
+            {selectedModelDef.contextLength && (
+              <div className={styles.modalityRow}>
+                <span className={styles.modalityName}>Context Window</span>
+                <span className={`${styles.modalityStatus} ${styles.modalityActive}`}>
+                  {selectedModelDef.contextLength.toLocaleString()} tokens
+                </span>
+              </div>
+            )}
+            {selectedModelDef.maxOutputTokens && (
+              <div className={styles.modalityRow}>
+                <span className={styles.modalityName}>Max Output</span>
+                <span className={`${styles.modalityStatus} ${styles.modalityActive}`}>
+                  {selectedModelDef.maxOutputTokens.toLocaleString()} tokens
+                </span>
+              </div>
+            )}
+          </div>
+        )}
         {selectedModelDef?.pricing &&
           (() => {
             const PRICING_LABELS = {

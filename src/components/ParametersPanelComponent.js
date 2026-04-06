@@ -80,6 +80,10 @@ export default function ParametersPanelComponent({
   const handleVerbosityChange = (val) => onChange({ verbosity: val });
   const handleReasoningSummaryChange = (val) =>
     onChange({ reasoningSummary: val });
+  const handleResponseFormatChange = (val) =>
+    onChange({ responseFormat: val });
+  const handleServiceTierChange = (val) =>
+    onChange({ serviceTier: val });
 
   if (isSpecialModel || settings.provider === "ollama") {
     return (
@@ -105,6 +109,7 @@ export default function ParametersPanelComponent({
           isReasoning &&
           settings.thinkingEnabled &&
           settings.provider === "anthropic";
+        const maxTemp = settings.provider === "anthropic" ? 1 : 2;
         return (
           <div className={styles.formGroup}>
             <label>
@@ -114,7 +119,7 @@ export default function ParametersPanelComponent({
             {!readOnly && (
               <SliderComponent
                 min={0}
-                max={2}
+                max={maxTemp}
                 step={0.1}
                 value={thinkingLocked ? 1 : settings.temperature}
                 onChange={handleTempChange}
@@ -125,18 +130,25 @@ export default function ParametersPanelComponent({
         );
       })()}
 
-      <div className={styles.formGroup}>
-        <label>Max Tokens ({settings.maxTokens})</label>
-        {!readOnly && (
-          <SliderComponent
-            min={256}
-            max={32000}
-            step={256}
-            value={settings.maxTokens}
-            onChange={handleMaxTokensChange}
-          />
-        )}
-      </div>
+      {(() => {
+        const maxOutput = selectedModelDef?.maxOutputTokens || 32000;
+        // Round step to nearest power based on range — keep slider snappy
+        const step = maxOutput > 32000 ? 1024 : 256;
+        return (
+          <div className={styles.formGroup}>
+            <label>Max Tokens ({settings.maxTokens})</label>
+            {!readOnly && (
+              <SliderComponent
+                min={256}
+                max={maxOutput}
+                step={step}
+                value={Math.min(settings.maxTokens, maxOutput)}
+                onChange={handleMaxTokensChange}
+              />
+            )}
+          </div>
+        );
+      })()}
 
       {(isReasoning && selectedModelDef?.responsesAPI) ||
       (readOnly && settings.reasoningEffort) ? (
@@ -317,7 +329,7 @@ export default function ParametersPanelComponent({
             </div>
           )}
 
-          {["llama-cpp", "lm-studio", "vllm"].includes(settings.provider) && (
+          {["openai", "google", "llama-cpp", "lm-studio", "vllm"].includes(settings.provider) && (
             <div className={styles.formGroup}>
               <label>Seed</label>
               <input
@@ -356,6 +368,42 @@ export default function ParametersPanelComponent({
                 />
               </div>
             </>
+          )}
+
+          {/* Response Format — JSON mode for OpenAI + Google */}
+          {selectedModelDef?.jsonMode && (
+            <div className={styles.formGroup}>
+              <label>Response Format</label>
+              <SelectDropdown
+                value={settings.responseFormat || ""}
+                options={[
+                  { value: "", label: "Default (Text)" },
+                  { value: "json_object", label: "JSON Object" },
+                ]}
+                onChange={handleResponseFormatChange}
+              />
+            </div>
+          )}
+
+          {/* Service Tier — request priority routing */}
+          {["openai", "anthropic"].includes(settings.provider) && (
+            <div className={styles.formGroup}>
+              <label>Service Tier</label>
+              <SelectDropdown
+                value={settings.serviceTier || ""}
+                options={[
+                  { value: "", label: "Default" },
+                  { value: "auto", label: "Auto" },
+                  ...(settings.provider === "openai" ? [
+                    { value: "default", label: "Standard" },
+                    { value: "priority", label: "Priority" },
+                  ] : [
+                    { value: "standard_only", label: "Standard Only" },
+                  ]),
+                ]}
+                onChange={handleServiceTierChange}
+              />
+            </div>
           )}
         </>
       )}
