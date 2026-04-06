@@ -38,6 +38,28 @@ function buildConfigLookup(config) {
   return map;
 }
 
+/**
+ * Derive a clean display name from a raw model path/key when no
+ * display_name exists in the config. Handles common patterns:
+ *   "qwen/qwen3.5-9b"                      → "Qwen3.5 9B"
+ *   "deepseek-r1-distill-qwen-32b@q4_1"    → "DeepSeek R1 Distill Qwen 32B"
+ *   "mistralai/devstral-small-2507"         → "Devstral Small 2507"
+ */
+function humanizeModelPath(raw) {
+  if (!raw) return raw;
+  // Strip publisher/org prefix: "qwen/qwen3.5-9b" → "qwen3.5-9b"
+  let name = raw.includes("/") ? raw.split("/").pop() : raw;
+  // Strip @quant suffix: "qwen3-32b@q8_0" → "qwen3-32b"
+  name = name.replace(/@[\w.]+$/, "");
+  // Replace hyphens/underscores with spaces
+  name = name.replace(/[-_]/g, " ");
+  // Capitalize each word, preserving existing uppercase and numbers
+  name = name.replace(/\b([a-z])/g, (_, c) => c.toUpperCase());
+  // Uppercase common size suffixes: "32b" → "32B", "0.6b" → "0.6B"
+  name = name.replace(/(\d+(?:\.\d+)?)\s*b\b/gi, (_, n) => `${n}B`);
+  return name.trim();
+}
+
 export default function BenchmarkDashboardComponent({ navSidebar, rightSidebar }) {
   const router = useRouter();
   const [stats, setStats] = useState(null);
@@ -127,8 +149,8 @@ export default function BenchmarkDashboardComponent({ navSidebar, rightSidebar }
         name: s.model,
         key: s.model,
         provider: s.provider,
-        // Use config display_name if available, otherwise fall back to stat label
-        display_name: configModel?.display_name || s.label,
+        // Use config display_name if available, otherwise humanize the raw path
+        display_name: configModel?.display_name || humanizeModelPath(s.label || s.model),
         // Benchmark-specific data (read by benchmark columns via _raw)
         _benchTotal: s.total,
         _benchPassed: s.passed,

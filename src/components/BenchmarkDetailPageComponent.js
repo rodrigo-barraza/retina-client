@@ -347,7 +347,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
     setLatestRun(null);
 
     if (selectedModels.length === 0) return;
-    const models = selectedModels.map((m) => ({ provider: m.provider, model: m.name }));
+    const models = selectedModels.map((m) => ({ provider: m.provider, model: m.name, display_name: m.display_name || m.label || m.name }));
 
     abortRef.current = PrismService.streamBenchmarkRun(benchmarkId, models, {
       onRunInfo: (data) => {

@@ -1088,15 +1088,16 @@ function ModelsTableInner({
       });
     }
 
-    for (const arenaCol of arenaCols) {
-      cols.push({
-        key: arenaCol.key,
-        label: arenaCol.label,
-        description: `LMArena ${arenaCol.label} benchmark ELO score`,
-        align: "right",
-        ...benchmarkHide,
-        render: (row) => row._raw.arena?.[arenaCol.dataKey] ?? "—",
-      });
+    if (!isBenchmark) {
+      for (const arenaCol of arenaCols) {
+        cols.push({
+          key: arenaCol.key,
+          label: arenaCol.label,
+          description: `LMArena ${arenaCol.label} benchmark ELO score`,
+          align: "right",
+          render: (row) => row._raw.arena?.[arenaCol.dataKey] ?? "—",
+        });
+      }
     }
 
     return cols;
