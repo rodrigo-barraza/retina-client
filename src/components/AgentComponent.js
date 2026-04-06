@@ -1,0 +1,930 @@
+"use client";
+
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { Bot, Paperclip, X, Code2 } from "lucide-react";
+import PrismService from "../services/PrismService.js";
+import ThreePanelLayout from "./ThreePanelLayout.js";
+import NavigationSidebarComponent from "./NavigationSidebarComponent.js";
+import HistoryPanel from "./HistoryPanel.js";
+import SettingsPanel from "./SettingsPanel.js";
+import CustomToolsPanel from "./CustomToolsPanel.js";
+import MessageList, { prepareDisplayMessages } from "./MessageList.js";
+import ImagePreviewComponent from "./ImagePreviewComponent.js";
+import TabBarComponent from "./TabBarComponent.js";
+import EmptyStateComponent from "./EmptyStateComponent.js";
+import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent.js";
+
+import {
+  buildToolSchemas,
+} from "../utils/FunctionCallingUtilities.js";
+import { PROJECT_AGENT, SETTINGS_DEFAULTS } from "../constants.js";
+import chatStyles from "./ChatArea.module.css";
+import styles from "./AgentComponent.module.css";
+import ChatInputButton from "./ChatInputButton.js";
+import useToolToggles from "../hooks/useToolToggles.js";
+
+// ── Agentic tool names — these are the 9 tools we built in tools-api
+const AGENTIC_TOOL_NAMES = new Set([
+  "read_file",
+  "write_file",
+  "str_replace_file",
+  "patch_file",
+  "list_directory",
+  "grep_search",
+  "glob_files",
+  "fetch_url",
+  "web_search",
+]);
+
+// ── Coding-focused quick prompts
+const AGENT_PROMPTS = [
+  "Read the README.md and summarize the project structure",
+  "Search for all TODO comments across the codebase",
+  "List the directory tree recursively",
+  "Find all files that import PrismService",
+  "Fetch the Node.js 22 changelog from the docs",
+  "Find and fix any unused imports in the services/ folder",
+  "Create a new utility function for date formatting",
+  "Grep for console.log statements and suggest cleanups",
+];
+
+// Tools that are always on and non-toggleable in the agent view
+const AGENT_LOCKED_TOOLS = new Set(["Function Calling"]);
+
+// ── Default system prompt for coding agent
+const AGENT_SYSTEM_PROMPT = `You are a highly capable coding agent with access to file system tools (read, write, edit, search) and web tools (fetch URLs, search).
+
+## Available Capabilities
+- **read_file**: Read files with optional line ranges
+- **write_file**: Create or overwrite files
+- **str_replace_file**: Make targeted edits to existing files (preferred for modifications)
+- **patch_file**: Apply unified diffs for multi-hunk edits
+- **list_directory**: Explore directory structure
+- **grep_search**: Search for patterns across files
+- **glob_files**: Find files by name pattern
+- **fetch_url**: Fetch web pages and documentation
+- **web_search**: Search the web for information
+
+## Coding Guidelines
+1. Always read relevant files before making edits to understand context
+2. Prefer str_replace_file over write_file for editing existing code — it's safer and preserves unchanged content
+3. After making changes, verify them by reading the modified section
+4. Keep your explanations concise and technical
+5. When searching, use includes filters to narrow results (e.g. ["*.js", "*.ts"])
+6. Current date/time: {{CURRENT_DATE_TIME}}
+
+Your workspace root is: /home/rodrigo/development/sun`;
+
+export default function AgentComponent() {
+  // ── State ────────────────────────────────────────────────────
+  const [messages, setMessages] = useState([]);
+  const [inputValue, setInputValue] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [toolActivity, setToolActivity] = useState([]);
+  const [streamingOutputs, setStreamingOutputs] = useState(new Map());
+  const [conversationId, setConversationId] = useState(() =>
+    crypto.randomUUID(),
+  );
+  const [conversations, setConversations] = useState([]);
+  const [activeId, setActiveId] = useState(null);
+  const [config, setConfig] = useState(null);
+  const [title, setTitle] = useState("Agent");
+  const [leftTab, setLeftTab] = useState("settings"); // "settings" | "tools"
+  const [customTools, setCustomTools] = useState([]);
+  const [builtInTools, setBuiltInTools] = useState([]);
+  const { disabledBuiltIns, handleToggleBuiltIn, handleToggleAllBuiltIn } =
+    useToolToggles(builtInTools);
+  const [settings, setSettings] = useState({
+    ...SETTINGS_DEFAULTS,
+    maxTokens: 16384,
+    functionCallingEnabled: true,
+    systemPrompt: AGENT_SYSTEM_PROMPT,
+  });
+
+  const [favoriteKeys, setFavoriteKeys] = useState([]);
+
+  const [pendingImages, setPendingImages] = useState([]);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
+
+  const textareaRef = useRef(null);
+  const endRef = useRef(null);
+  const abortRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const handleStop = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current();
+      abortRef.current = null;
+    }
+    setIsGenerating(false);
+  }, []);
+
+  // ── Filtered config: only function-calling models ────────────
+  const filteredConfig = useMemo(() => {
+    if (!config) return null;
+    const textModelsMap = config.textToText?.models || {};
+    const filteredTextModels = {};
+
+    for (const [provider, models] of Object.entries(textModelsMap)) {
+      const fcModels = models.filter((m) =>
+        m.tools?.includes("Function Calling"),
+      );
+      if (fcModels.length > 0) filteredTextModels[provider] = fcModels;
+    }
+
+    const filteredProviderList = (config.providerList || []).filter(
+      (p) => filteredTextModels[p],
+    );
+
+    return {
+      ...config,
+      providerList: filteredProviderList,
+      textToText: {
+        ...config.textToText,
+        models: filteredTextModels,
+      },
+      textToImage: { models: {} },
+      textToSpeech: { models: {}, voices: {}, defaultVoices: {} },
+      audioToText: { models: {} },
+    };
+  }, [config]);
+
+  // ── Model capability detection ──────────────────────────────
+  const supportsImageInput = useMemo(() => {
+    if (!filteredConfig) return false;
+    const models = filteredConfig.textToText?.models?.[settings.provider] || [];
+    const modelDef = models.find((m) => m.name === settings.model);
+    return modelDef?.inputTypes?.includes("image") ?? false;
+  }, [filteredConfig, settings.provider, settings.model]);
+
+  // ── Effects ──────────────────────────────────────────────────
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, toolActivity]);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }
+  }, [inputValue]);
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
+
+  // Load favorite models
+  useEffect(() => {
+    PrismService.getFavorites("model")
+      .then((favs) => setFavoriteKeys(favs.map((f) => f.key)))
+      .catch(() => {});
+  }, []);
+
+  // Fetch Prism config and auto-select first FC-capable provider/model
+  useEffect(() => {
+    PrismService.getConfigWithLocalModels({
+      onConfig: (cfg) => {
+        setConfig(cfg);
+
+        // Auto-select first FC-capable provider and model
+        const textModels = cfg.textToText?.models || {};
+        for (const provider of cfg.providerList || []) {
+          const models = textModels[provider] || [];
+          const fcModel = models.find((m) =>
+            m.tools?.includes("Function Calling"),
+          );
+          if (fcModel) {
+            setSettings((s) => ({
+              ...s,
+              provider,
+              model: fcModel.name,
+              temperature: fcModel.defaultTemperature ?? 1.0,
+            }));
+            break;
+          }
+        }
+      },
+      onLocalMerge: (merged) => setConfig(merged),
+    }).catch(console.error);
+  }, []);
+
+  // Load conversation history
+  const loadConversations = useCallback(async () => {
+    try {
+      const convs =
+        await PrismService.getConversationsByProject(PROJECT_AGENT);
+      setConversations(convs);
+    } catch (err) {
+      console.error("Failed to load conversations:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  // Load custom tools
+  const loadCustomTools = useCallback(async () => {
+    try {
+      const tools = await PrismService.getCustomTools(PROJECT_AGENT);
+      setCustomTools(tools);
+    } catch (err) {
+      console.error("Failed to load custom tools:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCustomTools();
+  }, [loadCustomTools]);
+
+  // Fetch built-in tools — refresh Prism cache first, then filter to agentic tools
+  useEffect(() => {
+    async function loadAgenticTools() {
+      // Trigger Prism to re-fetch from tools-api (picks up newly added tools)
+      try {
+        await PrismService.refreshBuiltInToolSchemas();
+      } catch {
+        // Non-fatal — Prism may still have a stale cache
+      }
+
+      const allTools = await PrismService.getBuiltInToolSchemas();
+      const agenticTools = allTools.filter((t) => AGENTIC_TOOL_NAMES.has(t.name));
+      setBuiltInTools(agenticTools);
+    }
+    loadAgenticTools().catch(console.error);
+  }, []);
+
+  // Build final tool schemas
+  const allToolSchemas = useMemo(
+    () => buildToolSchemas(builtInTools, disabledBuiltIns, customTools),
+    [customTools, builtInTools, disabledBuiltIns],
+  );
+
+  // Pick random prompt suggestions
+  const [randomPrompts, setRandomPrompts] = useState([]);
+
+  useEffect(() => {
+    const pool = [...AGENT_PROMPTS];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    setRandomPrompts(pool.slice(0, 5));
+  }, [conversationId]);
+
+  // ── Image handlers ──────────────────────────────────────────
+  const handleImageSelect = useCallback((e) => {
+    const files = Array.from(e.target.files);
+    for (const file of files) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setPendingImages((prev) => [...prev, ev.target.result]);
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = "";
+  }, []);
+
+  const removeImage = useCallback((index) => {
+    setPendingImages((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleDragEnter = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current++;
+      if (supportsImageInput && e.dataTransfer?.items?.length > 0) {
+        setIsDragging(true);
+      }
+    },
+    [supportsImageInput],
+  );
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+      dragCounter.current = 0;
+      if (!supportsImageInput) return;
+      const files = Array.from(e.dataTransfer?.files || []);
+      const images = files.filter((f) => f.type.startsWith("image/"));
+      for (const file of images) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setPendingImages((prev) => [...prev, ev.target.result]);
+        };
+        reader.readAsDataURL(file);
+      }
+    },
+    [supportsImageInput],
+  );
+
+  const handlePaste = useCallback(
+    (e) => {
+      if (!supportsImageInput) return;
+      const items = Array.from(e.clipboardData?.items || []);
+      const files = items
+        .filter(
+          (item) => item.kind === "file" && item.type.startsWith("image/"),
+        )
+        .map((item) => item.getAsFile())
+        .filter(Boolean);
+      if (files.length === 0) return;
+      e.preventDefault();
+      for (const file of files) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setPendingImages((prev) => [...prev, ev.target.result]);
+        };
+        reader.readAsDataURL(file);
+      }
+    },
+    [supportsImageInput],
+  );
+
+  // ── Orchestration loop ───────────────────────────────────────
+  const runOrchestrationLoop = useCallback(
+    async (conversationMessages, resolvedTitle) => {
+      const currentMessages = [...conversationMessages];
+
+      setMessages((prev) =>
+        prev.filter((m) => !(m.role === "assistant" && !m.content?.trim())),
+      );
+
+      await new Promise((resolve, reject) => {
+        const systemPromptText = settings.systemPrompt.replace("{{CURRENT_DATE_TIME}}", new Date().toLocaleString());
+        const payload = {
+          provider: settings.provider,
+          model: settings.model,
+          messages: [
+            { role: "system", content: systemPromptText },
+            ...currentMessages,
+          ],
+          functionCallingEnabled: true,
+          enabledTools: allToolSchemas.map(t => t.name),
+          maxTokens: settings.maxTokens,
+          temperature: settings.temperature,
+          thinkingEnabled: settings.thinkingEnabled ?? false,
+          // Local models need enough context for MCP tool schemas + conversation
+          minContextLength: 50000,
+          project: PROJECT_AGENT,
+          conversationId,
+          conversationMeta: {
+            title: resolvedTitle,
+            systemPrompt: systemPromptText,
+          },
+        };
+
+        let streamedText = "";
+        let streamedThinking = "";
+
+        abortRef.current = PrismService.streamText(payload, {
+          onChunk: (content) => {
+            streamedText += content;
+            // Strip tool call XML markup that some models (Gemma 4) emit in text.
+            // Handle both complete tag pairs and incomplete/streaming tags (no closing tag yet).
+            const cleanText = streamedText
+              .replace(/<\|?tool_call\|?>[\s\S]*?<\/?\|?tool_call\|?>/gi, "")
+              .replace(/<\|?tool_response\|?>[\s\S]*?<\/?\|?tool_response\|?>/gi, "")
+              .replace(/<\|?result\|?>[\s\S]*?<\/?\|?result\|?>/gi, "")
+              .replace(/\[END_TOOL_REQUEST\]/gi, "")
+              // Incomplete tags at end of stream (closing tag hasn't arrived yet)
+              .replace(/<\|?tool_call\|?>[\s\S]*$/gi, "")
+              .replace(/<\|?tool_response\|?>[\s\S]*$/gi, "")
+              .replace(/<\|?result\|?>[\s\S]*$/gi, "")
+              .trim();
+            setMessages((prev) => {
+              const updated = [...prev];
+              const lastMsg = updated[updated.length - 1];
+              if (lastMsg?.role === "assistant") {
+                lastMsg.content = cleanText;
+              } else {
+                updated.push({ role: "assistant", content: cleanText });
+              }
+              return updated;
+            });
+          },
+          onThinking: (content) => {
+            streamedThinking += content;
+            setMessages((prev) => {
+              const updated = [...prev];
+              const lastMsg = updated[updated.length - 1];
+              if (lastMsg?.role === "assistant") {
+                lastMsg.thinking = streamedThinking;
+              } else {
+                updated.push({
+                  role: "assistant",
+                  content: "",
+                  thinking: streamedThinking,
+                });
+              }
+              return updated;
+            });
+          },
+          onToolExecution: (data) => {
+            const tc = data.tool;
+            setToolActivity((prev) => {
+              let updated = [];
+              if (data.status === "calling") {
+                updated = [
+                  ...prev,
+                  {
+                    id: tc.id || `tc-${Date.now()}-${Math.random()}`,
+                    name: tc.name,
+                    args: tc.args,
+                    status: "calling",
+                    timestamp: Date.now(),
+                  },
+                ];
+              } else {
+                updated = prev.map((activity) => {
+                  if (
+                    (tc.id && activity.id === tc.id) ||
+                    (!tc.id && activity.name === tc.name && activity.status === "calling")
+                  ) {
+                    return { ...activity, status: data.status, result: tc.result };
+                  }
+                  return activity;
+                });
+              }
+              setMessages((msgPrev) => {
+                const arr = [...msgPrev];
+                const last = arr[arr.length - 1];
+                if (last?.role === "assistant") {
+                  arr[arr.length - 1] = { ...last, toolCalls: updated };
+                } else {
+                  // Tool events can arrive before any text chunks — create placeholder
+                  arr.push({ role: "assistant", content: "", toolCalls: updated });
+                }
+                return arr;
+              });
+              return updated;
+            });
+          },
+          // LM Studio native MCP tool calls (toolCall events)
+          onToolCall: (tc) => {
+            setToolActivity((prev) => {
+              let updated;
+              if (tc.status === "calling") {
+                updated = [
+                  ...prev,
+                  {
+                    id: tc.id || `tc-${Date.now()}-${Math.random()}`,
+                    name: tc.name,
+                    args: tc.args,
+                    status: "calling",
+                    timestamp: Date.now(),
+                  },
+                ];
+              } else {
+                // done or error — update existing entry
+                updated = prev.map((activity) => {
+                  if (
+                    (tc.id && activity.id === tc.id) ||
+                    (!tc.id && activity.name === tc.name && activity.status === "calling")
+                  ) {
+                    return { ...activity, status: tc.status, result: tc.result };
+                  }
+                  return activity;
+                });
+              }
+              setMessages((msgPrev) => {
+                const arr = [...msgPrev];
+                const last = arr[arr.length - 1];
+                if (last?.role === "assistant") {
+                  arr[arr.length - 1] = { ...last, toolCalls: updated };
+                } else {
+                  arr.push({ role: "assistant", content: "", toolCalls: updated });
+                }
+                return arr;
+              });
+              return updated;
+            });
+          },
+          onToolOutput: (data) => {
+            if (data.event === "stdout" || data.event === "stderr") {
+              setStreamingOutputs((prev) => {
+                const updated = new Map(prev);
+                const key = data.toolCallId || data.name;
+                const existing = updated.get(key) || "";
+                updated.set(key, existing + (data.data || ""));
+                return updated;
+              });
+            }
+          },
+          onDone: () => resolve(),
+          onError: (err) => reject(err),
+        });
+      });
+
+      return [];
+    },
+    [
+      settings.provider,
+      settings.model,
+      settings.maxTokens,
+      settings.temperature,
+      settings.thinkingEnabled,
+      settings.systemPrompt,
+      conversationId,
+      allToolSchemas,
+    ],
+  );
+
+  // ── Send handler ─────────────────────────────────────────────
+  const handleSend = useCallback(
+    async (e) => {
+      if (e) e.preventDefault();
+      if (isGenerating) {
+        handleStop();
+        return;
+      }
+      const text = inputValue.trim();
+      if (!text && pendingImages.length === 0) return;
+
+      const currentImages = [...pendingImages];
+      setInputValue("");
+      setPendingImages([]);
+      setIsGenerating(true);
+      setToolActivity([]);
+      setStreamingOutputs(new Map());
+
+      let resolvedTitle = title;
+      if (messages.length === 0) {
+        const titleText = text || "Agent conversation";
+        resolvedTitle =
+          titleText.length > 60 ? titleText.slice(0, 57) + "..." : titleText;
+        setTitle(resolvedTitle);
+      }
+
+      const userMessage = {
+        role: "user",
+        content: text,
+        ...(currentImages.length > 0 ? { images: currentImages } : {}),
+      };
+      const updatedMessages = [...messages, userMessage];
+      setMessages(updatedMessages);
+
+      try {
+        await runOrchestrationLoop(
+          updatedMessages,
+          resolvedTitle,
+        );
+        // Messages are already updated by the streaming callbacks — just reload history
+        loadConversations();
+      } catch (err) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `⚠️ Error: ${err.message}`,
+            isError: true,
+          },
+        ]);
+      } finally {
+        setIsGenerating(false);
+        abortRef.current = null;
+      }
+    },
+    [
+      handleStop,
+      inputValue,
+      pendingImages,
+      isGenerating,
+      messages,
+      title,
+      runOrchestrationLoop,
+      loadConversations,
+    ],
+  );
+
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    },
+    [handleSend],
+  );
+
+  // ── Conversation management ──────────────────────────────────
+  const handleNewChat = useCallback(() => {
+    if (isGenerating) return;
+    setMessages([]);
+    setToolActivity([]);
+    setPendingImages([]);
+    setConversationId(crypto.randomUUID());
+    setActiveId(null);
+    setTitle("Agent");
+    textareaRef.current?.focus();
+  }, [isGenerating]);
+
+  const handleSelectConversation = useCallback(
+    async (conv) => {
+      if (isGenerating) return;
+      try {
+        const full = await PrismService.getConversationByProject(
+          conv.id,
+          PROJECT_AGENT,
+        );
+        const displayMessages = prepareDisplayMessages(full.messages || []);
+        setMessages(displayMessages);
+        setConversationId(conv.id);
+        setActiveId(conv.id);
+        setTitle(full.title || "Agent");
+        setToolActivity([]);
+      } catch (err) {
+        console.error("Failed to load conversation:", err);
+      }
+    },
+    [isGenerating],
+  );
+
+  const handleDeleteConversation = useCallback(
+    async (convId) => {
+      try {
+        await PrismService.deleteConversationByProject(convId, PROJECT_AGENT);
+        setConversations((prev) => prev.filter((c) => c.id !== convId));
+        if (activeId === convId) {
+          handleNewChat();
+        }
+      } catch (err) {
+        console.error("Failed to delete conversation:", err);
+      }
+    },
+    [activeId, handleNewChat],
+  );
+
+  // ── Left sidebar: tab bar + content ──────────────────────────
+  const leftPanel = (
+    <>
+      <TabBarComponent
+        tabs={[
+          { key: "settings", label: "Settings" },
+          {
+            key: "tools",
+            label: "Agentic Tools",
+            badge: allToolSchemas.length,
+          },
+        ]}
+        activeTab={leftTab}
+        onChange={setLeftTab}
+      />
+
+      {leftTab === "settings" && (
+        <SettingsPanel
+          config={filteredConfig}
+          settings={settings}
+          onChange={(updates) => setSettings((s) => ({ ...s, ...updates, functionCallingEnabled: true }))}
+          hasAssistantImages={false}
+          lockedTools={AGENT_LOCKED_TOOLS}
+        />
+      )}
+
+      {leftTab === "tools" && (
+        <CustomToolsPanel
+          tools={customTools}
+          onToolsChange={loadCustomTools}
+          project={PROJECT_AGENT}
+          builtInTools={builtInTools}
+          disabledBuiltIns={disabledBuiltIns}
+          onToggleBuiltIn={handleToggleBuiltIn}
+          onToggleAllBuiltIn={handleToggleAllBuiltIn}
+        />
+      )}
+    </>
+  );
+
+  // ── Center: chat area ───────────────────────────────────────
+  const chatContent = (
+    <div className={chatStyles.container}>
+      {/* Messages */}
+      <div className={chatStyles.messagesList}>
+        {messages.length === 0 && (
+          <EmptyStateComponent
+            icon={<Bot size={40} />}
+            title="Coding Agent"
+            subtitle="Read, edit, search, and browse your codebase with AI-powered tools."
+          >
+            {randomPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                className={styles.quickPrompt}
+                onClick={() => {
+                  setInputValue(prompt);
+                  textareaRef.current?.focus();
+                }}
+              >
+                {prompt}
+              </button>
+            ))}
+          </EmptyStateComponent>
+        )}
+
+        <MessageList
+          messages={messages.filter(
+            (m) => m.role === "user" || m.role === "assistant",
+          )}
+          isGenerating={isGenerating}
+          streamingOutputs={streamingOutputs}
+        />
+
+        <div ref={endRef} />
+      </div>
+
+      {/* Input area */}
+      <div className={chatStyles.inputWrapper}>
+        <form
+          onSubmit={handleSend}
+          className={`${chatStyles.inputBox} ${isDragging ? chatStyles.inputBoxDragActive : ""} ${isGenerating ? chatStyles.inputBoxGenerating : ""}`}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onPaste={handlePaste}
+        >
+          {isDragging && (
+            <div className={chatStyles.dragOverlay}>
+              <Paperclip size={20} />
+              <span>Drop images here</span>
+            </div>
+          )}
+          {pendingImages.length > 0 && (
+            <div className={chatStyles.pendingImages}>
+              {pendingImages.map((dataUrl, i) => (
+                <div key={i} className={chatStyles.pendingAttachmentWrap}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={dataUrl}
+                    alt="Attached"
+                    className={chatStyles.pendingImg}
+                    onClick={() => setLightboxSrc(dataUrl)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(i)}
+                    className={chatStyles.removeAttachment}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className={chatStyles.inputRow}>
+            {supportsImageInput && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  hidden
+                  onChange={handleImageSelect}
+                />
+                <ChatInputButton
+                  onClick={() => fileInputRef.current?.click()}
+                  label="Attach image"
+                  icon="paperclip"
+                />
+              </>
+            )}
+            <textarea
+              ref={textareaRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask me to read, edit, search, or explore your codebase..."
+              rows={1}
+            />
+            <ChatInputButton
+              variant="submit"
+              isGenerating={isGenerating}
+              disabled={
+                isGenerating
+                  ? false
+                  : !inputValue.trim() && pendingImages.length === 0
+              }
+              label={isGenerating ? "Stop" : "Send"}
+            />
+          </div>
+        </form>
+        <div className={chatStyles.hint}>
+          Press <kbd>Enter</kbd> to send, <kbd>Shift</kbd> + <kbd>Enter</kbd>{" "}
+          for new line
+        </div>
+      </div>
+      {lightboxSrc && (
+        <ImagePreviewComponent
+          src={lightboxSrc}
+          onClose={() => setLightboxSrc(null)}
+          onUseAnnotated={(dataUrl) => {
+            setPendingImages((prev) => [...prev, dataUrl]);
+            setLightboxSrc(null);
+          }}
+        />
+      )}
+    </div>
+  );
+
+  // ── Layout ───────────────────────────────────────────────────
+  return (
+    <ThreePanelLayout
+      navSidebar={
+        <NavigationSidebarComponent mode="user" isGenerating={isGenerating} />
+      }
+      leftPanel={leftPanel}
+      leftTitle={null}
+      rightPanel={
+        <HistoryPanel
+          conversations={conversations}
+          activeId={activeId}
+          onSelect={handleSelectConversation}
+          onNew={handleNewChat}
+          onDelete={handleDeleteConversation}
+          disableNew={messages.length === 0 && !activeId}
+        />
+      }
+      rightTitle={`${conversations.length} Conversations`}
+      headerTitle={title}
+      headerCenter={
+        <ModelPickerPopoverComponent
+          config={filteredConfig}
+          settings={settings}
+          onSelectModel={(provider, modelName) => {
+            const modelDef =
+              (filteredConfig?.textToText?.models?.[provider] || []).find(
+                (m) => m.name === modelName,
+              );
+            const temp = modelDef?.defaultTemperature ?? 1.0;
+            setSettings((s) => ({
+              ...s,
+              provider,
+              model: modelName,
+              temperature: temp,
+            }));
+          }}
+          favorites={favoriteKeys}
+          onToggleFavorite={async (key) => {
+            if (favoriteKeys.includes(key)) {
+              setFavoriteKeys((prev) => prev.filter((k) => k !== key));
+              PrismService.removeFavorite("model", key).catch(() => {});
+            } else {
+              setFavoriteKeys((prev) => [...prev, key]);
+              const [provider, ...rest] = key.split(":");
+              PrismService.addFavorite("model", key, {
+                provider,
+                name: rest.join(":"),
+              }).catch(() => {});
+            }
+          }}
+        />
+      }
+      headerMeta={
+        messages.length > 0 ? (
+          <div className={styles.headerMeta}>
+            <span>
+              {
+                messages.filter(
+                  (m) => m.role === "user" || m.role === "assistant",
+                ).length
+              }{" "}
+              messages
+            </span>
+          </div>
+        ) : null
+      }
+      headerControls={
+        <div className={styles.headerControls}>
+          <span className={styles.headerBadge}>
+            <Code2 size={10} />
+            Agentic
+          </span>
+        </div>
+      }
+    >
+      {chatContent}
+    </ThreePanelLayout>
+  );
+}

@@ -142,6 +142,14 @@ export default class PrismService {
     return PrismService._request("/config/tools", { method: "GET" });
   }
 
+  /**
+   * Trigger Prism to re-fetch tool schemas from tools-api.
+   * @returns {Promise<{ ok: boolean, count: number }>}
+   */
+  static async refreshBuiltInToolSchemas() {
+    return PrismService._request("/config/tools/refresh", { method: "POST" });
+  }
+
 
 
   // ---------------------------------------------------------------------------

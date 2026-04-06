@@ -130,6 +130,7 @@ export default function HistoryPanel({
   onToggleFavorite,
   initialProviders,
   initialSearch = "",
+  disableNew,
   // Customisable labels — defaults match "conversations" context
   newLabel = "New Conversation",
   emptyText = "No recent chats",
@@ -208,7 +209,7 @@ export default function HistoryPanel({
           size="sm"
           icon={Plus}
           onClick={onNew}
-          disabled={!activeId}
+          disabled={disableNew !== undefined ? disableNew : !activeId}
           className={styles.newBtn}
           data-panel-close
         >

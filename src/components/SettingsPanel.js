@@ -51,6 +51,7 @@ export default function SettingsPanel({
   onCloseSystemPromptModal,
   workflows = [],
   conversationStats = null,
+  lockedTools,
 }) {
   const { _providers = {}, textToText = {} } = config || {};
   const textModelsMap = textToText.models || {};
@@ -184,9 +185,9 @@ export default function SettingsPanel({
         };
       case "Function Calling":
         return {
-          checked: settings.functionCallingEnabled || false,
-          onChange: (val) => onChange({ functionCallingEnabled: val }),
-          disabled: false,
+          checked: lockedTools?.has("Function Calling") || settings.functionCallingEnabled || false,
+          onChange: lockedTools?.has("Function Calling") ? () => {} : (val) => onChange({ functionCallingEnabled: val }),
+          disabled: !!lockedTools?.has("Function Calling"),
         };
       case "Image Generation":
         return {

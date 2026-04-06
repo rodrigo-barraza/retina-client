@@ -6,6 +6,7 @@ import IrisService from "../services/IrisService";
 import PrismService from "../services/PrismService";
 import ModelsTableComponent from "./ModelsTableComponent";
 import ModelLoadConfigPanel from "./ModelLoadConfigPanel";
+import ModelDetailPanelComponent from "./ModelDetailPanelComponent";
 import PageHeaderComponent from "./PageHeaderComponent";
 import { ErrorMessage } from "./StateMessageComponent";
 import { useToast } from "./ToastComponent";
@@ -59,6 +60,7 @@ export default function ModelsPageComponent({ mode = "user", onCountChange }) {
   const [toastElement, showToast] = useToast(4000);
   const [favoriteKeys, setFavoriteKeys] = useState([]);
   const [loadConfigModel, setLoadConfigModel] = useState(null);
+  const [selectedModel, setSelectedModel] = useState(null);
   const hasLoadedRef = useRef(false);
 
   // Helper: merge config + LM data + stats into the allModels array
@@ -344,6 +346,7 @@ export default function ModelsPageComponent({ mode = "user", onCountChange }) {
         ) : (
           <ModelsTableComponent
             models={allModels}
+            onSelect={setSelectedModel}
             renderActions={renderActions}
             favorites={favoriteKeys}
             onToggleFavorite={handleToggleFavorite}
@@ -358,6 +361,13 @@ export default function ModelsPageComponent({ mode = "user", onCountChange }) {
           onClose={() => setLoadConfigModel(null)}
           service={isAdmin ? IrisService : PrismService}
           loading={!!actionInProgress}
+        />
+      )}
+
+      {selectedModel && (
+        <ModelDetailPanelComponent
+          model={selectedModel}
+          onClose={() => setSelectedModel(null)}
         />
       )}
     </>
