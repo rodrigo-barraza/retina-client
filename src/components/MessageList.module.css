@@ -1169,3 +1169,110 @@
   50% { opacity: 0.4; }
 }
 
+/* ── Sticky Pinned User Message ─────────────────────────────── */
+
+.stickyUserMsg {
+  position: sticky;
+  top: -30px;
+  z-index: 20;
+  animation: stickySlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+  will-change: transform, opacity;
+}
+
+.stickyUserMsgInner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  border-top: none;
+  border-left: 3px solid var(--text-secondary);
+  border-radius: 0 0 6px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stickyUserMsgInner:hover {
+  background: color-mix(in srgb, var(--bg-secondary) 95%, transparent);
+  border-color: var(--border-color);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.12);
+  transform: translateY(1px);
+}
+
+.stickyUserMsgAvatar {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.stickyUserMsgContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stickyUserMsgText {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+.stickyUserMsgBadge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent-color) 12%, transparent);
+  color: var(--accent-color);
+  border: 1px solid color-mix(in srgb, var(--accent-color) 20%, transparent);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.stickyUserMsgChevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  opacity: 0.5;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.stickyUserMsgInner:hover .stickyUserMsgChevron {
+  opacity: 1;
+  transform: translateY(2px);
+}
+
+@keyframes stickySlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

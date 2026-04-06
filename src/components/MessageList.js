@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -760,6 +760,77 @@ export default function MessageList({
   const [expandedDeletedSet, setExpandedDeletedSet] = useState(new Set());
   const hasSystemPrompt = !!(systemPrompt && systemPrompt.trim());
 
+  // ── Sticky last user message (pinned header) ─────────────
+  const [isUserMsgScrolledPast, setIsUserMsgScrolledPast] = useState(false);
+  const lastUserMsgRef = useRef(null);
+  const lastUserMsgIndexRef = useRef(-1);
+
+  // Find the last user message
+  const lastUserMsgIndex = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "user" && !messages[i].deleted) return i;
+    }
+    return -1;
+  }, [messages]);
+
+  // IntersectionObserver for scroll-past detection
+  useEffect(() => {
+    lastUserMsgIndexRef.current = lastUserMsgIndex;
+    const node = lastUserMsgRef.current;
+    if (!node || lastUserMsgIndex < 0) {
+      return;
+    }
+
+    // Find the scroll container — walk up to the nearest overflow-y ancestor
+    let scrollParent = node.parentElement;
+    while (scrollParent) {
+      const overflow = getComputedStyle(scrollParent).overflowY;
+      if (overflow === "auto" || overflow === "scroll") break;
+      scrollParent = scrollParent.parentElement;
+    }
+    if (!scrollParent) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Show sticky when user message is NOT intersecting
+        // AND the element is above the viewport (scrolled past)
+        const scrolledPast = !entry.isIntersecting &&
+          entry.boundingClientRect.bottom < entry.rootBounds.top + 20;
+        setIsUserMsgScrolledPast(scrolledPast);
+      },
+      {
+        root: scrollParent,
+        threshold: 0,
+        rootMargin: "0px",
+      },
+    );
+
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      setIsUserMsgScrolledPast(false);
+    };
+  }, [lastUserMsgIndex, messages]);
+
+  // Derive sticky message data from the boolean flag
+  const stickyUserMsg = useMemo(() => {
+    if (!isUserMsgScrolledPast || lastUserMsgIndex < 0) return null;
+    const msg = messages[lastUserMsgIndex];
+    if (!msg) return null;
+    return {
+      content: msg.content,
+      images: msg.images,
+      index: lastUserMsgIndex,
+    };
+  }, [isUserMsgScrolledPast, lastUserMsgIndex, messages]);
+
+  const handleStickyClick = useCallback(() => {
+    lastUserMsgRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, []);
+
   const toggleDeletedExpanded = (index) => {
     setExpandedDeletedSet((prev) => {
       const next = new Set(prev);
@@ -851,6 +922,31 @@ export default function MessageList({
 
   return (
     <div className={styles.messagesList}>
+      {/* ── Sticky pinned user message ── */}
+      {stickyUserMsg && (
+        <div className={styles.stickyUserMsg} onClick={handleStickyClick}>
+          <div className={styles.stickyUserMsgInner}>
+            <div className={styles.stickyUserMsgAvatar}>
+              <User size={12} />
+            </div>
+            <div className={styles.stickyUserMsgContent}>
+              {stickyUserMsg.images && stickyUserMsg.images.length > 0 && (
+                <span className={styles.stickyUserMsgBadge}>
+                  {stickyUserMsg.images.length} attachment{stickyUserMsg.images.length > 1 ? "s" : ""}
+                </span>
+              )}
+              <span className={styles.stickyUserMsgText}>
+                {stickyUserMsg.content
+                  ? stickyUserMsg.content.length > 200
+                    ? stickyUserMsg.content.slice(0, 200) + "…"
+                    : stickyUserMsg.content
+                  : "(no text)"}
+              </span>
+            </div>
+            <ChevronDown size={14} className={styles.stickyUserMsgChevron} />
+          </div>
+        </div>
+      )}
       {hasSystemPrompt && (
         <div className={`${styles.message} ${styles.systemNode}`}>
           <div className={styles.avatar}>
@@ -1096,6 +1192,7 @@ export default function MessageList({
             {/* ── Normal (non-deleted) message ── */}
             {!msg.deleted && (
             <div
+              ref={i === lastUserMsgIndex && msg.role === "user" ? lastUserMsgRef : undefined}
               className={`${styles.message} ${roleClass}${coalesce?.isContinuation ? ` ${styles.continuationMessage}` : ""}`}
             >
               {/* Avatar: hidden for continuation messages */}
