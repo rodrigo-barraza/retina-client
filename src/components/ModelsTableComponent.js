@@ -615,6 +615,64 @@ function ModelsTableInner({
       });
     }
 
+    // ── Benchmark priority columns (Pass Rate, Passed, Failed) ──
+    if (isBenchmark) {
+      cols.push({
+        key: "benchPassRate",
+        label: "Pass Rate",
+        description: "Percentage of benchmark tests this model passed",
+        sortable: true,
+        width: "100px",
+        sortValue: (row) => row._raw._benchPassRate || 0,
+        render: (row) => {
+          const pct = Math.round((row._raw._benchPassRate || 0) * 100);
+          const color =
+            pct >= 80 ? "var(--success)" : pct >= 50 ? "var(--warning)" : "var(--danger)";
+          return (
+            <span className={styles.benchRateCell}>
+              <span className={styles.benchRateBar}>
+                <span
+                  className={styles.benchRateBarFill}
+                  style={{ width: `${pct}%`, background: color }}
+                />
+              </span>
+              <span className={styles.benchRateValue} style={{ color }}>
+                {pct}%
+              </span>
+            </span>
+          );
+        },
+      });
+      cols.push({
+        key: "benchPassed",
+        label: "Pass",
+        description: "Number of benchmark tests this model passed",
+        sortable: true,
+        align: "right",
+        sortValue: (row) => row._raw._benchPassed || 0,
+        render: (row) => (
+          <span className={styles.benchPassedCell}>
+            <CheckCircle2 size={12} />
+            {row._raw._benchPassed || 0}
+          </span>
+        ),
+      });
+      cols.push({
+        key: "benchFailed",
+        label: "Fail",
+        description: "Number of benchmark tests this model failed or errored",
+        sortable: true,
+        align: "right",
+        sortValue: (row) => (row._raw._benchFailed || 0) + (row._raw._benchErrored || 0),
+        render: (row) => (
+          <span className={styles.benchFailedCell}>
+            <XCircle size={12} />
+            {(row._raw._benchFailed || 0) + (row._raw._benchErrored || 0)}
+          </span>
+        ),
+      });
+    }
+
     // 1. FAVORITE — sortable star toggle
     cols.push({
       key: "favorite",
@@ -729,7 +787,7 @@ function ModelsTableInner({
       });
     }
 
-    // ── Benchmark-specific columns ──
+    // ── Benchmark remaining columns (Tests, Avg Latency, Cost) ──
     if (isBenchmark) {
       cols.push({
         key: "benchTests",
@@ -741,59 +799,6 @@ function ModelsTableInner({
         render: (row) => {
           const v = row._raw._benchTotal || 0;
           return v > 0 ? formatNumber(v) : "—";
-        },
-      });
-      cols.push({
-        key: "benchPassed",
-        label: "Passed",
-        description: "Number of benchmark tests this model passed",
-        sortable: true,
-        align: "right",
-        sortValue: (row) => row._raw._benchPassed || 0,
-        render: (row) => (
-          <span className={styles.benchPassedCell}>
-            <CheckCircle2 size={12} />
-            {row._raw._benchPassed || 0}
-          </span>
-        ),
-      });
-      cols.push({
-        key: "benchFailed",
-        label: "Failed",
-        description: "Number of benchmark tests this model failed or errored",
-        sortable: true,
-        align: "right",
-        sortValue: (row) => (row._raw._benchFailed || 0) + (row._raw._benchErrored || 0),
-        render: (row) => (
-          <span className={styles.benchFailedCell}>
-            <XCircle size={12} />
-            {(row._raw._benchFailed || 0) + (row._raw._benchErrored || 0)}
-          </span>
-        ),
-      });
-      cols.push({
-        key: "benchPassRate",
-        label: "Pass Rate",
-        description: "Percentage of benchmark tests this model passed",
-        sortable: true,
-        sortValue: (row) => row._raw._benchPassRate || 0,
-        render: (row) => {
-          const pct = Math.round((row._raw._benchPassRate || 0) * 100);
-          const color =
-            pct >= 80 ? "var(--success)" : pct >= 50 ? "var(--warning)" : "var(--danger)";
-          return (
-            <span className={styles.benchRateCell}>
-              <span className={styles.benchRateBar}>
-                <span
-                  className={styles.benchRateBarFill}
-                  style={{ width: `${pct}%`, background: color }}
-                />
-              </span>
-              <span className={styles.benchRateValue} style={{ color }}>
-                {pct}%
-              </span>
-            </span>
-          );
         },
       });
       cols.push({

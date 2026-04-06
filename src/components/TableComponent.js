@@ -76,7 +76,7 @@ function HeaderCell({ col, thClasses, isSortable, handleSort, sort }) {
     <th
       ref={thRef}
       className={thClasses}
-      style={{ textAlign: col.align || "left" }}
+      style={{ textAlign: col.align || "left", width: col.width, maxWidth: col.width }}
       onClick={isSortable ? () => handleSort(col.key) : undefined}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
@@ -472,9 +472,10 @@ export default function TableComponent({
                         const extraClass = col.className || "";
                         const sortedClass =
                           !isFirst && isSorted ? styles.tdSorted : "";
-                        const cellStyle = col.align
-                          ? { textAlign: col.align }
-                          : {};
+                        const cellStyle = {
+                          ...(col.align ? { textAlign: col.align } : {}),
+                          ...(col.width ? { width: col.width, maxWidth: col.width } : {}),
+                        };
 
                         let content;
                         if (col.render) {

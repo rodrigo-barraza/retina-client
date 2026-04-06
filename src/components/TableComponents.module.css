@@ -237,11 +237,11 @@
 .dashboardRateCell {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .dashboardRateBar {
-  width: 60px;
+  width: 40px;
   height: 4px;
   border-radius: 2px;
   background: var(--bg-tertiary);
@@ -259,6 +259,6 @@
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 12px;
-  min-width: 36px;
+  min-width: 28px;
 }
 

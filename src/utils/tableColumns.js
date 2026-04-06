@@ -868,7 +868,7 @@ export const dashboardTestsColumn = () => ({
 
 export const dashboardPassedColumn = () => ({
   key: "passed",
-  label: "Passed",
+  label: "Pass",
   description: "Number of benchmark tests this model passed",
   sortable: true,
   align: "right",
@@ -882,7 +882,7 @@ export const dashboardPassedColumn = () => ({
 
 export const dashboardFailedColumn = () => ({
   key: "failed",
-  label: "Failed",
+  label: "Fail",
   description: "Number of benchmark tests this model failed or errored",
   sortable: true,
   sortValue: (r) => r.failed + r.errored,
@@ -900,6 +900,7 @@ export const dashboardPassRateColumn = () => ({
   label: "Pass Rate",
   description: "Percentage of benchmark tests this model passed",
   sortable: true,
+  width: "100px",
   render: (r) => {
     const pct = Math.round(r.passRate * 100);
     const color =

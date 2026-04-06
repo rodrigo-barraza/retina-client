@@ -37,12 +37,12 @@ export default function BenchmarkDashboardTableComponent({
 }) {
   const columns = useMemo(
     () => [
+      dashboardPassRateColumn(),
+      dashboardPassedColumn(),
+      dashboardFailedColumn(),
       dashboardModelColumn(),
       dashboardProviderColumn(),
       dashboardTestsColumn(),
-      dashboardPassedColumn(),
-      dashboardFailedColumn(),
-      dashboardPassRateColumn(),
       dashboardAvgLatencyColumn(),
       dashboardCostColumn(),
     ],
