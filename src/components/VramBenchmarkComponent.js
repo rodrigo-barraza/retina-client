@@ -14,6 +14,14 @@ import {
   Target,
   Gauge,
   Crosshair,
+  MessageSquare,
+  ArrowDownToLine,
+  Crown,
+  Rocket,
+  BrainCircuit,
+  Grid3x3,
+  ThumbsDown,
+  AlertTriangle,
 } from "lucide-react";
 import Chart from "chart.js/auto";
 import PrismService from "../services/PrismService";
@@ -200,7 +208,7 @@ function makeDatalabelsPlugin({ getLabel, anchor = "end", align = "top", offset 
 const VIEW_TABS = [
   { key: "scatter", label: "VRAM vs Speed", icon: <TrendingUp size={12} /> },
   { key: "bar", label: "VRAM Usage", icon: <BarChart3 size={12} /> },
-  { key: "efficiency", label: "Efficiency", icon: <Zap size={12} /> },
+  { key: "efficiency", label: "Tokens per Second", icon: <Zap size={12} /> },
   { key: "quantDist", label: "Quantization", icon: <Layers size={12} /> },
   { key: "context", label: "Context Scaling", icon: <HardDrive size={12} /> },
 ];
@@ -374,14 +382,6 @@ export default function VramBenchmarkComponent() {
       m.tokensPerSecond > best.tokensPerSecond ? m : best,
     );
 
-    // Best efficiency — highest TPS per GiB of VRAM
-    const efficiencies = models.map((m) => ({
-      model: m,
-      eff: m.tokensPerSecond / m.modelVramGiB,
-    }));
-    const bestEff = efficiencies.reduce((best, e) =>
-      e.eff > best.eff ? e : best,
-    );
 
     // Median TTFT — more meaningful than average (resistant to outliers)
     const ttftModels = models.filter((m) => m.ttft?.ms > 0);
@@ -405,10 +405,111 @@ export default function VramBenchmarkComponent() {
     // Count how many don't fit in GPU VRAM
     const oomCount = models.filter((m) => m.fitsInVram === false).length;
 
+    // Scope stats — distinct quant formats & providers
+    const quantCount = new Set(models.map((m) => m.quantization).filter(Boolean)).size;
+    const providerCount = new Set(models.map((m) => m.provider).filter(Boolean)).size;
+
+    // ── Best Model cards for practical LLM usage ──
+
+    // 1. Fastest Response — lowest TTFT (critical for interactive chat)
+    const fastestResponse = ttftModels.length > 0
+      ? ttftModels.reduce((best, m) =>
+          m.ttft.ms < best.ttft.ms ? m : best,
+        )
+      : null;
+
+    // 2. Best for Chat — largest model (by VRAM) that still runs ≥30 TPS
+    const CHAT_TPS_THRESHOLD = 30;
+    const chatCandidates = models.filter(
+      (m) => m.tokensPerSecond >= CHAT_TPS_THRESHOLD && m.fitsInVram !== false,
+    );
+    const bestForChat = chatCandidates.length > 0
+      ? chatCandidates.reduce((best, m) =>
+          m.modelVramGiB > best.modelVramGiB ? m : best,
+        )
+      : null;
+
+    // 3. Largest Runnable — biggest model by VRAM that fits in GPU
+    const fittingModels = models.filter((m) => m.fitsInVram !== false);
+    const largestRunnable = fittingModels.length > 0
+      ? fittingModels.reduce((best, m) =>
+          m.modelVramGiB > best.modelVramGiB ? m : best,
+        )
+      : null;
+
+    // 4. Lowest Footprint — smallest VRAM model (multi-model serving / sidecar)
+    const lowestFootprint = models.reduce((best, m) =>
+      m.modelVramGiB < best.modelVramGiB ? m : best,
+    );
+
+    // 5. Best Prefill — highest prefill tokens/sec (prompt processing for RAG)
+    const prefillModels = models.filter((m) => m.ttft?.prefillTokPerSec > 0);
+    const bestPrefill = prefillModels.length > 0
+      ? prefillModels.reduce((best, m) =>
+          m.ttft.prefillTokPerSec > best.ttft.prefillTokPerSec ? m : best,
+        )
+      : null;
+
+    // 6. Best Large Model — highest TPS among models ≥8 GiB VRAM
+    const LARGE_VRAM_THRESHOLD = 8;
+    const largeModels = models.filter(
+      (m) => m.modelVramGiB >= LARGE_VRAM_THRESHOLD && m.fitsInVram !== false,
+    );
+    const bestLargeModel = largeModels.length > 0
+      ? largeModels.reduce((best, m) =>
+          m.tokensPerSecond > best.tokensPerSecond ? m : best,
+        )
+      : null;
+
+    // ── Worst Model cards (counterparts) ──
+
+    // W1. Slowest Throughput — lowest TPS
+    const slowest = models.reduce((worst, m) =>
+      m.tokensPerSecond < worst.tokensPerSecond ? m : worst,
+    );
+
+    // W2. Slowest Response — highest TTFT
+    const slowestResponse = ttftModels.length > 0
+      ? ttftModels.reduce((worst, m) =>
+          m.ttft.ms > worst.ttft.ms ? m : worst,
+        )
+      : null;
+
+    // W3. Worst for Chat — smallest model that still meets ≥30 TPS threshold
+    const worstForChat = chatCandidates.length > 0
+      ? chatCandidates.reduce((worst, m) =>
+          m.modelVramGiB < worst.modelVramGiB ? m : worst,
+        )
+      : null;
+
+    // W4. Smallest Runnable — smallest fitting model (lowest capability that runs)
+    const smallestRunnable = fittingModels.length > 0
+      ? fittingModels.reduce((worst, m) =>
+          m.modelVramGiB < worst.modelVramGiB ? m : worst,
+        )
+      : null;
+
+    // W5. Heaviest Footprint — largest VRAM consumer
+    const heaviestFootprint = models.reduce((worst, m) =>
+      m.modelVramGiB > worst.modelVramGiB ? m : worst,
+    );
+
+    // W6. Worst Large Model — slowest TPS among models ≥8 GiB
+    const worstLargeModel = largeModels.length > 0
+      ? largeModels.reduce((worst, m) =>
+          m.tokensPerSecond < worst.tokensPerSecond ? m : worst,
+        )
+      : null;
+
     return {
       n, minVram, maxVram,
-      fastest, bestEff,
-      medianTtft, avgDelta, oomCount,
+      fastest, medianTtft, avgDelta, oomCount,
+      quantCount, providerCount,
+      fastestResponse, bestForChat, largestRunnable, lowestFootprint,
+      bestPrefill, bestLargeModel,
+      // worst counterparts
+      slowest, slowestResponse, worstForChat,
+      smallestRunnable, heaviestFootprint, worstLargeModel,
     };
   }, [models]);
 
@@ -560,7 +661,41 @@ export default function VramBenchmarkComponent() {
     });
   }, [models, machineFilter]);
 
-  // ── Bar (VRAM Consumption) ───────────────────────────────
+  // ── Shared range data for bar charts ──────────────────────
+
+  const { vramRanges, tpsRanges } = useMemo(() => {
+    const vram = {};
+    const tps = {};
+    const source = allFilteredData.length > 0 ? allFilteredData : rawData.filter((d) => d.modelVramGiB > 0);
+    for (const d of source) {
+      const name = d.displayName;
+      const v = d.modelVramGiB;
+      const t = d.tokensPerSecond || 0;
+      // VRAM ranges (store full entries for per-dot tooltips)
+      if (!vram[name]) {
+        vram[name] = { min: v, max: v, count: 1, values: [v], entries: [d] };
+      } else {
+        vram[name].min = Math.min(vram[name].min, v);
+        vram[name].max = Math.max(vram[name].max, v);
+        vram[name].count++;
+        vram[name].values.push(v);
+        vram[name].entries.push(d);
+      }
+      // TPS ranges (store full entries for per-dot tooltips)
+      if (t > 0) {
+        if (!tps[name]) {
+          tps[name] = { min: t, max: t, count: 1, values: [t], entries: [d] };
+        } else {
+          tps[name].min = Math.min(tps[name].min, t);
+          tps[name].max = Math.max(tps[name].max, t);
+          tps[name].count++;
+          tps[name].values.push(t);
+          tps[name].entries.push(d);
+        }
+      }
+    }
+    return { vramRanges: vram, tpsRanges: tps };
+  }, [allFilteredData, rawData]);
 
   const renderBar = useCallback(() => {
     const canvas = chartRefs.bar.current;
@@ -578,35 +713,77 @@ export default function VramBenchmarkComponent() {
     canvas.parentElement.style.height =
       Math.max(400, models.length * 24 + 80) + "px";
 
+    // Build floating bar data: [min, max] tuples per model
+    const rangeData = models.map((m) => {
+      const range = vramRanges[m.displayName];
+      if (range && range.count > 1) {
+        return [range.min, range.max];
+      }
+      // Single entry — show a thin bar (give it ±0.05 so it's still visible)
+      return [Math.max(0, m.modelVramGiB - 0.05), m.modelVramGiB + 0.05];
+    });
+
+    // Cohesive gradient: map VRAM magnitude to a cyan→indigo→rose scale
+    const allVram = models.map((m) => m.modelVramGiB);
+    const vMin = Math.min(...allVram);
+    const vMax = Math.max(...allVram);
+    const vSpan = vMax - vMin || 1;
+
+    function vramColor(gib, alpha = 0.55) {
+      const t = (gib - vMin) / vSpan; // 0 → 1
+      // HSL sweep: 190 (cyan) → 250 (indigo) → 330 (rose)
+      const hue = 190 + t * 140;
+      const sat = 70 + t * 10;
+      const lgt = 55 - t * 10;
+      return {
+        bg: `hsla(${hue}, ${sat}%, ${lgt}%, ${alpha})`,
+        border: `hsl(${hue}, ${sat}%, ${lgt}%)`,
+      };
+    }
+
+    // Build scatter overlay: individual entries as interactive dots
+    const scatterData = [];
+    for (let i = 0; i < models.length; i++) {
+      const m = models[i];
+      const range = vramRanges[m.displayName];
+      if (!range || range.count <= 1) continue;
+      for (const entry of range.entries) {
+        scatterData.push({ x: entry.modelVramGiB, y: i, entry });
+      }
+    }
+
     chartInstances.current.bar = new Chart(ctx, {
       type: "bar",
       data: {
         labels,
         datasets: [
           {
-            label: "Measured VRAM (GiB)",
-            data: models.map((m) => m.modelVramGiB),
-            backgroundColor: models.map(
-              (m) => getQuantColor(m.quantization).bg,
+            label: "VRAM Range (GiB)",
+            data: rangeData,
+            backgroundColor: models.map((m) => vramColor(m.modelVramGiB, 0.45).bg),
+            borderColor: models.map((m) =>
+              m.fitsInVram === false ? "#f43f5e" : vramColor(m.modelVramGiB, 1).border,
             ),
-            borderColor: models.map(
-              (m) => m.fitsInVram === false ? "#f43f5e" : getQuantColor(m.quantization).border,
-            ),
-            borderWidth: models.map(
-              (m) => m.fitsInVram === false ? 2.5 : 1.5,
-            ),
+            borderWidth: 1.5,
+            borderSkipped: false,
             borderRadius: 2,
             hoverBorderWidth: 2.5,
             hoverBorderColor: "#f8f8f8",
+            order: 2,
           },
           {
-            label: "Estimated VRAM (GiB)",
-            data: models.map((m) => m.estimatedGiB),
-            backgroundColor: "rgba(255,255,255,0.03)",
-            borderColor: "rgba(255,255,255,0.15)",
-            borderWidth: 1,
-            borderRadius: 2,
-            borderDash: [4, 3],
+            type: "scatter",
+            label: "Individual Runs",
+            data: scatterData,
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
+            borderColor: "rgba(255, 255, 255, 0.3)",
+            borderWidth: 0.5,
+            pointRadius: 3.5,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: "#fff",
+            pointHoverBorderColor: "#6366f1",
+            pointHoverBorderWidth: 2,
+            order: 1,
           },
         ],
       },
@@ -614,7 +791,12 @@ export default function VramBenchmarkComponent() {
         makeDatalabelsPlugin({
           getLabel: (_raw, i) => {
             const m = models[i];
-            return m ? `${m.modelVramGiB.toFixed(1)}G` : "";
+            if (!m) return "";
+            const range = vramRanges[m.displayName];
+            if (range && range.count > 1) {
+              return `${range.min.toFixed(1)}–${range.max.toFixed(1)}G`;
+            }
+            return `${m.modelVramGiB.toFixed(1)}G`;
           },
           anchor: "end",
           align: "right",
@@ -627,7 +809,7 @@ export default function VramBenchmarkComponent() {
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 600, easing: "easeOutQuart" },
-        interaction: { mode: "index", intersect: false },
+        interaction: { mode: "point", intersect: true },
         scales: {
           x: {
             title: { ...AXIS_TITLE_STYLE, text: "VRAM (GiB)" },
@@ -635,32 +817,57 @@ export default function VramBenchmarkComponent() {
             ticks: TICK_STYLE,
           },
           y: {
-            grid: { display: false },
+            grid: { color: "rgba(255,255,255,0.04)", drawBorder: false },
             ticks: { ...TICK_STYLE, padding: 8 },
           },
         },
         plugins: {
-          legend: { ...LEGEND_STYLE, labels: { ...LEGEND_STYLE.labels, pointStyle: "rect" } },
+          legend: { display: false },
           tooltip: {
             ...TOOLTIP_STYLE,
             callbacks: {
-              title: (items) =>
-                models[items[0]?.dataIndex]?.displayName || "",
+              title: (items) => {
+                const item = items[0];
+                if (!item) return "";
+                // Scatter dot — show entry-specific title
+                if (item.datasetIndex === 1) {
+                  return item.raw?.entry?.displayName || "";
+                }
+                return models[item.dataIndex]?.displayName || "";
+              },
               afterTitle: (items) => {
-                const m = models[items[0]?.dataIndex];
+                const item = items[0];
+                if (!item) return "";
+                if (item.datasetIndex === 1) {
+                  const e = item.raw?.entry;
+                  if (!e) return "";
+                  return `${e.quantization} · ${e.architecture} · ${(e.contextLength / 1024).toFixed(0)}K ctx · ${shortGPU(e.system?.gpu?.name)}`;
+                }
+                const m = models[item.dataIndex];
                 if (!m) return "";
                 return `${m.quantization} · ${m.architecture} · ${(m.contextLength / 1024).toFixed(0)}K ctx · ${shortGPU(m.system?.gpu?.name)}`;
               },
               label: (item) => {
-                const m = models[item.dataIndex];
-                if (item.datasetIndex === 0) {
-                  return ` Measured: ${m.modelVramGiB.toFixed(2)} GiB`;
+                // Scatter dot — entry-specific data
+                if (item.datasetIndex === 1) {
+                  const e = item.raw?.entry;
+                  if (!e) return "";
+                  return ` VRAM: ${e.modelVramGiB.toFixed(2)} GiB`;
                 }
-                const delta = m.modelVramGiB - m.estimatedGiB;
-                return ` Estimated: ${m.estimatedGiB.toFixed(2)} GiB (Δ ${delta >= 0 ? "+" : ""}${delta.toFixed(2)})`;
+                const m = models[item.dataIndex];
+                const range = vramRanges[m.displayName];
+                if (range && range.count > 1) {
+                  return ` VRAM: ${range.min.toFixed(2)}–${range.max.toFixed(2)} GiB (${range.count} runs)`;
+                }
+                return ` Measured: ${m.modelVramGiB.toFixed(2)} GiB`;
               },
               afterBody: (items) => {
-                const m = models[items[0]?.dataIndex];
+                const item = items[0];
+                if (!item) return "";
+                // Use entry-specific data for scatter dots
+                const m = item.datasetIndex === 1
+                  ? item.raw?.entry
+                  : models[item.dataIndex];
                 if (!m) return "";
                 const lines = [
                   "",
@@ -680,6 +887,7 @@ export default function VramBenchmarkComponent() {
                 if (m.hysteresis?.leakedMiB > 0) lines.push(`⚠ VRAM leak: ${m.hysteresis.leakedMiB} MiB`);
                 if (m.fitsInVram === false) lines.push(`⚠ Does NOT fit in VRAM`);
                 if (m.generation?.outputTokens) lines.push(`Gen: ${m.generation.outputTokens} tokens in ${(m.generation.totalTimeMs / 1000).toFixed(1)}s`);
+                if (m.settings?.label && m.settings.label !== "default") lines.push(`Settings: ${m.settings.label}`);
                 return lines;
               },
             },
@@ -687,9 +895,9 @@ export default function VramBenchmarkComponent() {
         },
       },
     });
-  }, [models]);
+  }, [models, vramRanges]);
 
-  // ── Efficiency (TPS / GiB ranked) ────────────────────────
+  // ── Tokens per Second (floating range bars) ──────────────
 
   const renderEfficiency = useCallback(() => {
     const canvas = chartRefs.efficiency.current;
@@ -698,40 +906,83 @@ export default function VramBenchmarkComponent() {
 
     const ctx = canvas.getContext("2d");
 
+    // Sort by peak TPS descending
     const sorted = [...models].sort(
-      (a, b) =>
-        b.tokensPerSecond / b.modelVramGiB -
-        a.tokensPerSecond / a.modelVramGiB,
+      (a, b) => b.tokensPerSecond - a.tokensPerSecond,
     );
 
     const labels = sorted.map((m) => {
       const name = m.displayName;
       return name.length > 30 ? name.slice(0, 28) + "…" : name;
     });
-    const effValues = sorted.map(
-      (m) => m.tokensPerSecond / m.modelVramGiB,
-    );
 
     // Dynamic height
     canvas.parentElement.style.height =
       Math.max(400, sorted.length * 24 + 80) + "px";
 
-    // Gradient colors based on efficiency ranking
-    const maxEff = Math.max(...effValues);
-    const bgColors = effValues.map((v) => {
-      const ratio = v / maxEff;
-      if (ratio > 0.75) return "rgba(16,185,129,0.6)";
-      if (ratio > 0.5) return "rgba(99,102,241,0.6)";
-      if (ratio > 0.25) return "rgba(245,158,11,0.6)";
-      return "rgba(244,63,94,0.5)";
+    // Build floating bar data: [min, max] TPS tuples per model
+    const rangeData = sorted.map((m) => {
+      const range = tpsRanges[m.displayName];
+      if (range && range.count > 1) {
+        return [range.min, range.max];
+      }
+      const t = m.tokensPerSecond || 0;
+      return [Math.max(0, t - 0.5), t + 0.5];
     });
-    const borderColors = effValues.map((v) => {
-      const ratio = v / maxEff;
-      if (ratio > 0.75) return "#10b981";
-      if (ratio > 0.5) return "#6366f1";
-      if (ratio > 0.25) return "#f59e0b";
-      return "#f43f5e";
-    });
+
+    // Cohesive gradient: map TPS magnitude to green→cyan→indigo
+    const allTps = sorted.map((m) => m.tokensPerSecond || 0);
+    const tMin = Math.min(...allTps);
+    const tMax = Math.max(...allTps);
+    const tSpan = tMax - tMin || 1;
+
+    function tpsColor(tps, alpha = 0.55) {
+      const t = (tps - tMin) / tSpan; // 0 → 1
+      // HSL sweep: 340 (rose/slow) → 260 (indigo) → 160 (green/fast)
+      const hue = 340 - t * 180;
+      const sat = 65 + t * 15;
+      const lgt = 50 - t * 5;
+      return {
+        bg: `hsla(${hue}, ${sat}%, ${lgt}%, ${alpha})`,
+        border: `hsl(${hue}, ${sat}%, ${lgt}%)`,
+      };
+    }
+
+    // Strip-plot plugin: draw individual TPS data points inside each bar
+    const tpsStripPlotPlugin = {
+      id: "tpsStripPlot",
+      afterDatasetsDraw(chart) {
+        const { ctx: c } = chart;
+        const meta = chart.getDatasetMeta(0);
+        if (!meta.visible) return;
+        c.save();
+
+        for (let i = 0; i < meta.data.length; i++) {
+          const el = meta.data[i];
+          const m = sorted[i];
+          if (!m) continue;
+          const range = tpsRanges[m.displayName];
+          if (!range || range.count <= 1) continue;
+
+          const xScale = chart.scales.x;
+          const barY = el.y;
+          const barH = el.height || 14;
+          const dotR = Math.min(3.5, barH * 0.2);
+
+          for (const val of range.values) {
+            const dotX = xScale.getPixelForValue(val);
+            c.beginPath();
+            c.arc(dotX, barY, dotR, 0, Math.PI * 2);
+            c.fillStyle = "rgba(255, 255, 255, 0.6)";
+            c.fill();
+            c.strokeStyle = "rgba(255, 255, 255, 0.25)";
+            c.lineWidth = 0.5;
+            c.stroke();
+          }
+        }
+        c.restore();
+      },
+    };
 
     chartInstances.current.efficiency = new Chart(ctx, {
       type: "bar",
@@ -739,11 +990,12 @@ export default function VramBenchmarkComponent() {
         labels,
         datasets: [
           {
-            label: "TPS / GiB",
-            data: effValues,
-            backgroundColor: bgColors,
-            borderColor: borderColors,
+            label: "Tokens/sec Range",
+            data: rangeData,
+            backgroundColor: sorted.map((m) => tpsColor(m.tokensPerSecond, 0.45).bg),
+            borderColor: sorted.map((m) => tpsColor(m.tokensPerSecond, 1).border),
             borderWidth: 1.5,
+            borderSkipped: false,
             borderRadius: 2,
             hoverBorderWidth: 2.5,
             hoverBorderColor: "#f8f8f8",
@@ -751,8 +1003,17 @@ export default function VramBenchmarkComponent() {
         ],
       },
       plugins: [
+        tpsStripPlotPlugin,
         makeDatalabelsPlugin({
-          getLabel: (raw) => typeof raw === "number" ? `${raw.toFixed(1)}` : "",
+          getLabel: (_raw, i) => {
+            const m = sorted[i];
+            if (!m) return "";
+            const range = tpsRanges[m.displayName];
+            if (range && range.count > 1) {
+              return `${range.min.toFixed(0)}–${range.max.toFixed(0)} t/s`;
+            }
+            return `${(m.tokensPerSecond || 0).toFixed(0)} t/s`;
+          },
           anchor: "end",
           align: "right",
           offset: 6,
@@ -765,12 +1026,12 @@ export default function VramBenchmarkComponent() {
         animation: { duration: 600, easing: "easeOutQuart" },
         scales: {
           x: {
-            title: { ...AXIS_TITLE_STYLE, text: "Tokens/sec per GiB VRAM" },
+            title: { ...AXIS_TITLE_STYLE, text: "Tokens / sec" },
             grid: GRID_STYLE,
             ticks: TICK_STYLE,
           },
           y: {
-            grid: { display: false },
+            grid: { color: "rgba(255,255,255,0.04)", drawBorder: false },
             ticks: { ...TICK_STYLE, padding: 8 },
           },
         },
@@ -782,10 +1043,19 @@ export default function VramBenchmarkComponent() {
               title: (items) => sorted[items[0]?.dataIndex]?.displayName || "",
               label: (item) => {
                 const m = sorted[item.dataIndex];
+                const range = tpsRanges[m.displayName];
+                if (range && range.count > 1) {
+                  return ` Speed: ${range.min.toFixed(1)}–${range.max.toFixed(1)} tok/s (${range.count} runs)`;
+                }
+                return ` Speed: ${m.tokensPerSecond?.toFixed(1) || '0'} tok/s`;
+              },
+              afterBody: (items) => {
+                const m = sorted[items[0]?.dataIndex];
+                if (!m) return "";
                 const lines = [
-                  ` Efficiency: ${(m.tokensPerSecond / m.modelVramGiB).toFixed(2)} TPS/GiB`,
-                  ` Speed: ${m.tokensPerSecond?.toFixed(1) || '0'} tok/s`,
+                  "",
                   ` VRAM: ${m.modelVramGiB.toFixed(2)} GiB`,
+                  ` Efficiency: ${(m.tokensPerSecond / m.modelVramGiB).toFixed(1)} TPS/GiB`,
                   ` Quant: ${m.quantization} (${m.bitsPerWeight || '?'} bpw)`,
                   ` Context: ${(m.contextLength / 1024).toFixed(0)}K`,
                 ];
@@ -799,7 +1069,7 @@ export default function VramBenchmarkComponent() {
         },
       },
     });
-  }, [models]);
+  }, [models, tpsRanges]);
 
   // ── Quantization Distribution ────────────────────────────
 
@@ -821,7 +1091,25 @@ export default function VramBenchmarkComponent() {
       quantGroups[q].totalBpw += m.bitsPerWeight || 0;
     }
 
-    const quantLabels = Object.keys(quantGroups).sort();
+    // Sort quant labels by bits-per-weight rank (lowest → highest)
+    const QUANT_RANK = {
+      IQ1_S: 1, IQ1_M: 2, IQ2_XXS: 3, IQ2_XS: 4, IQ2_S: 5, IQ2_M: 6,
+      Q2_K: 7, Q2_K_S: 8,
+      IQ3_XXS: 9, IQ3_XS: 10, IQ3_S: 11, IQ3_M: 12,
+      Q3_K_S: 13, Q3_K_M: 14, Q3_K_L: 15,
+      IQ4_XS: 16, IQ4_NL: 17,
+      Q4_0: 18, Q4_1: 19, Q4_K_S: 20, Q4_K_M: 21,
+      Q5_0: 22, Q5_1: 23, Q5_K_S: 24, Q5_K_M: 25,
+      Q6_K: 26, Q6_K_L: 27,
+      Q8_0: 28, Q8_1: 29,
+      F16: 90, FP16: 91, BF16: 92, F32: 99, FP32: 100,
+      unknown: 999,
+    };
+    const quantLabels = Object.keys(quantGroups).sort((a, b) => {
+      const ra = QUANT_RANK[a] ?? (50 + (quantGroups[a].avgBpw || 50));
+      const rb = QUANT_RANK[b] ?? (50 + (quantGroups[b].avgBpw || 50));
+      return ra - rb || a.localeCompare(b);
+    });
     for (const q of quantLabels) {
       quantGroups[q].avgVram = quantGroups[q].totalVram / quantGroups[q].count;
       quantGroups[q].avgTps = quantGroups[q].totalTps / quantGroups[q].count;
@@ -1073,8 +1361,8 @@ export default function VramBenchmarkComponent() {
 
   const chartDescriptions = {
     scatter: `Each bubble represents a model — size indicates file weight, position reveals the VRAM/throughput trade-off${settingsDesc}.`,
-    bar: `Measured GPU VRAM (solid) vs. estimated (dashed outline)${settingsDesc || " — default settings"}.`,
-    efficiency: `Models ranked by tokens-per-second per GiB of VRAM consumed. Higher is better${settingsDesc}.`,
+    bar: `Each bar spans the min→max measured VRAM across all benchmark runs${settingsDesc || " — default settings"}.`,
+    efficiency: `Each bar spans the min→max tokens/sec across all benchmark runs${settingsDesc || " — default settings"}. Sorted by peak throughput.`,
     quantDist: `Average VRAM and speed grouped by quantization format${settingsDesc}.`,
     context: "How VRAM consumption scales as context window size increases per model.",
   };
@@ -1133,6 +1421,7 @@ export default function VramBenchmarkComponent() {
         {/* Stats cards */}
         {stats && (
           <div className={styles.statsGrid}>
+            {/* ── Summary stats (single-width) ── */}
             <StatsCard
               label="Models Profiled"
               value={stats.n}
@@ -1145,20 +1434,6 @@ export default function VramBenchmarkComponent() {
               subtitle="GiB (min → max)"
               icon={Gauge}
               variant="info"
-            />
-            <StatsCard
-              label="Best Throughput"
-              value={`${stats.fastest.tokensPerSecond.toFixed(0)} t/s`}
-              subtitle={shortModelName(stats.fastest.displayName, 24)}
-              icon={Zap}
-              variant="success"
-            />
-            <StatsCard
-              label="Best Efficiency"
-              value={`${stats.bestEff.eff.toFixed(1)} t/s/G`}
-              subtitle={shortModelName(stats.bestEff.model.displayName, 24)}
-              icon={TrendingUp}
-              variant="warning"
             />
             {stats.medianTtft && (
               <StatsCard
@@ -1182,6 +1457,139 @@ export default function VramBenchmarkComponent() {
                 value={stats.oomCount}
                 subtitle="Exceeded GPU VRAM"
                 icon={Target}
+                variant="danger"
+              />
+            )}
+            <StatsCard
+              label="Quantizations"
+              value={stats.quantCount}
+              subtitle="Distinct formats"
+              icon={Grid3x3}
+              variant="accent"
+            />
+
+            {/* ── Best Model cards (wide, 2-col span) ── */}
+            <StatsCard
+              className={styles.statWide}
+              label="🏆 Best Throughput"
+              value={`${stats.fastest.tokensPerSecond.toFixed(0)} t/s`}
+              subtitle={`${shortModelName(stats.fastest.displayName, 30)} · ${stats.fastest.quantization} · ${stats.fastest.modelVramGiB.toFixed(1)}G`}
+              icon={Zap}
+              variant="success"
+            />
+            {stats.fastestResponse && (
+              <StatsCard
+                className={styles.statWide}
+                label="⚡ Fastest Response"
+                value={`${stats.fastestResponse.ttft.ms.toFixed(0)} ms TTFT`}
+                subtitle={`${shortModelName(stats.fastestResponse.displayName, 30)} · ${stats.fastestResponse.tokensPerSecond.toFixed(0)} t/s · ${stats.fastestResponse.modelVramGiB.toFixed(1)}G`}
+                icon={Crown}
+                variant="success"
+              />
+            )}
+            {stats.bestForChat && (
+              <StatsCard
+                className={styles.statWide}
+                label="💬 Best for Chat"
+                value={shortModelName(stats.bestForChat.displayName, 28)}
+                subtitle={`${stats.bestForChat.tokensPerSecond.toFixed(0)} t/s · ${stats.bestForChat.modelVramGiB.toFixed(1)}G · largest ≥30 t/s`}
+                icon={MessageSquare}
+                variant="accent"
+              />
+            )}
+            {stats.largestRunnable && (
+              <StatsCard
+                className={styles.statWide}
+                label="🐘 Largest Runnable"
+                value={shortModelName(stats.largestRunnable.displayName, 28)}
+                subtitle={`${stats.largestRunnable.modelVramGiB.toFixed(1)}G VRAM · ${stats.largestRunnable.tokensPerSecond.toFixed(0)} t/s · ${stats.largestRunnable.quantization}`}
+                icon={ArrowDownToLine}
+                variant="info"
+              />
+            )}
+            <StatsCard
+              className={styles.statWide}
+              label="🪶 Lowest Footprint"
+              value={shortModelName(stats.lowestFootprint.displayName, 28)}
+              subtitle={`${stats.lowestFootprint.modelVramGiB.toFixed(1)}G VRAM · ${stats.lowestFootprint.tokensPerSecond.toFixed(0)} t/s · ${stats.lowestFootprint.quantization}`}
+              icon={HardDrive}
+              variant="success"
+            />
+            {stats.bestPrefill && (
+              <StatsCard
+                className={styles.statWide}
+                label="🚀 Best Prefill"
+                value={`${stats.bestPrefill.ttft.prefillTokPerSec.toFixed(0)} tok/s`}
+                subtitle={`${shortModelName(stats.bestPrefill.displayName, 30)} · prompt ingestion · ${stats.bestPrefill.modelVramGiB.toFixed(1)}G`}
+                icon={Rocket}
+                variant="success"
+              />
+            )}
+            {stats.bestLargeModel && (
+              <StatsCard
+                className={styles.statWide}
+                label="🧠 Best Large Model"
+                value={`${stats.bestLargeModel.tokensPerSecond.toFixed(0)} t/s`}
+                subtitle={`${shortModelName(stats.bestLargeModel.displayName, 30)} · fastest ≥8G · ${stats.bestLargeModel.modelVramGiB.toFixed(1)}G`}
+                icon={BrainCircuit}
+                variant="accent"
+              />
+            )}
+
+            {/* ── Worst Model cards (wide, 2-col span) ── */}
+            <StatsCard
+              className={styles.statWide}
+              label="🐌 Slowest Throughput"
+              value={`${stats.slowest.tokensPerSecond.toFixed(0)} t/s`}
+              subtitle={`${shortModelName(stats.slowest.displayName, 30)} · ${stats.slowest.quantization} · ${stats.slowest.modelVramGiB.toFixed(1)}G`}
+              icon={ThumbsDown}
+              variant="danger"
+            />
+            {stats.slowestResponse && (
+              <StatsCard
+                className={styles.statWide}
+                label="🐢 Slowest Response"
+                value={`${stats.slowestResponse.ttft.ms.toFixed(0)} ms TTFT`}
+                subtitle={`${shortModelName(stats.slowestResponse.displayName, 30)} · ${stats.slowestResponse.tokensPerSecond.toFixed(0)} t/s · ${stats.slowestResponse.modelVramGiB.toFixed(1)}G`}
+                icon={AlertTriangle}
+                variant="danger"
+              />
+            )}
+            {stats.worstForChat && (
+              <StatsCard
+                className={styles.statWide}
+                label="💬 Worst for Chat"
+                value={shortModelName(stats.worstForChat.displayName, 28)}
+                subtitle={`${stats.worstForChat.tokensPerSecond.toFixed(0)} t/s · ${stats.worstForChat.modelVramGiB.toFixed(1)}G · smallest ≥30 t/s`}
+                icon={ThumbsDown}
+                variant="danger"
+              />
+            )}
+            {stats.smallestRunnable && (
+              <StatsCard
+                className={styles.statWide}
+                label="🔬 Smallest Runnable"
+                value={shortModelName(stats.smallestRunnable.displayName, 28)}
+                subtitle={`${stats.smallestRunnable.modelVramGiB.toFixed(1)}G VRAM · ${stats.smallestRunnable.tokensPerSecond.toFixed(0)} t/s · ${stats.smallestRunnable.quantization}`}
+                icon={AlertTriangle}
+                variant="warning"
+              />
+            )}
+            <StatsCard
+              className={styles.statWide}
+              label="🏋️ Heaviest Footprint"
+              value={shortModelName(stats.heaviestFootprint.displayName, 28)}
+              subtitle={`${stats.heaviestFootprint.modelVramGiB.toFixed(1)}G VRAM · ${stats.heaviestFootprint.tokensPerSecond.toFixed(0)} t/s · ${stats.heaviestFootprint.quantization}`}
+              icon={ThumbsDown}
+              variant="danger"
+            />
+            {stats.worstLargeModel && (
+              <StatsCard
+                className={styles.statWide}
+                label="🧠 Worst Large Model"
+                value={`${stats.worstLargeModel.tokensPerSecond.toFixed(0)} t/s`}
+                subtitle={`${shortModelName(stats.worstLargeModel.displayName, 30)} · slowest ≥8G · ${stats.worstLargeModel.modelVramGiB.toFixed(1)}G`}
+                icon={AlertTriangle}
                 variant="danger"
               />
             )}

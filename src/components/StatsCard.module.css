@@ -2,10 +2,10 @@
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
-  padding: 20px 24px;
+  padding: 6px 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 1px;
   transition: all var(--transition-fast);
   position: relative;
   overflow: hidden;
@@ -22,7 +22,7 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
+  height: 2px;
   background: linear-gradient(90deg, var(--accent-color), transparent);
   opacity: 0;
   transition: opacity var(--transition-fast);
@@ -39,22 +39,23 @@
 }
 
 .label {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 9px;
+  font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 
 .icon {
-  width: 36px;
-  height: 36px;
+  width: 20px;
+  height: 20px;
   border-radius: var(--border-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--accent-color);
   background: var(--accent-subtle);
+  flex-shrink: 0;
 }
 
 .icon.success {
@@ -78,16 +79,19 @@
 }
 
 .value {
-  font-size: 28px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-primary);
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
 .subtitle {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Loading skeleton */

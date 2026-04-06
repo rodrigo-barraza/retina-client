@@ -7,10 +7,11 @@ export default function StatsCard({
   icon: Icon,
   variant = "accent",
   loading = false,
+  className,
 }) {
   if (loading) {
     return (
-      <div className={styles.card}>
+      <div className={`${styles.card} ${className || ""}`}>
         <div className={styles.header}>
           <div className={`${styles.skeleton} ${styles.skeletonLabel}`} />
         </div>
@@ -20,12 +21,12 @@ export default function StatsCard({
   }
 
   return (
-    <div className={styles.card}>
+    <div className={`${styles.card} ${className || ""}`}>
       <div className={styles.header}>
         <span className={styles.label}>{label}</span>
         {Icon && (
           <div className={`${styles.icon} ${styles[variant] || ""}`}>
-            <Icon size={18} />
+            <Icon size={14} />
           </div>
         )}
       </div>

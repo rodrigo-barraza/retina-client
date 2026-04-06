@@ -34,9 +34,13 @@
 /* ─── Stats grid ─── */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.statWide {
+  grid-column: span 2;
 }
 
 /* ─── Refresh button (in PageHeader right slot) ─── */
@@ -140,7 +144,11 @@
 
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 8px;
+  }
+
+  .statWide {
+    grid-column: span 1;
   }
 
   .chartCard {
