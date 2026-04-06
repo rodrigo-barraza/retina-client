@@ -1126,7 +1126,7 @@ export default class PrismService {
 
   /**
    * Fetch VRAM benchmark entries with optional filters.
-   * @param {object} [params] - { settings, hostname, ctx, limit }
+   * @param {object} [params] - { settings, hostname, ctx, provider, limit }
    * @returns {Promise<{ count: number, data: Array }>}
    */
   static async getVramBenchmarks(params = {}) {
@@ -1139,11 +1139,34 @@ export default class PrismService {
 
   /**
    * Fetch distinct machines that have run VRAM benchmarks.
-   * @returns {Promise<Array<{ hostname, gpu, gpuVramGB, cpu, ramGiB, benchmarkCount, lastRun }>>}
+   * @returns {Promise<Array<{ hostname, gpu, gpuVramGB, gpuVendor, cpu, ramGiB, platform, benchmarkCount, lastRun }>>}
    */
   static async getVramBenchmarkMachines() {
     return PrismService._request("/vram-benchmarks/machines", {
       method: "GET",
     });
+  }
+
+  /**
+   * Fetch distinct settings labels available in benchmark data.
+   * @returns {Promise<string[]>}
+   */
+  static async getVramBenchmarkSettings() {
+    return PrismService._request("/vram-benchmarks/settings", {
+      method: "GET",
+    });
+  }
+
+  /**
+   * Fetch distinct context lengths available in benchmark data.
+   * @param {object} [params] - { settings }
+   * @returns {Promise<number[]>}
+   */
+  static async getVramBenchmarkContexts(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return PrismService._request(
+      `/vram-benchmarks/contexts${query ? `?${query}` : ""}`,
+      { method: "GET" },
+    );
   }
 }
