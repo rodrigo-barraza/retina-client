@@ -748,7 +748,7 @@ export default function VramBenchmarkComponent() {
       const range = vramRanges[m.displayName];
       if (!range || range.count <= 1) continue;
       for (const entry of range.entries) {
-        scatterData.push({ x: entry.modelVramGiB, y: i, entry });
+        scatterData.push({ x: entry.modelVramGiB, y: labels[i], entry });
       }
     }
 
@@ -948,41 +948,16 @@ export default function VramBenchmarkComponent() {
       };
     }
 
-    // Strip-plot plugin: draw individual TPS data points inside each bar
-    const tpsStripPlotPlugin = {
-      id: "tpsStripPlot",
-      afterDatasetsDraw(chart) {
-        const { ctx: c } = chart;
-        const meta = chart.getDatasetMeta(0);
-        if (!meta.visible) return;
-        c.save();
-
-        for (let i = 0; i < meta.data.length; i++) {
-          const el = meta.data[i];
-          const m = sorted[i];
-          if (!m) continue;
-          const range = tpsRanges[m.displayName];
-          if (!range || range.count <= 1) continue;
-
-          const xScale = chart.scales.x;
-          const barY = el.y;
-          const barH = el.height || 14;
-          const dotR = Math.min(3.5, barH * 0.2);
-
-          for (const val of range.values) {
-            const dotX = xScale.getPixelForValue(val);
-            c.beginPath();
-            c.arc(dotX, barY, dotR, 0, Math.PI * 2);
-            c.fillStyle = "rgba(255, 255, 255, 0.6)";
-            c.fill();
-            c.strokeStyle = "rgba(255, 255, 255, 0.25)";
-            c.lineWidth = 0.5;
-            c.stroke();
-          }
-        }
-        c.restore();
-      },
-    };
+    // Build scatter overlay: individual TPS entries as interactive dots
+    const scatterData = [];
+    for (let i = 0; i < sorted.length; i++) {
+      const m = sorted[i];
+      const range = tpsRanges[m.displayName];
+      if (!range || range.count <= 1) continue;
+      for (const entry of range.entries) {
+        scatterData.push({ x: entry.tokensPerSecond || 0, y: labels[i], entry });
+      }
+    }
 
     chartInstances.current.efficiency = new Chart(ctx, {
       type: "bar",
@@ -999,11 +974,25 @@ export default function VramBenchmarkComponent() {
             borderRadius: 2,
             hoverBorderWidth: 2.5,
             hoverBorderColor: "#f8f8f8",
+            order: 2,
+          },
+          {
+            type: "scatter",
+            label: "Individual Runs",
+            data: scatterData,
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
+            borderColor: "rgba(255, 255, 255, 0.3)",
+            borderWidth: 0.5,
+            pointRadius: 3.5,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: "#fff",
+            pointHoverBorderColor: "#6366f1",
+            pointHoverBorderWidth: 2,
+            order: 1,
           },
         ],
       },
       plugins: [
-        tpsStripPlotPlugin,
         makeDatalabelsPlugin({
           getLabel: (_raw, i) => {
             const m = sorted[i];
@@ -1017,6 +1006,7 @@ export default function VramBenchmarkComponent() {
           anchor: "end",
           align: "right",
           offset: 6,
+          filterFn: (di) => di === 0,
         }),
       ],
       options: {
@@ -1024,6 +1014,7 @@ export default function VramBenchmarkComponent() {
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 600, easing: "easeOutQuart" },
+        interaction: { mode: "point", intersect: true },
         scales: {
           x: {
             title: { ...AXIS_TITLE_STYLE, text: "Tokens / sec" },
@@ -1040,8 +1031,32 @@ export default function VramBenchmarkComponent() {
           tooltip: {
             ...TOOLTIP_STYLE,
             callbacks: {
-              title: (items) => sorted[items[0]?.dataIndex]?.displayName || "",
+              title: (items) => {
+                const item = items[0];
+                if (!item) return "";
+                if (item.datasetIndex === 1) {
+                  return item.raw?.entry?.displayName || "";
+                }
+                return sorted[item.dataIndex]?.displayName || "";
+              },
+              afterTitle: (items) => {
+                const item = items[0];
+                if (!item) return "";
+                if (item.datasetIndex === 1) {
+                  const e = item.raw?.entry;
+                  if (!e) return "";
+                  return `${e.quantization} · ${e.architecture} · ${(e.contextLength / 1024).toFixed(0)}K ctx · ${shortGPU(e.system?.gpu?.name)}`;
+                }
+                const m = sorted[item.dataIndex];
+                if (!m) return "";
+                return `${m.quantization} · ${m.architecture} · ${(m.contextLength / 1024).toFixed(0)}K ctx`;
+              },
               label: (item) => {
+                if (item.datasetIndex === 1) {
+                  const e = item.raw?.entry;
+                  if (!e) return "";
+                  return ` Speed: ${(e.tokensPerSecond || 0).toFixed(1)} tok/s`;
+                }
                 const m = sorted[item.dataIndex];
                 const range = tpsRanges[m.displayName];
                 if (range && range.count > 1) {
@@ -1050,7 +1065,11 @@ export default function VramBenchmarkComponent() {
                 return ` Speed: ${m.tokensPerSecond?.toFixed(1) || '0'} tok/s`;
               },
               afterBody: (items) => {
-                const m = sorted[items[0]?.dataIndex];
+                const item = items[0];
+                if (!item) return "";
+                const m = item.datasetIndex === 1
+                  ? item.raw?.entry
+                  : sorted[item.dataIndex];
                 if (!m) return "";
                 const lines = [
                   "",
@@ -1062,6 +1081,7 @@ export default function VramBenchmarkComponent() {
                 if (m.ttft?.ms) lines.push(` TTFT: ${m.ttft.ms.toFixed(0)} ms`);
                 if (m.loadTimeMs) lines.push(` Load: ${(m.loadTimeMs / 1000).toFixed(1)}s`);
                 if (m.gpu?.temp) lines.push(` GPU: ${m.gpu.temp}°C · ${m.gpu.power || '?'}W`);
+                if (m.settings?.label && m.settings.label !== "default") lines.push(` Settings: ${m.settings.label}`);
                 return lines;
               },
             },
