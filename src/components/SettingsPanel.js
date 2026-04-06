@@ -540,7 +540,9 @@ export default function SettingsPanel({
                       <span
                         className={`${styles.modalityStatus} ${toggle.checked ? styles.modalityActive : ""}`}
                       >
-                        {toggle.checked ? "On" : "Off"}
+                        {tool === "Image Generation"
+                          ? (toggle.checked ? "Forced" : "Default")
+                          : (toggle.checked ? "On" : "Off")}
                       </span>
                     ) : (
                       <span

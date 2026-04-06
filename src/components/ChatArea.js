@@ -43,6 +43,8 @@ const TOOL_DESCRIPTIONS = {
   "URL Context": "Extract and analyze content from provided URLs.",
   "Function Calling":
     "Ask about weather, events, commodities, trends, and more.",
+  "Image Generation":
+    "Force the model to generate an image in its response.",
 };
 
 // Map model input types to file accept strings
@@ -724,6 +726,7 @@ export default function ChatArea({
                       ? (h) => onFcCardHover?.(h)
                       : undefined
                   }
+                  {...(tool === "Image Generation" ? { enabledLabel: "Forced", disabledLabel: "Default" } : {})}
                 />
               );
             })}
