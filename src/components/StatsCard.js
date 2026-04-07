@@ -8,6 +8,8 @@ export default function StatsCard({
   variant = "accent",
   loading = false,
   className,
+  onMouseEnter,
+  onMouseLeave,
 }) {
   if (loading) {
     return (
@@ -21,7 +23,11 @@ export default function StatsCard({
   }
 
   return (
-    <div className={`${styles.card} ${className || ""}`}>
+    <div
+      className={`${styles.card} ${className || ""}`}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <div className={styles.header}>
         <span className={styles.label}>{label}</span>
         {Icon && (

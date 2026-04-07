@@ -22,6 +22,7 @@ import {
   Grid3x3,
   ThumbsDown,
   AlertTriangle,
+  Ruler,
 } from "lucide-react";
 import Chart from "chart.js/auto";
 import PrismService from "../services/PrismService";
@@ -478,6 +479,7 @@ const VIEW_TABS = [
   { key: "bar", label: "VRAM Usage", icon: <BarChart3 size={12} /> },
   { key: "efficiency", label: "Tokens per Second", icon: <Zap size={12} /> },
   { key: "quantDist", label: "Quantization", icon: <Layers size={12} /> },
+  { key: "ctxLeaderboard", label: "Context Length", icon: <Ruler size={12} /> },
   { key: "context", label: "Context Scaling", icon: <HardDrive size={12} /> },
 ];
 
@@ -554,6 +556,7 @@ export default function VramBenchmarkComponent() {
     bar: useRef(null),
     efficiency: useRef(null),
     quantDist: useRef(null),
+    ctxLeaderboard: useRef(null),
     context: useRef(null),
   };
   const chartInstances = useRef({});
@@ -833,13 +836,15 @@ export default function VramBenchmarkComponent() {
 
     // Helper — short settings tag for card subtitles
     const stag = (m) => m.settings?.label ? ` · ⚙ ${m.settings.label}` : "";
+    // Helper — context length tag for card subtitles
+    const ctag = (m) => m.contextLength ? ` · ${(m.contextLength / 1024).toFixed(0)}K ctx` : "";
 
     const bestCards = [
       fastest && {
         key: "best-throughput",
         label: "🏆 Best Throughput",
         value: shortModelName(fastest.displayName, 28),
-        subtitle: `${fastest.tokensPerSecond.toFixed(0)} t/s · ${fastest.quantization} · ${fastest.modelVramGiB.toFixed(1)}G${stag(fastest)}`,
+        subtitle: `${fastest.tokensPerSecond.toFixed(0)} t/s · ${fastest.quantization} · ${fastest.modelVramGiB.toFixed(1)}G${ctag(fastest)}${stag(fastest)}`,
         icon: Zap,
         variant: "success",
         sortName: fastest.displayName,
@@ -848,7 +853,7 @@ export default function VramBenchmarkComponent() {
         key: "fastest-response",
         label: "⚡ Fastest Response",
         value: shortModelName(fastestResponse.displayName, 28),
-        subtitle: `${fastestResponse.ttft.ms.toFixed(0)} ms TTFT · ${fastestResponse.tokensPerSecond.toFixed(0)} t/s · ${fastestResponse.modelVramGiB.toFixed(1)}G${stag(fastestResponse)}`,
+        subtitle: `${fastestResponse.ttft.ms.toFixed(0)} ms TTFT · ${fastestResponse.tokensPerSecond.toFixed(0)} t/s · ${fastestResponse.modelVramGiB.toFixed(1)}G${ctag(fastestResponse)}${stag(fastestResponse)}`,
         icon: Crown,
         variant: "success",
         sortName: fastestResponse.displayName,
@@ -857,7 +862,7 @@ export default function VramBenchmarkComponent() {
         key: "best-chat",
         label: "💬 Best for Chat",
         value: shortModelName(bestForChat.displayName, 28),
-        subtitle: `${bestForChat.tokensPerSecond.toFixed(0)} t/s · ${bestForChat.modelVramGiB.toFixed(1)}G · largest ≥30 t/s${stag(bestForChat)}`,
+        subtitle: `${bestForChat.tokensPerSecond.toFixed(0)} t/s · ${bestForChat.modelVramGiB.toFixed(1)}G · largest ≥30 t/s${ctag(bestForChat)}${stag(bestForChat)}`,
         icon: MessageSquare,
         variant: "accent",
         sortName: bestForChat.displayName,
@@ -866,7 +871,7 @@ export default function VramBenchmarkComponent() {
         key: "largest-runnable",
         label: "🐘 Largest Runnable",
         value: shortModelName(largestRunnable.displayName, 28),
-        subtitle: `${largestRunnable.modelVramGiB.toFixed(1)}G VRAM · ${largestRunnable.tokensPerSecond.toFixed(0)} t/s · ${largestRunnable.quantization}${stag(largestRunnable)}`,
+        subtitle: `${largestRunnable.modelVramGiB.toFixed(1)}G VRAM · ${largestRunnable.tokensPerSecond.toFixed(0)} t/s · ${largestRunnable.quantization}${ctag(largestRunnable)}${stag(largestRunnable)}`,
         icon: ArrowDownToLine,
         variant: "info",
         sortName: largestRunnable.displayName,
@@ -875,7 +880,7 @@ export default function VramBenchmarkComponent() {
         key: "lowest-footprint",
         label: "🪶 Lowest Footprint",
         value: shortModelName(lowestFootprint.displayName, 28),
-        subtitle: `${lowestFootprint.modelVramGiB.toFixed(1)}G VRAM · ${lowestFootprint.tokensPerSecond.toFixed(0)} t/s · ${lowestFootprint.quantization}${stag(lowestFootprint)}`,
+        subtitle: `${lowestFootprint.modelVramGiB.toFixed(1)}G VRAM · ${lowestFootprint.tokensPerSecond.toFixed(0)} t/s · ${lowestFootprint.quantization}${ctag(lowestFootprint)}${stag(lowestFootprint)}`,
         icon: HardDrive,
         variant: "success",
         sortName: lowestFootprint.displayName,
@@ -884,7 +889,7 @@ export default function VramBenchmarkComponent() {
         key: "best-prefill",
         label: "🚀 Best Prefill",
         value: shortModelName(bestPrefill.displayName, 28),
-        subtitle: `${bestPrefill.ttft.prefillTokPerSec.toFixed(0)} tok/s prefill · ${bestPrefill.modelVramGiB.toFixed(1)}G${stag(bestPrefill)}`,
+        subtitle: `${bestPrefill.ttft.prefillTokPerSec.toFixed(0)} tok/s prefill · ${bestPrefill.modelVramGiB.toFixed(1)}G${ctag(bestPrefill)}${stag(bestPrefill)}`,
         icon: Rocket,
         variant: "success",
         sortName: bestPrefill.displayName,
@@ -893,7 +898,7 @@ export default function VramBenchmarkComponent() {
         key: "best-large",
         label: "🧠 Best Large Model",
         value: shortModelName(bestLargeModel.displayName, 28),
-        subtitle: `${bestLargeModel.tokensPerSecond.toFixed(0)} t/s · fastest ≥8G · ${bestLargeModel.modelVramGiB.toFixed(1)}G${stag(bestLargeModel)}`,
+        subtitle: `${bestLargeModel.tokensPerSecond.toFixed(0)} t/s · fastest ≥8G · ${bestLargeModel.modelVramGiB.toFixed(1)}G${ctag(bestLargeModel)}${stag(bestLargeModel)}`,
         icon: BrainCircuit,
         variant: "accent",
         sortName: bestLargeModel.displayName,
@@ -905,7 +910,7 @@ export default function VramBenchmarkComponent() {
         key: "slowest-throughput",
         label: "🐌 Slowest Throughput",
         value: shortModelName(slowest.displayName, 28),
-        subtitle: `${slowest.tokensPerSecond.toFixed(0)} t/s · ${slowest.quantization} · ${slowest.modelVramGiB.toFixed(1)}G${stag(slowest)}`,
+        subtitle: `${slowest.tokensPerSecond.toFixed(0)} t/s · ${slowest.quantization} · ${slowest.modelVramGiB.toFixed(1)}G${ctag(slowest)}${stag(slowest)}`,
         icon: ThumbsDown,
         variant: "danger",
         sortName: slowest.displayName,
@@ -914,7 +919,7 @@ export default function VramBenchmarkComponent() {
         key: "slowest-response",
         label: "🐢 Slowest Response",
         value: shortModelName(slowestResponse.displayName, 28),
-        subtitle: `${slowestResponse.ttft.ms.toFixed(0)} ms TTFT · ${slowestResponse.tokensPerSecond.toFixed(0)} t/s · ${slowestResponse.modelVramGiB.toFixed(1)}G${stag(slowestResponse)}`,
+        subtitle: `${slowestResponse.ttft.ms.toFixed(0)} ms TTFT · ${slowestResponse.tokensPerSecond.toFixed(0)} t/s · ${slowestResponse.modelVramGiB.toFixed(1)}G${ctag(slowestResponse)}${stag(slowestResponse)}`,
         icon: AlertTriangle,
         variant: "danger",
         sortName: slowestResponse.displayName,
@@ -923,7 +928,7 @@ export default function VramBenchmarkComponent() {
         key: "worst-chat",
         label: "💬 Worst for Chat",
         value: shortModelName(worstForChat.displayName, 28),
-        subtitle: `${worstForChat.tokensPerSecond.toFixed(0)} t/s · ${worstForChat.modelVramGiB.toFixed(1)}G · smallest ≥30 t/s${stag(worstForChat)}`,
+        subtitle: `${worstForChat.tokensPerSecond.toFixed(0)} t/s · ${worstForChat.modelVramGiB.toFixed(1)}G · smallest ≥30 t/s${ctag(worstForChat)}${stag(worstForChat)}`,
         icon: ThumbsDown,
         variant: "danger",
         sortName: worstForChat.displayName,
@@ -932,7 +937,7 @@ export default function VramBenchmarkComponent() {
         key: "smallest-runnable",
         label: "🔬 Smallest Runnable",
         value: shortModelName(smallestRunnable.displayName, 28),
-        subtitle: `${smallestRunnable.modelVramGiB.toFixed(1)}G VRAM · ${smallestRunnable.tokensPerSecond.toFixed(0)} t/s · ${smallestRunnable.quantization}${stag(smallestRunnable)}`,
+        subtitle: `${smallestRunnable.modelVramGiB.toFixed(1)}G VRAM · ${smallestRunnable.tokensPerSecond.toFixed(0)} t/s · ${smallestRunnable.quantization}${ctag(smallestRunnable)}${stag(smallestRunnable)}`,
         icon: AlertTriangle,
         variant: "warning",
         sortName: smallestRunnable.displayName,
@@ -941,7 +946,7 @@ export default function VramBenchmarkComponent() {
         key: "heaviest-footprint",
         label: "🏋️ Heaviest Footprint",
         value: shortModelName(heaviestFootprint.displayName, 28),
-        subtitle: `${heaviestFootprint.modelVramGiB.toFixed(1)}G VRAM · ${heaviestFootprint.tokensPerSecond.toFixed(0)} t/s · ${heaviestFootprint.quantization}${stag(heaviestFootprint)}`,
+        subtitle: `${heaviestFootprint.modelVramGiB.toFixed(1)}G VRAM · ${heaviestFootprint.tokensPerSecond.toFixed(0)} t/s · ${heaviestFootprint.quantization}${ctag(heaviestFootprint)}${stag(heaviestFootprint)}`,
         icon: ThumbsDown,
         variant: "danger",
         sortName: heaviestFootprint.displayName,
@@ -950,7 +955,7 @@ export default function VramBenchmarkComponent() {
         key: "worst-large",
         label: "🧠 Worst Large Model",
         value: shortModelName(worstLargeModel.displayName, 28),
-        subtitle: `${worstLargeModel.tokensPerSecond.toFixed(0)} t/s · slowest ≥8G · ${worstLargeModel.modelVramGiB.toFixed(1)}G${stag(worstLargeModel)}`,
+        subtitle: `${worstLargeModel.tokensPerSecond.toFixed(0)} t/s · slowest ≥8G · ${worstLargeModel.modelVramGiB.toFixed(1)}G${ctag(worstLargeModel)}${stag(worstLargeModel)}`,
         icon: AlertTriangle,
         variant: "danger",
         sortName: worstLargeModel.displayName,
@@ -989,6 +994,90 @@ export default function VramBenchmarkComponent() {
       chartInstances.current[key] = null;
     }
   }
+
+  // ── Programmatic chart highlight on card hover ──────────
+  // Uses Chart.js's setActiveElements API to emulate a hover
+  // on the data point(s) that match `displayName`.
+
+  const highlightModelInChart = useCallback((displayName) => {
+    const chart = chartInstances.current[activeView];
+    if (!chart) return;
+
+    if (!displayName) {
+      // Clear highlight
+      chart.setActiveElements([]);
+      chart.tooltip?.setActiveElements([], { x: 0, y: 0 });
+      chart.update("none");
+      return;
+    }
+
+    const activeEls = [];
+
+    for (let di = 0; di < chart.data.datasets.length; di++) {
+      const ds = chart.data.datasets[di];
+      const data = ds.data;
+
+      for (let idx = 0; idx < data.length; idx++) {
+        let match = false;
+
+        // Scatter / bubble: raw has .model.displayName
+        if (data[idx]?.model?.displayName === displayName) {
+          match = true;
+        }
+
+        // Scatter overlay entries on bar/efficiency charts: raw has .entry.displayName
+        if (data[idx]?.entry?.displayName === displayName) {
+          match = true;
+        }
+
+        // Context scaling: raw has .ctx.displayName
+        if (data[idx]?.ctx?.displayName === displayName) {
+          match = true;
+        }
+
+        // Index-axis bar charts (bar, efficiency, ctxLeaderboard):
+        // match against chart labels — check if displayName starts with (or equals) the label
+        if (!match && chart.data.labels?.[idx]) {
+          const label = chart.data.labels[idx];
+          if (
+            displayName === label ||
+            displayName.startsWith(label.replace("…", ""))
+          ) {
+            match = true;
+          }
+        }
+
+        // Context scaling: dataset label contains model name
+        if (!match && activeView === "context" && ds.label) {
+          const dsLabel = ds.label.replace("…", "").split(" · ")[0];
+          if (displayName.startsWith(dsLabel) || dsLabel.startsWith(displayName.slice(0, 20))) {
+            match = true;
+          }
+        }
+
+        if (match) {
+          activeEls.push({ datasetIndex: di, index: idx });
+        }
+      }
+    }
+
+    if (activeEls.length > 0) {
+      chart.setActiveElements(activeEls);
+      // Position tooltip near the first highlighted element
+      const meta = chart.getDatasetMeta(activeEls[0].datasetIndex);
+      const el = meta.data[activeEls[0].index];
+      if (el) {
+        chart.tooltip?.setActiveElements(activeEls, {
+          x: el.x,
+          y: el.y,
+        });
+      }
+    } else {
+      chart.setActiveElements([]);
+      chart.tooltip?.setActiveElements([], { x: 0, y: 0 });
+    }
+    chart.update("none");
+  }, [activeView]);
 
   // ── Scatter (dynamic axes) ───────────────────────────────
 
@@ -1318,14 +1407,16 @@ export default function VramBenchmarkComponent() {
 
   // ── Shared range data for bar charts ──────────────────────
 
-  const { vramRanges, tpsRanges } = useMemo(() => {
+  const { vramRanges, tpsRanges, ctxRanges } = useMemo(() => {
     const vram = {};
     const tps = {};
+    const ctxR = {};
     const source = allFilteredData.length > 0 ? allFilteredData : rawData.filter((d) => d.modelVramGiB > 0);
     for (const d of source) {
       const name = d.displayName;
       const v = d.modelVramGiB;
       const t = d.tokensPerSecond || 0;
+      const c = d.contextLength || 0;
       // VRAM ranges (store full entries for per-dot tooltips)
       if (!vram[name]) {
         vram[name] = { min: v, max: v, count: 1, values: [v], entries: [d] };
@@ -1348,8 +1439,21 @@ export default function VramBenchmarkComponent() {
           tps[name].entries.push(d);
         }
       }
+      // Context length ranges (store full entries for per-dot tooltips)
+      if (c > 0) {
+        const cK = c / 1024;
+        if (!ctxR[name]) {
+          ctxR[name] = { min: cK, max: cK, count: 1, values: [cK], entries: [d] };
+        } else {
+          ctxR[name].min = Math.min(ctxR[name].min, cK);
+          ctxR[name].max = Math.max(ctxR[name].max, cK);
+          ctxR[name].count++;
+          ctxR[name].values.push(cK);
+          ctxR[name].entries.push(d);
+        }
+      }
     }
-    return { vramRanges: vram, tpsRanges: tps };
+    return { vramRanges: vram, tpsRanges: tps, ctxRanges: ctxR };
   }, [allFilteredData, rawData]);
 
   // ── Zoom-update effects: animate x-axis range when clip values change ──
@@ -2001,6 +2105,314 @@ export default function VramBenchmarkComponent() {
     });
   }, [models]);
 
+  // ── Context Length Leaderboard ────────────────────────────
+  // Dual-axis horizontal floating range bars — matches VRAM/TPS chart pattern.
+  // Primary x: context length range (K), Secondary x: TPS range.
+
+  const renderCtxLeaderboard = useCallback(() => {
+    const canvas = chartRefs.ctxLeaderboard.current;
+    if (!canvas || models.length === 0) return;
+    destroyChart("ctxLeaderboard");
+
+    const ctx = canvas.getContext("2d");
+
+    // Sort by max context descending, then TPS within same tier
+    const sorted = [...models].sort((a, b) => {
+      const cA = ctxRanges[a.displayName]?.max || a.contextLength / 1024 || 0;
+      const cB = ctxRanges[b.displayName]?.max || b.contextLength / 1024 || 0;
+      return cB - cA || b.tokensPerSecond - a.tokensPerSecond;
+    });
+
+    const labels = sorted.map((m) => {
+      const name = m.displayName;
+      return name.length > 30 ? name.slice(0, 28) + "…" : name;
+    });
+
+    // Dynamic height
+    canvas.parentElement.style.height =
+      Math.max(400, sorted.length * 24 + 80) + "px";
+
+    // Build floating bar data: [min, max] context (K) tuples per model
+    const ctxRangeData = sorted.map((m) => {
+      const range = ctxRanges[m.displayName];
+      if (range && range.count > 1) {
+        return [range.min, range.max];
+      }
+      const k = (m.contextLength || 0) / 1024;
+      return [Math.max(0, k - 0.5), k + 0.5];
+    });
+
+    // Build floating bar data: [min, max] TPS tuples per model
+    const tpsRangeData = sorted.map((m) => {
+      const range = tpsRanges[m.displayName];
+      if (range && range.count > 1) {
+        return [range.min, range.max];
+      }
+      const t = m.tokensPerSecond || 0;
+      return [Math.max(0, t - 0.5), t + 0.5];
+    });
+
+    // Color gradient for context bars: cyan → emerald → teal by context magnitude
+    const allCtx = sorted.map((m) => ctxRanges[m.displayName]?.max || (m.contextLength || 0) / 1024);
+    const cMin = Math.min(...allCtx);
+    const cMax = Math.max(...allCtx);
+    const cSpan = cMax - cMin || 1;
+
+    function ctxColor(k, alpha = 0.55) {
+      const t = (k - cMin) / cSpan; // 0 → 1
+      // HSL sweep: 190 (cyan/small) → 160 (emerald/medium) → 140 (teal/large)
+      const hue = 190 - t * 50;
+      const sat = 60 + t * 20;
+      const lgt = 55 - t * 10;
+      return {
+        bg: `hsla(${hue}, ${sat}%, ${lgt}%, ${alpha})`,
+        border: `hsl(${hue}, ${sat}%, ${lgt}%)`,
+      };
+    }
+
+    // Build scatter overlay: individual context entries as interactive dots
+    const ctxScatterData = [];
+    for (let i = 0; i < sorted.length; i++) {
+      const m = sorted[i];
+      const range = ctxRanges[m.displayName];
+      if (!range || range.count <= 1) continue;
+      for (const entry of range.entries) {
+        ctxScatterData.push({
+          x: (entry.contextLength || 0) / 1024,
+          y: labels[i],
+          entry,
+        });
+      }
+    }
+
+    // Build scatter overlay: individual TPS entries as interactive dots
+    const tpsScatterData = [];
+    for (let i = 0; i < sorted.length; i++) {
+      const m = sorted[i];
+      const range = tpsRanges[m.displayName];
+      if (!range || range.count <= 1) continue;
+      for (const entry of range.entries) {
+        tpsScatterData.push({
+          x: entry.tokensPerSecond || 0,
+          y: labels[i],
+          entry,
+        });
+      }
+    }
+
+
+
+    chartInstances.current.ctxLeaderboard = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Context Range (K)",
+            data: ctxRangeData,
+            backgroundColor: sorted.map((m) =>
+              ctxColor(ctxRanges[m.displayName]?.max || (m.contextLength || 0) / 1024, 0.45).bg,
+            ),
+            borderColor: sorted.map((m) =>
+              m.fitsInVram === false
+                ? "#f43f5e"
+                : ctxColor(ctxRanges[m.displayName]?.max || (m.contextLength || 0) / 1024, 1).border,
+            ),
+            borderWidth: 1.5,
+            borderSkipped: false,
+            borderRadius: 2,
+            hoverBorderWidth: 2.5,
+            hoverBorderColor: "#f8f8f8",
+            xAxisID: "x",
+            order: 4,
+          },
+          {
+            label: "TPS Range",
+            data: tpsRangeData,
+            backgroundColor: "rgba(128,128,128,0.15)",
+            borderColor: "rgba(100,100,100,0.5)",
+            borderWidth: 1.5,
+            borderSkipped: false,
+            borderRadius: 2,
+            hoverBorderWidth: 2.5,
+            hoverBorderColor: "#f8f8f8",
+            xAxisID: "x1",
+            order: 3,
+          },
+          {
+            type: "scatter",
+            label: "Context Runs",
+            data: ctxScatterData,
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
+            borderColor: "rgba(255, 255, 255, 0.3)",
+            borderWidth: 0.5,
+            pointRadius: 3.5,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: "#fff",
+            pointHoverBorderColor: "#14b8a6",
+            pointHoverBorderWidth: 2,
+            xAxisID: "x",
+            order: 1,
+          },
+          {
+            type: "scatter",
+            label: "TPS Runs",
+            data: tpsScatterData,
+            backgroundColor: "rgba(255, 255, 255, 0.5)",
+            borderColor: "rgba(255, 255, 255, 0.2)",
+            borderWidth: 0.5,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: "#fff",
+            pointHoverBorderColor: "#6366f1",
+            pointHoverBorderWidth: 2,
+            xAxisID: "x1",
+            order: 2,
+          },
+        ],
+      },
+      plugins: [
+        makeDatalabelsPlugin({
+          getLabel: (_raw, i) => {
+            const m = sorted[i];
+            if (!m) return "";
+            // Context range label
+            const cRange = ctxRanges[m.displayName];
+            let ctxLabel;
+            if (cRange && cRange.count > 1) {
+              const minL = cRange.min >= 1024 ? `${(cRange.min / 1024).toFixed(0)}M` : `${cRange.min.toFixed(0)}K`;
+              const maxL = cRange.max >= 1024 ? `${(cRange.max / 1024).toFixed(0)}M` : `${cRange.max.toFixed(0)}K`;
+              ctxLabel = `${minL}–${maxL}`;
+            } else {
+              const k = (m.contextLength || 0) / 1024;
+              ctxLabel = k >= 1024 ? `${(k / 1024).toFixed(0)}M` : `${k.toFixed(0)}K`;
+            }
+            // TPS label
+            const tRange = tpsRanges[m.displayName];
+            let tpsLabel;
+            if (tRange && tRange.count > 1) {
+              tpsLabel = `${tRange.min.toFixed(0)}–${tRange.max.toFixed(0)} t/s`;
+            } else {
+              tpsLabel = `${(m.tokensPerSecond || 0).toFixed(0)} t/s`;
+            }
+            return `${ctxLabel} · ${tpsLabel}`;
+          },
+          anchor: "end",
+          align: "right",
+          offset: 6,
+          filterFn: (di) => di === 0,
+        }),
+      ],
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 600, easing: "easeOutQuart" },
+        interaction: { mode: "point", intersect: true },
+        scales: {
+          x: {
+            position: "bottom",
+            title: { ...AXIS_TITLE_STYLE, text: "Context Length (K tokens)" },
+            grid: GRID_STYLE,
+            ticks: {
+              ...TICK_STYLE,
+              callback: (v) => v >= 1024 ? `${(v / 1024).toFixed(0)}M` : `${v}K`,
+            },
+          },
+          x1: {
+            position: "top",
+            title: { ...AXIS_TITLE_STYLE, text: "Tokens / sec" },
+            grid: { display: false },
+            ticks: TICK_STYLE,
+          },
+          y: {
+            grid: { color: "rgba(255,255,255,0.04)", drawBorder: false },
+            ticks: { ...TICK_STYLE, padding: 8 },
+          },
+        },
+        plugins: {
+          legend: LEGEND_STYLE,
+          tooltip: {
+            ...TOOLTIP_STYLE,
+            callbacks: {
+              title: (items) => {
+                const item = items[0];
+                if (!item) return "";
+                // Scatter dots
+                if (item.datasetIndex >= 2) {
+                  return item.raw?.entry?.displayName || "";
+                }
+                return sorted[item.dataIndex]?.displayName || "";
+              },
+              afterTitle: (items) => {
+                const item = items[0];
+                if (!item) return "";
+                if (item.datasetIndex >= 2) {
+                  const e = item.raw?.entry;
+                  if (!e) return "";
+                  return `${e.quantization} · ${e.architecture} · ${(e.contextLength / 1024).toFixed(0)}K ctx · ${shortGPU(e.system?.gpu?.name)}`;
+                }
+                const m = sorted[item.dataIndex];
+                if (!m) return "";
+                return `${m.quantization} · ${m.architecture} · ${(m.contextLength / 1024).toFixed(0)}K ctx · ${shortGPU(m.system?.gpu?.name)}`;
+              },
+              label: (item) => {
+                // Scatter dots — entry-specific
+                if (item.datasetIndex === 2) {
+                  const e = item.raw?.entry;
+                  if (!e) return "";
+                  return ` Context: ${((e.contextLength || 0) / 1024).toFixed(0)}K`;
+                }
+                if (item.datasetIndex === 3) {
+                  const e = item.raw?.entry;
+                  if (!e) return "";
+                  return ` Speed: ${(e.tokensPerSecond || 0).toFixed(1)} tok/s`;
+                }
+                const m = sorted[item.dataIndex];
+                if (!m) return "";
+                if (item.datasetIndex === 0) {
+                  const range = ctxRanges[m.displayName];
+                  if (range && range.count > 1) {
+                    const minL = range.min >= 1024 ? `${(range.min / 1024).toFixed(0)}M` : `${range.min.toFixed(0)}K`;
+                    const maxL = range.max >= 1024 ? `${(range.max / 1024).toFixed(0)}M` : `${range.max.toFixed(0)}K`;
+                    return ` Context: ${minL}–${maxL} (${range.count} runs)`;
+                  }
+                  return ` Context: ${((m.contextLength || 0) / 1024).toFixed(0)}K`;
+                }
+                // TPS bar
+                const tRange = tpsRanges[m.displayName];
+                if (tRange && tRange.count > 1) {
+                  return ` Speed: ${tRange.min.toFixed(1)}–${tRange.max.toFixed(1)} tok/s (${tRange.count} runs)`;
+                }
+                return ` Speed: ${m.tokensPerSecond?.toFixed(1) || "0"} tok/s`;
+              },
+              afterBody: (items) => {
+                const item = items[0];
+                if (!item) return "";
+                const m = item.datasetIndex >= 2
+                  ? item.raw?.entry
+                  : sorted[item.dataIndex];
+                if (!m) return "";
+                const lines = [
+                  "",
+                  `VRAM: ${m.modelVramGiB.toFixed(2)} GiB`,
+                  `Efficiency: ${(m.tokensPerSecond / m.modelVramGiB).toFixed(1)} TPS/GiB`,
+                  `Quant: ${m.quantization} (${m.bitsPerWeight || "?"} bpw)`,
+                ];
+                if (m.ttft?.ms) lines.push(`TTFT: ${m.ttft.ms.toFixed(0)} ms`);
+                if (m.loadTimeMs) lines.push(`Load: ${(m.loadTimeMs / 1000).toFixed(1)}s`);
+                if (m.gpu?.temp) lines.push(`GPU: ${m.gpu.temp}°C · ${m.gpu.power || "?"}W`);
+                if (m.fitsInVram === false) lines.push(`⚠ Does NOT fit in VRAM`);
+                if (m.settings?.label && m.settings.label !== "default") lines.push(`Settings: ${m.settings.label}`);
+                return lines;
+              },
+            },
+          },
+        },
+      },
+    });
+  }, [models, ctxRanges, tpsRanges]);
+
   // ── Context Length Scaling ────────────────────────────────
 
   const renderContext = useCallback(() => {
@@ -2174,6 +2586,7 @@ export default function VramBenchmarkComponent() {
       bar: renderBar,
       efficiency: renderEfficiency,
       quantDist: renderQuantDist,
+      ctxLeaderboard: renderCtxLeaderboard,
       context: renderContext,
     };
     renderMap[activeView]?.();
@@ -2185,6 +2598,7 @@ export default function VramBenchmarkComponent() {
     renderBar,
     renderEfficiency,
     renderQuantDist,
+    renderCtxLeaderboard,
     renderContext,
   ]);
 
@@ -2211,6 +2625,7 @@ export default function VramBenchmarkComponent() {
     bar: `Each bar spans the min→max measured VRAM across all benchmark runs${settingsDesc || " — default settings"}.`,
     efficiency: `Each bar spans the min→max tokens/sec across all benchmark runs${settingsDesc || " — default settings"}. Sorted by peak throughput.`,
     quantDist: `Average VRAM and speed grouped by quantization format${settingsDesc}.`,
+    ctxLeaderboard: `Each model shows two bars: context length range (bottom axis, colored by max context) and TPS range (top axis, gray). Scatter dots show individual runs${settingsDesc || " — default settings"}.`,
     context: "How VRAM consumption scales as context window size increases per model.",
   };
 
@@ -2319,6 +2734,8 @@ export default function VramBenchmarkComponent() {
                 subtitle={card.subtitle}
                 icon={card.icon}
                 variant={card.variant}
+                onMouseEnter={() => highlightModelInChart(card.sortName)}
+                onMouseLeave={() => highlightModelInChart(null)}
               />
             ))}
           </div>
@@ -2509,7 +2926,7 @@ export default function VramBenchmarkComponent() {
                 className={styles.chartWrapper}
                 style={{
                   display: activeView === tab.key ? "block" : "none",
-                  height: tab.key === "bar" || tab.key === "efficiency"
+                  height: tab.key === "bar" || tab.key === "efficiency" || tab.key === "ctxLeaderboard"
                     ? undefined
                     : 460,
                 }}

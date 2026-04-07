@@ -219,6 +219,7 @@
   flex-direction: column;
   gap: 6px;
   padding-top: 4px;
+  min-width: 0;
 }
 
 .roleLabel {
@@ -356,6 +357,7 @@
   font-size: 15px;
   line-height: 1.6;
   color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
 /* Markdown prose styles */

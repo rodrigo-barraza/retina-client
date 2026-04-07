@@ -693,6 +693,7 @@
   font-size: 14px;
   line-height: 1.6;
   color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
 .text h1,

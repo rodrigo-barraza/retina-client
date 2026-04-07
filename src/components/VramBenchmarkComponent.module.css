@@ -41,6 +41,7 @@
 
 .statWide {
   grid-column: span 2;
+  cursor: pointer;
 }
 
 /* ─── Refresh button (in PageHeader right slot) ─── */
