@@ -27,7 +27,6 @@ import {
 } from "../utils/utilities.js";
 import { getModalities } from "./HistoryPanel.js";
 import { PROJECT_AGENT, SETTINGS_DEFAULTS } from "../constants.js";
-import { WORKSPACE_ROOT } from "../../secrets.js";
 import chatStyles from "./ChatArea.module.css";
 import styles from "./AgentComponent.module.css";
 import ChatInputButton from "./ChatInputButton.js";
@@ -79,53 +78,6 @@ const AGENT_PROMPTS = [
 // Tools that are always on and non-toggleable in the agent view
 const AGENT_LOCKED_TOOLS = new Set(["Function Calling"]);
 
-/**
- * Build the agent system prompt dynamically from the loaded tool schemas.
- * Groups tools by their `domain` field (sourced from tools-api via Prism).
- * Falls back to tool names only if descriptions are missing.
- */
-function buildAgentSystemPrompt(tools) {
-  // Group tools by domain, preserving insertion order
-  const groups = new Map();
-  for (const tool of tools) {
-    // Strip "Agentic: " prefix for cleaner headings in the prompt
-    const domain = (tool.domain || "Other").replace(/^Agentic:\s*/i, "");
-    if (!groups.has(domain)) groups.set(domain, []);
-    groups.get(domain).push(tool);
-  }
-
-  // Build categorised capability list
-  const sections = [];
-  for (const [domain, domainTools] of groups) {
-    const entries = domainTools.map((t) => {
-      // Use first sentence of description for brevity
-      const desc = (t.description || "").split(/\.\s/)[0];
-      return `- **${t.name}**: ${desc}`;
-    });
-    sections.push(`### ${domain}\n${entries.join("\n")}`);
-  }
-
-  const capabilitiesBlock = sections.length > 0
-    ? `## Available Capabilities (${tools.length} tools)\n\n${sections.join("\n\n")}`
-    : "## Available Capabilities\nNo tools loaded.";
-
-  return `You are a highly capable coding agent with access to file system, git, command execution, and web tools.
-
-${capabilitiesBlock}
-
-## Coding Guidelines
-1. Always read relevant files before making edits to understand context
-2. Prefer str_replace_file over write_file for editing existing code — it's safer and preserves unchanged content
-3. Use multi_file_read when you need to inspect several files at once
-4. After making changes, verify them by reading the modified section
-5. Use project_summary to understand unfamiliar codebases before diving in
-6. Check git_status before and after edits to track your changes
-7. When searching, use includes filters to narrow results (e.g. ["*.js", "*.ts"])
-8. Keep your explanations concise and technical
-9. Current date/time: {{CURRENT_DATE_TIME}}
-
-Your workspace root is: {{WORKSPACE_ROOT}}`;
-}
 
 export default function AgentComponent() {
   // ── State ────────────────────────────────────────────────────
@@ -150,7 +102,6 @@ export default function AgentComponent() {
     ...SETTINGS_DEFAULTS,
     maxTokens: 16384,
     functionCallingEnabled: true,
-    systemPrompt: "", // Derived from builtInTools once loaded
   });
 
   const [favoriteKeys, setFavoriteKeys] = useState([]);
@@ -317,21 +268,8 @@ export default function AgentComponent() {
     loadAgenticTools().catch(console.error);
   }, []);
 
-  // ── Derived system prompt from loaded tools ────────────────
-  const agentSystemPrompt = useMemo(
-    () => {
-      const enabledTools = builtInTools.filter((t) => !disabledBuiltIns.has(t.name));
-      return buildAgentSystemPrompt(enabledTools);
-    },
-    [builtInTools, disabledBuiltIns],
-  );
-
-  // Sync derived prompt into settings whenever it changes
-  useEffect(() => {
-    if (agentSystemPrompt) {
-      setSettings((s) => ({ ...s, systemPrompt: agentSystemPrompt }));
-    }
-  }, [agentSystemPrompt]);
+  // System prompt is fully assembled server-side by SystemPromptAssembler.
+  // The client sends a placeholder system message that gets replaced.
 
   // ── Conversation stats for SettingsPanel ──────────────────
   const uniqueModels = useMemo(() => getUniqueModels(messages), [messages]);
@@ -457,14 +395,12 @@ export default function AgentComponent() {
       );
 
       await new Promise((resolve, reject) => {
-        const systemPromptText = settings.systemPrompt
-          .replace("{{CURRENT_DATE_TIME}}", new Date().toLocaleString())
-          .replace("{{WORKSPACE_ROOT}}", WORKSPACE_ROOT || "");
+        // System prompt placeholder — replaced server-side by SystemPromptAssembler
         const payload = {
           provider: settings.provider,
           model: settings.model,
           messages: [
-            { role: "system", content: systemPromptText },
+            { role: "system", content: "" },
             ...currentMessages,
           ],
           functionCallingEnabled: true,
@@ -480,7 +416,6 @@ export default function AgentComponent() {
           conversationId,
           conversationMeta: {
             title: resolvedTitle,
-            systemPrompt: systemPromptText,
           },
           // Phase 1: Agentic controls
           autoApprove,
@@ -763,7 +698,6 @@ export default function AgentComponent() {
       settings.thinkingEnabled,
       settings.reasoningEffort,
       settings.thinkingBudget,
-      settings.systemPrompt,
       conversationId,
       allToolSchemas,
       autoApprove,
