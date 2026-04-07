@@ -300,7 +300,7 @@ export default function SkillsPanel({ skills, onSkillsChange, project }) {
 
             {skill.content && (
               <div className={styles.skillContentPreview}>
-                {skill.content.slice(0, 200)}
+                {skill.content}
               </div>
             )}
 

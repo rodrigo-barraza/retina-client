@@ -408,6 +408,23 @@ export default class PrismService {
   }
 
   // ---------------------------------------------------------------------------
+  // Agent Memories
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List all agent memories for a project (read-only).
+   * @param {string} [project]
+   * @param {number} [limit=100]
+   * @returns {Promise<{ memories: Array, total: number }>}
+   */
+  static async getAgentMemories(project, limit = 100) {
+    const qs = new URLSearchParams();
+    if (project) qs.set("project", project);
+    if (limit) qs.set("limit", String(limit));
+    return PrismService._request(`/agent-memories?${qs}`, { method: "GET" });
+  }
+
+  // ---------------------------------------------------------------------------
   // Chat
   // ---------------------------------------------------------------------------
 

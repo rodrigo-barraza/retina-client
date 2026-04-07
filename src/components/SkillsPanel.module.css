@@ -189,28 +189,14 @@
 
 .skillContentPreview {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   line-height: 1.5;
-  max-height: 60px;
-  overflow: hidden;
   white-space: pre-wrap;
   padding: 8px;
   background: color-mix(in srgb, var(--bg-tertiary) 60%, transparent);
   border-radius: 6px;
   font-family: var(--font-mono, "JetBrains Mono", "Fira Code", monospace);
   border: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
-  position: relative;
-
-  &::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 24px;
-    background: linear-gradient(transparent, var(--bg-card));
-    pointer-events: none;
-  }
 }
 
 .skillCharCount {

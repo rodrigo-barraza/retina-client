@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Bot, Paperclip, X, Code2, ClipboardList, Zap, Sparkles } from "lucide-react";
+import { Bot, Paperclip, X, Code2, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
 import NavigationSidebarComponent from "./NavigationSidebarComponent.js";
@@ -9,6 +9,7 @@ import HistoryPanel from "./HistoryPanel.js";
 import SettingsPanel from "./SettingsPanel.js";
 import CustomToolsPanel from "./CustomToolsPanel.js";
 import SkillsPanel from "./SkillsPanel.js";
+import MemoriesPanel from "./MemoriesPanel.js";
 import MessageList, { prepareDisplayMessages } from "./MessageList.js";
 import ImagePreviewComponent from "./ImagePreviewComponent.js";
 import TabBarComponent from "./TabBarComponent.js";
@@ -876,16 +877,20 @@ export default function AgentComponent() {
     <>
       <TabBarComponent
         tabs={[
-          { key: "settings", label: "Settings" },
+          { key: "settings", icon: <Settings size={14} /> },
           {
             key: "tools",
-            label: "Agentic Tools",
+            icon: <Wrench size={14} />,
             badge: allToolSchemas.length,
           },
           {
             key: "skills",
-            label: "Skills",
+            icon: <Sparkles size={14} />,
             badge: skills.filter((s) => s.enabled).length || undefined,
+          },
+          {
+            key: "memories",
+            icon: <Brain size={14} />,
           },
         ]}
         activeTab={leftTab}
@@ -936,6 +941,10 @@ export default function AgentComponent() {
           onSkillsChange={loadSkills}
           project={PROJECT_AGENT}
         />
+      )}
+
+      {leftTab === "memories" && (
+        <MemoriesPanel project={PROJECT_AGENT} />
       )}
     </>
   );
