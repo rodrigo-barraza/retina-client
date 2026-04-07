@@ -351,3 +351,41 @@
   }
 }
 
+/* ── Consolidation Toast ──────────────────────────────────── */
+
+.toast {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  animation: toastSlideIn 0.25s ease-out;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toastSuccess {
+  background: color-mix(in srgb, #34d399 12%, transparent);
+  color: #34d399;
+  border: 1px solid color-mix(in srgb, #34d399 25%, transparent);
+}
+
+.toastInfo {
+  background: color-mix(in srgb, #60a5fa 12%, transparent);
+  color: #60a5fa;
+  border: 1px solid color-mix(in srgb, #60a5fa 25%, transparent);
+}
+
+.toastError {
+  background: color-mix(in srgb, #f87171 12%, transparent);
+  color: #f87171;
+  border: 1px solid color-mix(in srgb, #f87171 25%, transparent);
+}

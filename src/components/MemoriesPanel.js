@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Brain, RefreshCw, User, MessageSquare, FolderKanban, ExternalLink, Trash2 } from "lucide-react";
+import { Brain, RefreshCw, User, MessageSquare, FolderKanban, ExternalLink, Trash2, Sparkles } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import styles from "./MemoriesPanel.module.css";
 
@@ -57,6 +57,8 @@ export default function MemoriesPanel({ project, refreshKey }) {
   const [error, setError] = useState(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
   const [newMemoryIds, setNewMemoryIds] = useState(new Set());
+  const [consolidating, setConsolidating] = useState(false);
+  const [toast, setToast] = useState(null);
   const knownIdsRef = useRef(new Set());
 
   const loadMemories = useCallback(async () => {
@@ -107,6 +109,28 @@ export default function MemoriesPanel({ project, refreshKey }) {
       console.error("Failed to delete memory:", err);
     }
   }, []);
+
+  const handleConsolidate = useCallback(async () => {
+    setConsolidating(true);
+    setToast(null);
+    try {
+      const result = await PrismService.consolidateMemories(project);
+      if (result.skipped) {
+        setToast({ type: "info", text: result.reason === "insufficient memories" ? "Not enough memories to consolidate" : "No consolidation needed" });
+      } else if (result.actionsApplied > 0) {
+        setToast({ type: "success", text: result.summary || `Consolidated ${result.merged || 0} memories` });
+        // Refresh after consolidation
+        loadMemories();
+      } else {
+        setToast({ type: "info", text: result.summary || "No changes needed" });
+      }
+    } catch (err) {
+      setToast({ type: "error", text: `Consolidation failed: ${err.message}` });
+    } finally {
+      setConsolidating(false);
+      setTimeout(() => setToast(null), 5000);
+    }
+  }, [project, loadMemories]);
 
   // ── Loading ─────────────────────────────────────────────────
   if (loading) {
@@ -159,6 +183,14 @@ export default function MemoriesPanel({ project, refreshKey }) {
         </span>
         <button
           className={styles.refreshBtn}
+          onClick={handleConsolidate}
+          disabled={consolidating || total < 2}
+          title="Consolidate memories — merge duplicates and clean stale entries"
+        >
+          <Sparkles size={11} className={consolidating ? styles.refreshSpin : ""} />
+        </button>
+        <button
+          className={styles.refreshBtn}
           onClick={loadMemories}
           disabled={loading}
           title="Refresh memories"
@@ -166,6 +198,12 @@ export default function MemoriesPanel({ project, refreshKey }) {
           <RefreshCw size={11} className={loading ? styles.refreshSpin : ""} />
         </button>
       </div>
+
+      {toast && (
+        <div className={`${styles.toast} ${styles[`toast${toast.type.charAt(0).toUpperCase() + toast.type.slice(1)}`]}`}>
+          {toast.text}
+        </div>
+      )}
 
       {memories.map((memory) => {
         const memoryId = memory.id || memory._id;

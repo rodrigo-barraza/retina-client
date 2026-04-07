@@ -433,6 +433,19 @@ export default class PrismService {
     return PrismService._request(`/agent-memories/${id}`, { method: "DELETE" });
   }
 
+  /**
+   * Trigger memory consolidation for a project.
+   * @param {string} project - Project identifier
+   * @returns {Promise<object>} Consolidation results
+   */
+  static async consolidateMemories(project) {
+    return PrismService._request("/agent-memories/consolidate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project }),
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // MCP Servers
   // ---------------------------------------------------------------------------
