@@ -138,6 +138,7 @@ export default function AgentComponent() {
   const [planFirst, setPlanFirst] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [planProposal, setPlanProposal] = useState(null); // { plan, steps, status }
+  const [agenticProgress, setAgenticProgress] = useState(null); // { iteration, maxIterations }
 
   const textareaRef = useRef(null);
   const endRef = useRef(null);
@@ -597,6 +598,15 @@ export default function AgentComponent() {
               status: "pending",
             });
           },
+          onStatus: (statusData) => {
+            // statusData is now the full SSE data object { type, message, iteration?, maxIterations? }
+            if (statusData?.message === "iteration_progress") {
+              setAgenticProgress({
+                iteration: statusData.iteration,
+                maxIterations: statusData.maxIterations,
+              });
+            }
+          },
           onDone: (data) => {
             setMessages((prev) => {
               const updated = [...prev];
@@ -657,6 +667,7 @@ export default function AgentComponent() {
       setStreamingOutputs(new Map());
       setPendingApprovals([]);
       setPlanProposal(null);
+      setAgenticProgress(null);
 
       let resolvedTitle = title;
       if (messages.length === 0) {
@@ -878,8 +889,14 @@ export default function AgentComponent() {
             planText={planProposal.plan}
             steps={planProposal.steps}
             status={planProposal.status}
-            onApprove={() => setPlanProposal((p) => p ? { ...p, status: "approved" } : null)}
-            onReject={() => setPlanProposal((p) => p ? { ...p, status: "rejected" } : null)}
+            onApprove={() => {
+              setPlanProposal((p) => p ? { ...p, status: "approved" } : null);
+              PrismService.sendApprovalResponse(conversationId, true).catch(console.error);
+            }}
+            onReject={() => {
+              setPlanProposal((p) => p ? { ...p, status: "rejected" } : null);
+              PrismService.sendApprovalResponse(conversationId, false).catch(console.error);
+            }}
           />
         )}
 
@@ -894,16 +911,19 @@ export default function AgentComponent() {
               setPendingApprovals((prev) =>
                 prev.map((a) => a.id === approval.id ? { ...a, status: "approved" } : a),
               );
+              PrismService.sendApprovalResponse(conversationId, true).catch(console.error);
             }}
             onReject={() => {
               setPendingApprovals((prev) =>
                 prev.map((a) => a.id === approval.id ? { ...a, status: "rejected" } : a),
               );
+              PrismService.sendApprovalResponse(conversationId, false).catch(console.error);
             }}
             onApproveAll={() => {
               setPendingApprovals((prev) =>
                 prev.map((a) => a.status === "pending" ? { ...a, status: "approved" } : a),
               );
+              PrismService.sendApprovalResponse(conversationId, true).catch(console.error);
             }}
           />
         ))}
@@ -912,6 +932,27 @@ export default function AgentComponent() {
       </div>
 
       {/* Input area */}
+      {agenticProgress && isGenerating && (
+        <div className={styles.iterationBar}>
+          <span className={styles.iterationLabel}>
+            <Zap size={11} />
+            Iteration {agenticProgress.iteration}/{agenticProgress.maxIterations}
+          </span>
+          <div className={styles.iterationDots}>
+            {Array.from({ length: agenticProgress.maxIterations }, (_, i) => {
+              const step = i + 1;
+              const isDone = step < agenticProgress.iteration;
+              const isActive = step === agenticProgress.iteration;
+              return (
+                <div
+                  key={step}
+                  className={`${styles.iterationDot}${isDone ? ` ${styles.iterationDotDone}` : ""}${isActive ? ` ${styles.iterationDotActive}` : ""}`}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div className={chatStyles.inputWrapper}>
         <form
           onSubmit={handleSend}

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from "react";
 import {
-  Monitor,
   Cpu,
   Zap,
   BarChart3,
@@ -496,7 +495,7 @@ export default function VramBenchmarkComponent() {
   // Filters
   const [machineFilter, setMachineFilter] = useState("all");
   const [providerFilter, setProviderFilter] = useState("all");
-  const [settingsFilter, setSettingsFilter] = useState("default");
+  const [settingsFilter, setSettingsFilter] = useState("all");
   const [ctxFilter, setCtxFilter] = useState("all");
   const [sortBy, setSortBy] = useState("vram");
   const [scatterMode, setScatterMode] = useState("vram_vs_speed");
@@ -799,12 +798,15 @@ export default function VramBenchmarkComponent() {
 
     // ── Build sorted card arrays by model name ──
 
+    // Helper — short settings tag for card subtitles
+    const stag = (m) => m.settings?.label ? ` · ⚙ ${m.settings.label}` : "";
+
     const bestCards = [
       fastest && {
         key: "best-throughput",
         label: "🏆 Best Throughput",
-        value: `${fastest.tokensPerSecond.toFixed(0)} t/s`,
-        subtitle: `${shortModelName(fastest.displayName, 30)} · ${fastest.quantization} · ${fastest.modelVramGiB.toFixed(1)}G`,
+        value: shortModelName(fastest.displayName, 28),
+        subtitle: `${fastest.tokensPerSecond.toFixed(0)} t/s · ${fastest.quantization} · ${fastest.modelVramGiB.toFixed(1)}G${stag(fastest)}`,
         icon: Zap,
         variant: "success",
         sortName: fastest.displayName,
@@ -812,8 +814,8 @@ export default function VramBenchmarkComponent() {
       fastestResponse && {
         key: "fastest-response",
         label: "⚡ Fastest Response",
-        value: `${fastestResponse.ttft.ms.toFixed(0)} ms TTFT`,
-        subtitle: `${shortModelName(fastestResponse.displayName, 30)} · ${fastestResponse.tokensPerSecond.toFixed(0)} t/s · ${fastestResponse.modelVramGiB.toFixed(1)}G`,
+        value: shortModelName(fastestResponse.displayName, 28),
+        subtitle: `${fastestResponse.ttft.ms.toFixed(0)} ms TTFT · ${fastestResponse.tokensPerSecond.toFixed(0)} t/s · ${fastestResponse.modelVramGiB.toFixed(1)}G${stag(fastestResponse)}`,
         icon: Crown,
         variant: "success",
         sortName: fastestResponse.displayName,
@@ -822,7 +824,7 @@ export default function VramBenchmarkComponent() {
         key: "best-chat",
         label: "💬 Best for Chat",
         value: shortModelName(bestForChat.displayName, 28),
-        subtitle: `${bestForChat.tokensPerSecond.toFixed(0)} t/s · ${bestForChat.modelVramGiB.toFixed(1)}G · largest ≥30 t/s`,
+        subtitle: `${bestForChat.tokensPerSecond.toFixed(0)} t/s · ${bestForChat.modelVramGiB.toFixed(1)}G · largest ≥30 t/s${stag(bestForChat)}`,
         icon: MessageSquare,
         variant: "accent",
         sortName: bestForChat.displayName,
@@ -831,7 +833,7 @@ export default function VramBenchmarkComponent() {
         key: "largest-runnable",
         label: "🐘 Largest Runnable",
         value: shortModelName(largestRunnable.displayName, 28),
-        subtitle: `${largestRunnable.modelVramGiB.toFixed(1)}G VRAM · ${largestRunnable.tokensPerSecond.toFixed(0)} t/s · ${largestRunnable.quantization}`,
+        subtitle: `${largestRunnable.modelVramGiB.toFixed(1)}G VRAM · ${largestRunnable.tokensPerSecond.toFixed(0)} t/s · ${largestRunnable.quantization}${stag(largestRunnable)}`,
         icon: ArrowDownToLine,
         variant: "info",
         sortName: largestRunnable.displayName,
@@ -840,7 +842,7 @@ export default function VramBenchmarkComponent() {
         key: "lowest-footprint",
         label: "🪶 Lowest Footprint",
         value: shortModelName(lowestFootprint.displayName, 28),
-        subtitle: `${lowestFootprint.modelVramGiB.toFixed(1)}G VRAM · ${lowestFootprint.tokensPerSecond.toFixed(0)} t/s · ${lowestFootprint.quantization}`,
+        subtitle: `${lowestFootprint.modelVramGiB.toFixed(1)}G VRAM · ${lowestFootprint.tokensPerSecond.toFixed(0)} t/s · ${lowestFootprint.quantization}${stag(lowestFootprint)}`,
         icon: HardDrive,
         variant: "success",
         sortName: lowestFootprint.displayName,
@@ -848,8 +850,8 @@ export default function VramBenchmarkComponent() {
       bestPrefill && {
         key: "best-prefill",
         label: "🚀 Best Prefill",
-        value: `${bestPrefill.ttft.prefillTokPerSec.toFixed(0)} tok/s`,
-        subtitle: `${shortModelName(bestPrefill.displayName, 30)} · prompt ingestion · ${bestPrefill.modelVramGiB.toFixed(1)}G`,
+        value: shortModelName(bestPrefill.displayName, 28),
+        subtitle: `${bestPrefill.ttft.prefillTokPerSec.toFixed(0)} tok/s prefill · ${bestPrefill.modelVramGiB.toFixed(1)}G${stag(bestPrefill)}`,
         icon: Rocket,
         variant: "success",
         sortName: bestPrefill.displayName,
@@ -857,8 +859,8 @@ export default function VramBenchmarkComponent() {
       bestLargeModel && {
         key: "best-large",
         label: "🧠 Best Large Model",
-        value: `${bestLargeModel.tokensPerSecond.toFixed(0)} t/s`,
-        subtitle: `${shortModelName(bestLargeModel.displayName, 30)} · fastest ≥8G · ${bestLargeModel.modelVramGiB.toFixed(1)}G`,
+        value: shortModelName(bestLargeModel.displayName, 28),
+        subtitle: `${bestLargeModel.tokensPerSecond.toFixed(0)} t/s · fastest ≥8G · ${bestLargeModel.modelVramGiB.toFixed(1)}G${stag(bestLargeModel)}`,
         icon: BrainCircuit,
         variant: "accent",
         sortName: bestLargeModel.displayName,
@@ -869,8 +871,8 @@ export default function VramBenchmarkComponent() {
       slowest && {
         key: "slowest-throughput",
         label: "🐌 Slowest Throughput",
-        value: `${slowest.tokensPerSecond.toFixed(0)} t/s`,
-        subtitle: `${shortModelName(slowest.displayName, 30)} · ${slowest.quantization} · ${slowest.modelVramGiB.toFixed(1)}G`,
+        value: shortModelName(slowest.displayName, 28),
+        subtitle: `${slowest.tokensPerSecond.toFixed(0)} t/s · ${slowest.quantization} · ${slowest.modelVramGiB.toFixed(1)}G${stag(slowest)}`,
         icon: ThumbsDown,
         variant: "danger",
         sortName: slowest.displayName,
@@ -878,8 +880,8 @@ export default function VramBenchmarkComponent() {
       slowestResponse && {
         key: "slowest-response",
         label: "🐢 Slowest Response",
-        value: `${slowestResponse.ttft.ms.toFixed(0)} ms TTFT`,
-        subtitle: `${shortModelName(slowestResponse.displayName, 30)} · ${slowestResponse.tokensPerSecond.toFixed(0)} t/s · ${slowestResponse.modelVramGiB.toFixed(1)}G`,
+        value: shortModelName(slowestResponse.displayName, 28),
+        subtitle: `${slowestResponse.ttft.ms.toFixed(0)} ms TTFT · ${slowestResponse.tokensPerSecond.toFixed(0)} t/s · ${slowestResponse.modelVramGiB.toFixed(1)}G${stag(slowestResponse)}`,
         icon: AlertTriangle,
         variant: "danger",
         sortName: slowestResponse.displayName,
@@ -888,7 +890,7 @@ export default function VramBenchmarkComponent() {
         key: "worst-chat",
         label: "💬 Worst for Chat",
         value: shortModelName(worstForChat.displayName, 28),
-        subtitle: `${worstForChat.tokensPerSecond.toFixed(0)} t/s · ${worstForChat.modelVramGiB.toFixed(1)}G · smallest ≥30 t/s`,
+        subtitle: `${worstForChat.tokensPerSecond.toFixed(0)} t/s · ${worstForChat.modelVramGiB.toFixed(1)}G · smallest ≥30 t/s${stag(worstForChat)}`,
         icon: ThumbsDown,
         variant: "danger",
         sortName: worstForChat.displayName,
@@ -897,7 +899,7 @@ export default function VramBenchmarkComponent() {
         key: "smallest-runnable",
         label: "🔬 Smallest Runnable",
         value: shortModelName(smallestRunnable.displayName, 28),
-        subtitle: `${smallestRunnable.modelVramGiB.toFixed(1)}G VRAM · ${smallestRunnable.tokensPerSecond.toFixed(0)} t/s · ${smallestRunnable.quantization}`,
+        subtitle: `${smallestRunnable.modelVramGiB.toFixed(1)}G VRAM · ${smallestRunnable.tokensPerSecond.toFixed(0)} t/s · ${smallestRunnable.quantization}${stag(smallestRunnable)}`,
         icon: AlertTriangle,
         variant: "warning",
         sortName: smallestRunnable.displayName,
@@ -906,7 +908,7 @@ export default function VramBenchmarkComponent() {
         key: "heaviest-footprint",
         label: "🏋️ Heaviest Footprint",
         value: shortModelName(heaviestFootprint.displayName, 28),
-        subtitle: `${heaviestFootprint.modelVramGiB.toFixed(1)}G VRAM · ${heaviestFootprint.tokensPerSecond.toFixed(0)} t/s · ${heaviestFootprint.quantization}`,
+        subtitle: `${heaviestFootprint.modelVramGiB.toFixed(1)}G VRAM · ${heaviestFootprint.tokensPerSecond.toFixed(0)} t/s · ${heaviestFootprint.quantization}${stag(heaviestFootprint)}`,
         icon: ThumbsDown,
         variant: "danger",
         sortName: heaviestFootprint.displayName,
@@ -914,8 +916,8 @@ export default function VramBenchmarkComponent() {
       worstLargeModel && {
         key: "worst-large",
         label: "🧠 Worst Large Model",
-        value: `${worstLargeModel.tokensPerSecond.toFixed(0)} t/s`,
-        subtitle: `${shortModelName(worstLargeModel.displayName, 30)} · slowest ≥8G · ${worstLargeModel.modelVramGiB.toFixed(1)}G`,
+        value: shortModelName(worstLargeModel.displayName, 28),
+        subtitle: `${worstLargeModel.tokensPerSecond.toFixed(0)} t/s · slowest ≥8G · ${worstLargeModel.modelVramGiB.toFixed(1)}G${stag(worstLargeModel)}`,
         icon: AlertTriangle,
         variant: "danger",
         sortName: worstLargeModel.displayName,
@@ -960,7 +962,13 @@ export default function VramBenchmarkComponent() {
   const renderScatter = useCallback(() => {
     const canvas = chartRefs.scatter.current;
     if (!canvas || models.length === 0) return;
-    destroyChart("scatter");
+
+    // If the canvas element changed (e.g. remount after loading), destroy stale instance
+    const existing = chartInstances.current.scatter;
+    if (existing && existing.canvas !== canvas) {
+      existing.destroy();
+      chartInstances.current.scatter = null;
+    }
 
     const ctx = canvas.getContext("2d");
     const mode = activeScatterMode;
@@ -1181,80 +1189,95 @@ export default function VramBenchmarkComponent() {
       });
     }
 
-    chartInstances.current.scatter = new Chart(ctx, {
-      type: "bubble",
-      data: { datasets },
-      plugins: [
-        makeDatalabelsPlugin({
-          getLabel: (raw) => shortModelName(raw?.model?.displayName, 16),
-          anchor: "end",
-          align: "top",
-          offset: 4,
-          filterFn: (di, chart) => chart.data.datasets[di]?.type !== "line",
-        }),
-        makeConnectorHighlightPlugin(),
-      ],
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 500, easing: "easeOutQuart" },
-        interaction: { mode: "nearest", intersect: true },
-        scales: {
-          x: {
-            title: { ...AXIS_TITLE_STYLE, text: mode.xLabel },
-            grid: GRID_STYLE,
-            ticks: TICK_STYLE,
-            min: mode.xMin ?? 0,
+    // ── Reuse or create chart ──
+    const currentChart = chartInstances.current.scatter;
+    if (currentChart) {
+      // Update data — instant swap, no misleading slide-from-bottom
+      currentChart.data.datasets = datasets;
+      currentChart.options.scales.x.title.text = mode.xLabel;
+      currentChart.options.scales.y.title.text = mode.yLabel;
+      currentChart.options.scales.x.min = mode.xMin ?? 0;
+      currentChart.options.scales.y.min = mode.yMin ?? 0;
+      currentChart.update("none");
+    } else {
+      chartInstances.current.scatter = new Chart(ctx, {
+        type: "bubble",
+        data: { datasets },
+        plugins: [
+          makeDatalabelsPlugin({
+            getLabel: (raw) => shortModelName(raw?.model?.displayName, 16),
+            anchor: "end",
+            align: "top",
+            offset: 4,
+            filterFn: (di, chart) => chart.data.datasets[di]?.type !== "line",
+          }),
+          makeConnectorHighlightPlugin(),
+        ],
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 600, easing: "easeInOutQuart" },
+          transitions: {
+            active: { animation: { duration: 200 } },
           },
-          y: {
-            title: { ...AXIS_TITLE_STYLE, text: mode.yLabel },
-            grid: GRID_STYLE,
-            ticks: { ...TICK_STYLE, callback: (v) => v < 0 ? "" : v },
-            min: mode.yMin ?? 0,
-          },
-        },
-        plugins: {
-          legend: {
-            ...LEGEND_STYLE,
-            labels: {
-              ...LEGEND_STYLE.labels,
-              filter: (item) => item.text !== "_connector",
+          interaction: { mode: "nearest", intersect: true },
+          scales: {
+            x: {
+              title: { ...AXIS_TITLE_STYLE, text: mode.xLabel },
+              grid: GRID_STYLE,
+              ticks: TICK_STYLE,
+              min: mode.xMin ?? 0,
+            },
+            y: {
+              title: { ...AXIS_TITLE_STYLE, text: mode.yLabel },
+              grid: GRID_STYLE,
+              ticks: { ...TICK_STYLE, callback: (v) => v < 0 ? "" : v },
+              min: mode.yMin ?? 0,
             },
           },
-          tooltip: {
-            ...TOOLTIP_STYLE,
-            filter: (item) => item.dataset.type !== "line",
-            callbacks: {
-              title: (items) => items[0]?.raw?.model?.displayName || "",
-              label: (item) => {
-                const m = item.raw.model;
-                const lines = [
-                  `GPU: ${shortGPU(m.system?.gpu?.name)}`,
-                  `VRAM: ${m.modelVramGiB.toFixed(2)} GiB (est: ${m.estimatedGiB.toFixed(2)})`,
-                  `Speed: ${m.tokensPerSecond?.toFixed(1) || '0'} tok/s`,
-                  `File: ${m.fileSizeGB.toFixed(1)} GB · ${m.quantization} (${m.bitsPerWeight || '?'} bpw)`,
-                  `Context: ${(m.contextLength / 1024).toFixed(0)}K`,
-                  `Efficiency: ${(m.tokensPerSecond / m.modelVramGiB).toFixed(1)} TPS/GiB`,
-                ];
-                if (m.vramDuringGen?.peakGiB) lines.push(`Peak VRAM (gen): ${m.vramDuringGen.peakGiB.toFixed(2)} GiB`);
-                if (m.ttft?.ms) {
-                  let ttftLine = `TTFT: ${m.ttft.ms.toFixed(0)} ms`;
-                  if (m.ttft.prefillTokPerSec) ttftLine += ` (prefill: ${m.ttft.prefillTokPerSec.toFixed(0)} t/s)`;
-                  lines.push(ttftLine);
-                }
-                if (m.loadTimeMs) lines.push(`Load: ${(m.loadTimeMs / 1000).toFixed(1)}s`);
-                if (m.gpu?.temp) lines.push(`GPU: ${m.gpu.temp}°C · ${m.gpu.power || '?'}W · ${m.gpu.utilization || '?'}%`);
-                if (m.fitsInVram === false) lines.push(`⚠ Does NOT fit in VRAM`);
-                if (m.settings?.label && m.settings.label !== "default") {
-                  lines.push(`Settings: ${m.settings.label}`);
-                }
-                return lines;
+          plugins: {
+            legend: {
+              ...LEGEND_STYLE,
+              labels: {
+                ...LEGEND_STYLE.labels,
+                filter: (item) => item.text !== "_connector",
+              },
+            },
+            tooltip: {
+              ...TOOLTIP_STYLE,
+              filter: (item) => item.dataset.type !== "line",
+              callbacks: {
+                title: (items) => items[0]?.raw?.model?.displayName || "",
+                label: (item) => {
+                  const m = item.raw.model;
+                  const lines = [
+                    `GPU: ${shortGPU(m.system?.gpu?.name)}`,
+                    `VRAM: ${m.modelVramGiB.toFixed(2)} GiB (est: ${m.estimatedGiB.toFixed(2)})`,
+                    `Speed: ${m.tokensPerSecond?.toFixed(1) || '0'} tok/s`,
+                    `File: ${m.fileSizeGB.toFixed(1)} GB · ${m.quantization} (${m.bitsPerWeight || '?'} bpw)`,
+                    `Context: ${(m.contextLength / 1024).toFixed(0)}K`,
+                    `Efficiency: ${(m.tokensPerSecond / m.modelVramGiB).toFixed(1)} TPS/GiB`,
+                  ];
+                  if (m.vramDuringGen?.peakGiB) lines.push(`Peak VRAM (gen): ${m.vramDuringGen.peakGiB.toFixed(2)} GiB`);
+                  if (m.ttft?.ms) {
+                    let ttftLine = `TTFT: ${m.ttft.ms.toFixed(0)} ms`;
+                    if (m.ttft.prefillTokPerSec) ttftLine += ` (prefill: ${m.ttft.prefillTokPerSec.toFixed(0)} t/s)`;
+                    lines.push(ttftLine);
+                  }
+                  if (m.loadTimeMs) lines.push(`Load: ${(m.loadTimeMs / 1000).toFixed(1)}s`);
+                  if (m.gpu?.temp) lines.push(`GPU: ${m.gpu.temp}°C · ${m.gpu.power || '?'}W · ${m.gpu.utilization || '?'}%`);
+                  if (m.fitsInVram === false) lines.push(`⚠ Does NOT fit in VRAM`);
+                  if (m.settings?.label && m.settings.label !== "default") {
+                    lines.push(`Settings: ${m.settings.label}`);
+                  }
+                  return lines;
+                },
               },
             },
           },
         },
-      },
-    });
+      });
+    }
   }, [models, machineFilter, allFilteredData, ctxFilter, activeScatterMode]);
 
   // ── Shared range data for bar charts ──────────────────────
@@ -1700,11 +1723,22 @@ export default function VramBenchmarkComponent() {
     const quantGroups = {};
     for (const m of models) {
       const q = m.quantization || "unknown";
-      if (!quantGroups[q]) quantGroups[q] = { count: 0, avgVram: 0, avgTps: 0, totalVram: 0, totalTps: 0, totalBpw: 0 };
+      if (!quantGroups[q]) {
+        quantGroups[q] = {
+          count: 0, totalVram: 0, totalTps: 0, totalBpw: 0,
+          minVram: Infinity, maxVram: -Infinity,
+          minTps: Infinity, maxTps: -Infinity,
+        };
+      }
+      const tps = m.tokensPerSecond || 0;
       quantGroups[q].count++;
       quantGroups[q].totalVram += m.modelVramGiB;
-      quantGroups[q].totalTps += m.tokensPerSecond || 0;
+      quantGroups[q].totalTps += tps;
       quantGroups[q].totalBpw += m.bitsPerWeight || 0;
+      if (m.modelVramGiB < quantGroups[q].minVram) quantGroups[q].minVram = m.modelVramGiB;
+      if (m.modelVramGiB > quantGroups[q].maxVram) quantGroups[q].maxVram = m.modelVramGiB;
+      if (tps < quantGroups[q].minTps) quantGroups[q].minTps = tps;
+      if (tps > quantGroups[q].maxTps) quantGroups[q].maxTps = tps;
     }
 
     // Sort quant labels by bits-per-weight rank (lowest → highest)
@@ -1727,10 +1761,71 @@ export default function VramBenchmarkComponent() {
       return ra - rb || a.localeCompare(b);
     });
     for (const q of quantLabels) {
-      quantGroups[q].avgVram = quantGroups[q].totalVram / quantGroups[q].count;
-      quantGroups[q].avgTps = quantGroups[q].totalTps / quantGroups[q].count;
-      quantGroups[q].avgBpw = quantGroups[q].totalBpw / quantGroups[q].count;
+      const g = quantGroups[q];
+      g.avgVram = g.totalVram / g.count;
+      g.avgTps = g.totalTps / g.count;
+      g.avgBpw = g.totalBpw / g.count;
+      // For single-model quants, add a small visual range so the bar is visible
+      if (g.minVram === g.maxVram) {
+        g.minVram = g.avgVram * 0.97;
+        g.maxVram = g.avgVram * 1.03;
+      }
+      if (g.minTps === g.maxTps) {
+        g.minTps = g.avgTps * 0.97;
+        g.maxTps = g.avgTps * 1.03;
+      }
     }
+
+    // Custom plugin: draw average tick marks on both VRAM and TPS bars
+    const avgLinePlugin = {
+      id: "quantAvgLine",
+      afterDatasetsDraw(chart) {
+        const { ctx: c } = chart;
+        c.save();
+
+        const drawAvgTick = (datasetIdx, scaleId, getAvg) => {
+          const meta = chart.getDatasetMeta(datasetIdx);
+          if (!meta.visible) return;
+          const scale = chart.scales[scaleId];
+
+          for (let i = 0; i < meta.data.length; i++) {
+            const bar = meta.data[i];
+            const q = quantLabels[i];
+            const avg = getAvg(quantGroups[q]);
+            const yPx = scale.getPixelForValue(avg);
+            const halfW = bar.width / 2;
+            const barBorder = bar.options?.borderColor || "#6366f1";
+
+            // Tick line
+            c.beginPath();
+            c.strokeStyle = barBorder;
+            c.lineWidth = 2.5;
+            c.moveTo(bar.x - halfW + 2, yPx);
+            c.lineTo(bar.x + halfW - 2, yPx);
+            c.stroke();
+
+            // Label with outline for readability
+            const text = avg.toFixed(1);
+            c.font = `600 9px ${CHART_FONT}`;
+            c.textAlign = "center";
+            c.textBaseline = "bottom";
+            // Outline
+            c.strokeStyle = "rgba(0,0,0,0.6)";
+            c.lineWidth = 3;
+            c.lineJoin = "round";
+            c.strokeText(text, bar.x, yPx - 4);
+            // Fill
+            c.fillStyle = "#fff";
+            c.fillText(text, bar.x, yPx - 4);
+          }
+        };
+
+        drawAvgTick(0, "y", (g) => g.avgVram);   // VRAM bars
+        drawAvgTick(1, "y1", (g) => g.avgTps);    // TPS bars
+
+        c.restore();
+      },
+    };
 
     chartInstances.current.quantDist = new Chart(ctx, {
       type: "bar",
@@ -1738,25 +1833,28 @@ export default function VramBenchmarkComponent() {
         labels: quantLabels,
         datasets: [
           {
-            label: "Avg VRAM (GiB)",
-            data: quantLabels.map((q) => quantGroups[q].avgVram),
+            label: "VRAM Range (GiB)",
+            data: quantLabels.map((q) => [quantGroups[q].minVram, quantGroups[q].maxVram]),
             backgroundColor: quantLabels.map((q) => getQuantColor(q).bg),
             borderColor: quantLabels.map((q) => getQuantColor(q).border),
             borderWidth: 1.5,
             borderRadius: 2,
+            borderSkipped: false,
             yAxisID: "y",
           },
           {
-            label: "Avg TPS",
-            data: quantLabels.map((q) => quantGroups[q].avgTps),
-            backgroundColor: "rgba(255,255,255,0.06)",
-            borderColor: "rgba(255,255,255,0.25)",
+            label: "TPS Range",
+            data: quantLabels.map((q) => [quantGroups[q].minTps, quantGroups[q].maxTps]),
+            backgroundColor: "rgba(128,128,128,0.15)",
+            borderColor: "rgba(100,100,100,0.5)",
             borderWidth: 1.5,
             borderRadius: 2,
+            borderSkipped: false,
             yAxisID: "y1",
           },
         ],
       },
+      plugins: [avgLinePlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -1769,13 +1867,13 @@ export default function VramBenchmarkComponent() {
           },
           y: {
             position: "left",
-            title: { ...AXIS_TITLE_STYLE, text: "Avg VRAM (GiB)" },
+            title: { ...AXIS_TITLE_STYLE, text: "VRAM (GiB)" },
             grid: GRID_STYLE,
             ticks: TICK_STYLE,
           },
           y1: {
             position: "right",
-            title: { ...AXIS_TITLE_STYLE, text: "Avg TPS" },
+            title: { ...AXIS_TITLE_STYLE, text: "TPS" },
             grid: { display: false },
             ticks: TICK_STYLE,
           },
@@ -1794,9 +1892,15 @@ export default function VramBenchmarkComponent() {
                 const q = quantLabels[item.dataIndex];
                 const g = quantGroups[q];
                 if (item.datasetIndex === 0) {
-                  return ` Avg VRAM: ${g.avgVram.toFixed(2)} GiB`;
+                  return [
+                    ` Avg VRAM: ${g.avgVram.toFixed(2)} GiB`,
+                    ` Range: ${(g.count > 1 ? g.minVram : g.avgVram).toFixed(2)} → ${(g.count > 1 ? g.maxVram : g.avgVram).toFixed(2)} GiB`,
+                  ];
                 }
-                return ` Avg Speed: ${g.avgTps.toFixed(1)} tok/s`;
+                return [
+                  ` Avg Speed: ${g.avgTps.toFixed(1)} tok/s`,
+                  ` Range: ${(g.count > 1 ? g.minTps : g.avgTps).toFixed(1)} → ${(g.count > 1 ? g.maxTps : g.avgTps).toFixed(1)} tok/s`,
+                ];
               },
               afterBody: (items) => {
                 const q = quantLabels[items[0]?.dataIndex];
@@ -1824,34 +1928,70 @@ export default function VramBenchmarkComponent() {
     destroyChart("context");
 
     const ctx = canvas.getContext("2d");
+    const showAllMachines = machineFilter === "all";
 
-    // Group by model name — deduplicate per context (prefer latest)
-    const modelGroups = {};
+    // ── Group data ──
+    // When all machines: group by model+hostname so each GPU gets its own line
+    // When single machine: group by model only (original behavior)
+    const groups = {};
     for (const d of allFilteredData) {
-      const name = d.displayName;
-      if (!modelGroups[name]) modelGroups[name] = {};
+      const modelName = d.displayName;
+      const hostname = d.system?.hostname || "unknown";
+      const groupKey = showAllMachines
+        ? `${modelName}__${hostname}`
+        : modelName;
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = { modelName, hostname, ctxMap: {} };
+      }
       const ctxKey = d.contextLength;
-      if (!modelGroups[name][ctxKey] || d.createdAt > modelGroups[name][ctxKey].createdAt) {
-        modelGroups[name][ctxKey] = d;
+      if (!groups[groupKey].ctxMap[ctxKey] || d.createdAt > groups[groupKey].ctxMap[ctxKey].createdAt) {
+        groups[groupKey].ctxMap[ctxKey] = d;
       }
     }
 
-    // Sort: models with most context lengths first, then by VRAM
-    const sortedModels = Object.entries(modelGroups)
-      .map(([name, ctxMap]) => ({
-        name,
+    // Build sorted entries — most context lengths first, then by VRAM
+    const sortedGroups = Object.entries(groups)
+      .map(([key, { modelName, hostname, ctxMap }]) => ({
+        key,
+        modelName,
+        hostname,
         items: Object.values(ctxMap).sort((a, b) => a.contextLength - b.contextLength),
         ctxCount: Object.keys(ctxMap).length,
       }))
       .sort((a, b) => b.ctxCount - a.ctxCount || a.items[0].modelVramGiB - b.items[0].modelVramGiB)
-      .slice(0, 15);
+      .slice(0, 20);
 
-    if (sortedModels.length === 0) return;
+    if (sortedGroups.length === 0) return;
 
-    const datasets = sortedModels.map(({ name, items }, i) => {
-      const color = PALETTE[i % PALETTE.length];
+    // ── Assign stable color per model name ──
+    const uniqueModels = [...new Set(sortedGroups.map((g) => g.modelName))];
+    const modelColorMap = {};
+    uniqueModels.forEach((name, i) => {
+      modelColorMap[name] = PALETTE[i % PALETTE.length];
+    });
+
+    // Track how many lines per model (for dash style differentiation)
+    const modelLineCount = {};
+
+    const datasets = sortedGroups.map(({ modelName, items }) => {
+      const color = modelColorMap[modelName];
+      const lineIdx = modelLineCount[modelName] || 0;
+      modelLineCount[modelName] = lineIdx + 1;
+
+      // Solid for first machine, dashed for second, dotted for third, etc.
+      const dashPatterns = [[], [6, 3], [2, 3], [8, 4, 2, 4]];
+      const borderDash = dashPatterns[lineIdx % dashPatterns.length];
+
+      const gpuLabel = showAllMachines
+        ? shortGPU(items[0]?.system?.gpu?.name)
+        : "";
+      const label = showAllMachines
+        ? `${modelName.length > 22 ? modelName.slice(0, 20) + "…" : modelName} · ${gpuLabel}`
+        : modelName.length > 25 ? modelName.slice(0, 23) + "…" : modelName;
+
       return {
-        label: name.length > 25 ? name.slice(0, 23) + "\u2026" : name,
+        label,
         data: items.map((d) => ({
           x: d.contextLength / 1024,
           y: d.modelVramGiB,
@@ -1860,6 +2000,7 @@ export default function VramBenchmarkComponent() {
         borderColor: color.border,
         backgroundColor: color.bg,
         borderWidth: 2,
+        borderDash,
         pointRadius: 5,
         pointHoverRadius: 7,
         pointBorderWidth: 1.5,
@@ -1912,9 +2053,11 @@ export default function VramBenchmarkComponent() {
                   ` Context: ${item.raw.x}K`,
                   ` VRAM: ${item.raw.y.toFixed(2)} GiB`,
                 ];
+                if (d?.system?.gpu?.name) lines.push(` GPU: ${shortGPU(d.system.gpu.name)}`);
                 if (d?.tokensPerSecond) lines.push(` Speed: ${d.tokensPerSecond.toFixed(1)} tok/s`);
                 if (d?.quantization) lines.push(` Quant: ${d.quantization} (${d.bitsPerWeight || "?"} bpw)`);
                 if (d?.ttft?.ms) lines.push(` TTFT: ${d.ttft.ms.toFixed(0)} ms`);
+                if (d?.settings?.label) lines.push(` Settings: ${d.settings.label}`);
                 if (d?.fitsInVram === false) lines.push(` ⚠ Does NOT fit in VRAM`);
                 return lines;
               },
@@ -1923,9 +2066,18 @@ export default function VramBenchmarkComponent() {
         },
       },
     });
-  }, [allFilteredData]);
+  }, [allFilteredData, machineFilter]);
 
-  // ── Render active chart on data/view change ─────────────
+  // ── Destroy chart when switching tabs ──
+  const prevViewRef = useRef(activeView);
+  useEffect(() => {
+    const prev = prevViewRef.current;
+    if (prev !== activeView) {
+      destroyChart(prev);
+      prevViewRef.current = activeView;
+    }
+    return () => destroyChart(activeView);
+  }, [activeView]);
 
   useEffect(() => {
     if (loading || error) return;
@@ -1944,8 +2096,6 @@ export default function VramBenchmarkComponent() {
       context: renderContext,
     };
     renderMap[activeView]?.();
-
-    return () => destroyChart(activeView);
   }, [
     loading,
     error,
@@ -1985,7 +2135,7 @@ export default function VramBenchmarkComponent() {
 
   // ── Loading / Error ──────────────────────────────────────
 
-  if (loading) {
+  if (loading && rawData.length === 0) {
     return (
       <>
         <PageHeaderComponent title="VRAM Benchmark" subtitle="Loading…" />
@@ -2014,12 +2164,6 @@ export default function VramBenchmarkComponent() {
       <PageHeaderComponent
         title="VRAM Benchmark"
         subtitle={subtitle}
-        centerContent={
-          <div className={styles.hwBadge}>
-            <Monitor size={12} />
-            {hwLabel || "Loading…"}
-          </div>
-        }
       >
         <button
           className={styles.refreshBtn}

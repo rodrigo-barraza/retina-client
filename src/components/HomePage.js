@@ -1067,7 +1067,8 @@ export default function HomePage({ initialConversationId = null }) {
         });
 
         abortRef.current = PrismService.streamText(payload, {
-          onStatus: (message) => {
+          onStatus: (statusData) => {
+            const message = typeof statusData === "string" ? statusData : statusData?.message || "";
             // Sync lmLoadProgress with chat auto-load status
             const loadMatch = message.match(/Loading model[….]\s*(\d+)%/);
             if (loadMatch) {
@@ -1824,7 +1825,8 @@ export default function HomePage({ initialConversationId = null }) {
         setMessages(msgsWithPlaceholder);
 
         abortRef.current = PrismService.streamText(payload, {
-          onStatus: (message) => {
+          onStatus: (statusData) => {
+            const message = typeof statusData === "string" ? statusData : statusData?.message || "";
             // Sync lmLoadProgress with chat auto-load status
             const loadMatch = message.match(/Loading model[\u2026.]\s*(\d+)%/);
             if (loadMatch) {

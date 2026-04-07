@@ -373,6 +373,18 @@ export default class PrismService {
   }
 
   /**
+   * Send an approval/rejection response for a pending agentic tool or plan.
+   * @param {string} conversationId - The conversation awaiting approval
+   * @param {boolean} approved - true to approve, false to reject
+   * @returns {Promise<{ ok: boolean, approved: boolean }>}
+   */
+  static async sendApprovalResponse(conversationId, approved) {
+    return PrismService._request("/chat/approve", {
+      body: { conversationId, approved },
+    });
+  }
+
+  /**
    * Stream text generation via SSE (Server-Sent Events).
    * @param {object} payload - { provider, model, messages, temperature?, maxTokens?, tools?, conversationId?, conversationMeta? }
    * @param {object} callbacks - { onChunk, onThinking, onImage(data, mimeType, minioRef), onExecutableCode, onCodeExecutionResult, onWebSearchResult, onStatus, onDone, onError }
@@ -470,7 +482,7 @@ export default class PrismService {
               } else if (data.type === "plan_proposal" && onPlanProposal) {
                 onPlanProposal(data);
               } else if (data.type === "status" && onStatus) {
-                onStatus(data.message);
+                onStatus(data);
               } else if (data.type === "done" && onDone) {
                 onDone(data);
               } else if (data.type === "error" && onError) {
