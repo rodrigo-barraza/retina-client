@@ -360,6 +360,54 @@ export default class PrismService {
   }
 
   // ---------------------------------------------------------------------------
+  // Skills
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List all skills for a project.
+   * @param {string} [project]
+   * @returns {Promise<Array>}
+   */
+  static async getSkills(project) {
+    const qs = project ? `?project=${encodeURIComponent(project)}` : "";
+    return PrismService._request(`/skills${qs}`, { method: "GET" });
+  }
+
+  /**
+   * Create a new skill.
+   * @param {object} skill - { name, description, content, enabled, project }
+   * @returns {Promise<object>}
+   */
+  static async createSkill(skill) {
+    return PrismService._request("/skills", {
+      method: "POST",
+      body: skill,
+    });
+  }
+
+  /**
+   * Update an existing skill.
+   * @param {string} id
+   * @param {object} updates
+   * @returns {Promise<object>}
+   */
+  static async updateSkill(id, updates) {
+    return PrismService._request(`/skills/${id}`, {
+      method: "PUT",
+      body: updates,
+    });
+  }
+
+  /**
+   * Delete a skill.
+   * @param {string} id
+   * @returns {Promise<object>}
+   */
+  static async deleteSkill(id) {
+    return PrismService._request(`/skills/${id}`, { method: "DELETE" });
+  }
+
+  // ---------------------------------------------------------------------------
   // Chat
   // ---------------------------------------------------------------------------
 

@@ -148,3 +148,21 @@
   0%, 100% { opacity: 1; transform: scale(1.4); }
   50% { opacity: 0.6; transform: scale(1.1); }
 }
+
+/* ── Skills Injected Badge ────────────────────────────────── */
+
+.skillsBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 999px;
+  background: color-mix(in srgb, #a855f7 12%, transparent);
+  color: #a855f7;
+  border: 1px solid color-mix(in srgb, #a855f7 20%, transparent);
+  letter-spacing: 0.03em;
+  text-transform: none;
+  flex-shrink: 0;
+}

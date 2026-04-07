@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Bot, Paperclip, X, Code2, ClipboardList, Zap } from "lucide-react";
+import { Bot, Paperclip, X, Code2, ClipboardList, Zap, Sparkles } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
 import NavigationSidebarComponent from "./NavigationSidebarComponent.js";
 import HistoryPanel from "./HistoryPanel.js";
 import SettingsPanel from "./SettingsPanel.js";
 import CustomToolsPanel from "./CustomToolsPanel.js";
+import SkillsPanel from "./SkillsPanel.js";
 import MessageList, { prepareDisplayMessages } from "./MessageList.js";
 import ImagePreviewComponent from "./ImagePreviewComponent.js";
 import TabBarComponent from "./TabBarComponent.js";
@@ -96,6 +97,8 @@ export default function AgentComponent() {
   const [leftTab, setLeftTab] = useState("settings"); // "settings" | "tools"
   const [customTools, setCustomTools] = useState([]);
   const [builtInTools, setBuiltInTools] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [injectedSkills, setInjectedSkills] = useState([]);
   const { disabledBuiltIns, handleToggleBuiltIn, handleToggleAllBuiltIn } =
     useToolToggles(builtInTools);
   const [settings, setSettings] = useState({
@@ -250,6 +253,20 @@ export default function AgentComponent() {
   useEffect(() => {
     loadCustomTools();
   }, [loadCustomTools]);
+
+  // Load skills
+  const loadSkills = useCallback(async () => {
+    try {
+      const s = await PrismService.getSkills(PROJECT_AGENT);
+      setSkills(s);
+    } catch (err) {
+      console.error("Failed to load skills:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSkills();
+  }, [loadSkills]);
 
   // Fetch built-in tools — refresh Prism cache first, then filter to agentic tools
   useEffect(() => {
@@ -663,6 +680,8 @@ export default function AgentComponent() {
                 iteration: statusData.iteration,
                 maxIterations: statusData.maxIterations,
               });
+            } else if (statusData?.message === "skills_injected") {
+              setInjectedSkills(statusData.skills || []);
             }
           },
           onDone: (data) => {
@@ -725,6 +744,7 @@ export default function AgentComponent() {
       setPendingApprovals([]);
       setPlanProposal(null);
       setAgenticProgress(null);
+      setInjectedSkills([]);
 
       let resolvedTitle = title;
       if (messages.length === 0) {
@@ -862,6 +882,11 @@ export default function AgentComponent() {
             label: "Agentic Tools",
             badge: allToolSchemas.length,
           },
+          {
+            key: "skills",
+            label: "Skills",
+            badge: skills.filter((s) => s.enabled).length || undefined,
+          },
         ]}
         activeTab={leftTab}
         onChange={setLeftTab}
@@ -902,6 +927,14 @@ export default function AgentComponent() {
           disabledBuiltIns={disabledBuiltIns}
           onToggleBuiltIn={handleToggleBuiltIn}
           onToggleAllBuiltIn={handleToggleAllBuiltIn}
+        />
+      )}
+
+      {leftTab === "skills" && (
+        <SkillsPanel
+          skills={skills}
+          onSkillsChange={loadSkills}
+          project={PROJECT_AGENT}
         />
       )}
     </>
@@ -996,6 +1029,12 @@ export default function AgentComponent() {
             <Zap size={11} />
             Iteration {agenticProgress.iteration}/{agenticProgress.maxIterations}
           </span>
+          {injectedSkills.length > 0 && (
+            <span className={styles.skillsBadge}>
+              <Sparkles size={9} />
+              {injectedSkills.length} skill{injectedSkills.length !== 1 ? "s" : ""}
+            </span>
+          )}
           <div className={styles.iterationDots}>
             {Array.from({ length: agenticProgress.maxIterations }, (_, i) => {
               const step = i + 1;
