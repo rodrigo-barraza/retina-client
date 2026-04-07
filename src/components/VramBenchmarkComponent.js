@@ -473,7 +473,7 @@ export default function VramBenchmarkComponent() {
 
   const models = useMemo(() => {
     let filtered = rawData.filter(
-      (d) => d.modelVramGiB > 0 && !d.error && d.fitsInVram !== false,
+      (d) => d.modelVramGiB > 0,
     );
 
     if (machineFilter !== "all") {
@@ -543,7 +543,7 @@ export default function VramBenchmarkComponent() {
 
   const allFilteredData = useMemo(() => {
     let filtered = rawData.filter(
-      (d) => d.modelVramGiB > 0 && !d.error && d.fitsInVram !== false,
+      (d) => d.modelVramGiB > 0,
     );
     if (machineFilter !== "all") {
       filtered = filtered.filter(
