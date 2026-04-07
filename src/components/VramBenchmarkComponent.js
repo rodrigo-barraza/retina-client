@@ -172,7 +172,7 @@ function makeDatalabelsPlugin({ getLabel, anchor = "end", align = "top", offset 
 
       let labelCount = 0;
       for (let di = 0; di < chart.data.datasets.length; di++) {
-        if (filterFn && !filterFn(di)) continue;
+        if (filterFn && !filterFn(di, chart)) continue;
         const meta = chart.getDatasetMeta(di);
         if (!meta.visible) continue;
         for (let i = 0; i < meta.data.length; i++) {
@@ -203,7 +203,183 @@ function makeDatalabelsPlugin({ getLabel, anchor = "end", align = "top", offset 
   };
 }
 
+// ── Connector highlight plugin ───────────────────────────────
+// When hovering a bubble, highlights its connector line and sibling
+// bubbles across GPUs with a glow ring + solid bold line.
+
+function makeConnectorHighlightPlugin() {
+  return {
+    id: "connectorHighlight",
+    afterEvent(chart, args) {
+      const event = args.event;
+      const elements = chart.getElementsAtEventForMode(
+        event, "nearest", { intersect: true }, false,
+      );
+      let hoveredModel = null;
+
+      if (elements.length > 0) {
+        const el = elements[0];
+        const ds = chart.data.datasets[el.datasetIndex];
+        // Only trigger on bubble datasets, not connector lines
+        if (ds.type !== "line") {
+          const raw = ds.data[el.index];
+          hoveredModel = raw?.model?.displayName || null;
+        }
+      }
+
+      const prev = chart._hoveredConnectorModel;
+      chart._hoveredConnectorModel = hoveredModel;
+      if (prev !== hoveredModel) args.changed = true;
+    },
+    afterDraw(chart) {
+      const hoveredModel = chart._hoveredConnectorModel;
+      if (!hoveredModel) return;
+
+      const { ctx } = chart;
+      ctx.save();
+
+      // Collect pixel positions for all bubbles matching this model
+      const bubblePoints = [];
+
+      for (let di = 0; di < chart.data.datasets.length; di++) {
+        const ds = chart.data.datasets[di];
+        if (ds.type === "line") continue;
+        const meta = chart.getDatasetMeta(di);
+        if (!meta.visible) continue;
+
+        for (let i = 0; i < ds.data.length; i++) {
+          const raw = ds.data[i];
+          if (raw?.model?.displayName !== hoveredModel) continue;
+          const el = meta.data[i];
+          if (!el) continue;
+          bubblePoints.push({
+            x: el.x,
+            y: el.y,
+            r: el.options?.radius || raw.r || 5,
+            borderColor: ds.borderColor,
+          });
+        }
+      }
+
+      if (bubblePoints.length < 2) {
+        ctx.restore();
+        return;
+      }
+
+      // Sort by x for consistent line direction
+      bubblePoints.sort((a, b) => a.x - b.x);
+
+      // Draw bold solid connector line
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([]);
+      ctx.moveTo(bubblePoints[0].x, bubblePoints[0].y);
+      for (let i = 1; i < bubblePoints.length; i++) {
+        ctx.lineTo(bubblePoints[i].x, bubblePoints[i].y);
+      }
+      ctx.stroke();
+
+      // Draw glow rings around sibling bubbles
+      for (const p of bubblePoints) {
+        // Outer glow
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r + 5, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Inner ring
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r + 2, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    },
+  };
+}
+
+// ── Scatter axis modes ───────────────────────────────────────
+// Each mode maps different data dimensions to the X/Y axes of the
+// bubble chart, turning the sort dropdown into a dimension explorer.
+
+const SCATTER_MODES = [
+  {
+    key: "vram_vs_speed",
+    label: "VRAM vs Speed",
+    desc: "Position reveals the VRAM/throughput trade-off.",
+    getX: (m) => m.modelVramGiB,
+    getY: (m) => m.tokensPerSecond,
+    xLabel: "VRAM Usage (GiB)",
+    yLabel: "Tokens / sec",
+    xMin: 0,
+    yMin: -30,
+  },
+  {
+    key: "vram_vs_efficiency",
+    label: "VRAM vs Efficiency",
+    desc: "How many tokens each GiB of VRAM produces — higher is better.",
+    getX: (m) => m.modelVramGiB,
+    getY: (m) => m.modelVramGiB > 0 ? m.tokensPerSecond / m.modelVramGiB : 0,
+    xLabel: "VRAM Usage (GiB)",
+    yLabel: "Efficiency (TPS / GiB)",
+    xMin: 0,
+    yMin: -2,
+  },
+  {
+    key: "vram_vs_ttft",
+    label: "VRAM vs TTFT",
+    desc: "Time to First Token — critical for interactive chat responsiveness.",
+    getX: (m) => m.modelVramGiB,
+    getY: (m) => m.ttft?.ms,
+    xLabel: "VRAM Usage (GiB)",
+    yLabel: "Time to First Token (ms)",
+    xMin: 0,
+    yMin: -50,
+    filter: (m) => m.ttft?.ms > 0,
+  },
+  {
+    key: "filesize_vs_speed",
+    label: "File Size vs Speed",
+    desc: "Disk footprint against inference speed — find the sweet spot for your storage.",
+    getX: (m) => m.fileSizeGB,
+    getY: (m) => m.tokensPerSecond,
+    xLabel: "File Size (GB)",
+    yLabel: "Tokens / sec",
+    xMin: 0,
+    yMin: -30,
+  },
+  {
+    key: "vram_vs_loadtime",
+    label: "VRAM vs Load Time",
+    desc: "Model load time — important for cold-start and multi-model switching.",
+    getX: (m) => m.modelVramGiB,
+    getY: (m) => m.loadTimeMs ? m.loadTimeMs / 1000 : null,
+    xLabel: "VRAM Usage (GiB)",
+    yLabel: "Load Time (sec)",
+    xMin: 0,
+    yMin: -1,
+    filter: (m) => m.loadTimeMs > 0,
+  },
+  {
+    key: "bpw_vs_speed",
+    label: "Quantization vs Speed",
+    desc: "Bits per weight against throughput — see how quantization affects performance.",
+    getX: (m) => m.bitsPerWeight,
+    getY: (m) => m.tokensPerSecond,
+    xLabel: "Bits per Weight",
+    yLabel: "Tokens / sec",
+    xMin: 0,
+    yMin: -30,
+    filter: (m) => m.bitsPerWeight > 0,
+  },
+];
+
 // ── View tabs ────────────────────────────────────────────────
+// Scatter label is dynamic — replaced in a memo inside the component.
 
 const VIEW_TABS = [
   { key: "scatter", label: "VRAM vs Speed", icon: <TrendingUp size={12} /> },
@@ -231,7 +407,22 @@ export default function VramBenchmarkComponent() {
   const [settingsFilter, setSettingsFilter] = useState("default");
   const [ctxFilter, setCtxFilter] = useState("all");
   const [sortBy, setSortBy] = useState("vram");
+  const [scatterMode, setScatterMode] = useState("vram_vs_speed");
   const [activeView, setActiveView] = useState("scatter");
+
+  // Active scatter mode config
+  const activeScatterMode = useMemo(
+    () => SCATTER_MODES.find((m) => m.key === scatterMode) || SCATTER_MODES[0],
+    [scatterMode],
+  );
+
+  // Dynamic tab labels — scatter tab reflects current axis mode
+  const viewTabs = useMemo(
+    () => VIEW_TABS.map((tab) =>
+      tab.key === "scatter" ? { ...tab, label: activeScatterMode.label } : tab,
+    ),
+    [activeScatterMode],
+  );
 
   // Canvas refs — one per chart type
   const chartRefs = {
@@ -534,7 +725,7 @@ export default function VramBenchmarkComponent() {
     }
   }
 
-  // ── Scatter (VRAM vs Speed) ──────────────────────────────
+  // ── Scatter (dynamic axes) ───────────────────────────────
 
   const renderScatter = useCallback(() => {
     const canvas = chartRefs.scatter.current;
@@ -542,35 +733,98 @@ export default function VramBenchmarkComponent() {
     destroyChart("scatter");
 
     const ctx = canvas.getContext("2d");
+    const mode = activeScatterMode;
     let datasets;
 
+    // Helper to build bubble data point from a model entry
+    const toPoint = (m) => {
+      const x = mode.getX(m);
+      const y = mode.getY(m);
+      if (x == null || y == null || isNaN(x) || isNaN(y)) return null;
+      return {
+        x,
+        y,
+        r: Math.max(5, Math.min(20, Math.sqrt(m.fileSizeGB) * 4.5)),
+        model: m,
+      };
+    };
+
     if (machineFilter === "all") {
+      // Keep one entry per model+GPU combo
+      let source = allFilteredData;
+      if (ctxFilter !== "all") {
+        source = source.filter((d) => d.contextLength === parseInt(ctxFilter));
+      }
+      if (mode.filter) {
+        source = source.filter(mode.filter);
+      }
+
+      const byModelGPU = {};
+      for (const d of source) {
+        const gpu = d.system?.gpu?.name || "Unknown";
+        const key = `${d.displayName}__${gpu}`;
+        if (!byModelGPU[key] || d.createdAt > byModelGPU[key].createdAt) {
+          byModelGPU[key] = d;
+        }
+      }
+      const scatterModels = Object.values(byModelGPU);
+
+      // Group by GPU for bubble coloring
       const gpuGroups = {};
-      for (const m of models) {
+      for (const m of scatterModels) {
         const gpu = m.system?.gpu?.name || "Unknown";
         if (!gpuGroups[gpu]) gpuGroups[gpu] = [];
         gpuGroups[gpu].push(m);
       }
+
       datasets = Object.entries(gpuGroups).map(([gpu, items]) => {
         const color = getGPUColor(gpu);
         return {
+          type: "bubble",
           label: shortGPU(gpu),
-          data: items.map((m) => ({
-            x: m.modelVramGiB,
-            y: m.tokensPerSecond,
-            r: Math.max(5, Math.min(20, Math.sqrt(m.fileSizeGB) * 4.5)),
-            model: m,
-          })),
+          data: items.map(toPoint).filter(Boolean),
           backgroundColor: color.bg,
           borderColor: color.border,
           borderWidth: 1.5,
           hoverBorderWidth: 2.5,
           hoverBorderColor: "#f8f8f8",
+          order: 2,
         };
       });
+
+      // Connector lines — link same-model bubbles across GPUs
+      const modelToPoints = {};
+      for (const m of scatterModels) {
+        const pt = toPoint(m);
+        if (!pt) continue;
+        if (!modelToPoints[m.displayName]) modelToPoints[m.displayName] = [];
+        modelToPoints[m.displayName].push(pt);
+      }
+
+      for (const [, points] of Object.entries(modelToPoints)) {
+        if (points.length < 2) continue;
+        points.sort((a, b) => a.x - b.x);
+        datasets.push({
+          type: "line",
+          label: "_connector",
+          data: points.map((p) => ({ x: p.x, y: p.y, model: p.model })),
+          borderColor: "rgba(255, 255, 255, 0.18)",
+          borderWidth: 1.5,
+          borderDash: [6, 3],
+          pointRadius: 0,
+          pointHitRadius: 0,
+          pointHoverRadius: 0,
+          fill: false,
+          tension: 0,
+          order: 3,
+        });
+      }
     } else {
+      let filtered = models;
+      if (mode.filter) filtered = filtered.filter(mode.filter);
+
       const quantGroups = {};
-      for (const m of models) {
+      for (const m of filtered) {
         const q = m.quantization || "unknown";
         if (!quantGroups[q]) quantGroups[q] = [];
         quantGroups[q].push(m);
@@ -579,12 +833,7 @@ export default function VramBenchmarkComponent() {
         const color = getQuantColor(q);
         return {
           label: q,
-          data: items.map((m) => ({
-            x: m.modelVramGiB,
-            y: m.tokensPerSecond,
-            r: Math.max(5, Math.min(20, Math.sqrt(m.fileSizeGB) * 4.5)),
-            model: m,
-          })),
+          data: items.map(toPoint).filter(Boolean),
           backgroundColor: color.bg,
           borderColor: color.border,
           borderWidth: 1.5,
@@ -603,7 +852,9 @@ export default function VramBenchmarkComponent() {
           anchor: "end",
           align: "top",
           offset: 4,
+          filterFn: (di, chart) => chart.data.datasets[di]?.type !== "line",
         }),
+        makeConnectorHighlightPlugin(),
       ],
       options: {
         responsive: true,
@@ -612,22 +863,29 @@ export default function VramBenchmarkComponent() {
         interaction: { mode: "nearest", intersect: true },
         scales: {
           x: {
-            title: { ...AXIS_TITLE_STYLE, text: "VRAM Usage (GiB)" },
+            title: { ...AXIS_TITLE_STYLE, text: mode.xLabel },
             grid: GRID_STYLE,
             ticks: TICK_STYLE,
-            min: 0,
+            min: mode.xMin ?? 0,
           },
           y: {
-            title: { ...AXIS_TITLE_STYLE, text: "Tokens / sec" },
+            title: { ...AXIS_TITLE_STYLE, text: mode.yLabel },
             grid: GRID_STYLE,
-            ticks: TICK_STYLE,
-            min: 0,
+            ticks: { ...TICK_STYLE, callback: (v) => v < 0 ? "" : v },
+            min: mode.yMin ?? 0,
           },
         },
         plugins: {
-          legend: LEGEND_STYLE,
+          legend: {
+            ...LEGEND_STYLE,
+            labels: {
+              ...LEGEND_STYLE.labels,
+              filter: (item) => item.text !== "_connector",
+            },
+          },
           tooltip: {
             ...TOOLTIP_STYLE,
+            filter: (item) => item.dataset.type !== "line",
             callbacks: {
               title: (items) => items[0]?.raw?.model?.displayName || "",
               label: (item) => {
@@ -659,7 +917,7 @@ export default function VramBenchmarkComponent() {
         },
       },
     });
-  }, [models, machineFilter]);
+  }, [models, machineFilter, allFilteredData, ctxFilter, activeScatterMode]);
 
   // ── Shared range data for bar charts ──────────────────────
 
@@ -1380,7 +1638,7 @@ export default function VramBenchmarkComponent() {
     : "";
 
   const chartDescriptions = {
-    scatter: `Each bubble represents a model — size indicates file weight, position reveals the VRAM/throughput trade-off${settingsDesc}.`,
+    scatter: `Each bubble represents a model — size indicates file weight. ${activeScatterMode.desc}${settingsDesc}`,
     bar: `Each bar spans the min→max measured VRAM across all benchmark runs${settingsDesc || " — default settings"}.`,
     efficiency: `Each bar spans the min→max tokens/sec across all benchmark runs${settingsDesc || " — default settings"}. Sorted by peak throughput.`,
     quantDist: `Average VRAM and speed grouped by quantization format${settingsDesc}.`,
@@ -1644,7 +1902,7 @@ export default function VramBenchmarkComponent() {
 
         {/* Tab bar for chart type */}
         <TabBarComponent
-          tabs={VIEW_TABS}
+          tabs={viewTabs}
           activeTab={activeView}
           onChange={setActiveView}
           className={styles.tabBar}
@@ -1681,7 +1939,17 @@ export default function VramBenchmarkComponent() {
                 ]}
               />
             )}
-            {!["context", "quantDist"].includes(activeView) && (
+            {activeView === "scatter" && (
+              <FilterSelectComponent
+                value={scatterMode}
+                onChange={setScatterMode}
+                options={SCATTER_MODES.map((m) => ({
+                  value: m.key,
+                  label: `Axes: ${m.label}`,
+                }))}
+              />
+            )}
+            {["bar", "efficiency"].includes(activeView) && (
               <FilterSelectComponent
                 value={sortBy}
                 onChange={setSortBy}
@@ -1701,7 +1969,7 @@ export default function VramBenchmarkComponent() {
             {chartDescriptions[activeView]}
           </p>
           <div className={styles.chartPanels}>
-            {VIEW_TABS.map((tab) => (
+            {viewTabs.map((tab) => (
               <div
                 key={tab.key}
                 className={styles.chartWrapper}
