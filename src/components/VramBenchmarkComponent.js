@@ -473,7 +473,7 @@ export default function VramBenchmarkComponent() {
 
   const models = useMemo(() => {
     let filtered = rawData.filter(
-      (d) => d.modelVramGiB > 0,
+      (d) => d.modelVramGiB > 0 && !d.error && d.fitsInVram !== false,
     );
 
     if (machineFilter !== "all") {
@@ -543,7 +543,7 @@ export default function VramBenchmarkComponent() {
 
   const allFilteredData = useMemo(() => {
     let filtered = rawData.filter(
-      (d) => d.modelVramGiB > 0,
+      (d) => d.modelVramGiB > 0 && !d.error && d.fitsInVram !== false,
     );
     if (machineFilter !== "all") {
       filtered = filtered.filter(
@@ -734,6 +734,7 @@ export default function VramBenchmarkComponent() {
 
     const ctx = canvas.getContext("2d");
     const mode = activeScatterMode;
+    const showAllCtx = ctxFilter === "all";
     let datasets;
 
     // Helper to build bubble data point from a model entry
@@ -749,25 +750,63 @@ export default function VramBenchmarkComponent() {
       };
     };
 
+    // Helper to fade an rgba() color
+    const fadeBg = (rgba) => rgba.replace(/[\d.]+\)$/, "0.12)");
+    // Helper to fade a #hex border color
+    const fadeBorder = (hex) => {
+      const h = hex.replace("#", "");
+      const r = parseInt(h.substring(0, 2), 16);
+      const g = parseInt(h.substring(2, 4), 16);
+      const b = parseInt(h.substring(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, 0.22)`;
+    };
+
+    // Compute bestKeys: for "all contexts", find the highest-TPS entry per group
+    const computeBestKeys = (entries, groupKeyFn) => {
+      if (!showAllCtx) return null;
+      const bestByGroup = {};
+      for (const m of entries) {
+        const gk = groupKeyFn(m);
+        if (!bestByGroup[gk] || m.tokensPerSecond > bestByGroup[gk].tokensPerSecond) {
+          bestByGroup[gk] = m;
+        }
+      }
+      const set = new Set();
+      for (const m of Object.values(bestByGroup)) {
+        set.add(`${m.displayName}__${m.system?.gpu?.name || "Unknown"}__${m.contextLength}`);
+      }
+      return set;
+    };
+
+    const entryKey = (m) =>
+      `${m.displayName}__${m.system?.gpu?.name || "Unknown"}__${m.contextLength}`;
+
     if (machineFilter === "all") {
-      // Keep one entry per model+GPU combo
       let source = allFilteredData;
-      if (ctxFilter !== "all") {
+      if (!showAllCtx) {
         source = source.filter((d) => d.contextLength === parseInt(ctxFilter));
       }
       if (mode.filter) {
         source = source.filter(mode.filter);
       }
 
-      const byModelGPU = {};
+      // Dedup: one per model+GPU (+context when showing all)
+      const byKey = {};
       for (const d of source) {
         const gpu = d.system?.gpu?.name || "Unknown";
-        const key = `${d.displayName}__${gpu}`;
-        if (!byModelGPU[key] || d.createdAt > byModelGPU[key].createdAt) {
-          byModelGPU[key] = d;
+        const key = showAllCtx
+          ? `${d.displayName}__${gpu}__${d.contextLength}`
+          : `${d.displayName}__${gpu}`;
+        if (!byKey[key] || d.createdAt > byKey[key].createdAt) {
+          byKey[key] = d;
         }
       }
-      const scatterModels = Object.values(byModelGPU);
+      const scatterModels = Object.values(byKey);
+
+      const bestKeys = computeBestKeys(
+        scatterModels,
+        (m) => `${m.displayName}__${m.system?.gpu?.name || "Unknown"}`,
+      );
 
       // Group by GPU for bubble coloring
       const gpuGroups = {};
@@ -779,10 +818,33 @@ export default function VramBenchmarkComponent() {
 
       datasets = Object.entries(gpuGroups).map(([gpu, items]) => {
         const color = getGPUColor(gpu);
+        const points = items.map(toPoint).filter(Boolean);
+
+        // Per-point opacity when showing all contexts
+        if (bestKeys) {
+          return {
+            type: "bubble",
+            label: shortGPU(gpu),
+            data: points,
+            backgroundColor: points.map((p) =>
+              bestKeys.has(entryKey(p.model)) ? color.bg : fadeBg(color.bg),
+            ),
+            borderColor: points.map((p) =>
+              bestKeys.has(entryKey(p.model)) ? color.border : fadeBorder(color.border),
+            ),
+            borderWidth: points.map((p) =>
+              bestKeys.has(entryKey(p.model)) ? 1.5 : 0.5,
+            ),
+            hoverBorderWidth: 2.5,
+            hoverBorderColor: "#f8f8f8",
+            order: 2,
+          };
+        }
+
         return {
           type: "bubble",
           label: shortGPU(gpu),
-          data: items.map(toPoint).filter(Boolean),
+          data: points,
           backgroundColor: color.bg,
           borderColor: color.border,
           borderWidth: 1.5,
@@ -792,9 +854,10 @@ export default function VramBenchmarkComponent() {
         };
       });
 
-      // Connector lines — link same-model bubbles across GPUs
+      // Connector lines — only link "best" bubbles across GPUs
       const modelToPoints = {};
       for (const m of scatterModels) {
+        if (bestKeys && !bestKeys.has(entryKey(m))) continue;
         const pt = toPoint(m);
         if (!pt) continue;
         if (!modelToPoints[m.displayName]) modelToPoints[m.displayName] = [];
@@ -820,20 +883,65 @@ export default function VramBenchmarkComponent() {
         });
       }
     } else {
-      let filtered = models;
-      if (mode.filter) filtered = filtered.filter(mode.filter);
+      // Single machine — use allFilteredData when showing all contexts
+      let source;
+      if (showAllCtx) {
+        source = allFilteredData.filter(
+          (d) => (d.system?.hostname || "unknown") === machineFilter,
+        );
+      } else {
+        source = models.map((m) => m); // clone so filter doesn't mutate
+      }
+      if (mode.filter) source = source.filter(mode.filter);
+
+      // Dedup per model (+context when showing all)
+      const byKey = {};
+      for (const d of source) {
+        const key = showAllCtx
+          ? `${d.displayName}__${d.contextLength}`
+          : d.displayName;
+        if (!byKey[key] || d.createdAt > byKey[key].createdAt) {
+          byKey[key] = d;
+        }
+      }
+      const scatterData = Object.values(byKey);
+
+      const bestKeys = computeBestKeys(
+        scatterData,
+        (m) => m.displayName,
+      );
 
       const quantGroups = {};
-      for (const m of filtered) {
+      for (const m of scatterData) {
         const q = m.quantization || "unknown";
         if (!quantGroups[q]) quantGroups[q] = [];
         quantGroups[q].push(m);
       }
       datasets = Object.entries(quantGroups).map(([q, items]) => {
         const color = getQuantColor(q);
+        const points = items.map(toPoint).filter(Boolean);
+
+        if (bestKeys) {
+          return {
+            label: q,
+            data: points,
+            backgroundColor: points.map((p) =>
+              bestKeys.has(entryKey(p.model)) ? color.bg : fadeBg(color.bg),
+            ),
+            borderColor: points.map((p) =>
+              bestKeys.has(entryKey(p.model)) ? color.border : fadeBorder(color.border),
+            ),
+            borderWidth: points.map((p) =>
+              bestKeys.has(entryKey(p.model)) ? 1.5 : 0.5,
+            ),
+            hoverBorderWidth: 2.5,
+            hoverBorderColor: "#f8f8f8",
+          };
+        }
+
         return {
           label: q,
-          data: items.map(toPoint).filter(Boolean),
+          data: points,
           backgroundColor: color.bg,
           borderColor: color.border,
           borderWidth: 1.5,
