@@ -424,6 +424,15 @@ export default class PrismService {
     return PrismService._request(`/agent-memories?${qs}`, { method: "GET" });
   }
 
+  /**
+   * Delete a specific agent memory.
+   * @param {string} id - Memory UUID
+   * @returns {Promise<{ success: boolean }>}
+   */
+  static async deleteAgentMemory(id) {
+    return PrismService._request(`/agent-memories/${id}`, { method: "DELETE" });
+  }
+
   // ---------------------------------------------------------------------------
   // MCP Servers
   // ---------------------------------------------------------------------------

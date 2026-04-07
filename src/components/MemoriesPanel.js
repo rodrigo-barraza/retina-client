@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Brain, RefreshCw, User, MessageSquare, FolderKanban, ExternalLink } from "lucide-react";
+import { Brain, RefreshCw, User, MessageSquare, FolderKanban, ExternalLink, Trash2 } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import styles from "./MemoriesPanel.module.css";
 
@@ -44,7 +44,7 @@ const TYPE_BADGE_CLASSES = {
 };
 
 /**
- * MemoriesPanel — read-only view of agent memories.
+ * MemoriesPanel — view and manage agent memories.
  *
  * Displays memories extracted from past coding sessions, organized by type
  * (user, feedback, project, reference). These are extracted automatically
@@ -55,6 +55,7 @@ export default function MemoriesPanel({ project, refreshKey }) {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
 
   const loadMemories = useCallback(async () => {
     setLoading(true);
@@ -74,6 +75,18 @@ export default function MemoriesPanel({ project, refreshKey }) {
   useEffect(() => {
     loadMemories();
   }, [loadMemories, refreshKey]);
+
+  const handleDelete = useCallback(async (memoryId) => {
+    try {
+      await PrismService.deleteAgentMemory(memoryId);
+      // Optimistic removal from local state
+      setMemories((prev) => prev.filter((m) => (m.id || m._id) !== memoryId));
+      setTotal((prev) => Math.max(0, prev - 1));
+      setConfirmingDeleteId(null);
+    } catch (err) {
+      console.error("Failed to delete memory:", err);
+    }
+  }, []);
 
   // ── Loading ─────────────────────────────────────────────────
   if (loading) {
@@ -140,6 +153,7 @@ export default function MemoriesPanel({ project, refreshKey }) {
         const IconComponent = TYPE_ICONS[type] || FolderKanban;
         const iconClass = TYPE_ICON_CLASSES[type] || "memoryIconProject";
         const badgeClass = TYPE_BADGE_CLASSES[type] || "badgeProject";
+        const isConfirming = confirmingDeleteId === memoryId;
 
         return (
           <div key={memoryId} className={styles.memoryCard}>
@@ -162,11 +176,36 @@ export default function MemoriesPanel({ project, refreshKey }) {
                   )}
                 </div>
               </div>
+              <button
+                className={styles.deleteBtn}
+                onClick={() => setConfirmingDeleteId(isConfirming ? null : memoryId)}
+                title="Delete memory"
+              >
+                <Trash2 size={12} />
+              </button>
             </div>
 
             {(memory.content || memory.fact) && (
               <div className={styles.memoryContent}>
                 {memory.content || memory.fact}
+              </div>
+            )}
+
+            {isConfirming && (
+              <div className={styles.confirmRow}>
+                <span className={styles.confirmLabel}>Delete this memory?</span>
+                <button
+                  className={`${styles.confirmBtn} ${styles.confirmBtnYes}`}
+                  onClick={() => handleDelete(memoryId)}
+                >
+                  Delete
+                </button>
+                <button
+                  className={`${styles.confirmBtn} ${styles.confirmBtnNo}`}
+                  onClick={() => setConfirmingDeleteId(null)}
+                >
+                  Cancel
+                </button>
               </div>
             )}
           </div>

@@ -103,6 +103,7 @@ export default function AgentComponent() {
   const [injectedSkills, setInjectedSkills] = useState([]);
   const [mcpServers, setMcpServers] = useState([]);
   const [memoriesRefreshKey, setMemoriesRefreshKey] = useState(0);
+  const [newMemoriesCount, setNewMemoriesCount] = useState(0);
   const { disabledBuiltIns, handleToggleBuiltIn, handleToggleAllBuiltIn } =
     useToolToggles(builtInTools);
   const [settings, setSettings] = useState({
@@ -700,8 +701,6 @@ export default function AgentComponent() {
               });
             } else if (statusData?.message === "skills_injected") {
               setInjectedSkills(statusData.skills || []);
-            } else if (statusData?.message === "memories_updated") {
-              setMemoriesRefreshKey((k) => k + 1);
             }
           },
           onDone: (data) => {
@@ -721,6 +720,26 @@ export default function AgentComponent() {
               }
               return updated;
             });
+            // SessionSummarizer runs async after SSE stream closes —
+            // poll every 2s for up to 20s until new memories are detected
+            (async () => {
+              const baselineCount = await PrismService.getAgentMemories(PROJECT_AGENT, 1)
+                .then((r) => r.total || 0)
+                .catch(() => 0);
+              let pollAttempts = 0;
+              const pollInterval = setInterval(async () => {
+                pollAttempts++;
+                try {
+                  const { total } = await PrismService.getAgentMemories(PROJECT_AGENT, 1);
+                  if (total > baselineCount) {
+                    clearInterval(pollInterval);
+                    setMemoriesRefreshKey((k) => k + 1);
+                    setNewMemoriesCount((c) => c + (total - baselineCount));
+                  }
+                } catch { /* ignore */ }
+                if (pollAttempts >= 10) clearInterval(pollInterval);
+              }, 2000);
+            })();
             resolve();
           },
           onError: (err) => reject(err),
@@ -910,6 +929,7 @@ export default function AgentComponent() {
           {
             key: "memories",
             icon: <Brain size={14} />,
+            badge: newMemoriesCount || undefined,
           },
           {
             key: "mcp",
@@ -918,7 +938,10 @@ export default function AgentComponent() {
           },
         ]}
         activeTab={leftTab}
-        onChange={setLeftTab}
+        onChange={(tab) => {
+          setLeftTab(tab);
+          if (tab === "memories") setNewMemoriesCount(0);
+        }}
       />
 
       {leftTab === "settings" && (
