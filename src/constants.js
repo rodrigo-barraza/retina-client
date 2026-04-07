@@ -17,6 +17,22 @@ export const SK_LAST_PROVIDER = "lastProvider";
 export const SK_LAST_MODEL = "lastModel";
 export const SK_INFERENCE_MODE = "inferenceMode";
 
+// ── Page-scoped model memory keys (auto-prefixed "retina:<key>") ──
+// Each page remembers the last-used model independently.
+// Value shape: { provider, model, isLocal }
+export const SK_MODEL_MEMORY_AGENT = "modelMemory:agent";
+export const SK_MODEL_MEMORY_CONVERSATIONS = "modelMemory:conversations";
+export const SK_MODEL_MEMORY_SYNTHESIS = "modelMemory:synthesis";
+export const SK_MODEL_MEMORY_BENCHMARKS = "modelMemory:benchmarks";
+
+// ── Page-scoped tool toggle memory keys (auto-prefixed "retina:<key>") ──
+// Each page remembers which tools are toggled on/off.
+// Value shape: { disabledBuiltIns: string[], toolToggles: { key: boolean } }
+export const SK_TOOL_MEMORY_AGENT = "toolMemory:agent";
+export const SK_TOOL_MEMORY_CONVERSATIONS = "toolMemory:conversations";
+export const SK_TOOL_MEMORY_SYNTHESIS = "toolMemory:synthesis";
+export const SK_TOOL_MEMORY_BENCHMARKS = "toolMemory:benchmarks";
+
 // ── Application constants ────────────────────────────────────────
 export const MAX_TOOL_ITERATIONS = 25;
 export const PROJECT_CONSOLE = "retina-console";

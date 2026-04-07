@@ -25,6 +25,8 @@ import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent";
 import BenchmarksTableComponent from "./BenchmarksTableComponent";
 import ChatPreviewComponent from "./ChatPreviewComponent";
 import ProviderLogo from "./ProviderLogos";
+import StorageService from "../services/StorageService";
+import { SK_MODEL_MEMORY_BENCHMARKS } from "../constants";
 import { formatCost } from "../utils/utilities";
 import styles from "./BenchmarkPageComponent.module.css";
 
@@ -82,7 +84,13 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
 
   // Model selection
   const [prismConfig, setPrismConfig] = useState(null);
-  const [selectedModelKeys, setSelectedModelKeys] = useState(new Set());
+  const [selectedModelKeys, setSelectedModelKeys] = useState(() => {
+    const saved = StorageService.get(SK_MODEL_MEMORY_BENCHMARKS);
+    if (saved?.selectedKeys && Array.isArray(saved.selectedKeys)) {
+      return new Set(saved.selectedKeys);
+    }
+    return new Set();
+  });
   const [favoriteKeys, setFavoriteKeys] = useState([]);
 
   // Selected result (for chat preview)
@@ -539,6 +547,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       } else {
         next.add(key);
       }
+      StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, { selectedKeys: [...next] });
       return next;
     });
   }, []);
@@ -547,12 +556,14 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
     setSelectedModelKeys((prev) => {
       const next = new Set(prev);
       next.delete(key);
+      StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, { selectedKeys: [...next] });
       return next;
     });
   }, []);
 
   const clearModelSelection = useCallback(() => {
     setSelectedModelKeys(new Set());
+    StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, { selectedKeys: [] });
   }, []);
 
   // ── Delete benchmark ──────────────────────────────────────

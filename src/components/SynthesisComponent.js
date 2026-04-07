@@ -33,8 +33,9 @@ import CopyButtonComponent from "./CopyButtonComponent.js";
 import BadgeComponent from "./BadgeComponent.js";
 import JsonViewerComponent from "./JsonViewerComponent.js";
 import SynthesisHistoryPanel from "./SynthesisHistoryPanel.js";
-import { SETTINGS_DEFAULTS } from "../constants.js";
+import { SETTINGS_DEFAULTS, SK_MODEL_MEMORY_SYNTHESIS } from "../constants.js";
 import styles from "./SynthesisComponent.module.css";
+import useModelMemory from "../hooks/useModelMemory.js";
 
 const DEFAULT_TURNS = 4;
 const MIN_TURNS = 1;
@@ -110,6 +111,9 @@ export default function SynthesisComponent() {
   });
   const [leftTab, setLeftTab] = useState("config"); // "config" | "output"
 
+  // ── Model memory (persist last-used model per page) ──────────
+  const { saveModel, restoreModel } = useModelMemory(SK_MODEL_MEMORY_SYNTHESIS);
+
   // ── Synthesis state ───────────────────────────────────────────
   const [systemPrompt, setSystemPrompt] = useState("");
 
@@ -154,20 +158,25 @@ export default function SynthesisComponent() {
     PrismService.getConfigWithLocalModels({
       onConfig: (cfg) => {
         setConfig(cfg);
-        // Auto-select first text-to-text provider/model if none set
-        if (!settings.provider || !settings.model) {
-          const textModels = cfg?.textToText?.models || {};
-          const firstProvider = Object.keys(textModels)[0];
-          if (firstProvider && textModels[firstProvider]?.length > 0) {
-            setSettings((s) => ({
-              ...s,
-              provider: s.provider || firstProvider,
-              model: s.model || textModels[firstProvider][0].name,
-            }));
-          }
-        }
+        restoreModel(cfg, setSettings, {
+          fallback: (config) => {
+            // Auto-select first text-to-text provider/model if none set
+            const textModels = config?.textToText?.models || {};
+            const firstProvider = Object.keys(textModels)[0];
+            if (firstProvider && textModels[firstProvider]?.length > 0) {
+              setSettings((s) => ({
+                ...s,
+                provider: s.provider || firstProvider,
+                model: s.model || textModels[firstProvider][0].name,
+              }));
+            }
+          },
+        });
       },
-      onLocalMerge: setConfig,
+      onLocalMerge: (merged) => {
+        setConfig(merged);
+        restoreModel(merged, setSettings);
+      },
     }).catch(console.error);
     loadSynthesisHistory();
 
@@ -206,7 +215,8 @@ export default function SynthesisComponent() {
   // ── Model selection handler ───────────────────────────────────
   const handleSelectModel = useCallback((provider, model) => {
     setSettings((s) => ({ ...s, provider, model }));
-  }, []);
+    saveModel(provider, model);
+  }, [saveModel]);
 
   const handleSelectUserSimModel = useCallback((provider, model) => {
     setUserSimSettings((s) => ({ ...s, provider, model }));

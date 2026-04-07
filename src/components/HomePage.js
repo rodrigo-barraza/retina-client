@@ -21,6 +21,8 @@ import {
   SK_LAST_PROVIDER,
   SK_LAST_MODEL,
   SK_INFERENCE_MODE,
+  SK_MODEL_MEMORY_CONVERSATIONS,
+  SK_TOOL_MEMORY_CONVERSATIONS,
   SETTINGS_DEFAULTS,
 } from "../constants";
 import { Send, Settings, Parentheses, SlidersHorizontal } from "lucide-react";
@@ -36,6 +38,7 @@ import ModelPickerPopoverComponent from "../components/ModelPickerPopoverCompone
 import ModelLoadConfigPanel from "../components/ModelLoadConfigPanel";
 import { useToast } from "../components/ToastComponent";
 import useToolToggles from "../hooks/useToolToggles";
+import useModelMemory from "../hooks/useModelMemory";
 
 // All tool-toggle keys that must be explicitly reset when switching conversations
 // to prevent leaking state from the previous selection.
@@ -200,7 +203,7 @@ export default function HomePage({ initialConversationId = null }) {
   const [customTools, setCustomTools] = useState([]);
   const [builtInTools, setBuiltInTools] = useState([]);
   const { disabledBuiltIns, handleToggleBuiltIn, handleToggleAllBuiltIn } =
-    useToolToggles(builtInTools);
+    useToolToggles(builtInTools, SK_TOOL_MEMORY_CONVERSATIONS);
   const [_toolActivity, setToolActivity] = useState([]);
   const [streamingOutputs, setStreamingOutputs] = useState(new Map());
 
@@ -304,43 +307,53 @@ export default function HomePage({ initialConversationId = null }) {
       .catch(() => setWorkflows([]));
   }, [activeId]);
 
+  // ── Model memory (persist last-used model per page) ──────────
+  const { saveModel, restoreModel } = useModelMemory(SK_MODEL_MEMORY_CONVERSATIONS);
+
   useEffect(() => {
     PrismService.getConfigWithLocalModels({
       onConfig: (cfg) => {
         setConfig(cfg);
 
-        // Try to restore last-used provider/model from localStorage
-        const savedProvider = StorageService.get(SK_LAST_PROVIDER);
-        const savedModel = StorageService.get(SK_LAST_MODEL);
-        const savedValid =
-          savedProvider &&
-          cfg.providerList?.includes(savedProvider) &&
-          ((cfg.textToText?.models?.[savedProvider] || []).some(
-            (m) => m.name === savedModel,
-          ) ||
-            (cfg.textToImage?.models?.[savedProvider] || []).some(
-              (m) => m.name === savedModel,
-            ));
+        // Try to restore page-scoped model memory first, then fall back to legacy keys
+        restoreModel(cfg, setSettings, {
+          fallback: (config) => {
+            const savedProvider = StorageService.get(SK_LAST_PROVIDER);
+            const savedModel = StorageService.get(SK_LAST_MODEL);
+            const savedValid =
+              savedProvider &&
+              config.providerList?.includes(savedProvider) &&
+              ((config.textToText?.models?.[savedProvider] || []).some(
+                (m) => m.name === savedModel,
+              ) ||
+                (config.textToImage?.models?.[savedProvider] || []).some(
+                  (m) => m.name === savedModel,
+                ));
 
-        const prov = savedValid ? savedProvider : cfg.providerList?.[0] || "";
-        const mod = savedValid
-          ? savedModel
-          : cfg.textToText?.defaults?.[prov] ||
-            cfg.textToText?.models?.[prov]?.[0]?.name ||
-            "";
+            const prov = savedValid ? savedProvider : config.providerList?.[0] || "";
+            const mod = savedValid
+              ? savedModel
+              : config.textToText?.defaults?.[prov] ||
+                config.textToText?.models?.[prov]?.[0]?.name ||
+                "";
 
-        const modelDef =
-          (cfg.textToText?.models?.[prov] || []).find((m) => m.name === mod) ||
-          (cfg.textToImage?.models?.[prov] || []).find((m) => m.name === mod);
-        const temp = modelDef?.defaultTemperature ?? 1.0;
-        setSettings((s) => ({
-          ...s,
-          provider: prov,
-          model: mod,
-          temperature: temp,
-        }));
+            const modelDef =
+              (config.textToText?.models?.[prov] || []).find((m) => m.name === mod) ||
+              (config.textToImage?.models?.[prov] || []).find((m) => m.name === mod);
+            const temp = modelDef?.defaultTemperature ?? 1.0;
+            setSettings((s) => ({
+              ...s,
+              provider: prov,
+              model: mod,
+              temperature: temp,
+            }));
+          },
+        });
       },
-      onLocalMerge: (merged) => setConfig(merged),
+      onLocalMerge: (merged) => {
+        setConfig(merged);
+        restoreModel(merged, setSettings);
+      },
     }).catch(console.error);
 
     // Load history
@@ -355,7 +368,7 @@ export default function HomePage({ initialConversationId = null }) {
     PrismService.getFavorites("conversation")
       .then((favs) => setConvFavoriteKeys(favs.map((f) => f.key)))
       .catch(() => {});
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Function Calling infrastructure ────────────────────────
 
@@ -496,12 +509,15 @@ export default function HomePage({ initialConversationId = null }) {
     setNewChatKey((k) => k + 1);
   };
 
-  // Persist provider/model to localStorage
+  // Persist provider/model to localStorage (legacy keys + page-scoped memory)
   useEffect(() => {
     if (settings.provider)
       StorageService.set(SK_LAST_PROVIDER, settings.provider);
     if (settings.model) StorageService.set(SK_LAST_MODEL, settings.model);
-  }, [settings.provider, settings.model]);
+    if (settings.provider && settings.model) {
+      saveModel(settings.provider, settings.model);
+    }
+  }, [settings.provider, settings.model, saveModel]);
 
   // Persist inference mode to localStorage
   useEffect(() => {
@@ -2162,6 +2178,7 @@ export default function HomePage({ initialConversationId = null }) {
                 model: modelName,
                 temperature: temp,
               }));
+              saveModel(provider, modelName);
             }}
             onLmStudioSelect={(rawModel) => {
               setLmConfigModel(rawModel);

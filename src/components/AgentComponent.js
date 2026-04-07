@@ -29,11 +29,12 @@ import {
   getUsedTools,
 } from "../utils/utilities.js";
 import { getModalities } from "./HistoryPanel.js";
-import { PROJECT_AGENT, SETTINGS_DEFAULTS } from "../constants.js";
+import { PROJECT_AGENT, SETTINGS_DEFAULTS, SK_MODEL_MEMORY_AGENT, SK_TOOL_MEMORY_AGENT } from "../constants.js";
 import chatStyles from "./ChatArea.module.css";
 import styles from "./AgentComponent.module.css";
 import ChatInputButton from "./ChatInputButton.js";
 import useToolToggles from "../hooks/useToolToggles.js";
+import useModelMemory from "../hooks/useModelMemory.js";
 
 // ── Agentic tool names — these are the 9 tools we built in tools-api
 const AGENTIC_TOOL_NAMES = new Set([
@@ -105,7 +106,10 @@ export default function AgentComponent() {
   const [memoriesRefreshKey, setMemoriesRefreshKey] = useState(0);
   const [newMemoriesCount, setNewMemoriesCount] = useState(0);
   const { disabledBuiltIns, handleToggleBuiltIn, handleToggleAllBuiltIn } =
-    useToolToggles(builtInTools);
+    useToolToggles(builtInTools, SK_TOOL_MEMORY_AGENT);
+
+  // ── Model memory (persist last-used model per page) ──────────
+  const { saveModel, restoreModel } = useModelMemory(SK_MODEL_MEMORY_AGENT);
   const [settings, setSettings] = useState({
     ...SETTINGS_DEFAULTS,
     maxTokens: 16384,
@@ -202,33 +206,38 @@ export default function AgentComponent() {
       .catch(() => {});
   }, []);
 
-  // Fetch Prism config and auto-select first FC-capable provider/model
+  // Fetch Prism config and restore remembered model (or auto-select first FC-capable)
   useEffect(() => {
+    const fcFallback = (cfg) => {
+      const textModels = cfg.textToText?.models || {};
+      for (const provider of cfg.providerList || []) {
+        const models = textModels[provider] || [];
+        const fcModel = models.find((m) =>
+          m.tools?.includes("Function Calling"),
+        );
+        if (fcModel) {
+          setSettings((s) => ({
+            ...s,
+            provider,
+            model: fcModel.name,
+            temperature: fcModel.defaultTemperature ?? 1.0,
+          }));
+          break;
+        }
+      }
+    };
+
     PrismService.getConfigWithLocalModels({
       onConfig: (cfg) => {
         setConfig(cfg);
-
-        // Auto-select first FC-capable provider and model
-        const textModels = cfg.textToText?.models || {};
-        for (const provider of cfg.providerList || []) {
-          const models = textModels[provider] || [];
-          const fcModel = models.find((m) =>
-            m.tools?.includes("Function Calling"),
-          );
-          if (fcModel) {
-            setSettings((s) => ({
-              ...s,
-              provider,
-              model: fcModel.name,
-              temperature: fcModel.defaultTemperature ?? 1.0,
-            }));
-            break;
-          }
-        }
+        restoreModel(cfg, setSettings, { fcOnly: true, fallback: fcFallback });
       },
-      onLocalMerge: (merged) => setConfig(merged),
+      onLocalMerge: (merged) => {
+        setConfig(merged);
+        restoreModel(merged, setSettings, { fcOnly: true, fallback: fcFallback });
+      },
     }).catch(console.error);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load conversation history
   const loadConversations = useCallback(async () => {
@@ -1244,6 +1253,7 @@ export default function AgentComponent() {
               model: modelName,
               temperature: temp,
             }));
+            saveModel(provider, modelName);
           }}
           favorites={favoriteKeys}
           onToggleFavorite={async (key) => {
