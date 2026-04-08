@@ -50,7 +50,7 @@ export default function SessionsTableComponent({
     sessionIdColumn(),
     projectColumn(),
     userColumn(),
-    modalitiesColumn({ fromConversations: true }),
+    modalitiesColumn(),
     modelsListColumn(),
     providersListColumn(),
     toolsColumn(),

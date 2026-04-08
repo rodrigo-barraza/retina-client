@@ -27,6 +27,7 @@ import {
   FilterClearButton,
 } from "../../../components/FilterBarComponent";
 import BadgeComponent from "../../../components/BadgeComponent";
+import ModalityIconComponent from "../../../components/ModalityIconComponent";
 import CostBadgeComponent from "../../../components/CostBadgeComponent";
 import ButtonComponent from "../../../components/ButtonComponent";
 import RequestDetailsComponent from "../../../components/RequestDetailsComponent";
@@ -412,20 +413,41 @@ export default function RequestsPage() {
                         ? new Date(selectedRequest.timestamp).toLocaleString()
                         : "-",
                     },
-                    { label: "Project", value: selectedRequest.project || "-" },
+                    {
+                      label: "Project",
+                      value: selectedRequest.project ? (
+                        <BadgeComponent variant="info">{selectedRequest.project}</BadgeComponent>
+                      ) : "-",
+                    },
                     {
                       label: "Endpoint",
-                      value: selectedRequest.endpoint || "-",
+                      value: (
+                        <BadgeComponent variant="endpoint">
+                          {selectedRequest.endpoint || "-"}
+                        </BadgeComponent>
+                      ),
                     },
                     {
                       label: "Operation",
-                      value: selectedRequest.operation || "-",
+                      value: (
+                        <BadgeComponent variant="info">
+                          {selectedRequest.operation || "-"}
+                        </BadgeComponent>
+                      ),
                     },
                     {
                       label: "Provider",
-                      value: selectedRequest.provider || "-",
+                      value: selectedRequest.provider ? (
+                        <BadgeComponent variant="provider">{selectedRequest.provider}</BadgeComponent>
+                      ) : "-",
                     },
                     { label: "Model", value: selectedRequest.model || "-" },
+                    {
+                      label: "Modalities",
+                      value: selectedRequest.modalities ? (
+                        <ModalityIconComponent modalities={selectedRequest.modalities} size={14} />
+                      ) : "-",
+                    },
                     {
                       label: "Status",
                       value: (
