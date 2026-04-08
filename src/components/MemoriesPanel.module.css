@@ -389,3 +389,121 @@
   color: #f87171;
   border: 1px solid color-mix(in srgb, #f87171 25%, transparent);
 }
+
+/* ── History Toggle ───────────────────────────────────────── */
+
+.historyBtnActive {
+  color: #a78bfa;
+  border-color: color-mix(in srgb, #a78bfa 40%, transparent);
+  background: color-mix(in srgb, #a78bfa 8%, transparent);
+}
+
+/* ── Consolidation History Section ─────────────────────────── */
+
+.historySection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: color-mix(in srgb, var(--bg-tertiary) 40%, transparent);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  animation: toastSlideIn 0.2s ease-out;
+}
+
+.historySectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.historySectionTitle {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.historyEmpty {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 12px 0;
+}
+
+.historyEntry {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  background: var(--bg-card);
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  border-radius: 5px;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: color-mix(in srgb, #a78bfa 30%, var(--border-color));
+  }
+}
+
+.historyEntryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.historyTrigger {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  background: color-mix(in srgb, #a78bfa 12%, transparent);
+  color: #a78bfa;
+}
+
+.triggerManual {
+  background: color-mix(in srgb, #60a5fa 12%, transparent);
+  color: #60a5fa;
+}
+
+.triggerScheduled {
+  background: color-mix(in srgb, #a78bfa 12%, transparent);
+  color: #a78bfa;
+}
+
+/* stylelint-disable-next-line selector-class-pattern */
+.triggerSession_threshold {
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  color: #f59e0b;
+}
+
+.historyTime {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.historySummary {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.historyStats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  color: var(--text-muted);
+
+  & span {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+}

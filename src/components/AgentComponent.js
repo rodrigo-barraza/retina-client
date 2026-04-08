@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Bot, Paperclip, X, Code2, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain, Plug } from "lucide-react";
+import { Bot, Paperclip, X, Code2, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain, Plug, GitBranch } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
 import NavigationSidebarComponent from "./NavigationSidebarComponent.js";
@@ -11,6 +11,7 @@ import CustomToolsPanel from "./CustomToolsPanel.js";
 import SkillsPanel from "./SkillsPanel.js";
 import MemoriesPanel from "./MemoriesPanel.js";
 import MCPServersPanel from "./MCPServersPanel.js";
+import CoordinatorPanel from "./CoordinatorPanel.js";
 import MessageList, { prepareDisplayMessages } from "./MessageList.js";
 import ImagePreviewComponent from "./ImagePreviewComponent.js";
 import TabBarComponent from "./TabBarComponent.js";
@@ -947,6 +948,10 @@ export default function AgentComponent() {
             icon: <Plug size={14} />,
             badge: mcpServers.filter((s) => s.connected).length || undefined,
           },
+          {
+            key: "coordinator",
+            icon: <GitBranch size={14} />,
+          },
         ]}
         activeTab={leftTab}
         onChange={(tab) => {
@@ -1011,6 +1016,10 @@ export default function AgentComponent() {
           onServersChange={loadMCPServers}
           project={PROJECT_AGENT}
         />
+      )}
+
+      {leftTab === "coordinator" && (
+        <CoordinatorPanel project={PROJECT_AGENT} />
       )}
     </>
   );

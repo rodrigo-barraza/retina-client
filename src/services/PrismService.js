@@ -441,9 +441,21 @@ export default class PrismService {
   static async consolidateMemories(project) {
     return PrismService._request("/agent-memories/consolidate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project }),
+      body: { project },
     });
+  }
+
+  /**
+   * Get consolidation run history for a project.
+   * @param {string} project - Project identifier
+   * @param {number} [limit=10]
+   * @returns {Promise<{ history: Array }>}
+   */
+  static async getConsolidationHistory(project, limit = 10) {
+    const qs = new URLSearchParams();
+    if (project) qs.set("project", project);
+    if (limit) qs.set("limit", String(limit));
+    return PrismService._request(`/agent-memories/consolidation-history?${qs}`, { method: "GET" });
   }
 
   // ---------------------------------------------------------------------------

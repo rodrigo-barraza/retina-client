@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Brain, RefreshCw, User, MessageSquare, FolderKanban, ExternalLink, Trash2, Sparkles } from "lucide-react";
+import { Brain, RefreshCw, User, MessageSquare, FolderKanban, ExternalLink, Trash2, Sparkles, History, GitMerge } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import styles from "./MemoriesPanel.module.css";
 
@@ -43,14 +43,25 @@ const TYPE_BADGE_CLASSES = {
   reference: "badgeReference",
 };
 
+const TRIGGER_LABELS = {
+  manual: "Manual",
+  scheduled: "Auto-Dream",
+  session_threshold: "Session",
+};
+
 /**
  * MemoriesPanel — view and manage agent memories.
  *
  * Displays memories extracted from past coding sessions, organized by type
  * (user, feedback, project, reference). These are extracted automatically
  * by the SessionSummarizer and stored via AgentMemoryService.
+ *
+ * @param {object} props
+ * @param {string} props.project - Project identifier
+ * @param {number} props.refreshKey - External refresh trigger
+ * @param {object} [props.consolidationEvent] - Real-time consolidation event from WebSocket
  */
-export default function MemoriesPanel({ project, refreshKey }) {
+export default function MemoriesPanel({ project, refreshKey, consolidationEvent }) {
   const [memories, setMemories] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -60,6 +71,11 @@ export default function MemoriesPanel({ project, refreshKey }) {
   const [consolidating, setConsolidating] = useState(false);
   const [toast, setToast] = useState(null);
   const knownIdsRef = useRef(new Set());
+
+  // History state
+  const [history, setHistory] = useState([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const loadMemories = useCallback(async () => {
     setLoading(true);
@@ -94,9 +110,42 @@ export default function MemoriesPanel({ project, refreshKey }) {
     }
   }, [project]);
 
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const result = await PrismService.getConsolidationHistory(project, 5);
+      setHistory(result.history || []);
+    } catch (err) {
+      console.error("Failed to load consolidation history:", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [project]);
+
   useEffect(() => {
     loadMemories();
   }, [loadMemories, refreshKey]);
+
+  // Load history when expanded
+  useEffect(() => {
+    if (historyOpen) loadHistory();
+  }, [historyOpen, loadHistory]);
+
+  // React to real-time consolidation events from WebSocket
+  useEffect(() => {
+    if (!consolidationEvent) return;
+    if (consolidationEvent.project && consolidationEvent.project !== project) return;
+
+    const { summary, actionsApplied } = consolidationEvent;
+    if (actionsApplied > 0) {
+      setToast({ type: "success", text: `✨ ${summary || "Memories consolidated"}` });
+      loadMemories();
+      if (historyOpen) loadHistory();
+    } else {
+      setToast({ type: "info", text: summary || "No changes needed" });
+    }
+    setTimeout(() => setToast(null), 5000);
+  }, [consolidationEvent]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = useCallback(async (memoryId) => {
     try {
@@ -116,11 +165,17 @@ export default function MemoriesPanel({ project, refreshKey }) {
     try {
       const result = await PrismService.consolidateMemories(project);
       if (result.skipped) {
-        setToast({ type: "info", text: result.reason === "insufficient memories" ? "Not enough memories to consolidate" : "No consolidation needed" });
+        const msg = result.reason === "daily_limit_reached"
+          ? "Daily consolidation limit reached"
+          : result.reason === "insufficient memories"
+            ? "Not enough memories to consolidate"
+            : "No consolidation needed";
+        setToast({ type: "info", text: msg });
       } else if (result.actionsApplied > 0) {
         setToast({ type: "success", text: result.summary || `Consolidated ${result.merged || 0} memories` });
         // Refresh after consolidation
         loadMemories();
+        if (historyOpen) loadHistory();
       } else {
         setToast({ type: "info", text: result.summary || "No changes needed" });
       }
@@ -130,7 +185,7 @@ export default function MemoriesPanel({ project, refreshKey }) {
       setConsolidating(false);
       setTimeout(() => setToast(null), 5000);
     }
-  }, [project, loadMemories]);
+  }, [project, loadMemories, loadHistory, historyOpen]);
 
   // ── Loading ─────────────────────────────────────────────────
   if (loading) {
@@ -190,6 +245,13 @@ export default function MemoriesPanel({ project, refreshKey }) {
           <Sparkles size={11} className={consolidating ? styles.refreshSpin : ""} />
         </button>
         <button
+          className={`${styles.refreshBtn} ${historyOpen ? styles.historyBtnActive : ""}`}
+          onClick={() => setHistoryOpen((prev) => !prev)}
+          title="Consolidation history"
+        >
+          <History size={11} />
+        </button>
+        <button
           className={styles.refreshBtn}
           onClick={loadMemories}
           disabled={loading}
@@ -202,6 +264,35 @@ export default function MemoriesPanel({ project, refreshKey }) {
       {toast && (
         <div className={`${styles.toast} ${styles[`toast${toast.type.charAt(0).toUpperCase() + toast.type.slice(1)}`]}`}>
           {toast.text}
+        </div>
+      )}
+
+      {/* ── Consolidation History ─────────────────────────────── */}
+      {historyOpen && (
+        <div className={styles.historySection}>
+          <div className={styles.historySectionHeader}>
+            <span className={styles.historySectionTitle}>Consolidation History</span>
+            {historyLoading && <RefreshCw size={10} className={styles.refreshSpin} />}
+          </div>
+          {history.length === 0 && !historyLoading && (
+            <div className={styles.historyEmpty}>No consolidation runs yet</div>
+          )}
+          {history.map((run, i) => (
+            <div key={i} className={styles.historyEntry}>
+              <div className={styles.historyEntryHeader}>
+                <span className={`${styles.historyTrigger} ${styles[`trigger${run.trigger?.charAt(0).toUpperCase()}${run.trigger?.slice(1)}`] || ""}`}>
+                  {TRIGGER_LABELS[run.trigger] || run.trigger || "unknown"}
+                </span>
+                <span className={styles.historyTime}>{timeAgo(run.runAt)}</span>
+              </div>
+              <div className={styles.historySummary}>{run.summary}</div>
+              <div className={styles.historyStats}>
+                <span><GitMerge size={9} /> {run.actionsApplied} action{run.actionsApplied !== 1 ? "s" : ""}</span>
+                <span>{run.memoriesBefore} → {run.memoriesAfter} memories</span>
+                {run.durationMs && <span>{(run.durationMs / 1000).toFixed(1)}s</span>}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
