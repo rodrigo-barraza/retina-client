@@ -533,6 +533,15 @@ export const endpointColumn = () => ({
   ),
 });
 
+export const operationColumn = () => ({
+  key: "operation",
+  label: "Operation",
+  description: "The semantic purpose of this LLM call (e.g. chat, agent:iteration, memory:extract)",
+  render: (r) => (
+    <BadgeComponent variant="info">{r.operation || "-"}</BadgeComponent>
+  ),
+});
+
 /* ·· Status ·· */
 
 export const statusColumn = () => ({

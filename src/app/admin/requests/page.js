@@ -112,6 +112,7 @@ export default function RequestsPage() {
     provider: "",
     model: "",
     endpoint: "",
+    operation: "",
     success: "",
   });
 
@@ -189,6 +190,7 @@ export default function RequestsPage() {
       provider: "",
       model: "",
       endpoint: "",
+      operation: "",
       success: "",
     });
     setPage(1);
@@ -198,7 +200,7 @@ export default function RequestsPage() {
 
   const exportCSV = useCallback(() => {
     const headers = [
-      "Timestamp", "Project", "Endpoint", "Provider", "Model",
+      "Timestamp", "Project", "Endpoint", "Operation", "Provider", "Model",
       "Tokens In", "Tokens Out", "Cost", "Tok/s", "Latency", "Status",
     ].join(",");
     const rows = requests.map((r) =>
@@ -206,6 +208,7 @@ export default function RequestsPage() {
         r.timestamp || "",
         r.project || "",
         r.endpoint || "",
+        r.operation || "",
         r.provider || "",
         r.model || "",
         r.inputTokens || 0,
@@ -296,9 +299,33 @@ export default function RequestsPage() {
             options={[
               { value: "", label: "All" },
               { value: "/chat", label: "/chat" },
-              { value: "/audio", label: "/audio" },
+              { value: "/agent", label: "/agent" },
               { value: "/embed", label: "/embed" },
+              { value: "/live", label: "/live" },
+            ]}
+          />
+        </FilterGroupComponent>
+        <FilterGroupComponent label="Operation">
+          <FilterSelectComponent
+            value={filters.operation}
+            onChange={(val) => handleFilterChange("operation", val)}
+            options={[
+              { value: "", label: "All" },
+              { value: "chat", label: "Chat" },
+              { value: "chat:image", label: "Chat: Image" },
+              { value: "agent", label: "Agent" },
+              { value: "agent:iteration", label: "Agent: Iteration" },
+              { value: "agent:image", label: "Agent: Image" },
               { value: "live", label: "Live" },
+              { value: "memory:extract", label: "Memory: Extract" },
+              { value: "memory:consolidate", label: "Memory: Consolidate" },
+              { value: "session:summarize", label: "Session: Summarize" },
+              { value: "coordinator:decompose", label: "Coordinator: Decompose" },
+              { value: "embed:memory", label: "Embed: Memory" },
+              { value: "embed:api", label: "Embed: API" },
+              { value: "embed:agent-memory", label: "Embed: Agent Memory" },
+              { value: "embed:skill-relevance", label: "Embed: Skill" },
+              { value: "embedding", label: "Embedding (legacy)" },
             ]}
           />
         </FilterGroupComponent>
@@ -389,6 +416,10 @@ export default function RequestsPage() {
                     {
                       label: "Endpoint",
                       value: selectedRequest.endpoint || "-",
+                    },
+                    {
+                      label: "Operation",
+                      value: selectedRequest.operation || "-",
                     },
                     {
                       label: "Provider",
