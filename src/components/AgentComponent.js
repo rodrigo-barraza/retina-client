@@ -1089,7 +1089,8 @@ export default function AgentComponent() {
               setPendingApprovals((prev) =>
                 prev.map((a) => a.status === "pending" ? { ...a, status: "approved" } : a),
               );
-              PrismService.sendApprovalResponse(conversationId, true).catch(console.error);
+              setAutoApprove(true);
+              PrismService.sendApprovalResponse(conversationId, true, { approveAll: true }).catch(console.error);
             }}
           />
         ))}
