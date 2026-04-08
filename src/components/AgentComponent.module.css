@@ -166,3 +166,29 @@
   text-transform: none;
   flex-shrink: 0;
 }
+
+/* ── Context Truncation Badge ────────────────────────────── */
+
+.contextBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 999px;
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  color: #f59e0b;
+  border: 1px solid color-mix(in srgb, #f59e0b 20%, transparent);
+  letter-spacing: 0.03em;
+  text-transform: none;
+  flex-shrink: 0;
+  cursor: help;
+  animation: contextBadgeFadeIn 0.3s ease;
+}
+
+@keyframes contextBadgeFadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+

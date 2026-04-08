@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Bot, Paperclip, X, Code2, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain, Plug, GitBranch } from "lucide-react";
+import { Bot, Paperclip, X, Code2, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain, Plug, GitBranch, Scissors } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
 import NavigationSidebarComponent from "./NavigationSidebarComponent.js";
@@ -132,6 +132,7 @@ export default function AgentComponent() {
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [planProposal, setPlanProposal] = useState(null); // { plan, steps, status }
   const [agenticProgress, setAgenticProgress] = useState(null); // { iteration, maxIterations }
+  const [contextTruncated, setContextTruncated] = useState(null); // { strategy, estimatedTokens }
 
   const textareaRef = useRef(null);
   const endRef = useRef(null);
@@ -713,6 +714,11 @@ export default function AgentComponent() {
               });
             } else if (statusData?.message === "skills_injected") {
               setInjectedSkills(statusData.skills || []);
+            } else if (statusData?.message === "context_truncated") {
+              setContextTruncated({
+                strategy: statusData.strategy,
+                estimatedTokens: statusData.estimatedTokens,
+              });
             }
           },
           onDone: (data) => {
@@ -796,6 +802,7 @@ export default function AgentComponent() {
       setPlanProposal(null);
       setAgenticProgress(null);
       setInjectedSkills([]);
+      setContextTruncated(null);
 
       let resolvedTitle = title;
       if (messages.length === 0) {
@@ -1118,6 +1125,12 @@ export default function AgentComponent() {
             <span className={styles.skillsBadge}>
               <Sparkles size={9} />
               {injectedSkills.length} skill{injectedSkills.length !== 1 ? "s" : ""}
+            </span>
+          )}
+          {contextTruncated && (
+            <span className={styles.contextBadge} title={`Strategy: ${contextTruncated.strategy} — ~${Math.round(contextTruncated.estimatedTokens / 1000)}k tokens`}>
+              <Scissors size={9} />
+              ctx trimmed
             </span>
           )}
           <div className={styles.iterationDots}>
