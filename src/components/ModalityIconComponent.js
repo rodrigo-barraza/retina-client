@@ -9,6 +9,7 @@ import {
   Globe,
   Code,
   Brain,
+  Hash,
 } from "lucide-react";
 import TooltipComponent from "./TooltipComponent";
 import { MODALITY_COLORS } from "./WorkflowNodeConstants";
@@ -31,6 +32,7 @@ const OUTPUT_MODALITIES = [
   { key: "textOut", label: "Text output", icon: Type, color: MODALITY_COLORS.text },
   { key: "imageOut", label: "Image output", icon: Image, color: MODALITY_COLORS.image },
   { key: "audioOut", label: "Audio output", icon: Volume2, color: MODALITY_COLORS.audio },
+  { key: "embeddingOut", label: "Embedding output", icon: Hash, color: MODALITY_COLORS.embedding },
 ];
 
 const TOOL_MODALITIES = [
