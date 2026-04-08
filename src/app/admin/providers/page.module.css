@@ -174,66 +174,29 @@
   font-style: italic;
 }
 
-.rateLimitGrid {
+/* Container for all model cards in a provider */
+.rateLimitModels {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 10px;
 }
 
-.rateLimitCard {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
-  background: var(--bg-tertiary);
-  border-radius: var(--border-radius-sm);
-  border: 1px solid var(--border-subtle);
-}
-
-.rateLimitCardLabel {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.rateLimitCardValues {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.rateLimitReset {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-/* Progress bar */
-.progressBarTrack {
-  width: 100%;
-  height: 6px;
-  background: var(--border-subtle);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.progressBarFill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.4s ease, background 0.4s ease;
-  min-width: 2px;
-}
-
-/* Google static model cards */
+/* Per-model card */
 .rateLimitModelCard {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   padding: 10px 12px;
   background: var(--bg-tertiary);
   border-radius: var(--border-radius-sm);
   border: 1px solid var(--border-subtle);
+}
+
+.rateLimitModelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .rateLimitModelName {
@@ -244,10 +207,11 @@
 
 .rateLimitMetrics {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 6px;
 }
 
+/* Static metric (Google) */
 .rateLimitMetric {
   display: flex;
   flex-direction: column;
@@ -267,12 +231,68 @@
   letter-spacing: 0.06em;
 }
 
+/* For static metrics, display inline */
+.rateLimitModelCard:not(:has(.limitBar)) .rateLimitMetrics {
+  flex-direction: row;
+  gap: 14px;
+}
+
+/* ── Dynamic Limit Bar ──────────────────────────────────────── */
+
+.limitBar {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.limitBarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.limitBarLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.limitBarValues {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.progressBarTrack {
+  width: 100%;
+  height: 5px;
+  background: var(--border-subtle);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease, background 0.4s ease;
+  min-width: 2px;
+}
+
+.rateLimitReset {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 @media (max-width: 767px) {
   .providerStats {
     gap: 14px;
   }
 
-  .rateLimitGrid {
+  .rateLimitModels {
     grid-template-columns: 1fr;
   }
 }

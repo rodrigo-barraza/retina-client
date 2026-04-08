@@ -247,7 +247,7 @@ export default function ProvidersPage() {
 
               {/* Rate Limits Section */}
               {providerLimits && (
-                <RateLimitPanel data={providerLimits} providerName={p.provider} />
+                <RateLimitPanel data={providerLimits} />
               )}
 
               {isExpanded && (
@@ -269,138 +269,140 @@ export default function ProvidersPage() {
 
 // ── Rate Limit Panel ──────────────────────────────────────────
 
-function RateLimitPanel({ data, providerName }) {
-  const { rateLimits, updatedAt, dynamic: _dynamic } = data;
+function RateLimitPanel({ data }) {
+  const { dynamic, models, note } = data;
 
-  // Google has a different structure (models map)
-  if (providerName === "google" && rateLimits?.models) {
-    return (
-      <div className={styles.rateLimitPanel}>
-        <div className={styles.rateLimitHeader}>
-          <span className={styles.rateLimitTitle}>Rate Limits</span>
-          <span className={styles.rateLimitMeta}>
-            {rateLimits.note || "Static tier limits"}
-          </span>
-        </div>
-        <div className={styles.rateLimitGrid}>
-          {Object.entries(rateLimits.models).map(([model, limits]) => (
-            <div key={model} className={styles.rateLimitModelCard}>
-              <span className={styles.rateLimitModelName}>{model}</span>
-              <div className={styles.rateLimitMetrics}>
-                <RateLimitMetric label="RPM" value={limits.rpm} />
-                <RateLimitMetric label="TPM" value={limits.tpm} />
-                {limits.rpd && <RateLimitMetric label="RPD" value={limits.rpd} />}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // OpenAI / Anthropic — dynamic limits
-  if (!rateLimits?.requests && !rateLimits?.tokens) return null;
-
-  const timeAgo = updatedAt ? getTimeAgo(updatedAt) : null;
+  if (!models || Object.keys(models).length === 0) return null;
 
   return (
     <div className={styles.rateLimitPanel}>
       <div className={styles.rateLimitHeader}>
         <span className={styles.rateLimitTitle}>Rate Limits</span>
-        {timeAgo && (
-          <span className={styles.rateLimitMeta}>
-            Updated {timeAgo}
-          </span>
+        {note && (
+          <span className={styles.rateLimitMeta}>{note}</span>
         )}
       </div>
-      <div className={styles.rateLimitGrid}>
-        {/* Requests */}
+      <div className={styles.rateLimitModels}>
+        {Object.entries(models).map(([modelName, modelData]) => (
+          <ModelRateLimitCard
+            key={modelName}
+            modelName={modelName}
+            modelData={modelData}
+            dynamic={dynamic}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A single model's rate-limit card.
+ * - Dynamic (OpenAI/Anthropic): shows remaining/limit progress bars per window (RPM, TPM).
+ * - Static (Google): shows fixed RPM/TPM/RPD values.
+ */
+function ModelRateLimitCard({ modelName, modelData, dynamic }) {
+  // Static model (Google) — simple metric display
+  if (!dynamic) {
+    return (
+      <div className={styles.rateLimitModelCard}>
+        <span className={styles.rateLimitModelName}>{modelName}</span>
+        <div className={styles.rateLimitMetrics}>
+          <RateLimitMetric label="RPM" value={modelData.rpm} />
+          <RateLimitMetric label="TPM" value={modelData.tpm} />
+          {modelData.rpd != null && <RateLimitMetric label="RPD" value={modelData.rpd} />}
+        </div>
+      </div>
+    );
+  }
+
+  // Dynamic model (OpenAI/Anthropic) — progress bars
+  const { rateLimits, updatedAt } = modelData;
+  if (!rateLimits) return null;
+
+  const timeAgo = updatedAt ? getTimeAgo(updatedAt) : null;
+
+  return (
+    <div className={styles.rateLimitModelCard}>
+      <div className={styles.rateLimitModelHeader}>
+        <span className={styles.rateLimitModelName}>{modelName}</span>
+        {timeAgo && (
+          <span className={styles.rateLimitMeta}>{timeAgo}</span>
+        )}
+      </div>
+      <div className={styles.rateLimitMetrics}>
+        {/* Requests per minute */}
         {rateLimits.requests?.limit != null && (
-          <div className={styles.rateLimitCard}>
-            <span className={styles.rateLimitCardLabel}>Requests</span>
-            <ProgressBar
-              current={rateLimits.requests.remaining}
-              max={rateLimits.requests.limit}
-            />
-            <span className={styles.rateLimitCardValues}>
-              {formatNumber(rateLimits.requests.remaining ?? 0)} / {formatNumber(rateLimits.requests.limit)} remaining
-            </span>
-            {rateLimits.requests.reset && (
-              <span className={styles.rateLimitReset}>
-                Resets in {rateLimits.requests.reset}
-              </span>
-            )}
-          </div>
+          <LimitBar
+            label="RPM"
+            remaining={rateLimits.requests.remaining}
+            limit={rateLimits.requests.limit}
+            reset={rateLimits.requests.reset}
+          />
         )}
-
-        {/* Tokens */}
+        {/* Tokens per minute */}
         {rateLimits.tokens?.limit != null && (
-          <div className={styles.rateLimitCard}>
-            <span className={styles.rateLimitCardLabel}>Tokens</span>
-            <ProgressBar
-              current={rateLimits.tokens.remaining}
-              max={rateLimits.tokens.limit}
-            />
-            <span className={styles.rateLimitCardValues}>
-              {formatNumber(rateLimits.tokens.remaining ?? 0)} / {formatNumber(rateLimits.tokens.limit)} remaining
-            </span>
-            {rateLimits.tokens.reset && (
-              <span className={styles.rateLimitReset}>
-                Resets in {rateLimits.tokens.reset}
-              </span>
-            )}
-          </div>
+          <LimitBar
+            label="TPM"
+            remaining={rateLimits.tokens.remaining}
+            limit={rateLimits.tokens.limit}
+            reset={rateLimits.tokens.reset}
+          />
         )}
-
-        {/* Anthropic extra: Input Tokens */}
+        {/* Anthropic: Input tokens per minute */}
         {rateLimits.inputTokens?.limit != null && (
-          <div className={styles.rateLimitCard}>
-            <span className={styles.rateLimitCardLabel}>Input Tokens</span>
-            <ProgressBar
-              current={rateLimits.inputTokens.remaining}
-              max={rateLimits.inputTokens.limit}
-            />
-            <span className={styles.rateLimitCardValues}>
-              {formatNumber(rateLimits.inputTokens.remaining ?? 0)} / {formatNumber(rateLimits.inputTokens.limit)} remaining
-            </span>
-          </div>
+          <LimitBar
+            label="ITPM"
+            remaining={rateLimits.inputTokens.remaining}
+            limit={rateLimits.inputTokens.limit}
+            reset={rateLimits.inputTokens.reset}
+          />
         )}
-
-        {/* Anthropic extra: Output Tokens */}
+        {/* Anthropic: Output tokens per minute */}
         {rateLimits.outputTokens?.limit != null && (
-          <div className={styles.rateLimitCard}>
-            <span className={styles.rateLimitCardLabel}>Output Tokens</span>
-            <ProgressBar
-              current={rateLimits.outputTokens.remaining}
-              max={rateLimits.outputTokens.limit}
-            />
-            <span className={styles.rateLimitCardValues}>
-              {formatNumber(rateLimits.outputTokens.remaining ?? 0)} / {formatNumber(rateLimits.outputTokens.limit)} remaining
-            </span>
-          </div>
+          <LimitBar
+            label="OTPM"
+            remaining={rateLimits.outputTokens.remaining}
+            limit={rateLimits.outputTokens.limit}
+            reset={rateLimits.outputTokens.reset}
+          />
         )}
       </div>
     </div>
   );
 }
 
-function ProgressBar({ current, max }) {
-  if (max == null || max === 0) return null;
+/**
+ * Compact progress bar with label, remaining/limit, and optional reset timer.
+ */
+function LimitBar({ label, remaining, limit, reset }) {
+  if (limit == null || limit === 0) return null;
 
-  const remaining = current ?? 0;
-  const pct = Math.max(0, Math.min(100, (remaining / max) * 100));
-  // Color gradient: green (>60%), yellow (30-60%), red (<30%)
-  const hue = Math.round((pct / 100) * 120); // 0=red, 60=yellow, 120=green
+  const rem = remaining ?? 0;
+  const pct = Math.max(0, Math.min(100, (rem / limit) * 100));
+  // HSL gradient: green (>60%) → yellow (30-60%) → red (<30%)
+  const hue = Math.round((pct / 100) * 120);
 
   return (
-    <div className={styles.progressBarTrack}>
-      <div
-        className={styles.progressBarFill}
-        style={{
-          width: `${pct}%`,
-          background: `hsl(${hue}, 70%, 50%)`,
-        }}
-      />
+    <div className={styles.limitBar}>
+      <div className={styles.limitBarHeader}>
+        <span className={styles.limitBarLabel}>{label}</span>
+        <span className={styles.limitBarValues}>
+          {formatCompact(rem)} / {formatCompact(limit)}
+        </span>
+      </div>
+      <div className={styles.progressBarTrack}>
+        <div
+          className={styles.progressBarFill}
+          style={{
+            width: `${pct}%`,
+            background: `hsl(${hue}, 70%, 50%)`,
+          }}
+        />
+      </div>
+      {reset && (
+        <span className={styles.rateLimitReset}>resets {reset}</span>
+      )}
     </div>
   );
 }
@@ -409,11 +411,21 @@ function RateLimitMetric({ label, value }) {
   return (
     <span className={styles.rateLimitMetric}>
       <span className={styles.rateLimitMetricValue}>
-        {value != null ? formatNumber(value) : "—"}
+        {value != null ? formatCompact(value) : "∞"}
       </span>
       <span className={styles.rateLimitMetricLabel}>{label}</span>
     </span>
   );
+}
+
+/**
+ * Format large numbers compactly: 10000000 → 10M, 3000 → 3K, 42 → 42
+ */
+function formatCompact(n) {
+  if (n == null) return "—";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1)}K`;
+  return n.toLocaleString();
 }
 
 function getTimeAgo(isoString) {
