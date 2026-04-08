@@ -222,4 +222,9 @@ export default class IrisService {
   static async getLocalConfig() {
     return fetchUserRouteAsAdmin("/config-local");
   }
+
+  // ── Rate Limits ───────────────────────────────────────────
+  static async getRateLimits() {
+    return fetchUserRouteAsAdmin("/config/rate-limits");
+  }
 }
