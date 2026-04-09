@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Bot, Paperclip, X, Code2, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain, Plug, GitBranch, Scissors } from "lucide-react";
+import { Bot, Paperclip, X, Code2, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain, Plug, GitBranch, Scissors, Repeat } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
 import NavigationSidebarComponent from "./NavigationSidebarComponent.js";
@@ -31,7 +31,7 @@ import {
   shuffleArray,
 } from "../utils/utilities.js";
 import { getModalities } from "../utils/utilities.js";
-import { PROJECT_AGENT, SETTINGS_DEFAULTS, SK_MODEL_MEMORY_AGENT, SK_TOOL_MEMORY_AGENT } from "../constants.js";
+import { PROJECT_AGENT, SETTINGS_DEFAULTS, SK_MODEL_MEMORY_AGENT, SK_TOOL_MEMORY_AGENT, MAX_TOOL_ITERATIONS } from "../constants.js";
 import chatStyles from "./ChatArea.module.css";
 import styles from "./AgentComponent.module.css";
 import ChatInputButton from "./ChatInputButton.js";
@@ -100,6 +100,7 @@ export default function AgentComponent() {
 
   // Phase 1: Agentic controls
   const [autoApprove, setAutoApprove] = useState(false);
+  const [maxIterations, setMaxIterations] = useState(MAX_TOOL_ITERATIONS);
   const [planFirst, setPlanFirst] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [planProposal, setPlanProposal] = useState(null); // { plan, steps, status }
@@ -438,6 +439,7 @@ export default function AgentComponent() {
           // Phase 1: Agentic controls
           autoApprove,
           planFirst,
+          maxIterations: Number.isFinite(maxIterations) ? maxIterations : 0,
         };
 
         let streamedText = "";
@@ -748,6 +750,7 @@ export default function AgentComponent() {
       allToolSchemas,
       autoApprove,
       planFirst,
+      maxIterations,
     ],
   );
 
@@ -1091,7 +1094,7 @@ export default function AgentComponent() {
         <div className={styles.iterationBar}>
           <span className={styles.iterationLabel}>
             <Zap size={11} />
-            Iteration {agenticProgress.iteration}/{agenticProgress.maxIterations}
+            Iteration {agenticProgress.iteration}/{Number.isFinite(maxIterations) ? maxIterations : "∞"}
           </span>
           {injectedSkills.length > 0 && (
             <span className={styles.skillsBadge}>
@@ -1106,7 +1109,7 @@ export default function AgentComponent() {
             </span>
           )}
           <div className={styles.iterationDots}>
-            {Array.from({ length: agenticProgress.maxIterations }, (_, i) => {
+            {Array.from({ length: Math.min(maxIterations, 50) }, (_, i) => {
               const step = i + 1;
               const isDone = step < agenticProgress.iteration;
               const isActive = step === agenticProgress.iteration;
@@ -1299,6 +1302,18 @@ export default function AgentComponent() {
           >
             <Zap size={10} />
             Auto
+          </button>
+          <button
+            className={`${styles.headerToggle} ${maxIterations !== MAX_TOOL_ITERATIONS ? styles.headerToggleActive : ""}`}
+            onClick={() => {
+              const steps = [10, 25, 50, 100, Infinity];
+              const idx = steps.indexOf(maxIterations);
+              setMaxIterations(steps[(idx + 1) % steps.length]);
+            }}
+            title={`Max agentic iterations: ${Number.isFinite(maxIterations) ? maxIterations : "∞ (unlimited)"} (click to cycle)`}
+          >
+            <Repeat size={10} />
+            {Number.isFinite(maxIterations) ? maxIterations : "∞"}
           </button>
           <span className={styles.headerBadge}>
             <Code2 size={10} />
