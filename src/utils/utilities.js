@@ -148,17 +148,43 @@ export async function copyToClipboard(text) {
 }
 
 /**
- * Read a File as a data URL string (base64-encoded).
- * Replaces the repeated FileReader → onload → readAsDataURL boilerplate
- * used across ~11 call sites.
+ * Format a large number compactly with adaptive decimal precision.
+ * e.g. 10000000 → "10M", 3500 → "3.5K", 42 → "42"
+ *
+ * Unlike formatNumber, this keeps a decimal when the value isn't
+ * a clean multiple (3.5K vs 4K) and uses toLocaleString for
+ * values under 1 000.
  */
-export function readFileAsDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (ev) => resolve(ev.target.result);
-    reader.onerror = () => reject(new Error("Failed to read file"));
-    reader.readAsDataURL(file);
-  });
+export function formatCompact(n) {
+  if (n == null) return "—";
+  if (n >= 1_000_000)
+    return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
+  if (n >= 1_000)
+    return `${(n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1)}K`;
+  return n.toLocaleString();
+}
+
+/**
+ * Human-readable relative timestamp from an ISO date string.
+ * Covers both fine-grained ("just now", "30s ago") and
+ * coarse-grained ("today", "yesterday", "3d ago") ranges.
+ */
+export function formatTimeAgo(isoString) {
+  if (!isoString) return "";
+  const diff = Date.now() - new Date(isoString).getTime();
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 5) return "just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return months === 1 ? "1 month ago" : `${months} months ago`;
 }
 
 

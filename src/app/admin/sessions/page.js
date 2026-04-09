@@ -4,84 +4,28 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { FolderOpen, Loader, MessageSquare, GitBranch } from "lucide-react";
 import { useRouter } from "next/navigation";
 import IrisService from "../../../services/IrisService";
+import { buildDateRangeParams } from "../../../utils/utilities";
 import {
-  buildDateRangeParams,
-  formatNumber,
-  formatLatency,
-  formatTokensPerSec,
-} from "../../../utils/utilities";
+  extractMediaAssets,
+  getMediaTypeFromRef,
+  buildRequestDetailSections,
+  reconstructChatMessages,
+} from "../../../utils/requestDetailHelpers";
 import PaginationComponent from "../../../components/PaginationComponent";
 import SessionsTableComponent from "../../../components/SessionsTableComponent";
 import SelectDropdown from "../../../components/SelectDropdown";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
 import useProjectFilter from "../../../hooks/useProjectFilter";
 import RequestDetailsComponent from "../../../components/RequestDetailsComponent";
-import BadgeComponent from "../../../components/BadgeComponent";
-import ModalityIconComponent from "../../../components/ModalityIconComponent";
-import CostBadgeComponent from "../../../components/CostBadgeComponent";
 import JsonViewerComponent from "../../../components/JsonViewerComponent";
 import HistoryItemComponent from "../../../components/HistoryItemComponent";
 import ChatPreviewComponent from "../../../components/ChatPreviewComponent";
-import { prepareDisplayMessages } from "../../../components/MessageList";
 import MediaCardComponent from "../../../components/MediaCardComponent";
 
 import styles from "./page.module.css";
 
 const PAGE_SIZE = 30;
 const POLL_INTERVAL = 5000; // 5s
-
-/* ── helpers ─────────────────────────────────────── */
-function extractMediaAssets(obj) {
-  const seen = new Set();
-  const assets = [];
-  const search = (node, origin) => {
-    if (!node) return;
-    if (typeof node === "string") {
-      if (seen.has(node)) return;
-      if (
-        node.startsWith("minio://") ||
-        node.startsWith("data:image/") ||
-        node.startsWith("data:audio/") ||
-        node.startsWith("data:video/") ||
-        node.startsWith("data:application/pdf")
-      ) {
-        seen.add(node);
-        assets.push({ url: node, origin });
-      } else if (node.startsWith("http://") || node.startsWith("https://")) {
-        const ext = node.split("?")[0].split(".").pop()?.toLowerCase();
-        if (
-          ["png","jpg","jpeg","gif","webp","mp3","wav","ogg","webm","mp4","mov","avi","pdf"].includes(ext)
-        ) {
-          seen.add(node);
-          assets.push({ url: node, origin });
-        }
-      }
-    } else if (Array.isArray(node)) {
-      node.forEach((n) => search(n, origin));
-    } else if (typeof node === "object") {
-      Object.values(node).forEach((n) => search(n, origin));
-    }
-  };
-  search(obj?.requestPayload, "user");
-  search(obj?.responsePayload, "ai");
-  return assets;
-}
-
-function getMediaTypeFromRef(ref) {
-  if (!ref) return "image";
-  const isData = ref.startsWith("data:");
-  if (isData) {
-    if (ref.startsWith("data:audio")) return "audio";
-    if (ref.startsWith("data:video")) return "video";
-    if (ref.startsWith("data:application/pdf")) return "pdf";
-    return "image";
-  }
-  const ext = ref.split("?")[0].split(".").pop()?.toLowerCase();
-  if (["mp3", "wav", "ogg", "webm"].includes(ext)) return "audio";
-  if (["mp4", "avi", "mov"].includes(ext)) return "video";
-  if (ext === "pdf") return "pdf";
-  return "image";
-}
 
 export default function SessionsPage() {
   const router = useRouter();
@@ -302,172 +246,7 @@ export default function SessionsPage() {
         open={!!selectedRequest}
         onClose={() => setSelectedRequest(null)}
         title="Request Detail"
-        sections={
-          selectedRequest
-            ? [
-                {
-                  title: "General",
-                  items: [
-                    {
-                      label: "Request ID",
-                      value: selectedRequest.requestId || "-",
-                      mono: true,
-                    },
-                    {
-                      label: "Timestamp",
-                      value: selectedRequest.timestamp
-                        ? new Date(selectedRequest.timestamp).toLocaleString()
-                        : "-",
-                    },
-                    {
-                      label: "Project",
-                      value: selectedRequest.project ? (
-                        <BadgeComponent variant="info">{selectedRequest.project}</BadgeComponent>
-                      ) : "-",
-                    },
-                    {
-                      label: "Endpoint",
-                      value: (
-                        <BadgeComponent variant="endpoint">
-                          {selectedRequest.endpoint || "-"}
-                        </BadgeComponent>
-                      ),
-                    },
-                    {
-                      label: "Operation",
-                      value: (
-                        <BadgeComponent variant="info">
-                          {selectedRequest.operation || "-"}
-                        </BadgeComponent>
-                      ),
-                    },
-                    {
-                      label: "Provider",
-                      value: selectedRequest.provider ? (
-                        <BadgeComponent variant="provider">{selectedRequest.provider}</BadgeComponent>
-                      ) : "-",
-                    },
-                    { label: "Model", value: selectedRequest.model || "-" },
-                    {
-                      label: "Modalities",
-                      value: selectedRequest.modalities ? (
-                        <ModalityIconComponent modalities={selectedRequest.modalities} size={14} />
-                      ) : "-",
-                    },
-                    {
-                      label: "Status",
-                      value: (
-                        <BadgeComponent
-                          variant={
-                            selectedRequest.success ? "success" : "error"
-                          }
-                        >
-                          {selectedRequest.success ? "Success" : "Error"}
-                        </BadgeComponent>
-                      ),
-                    },
-                    {
-                      label: "Tools Used",
-                      value: (
-                        <BadgeComponent
-                          variant={
-                            selectedRequest.toolsUsed ? "endpoint" : "info"
-                          }
-                        >
-                          {selectedRequest.toolsUsed ? "Yes" : "No"}
-                        </BadgeComponent>
-                      ),
-                    },
-                    ...(selectedRequest.errorMessage
-                      ? [
-                          {
-                            label: "Error",
-                            value: (
-                              <span style={{ color: "var(--danger)" }}>
-                                {selectedRequest.errorMessage}
-                              </span>
-                            ),
-                          },
-                        ]
-                      : []),
-                  ],
-                },
-                {
-                  title: "Usage",
-                  items: [
-                    {
-                      label: "Input Tokens",
-                      value: formatNumber(selectedRequest.inputTokens),
-                    },
-                    {
-                      label: "Output Tokens",
-                      value: formatNumber(selectedRequest.outputTokens),
-                    },
-                    {
-                      label: "Estimated Cost",
-                      value: <CostBadgeComponent cost={selectedRequest.estimatedCost} />,
-                    },
-                    {
-                      label: "Tokens/sec",
-                      value: formatTokensPerSec(selectedRequest.tokensPerSec),
-                    },
-                    {
-                      label: "Input Chars",
-                      value: formatNumber(selectedRequest.inputCharacters),
-                    },
-                    {
-                      label: "Output Chars",
-                      value: formatNumber(selectedRequest.outputCharacters),
-                    },
-                    {
-                      label: "Messages",
-                      value: selectedRequest.messageCount || 0,
-                    },
-                  ],
-                },
-                {
-                  title: "Timing",
-                  items: [
-                    {
-                      label: "Time to Generation",
-                      value: formatLatency(selectedRequest.timeToGeneration),
-                    },
-                    {
-                      label: "Generation Time",
-                      value: formatLatency(selectedRequest.generationTime),
-                    },
-                    {
-                      label: "Total Time",
-                      value: formatLatency(selectedRequest.totalTime),
-                    },
-                  ],
-                },
-                {
-                  title: "Parameters",
-                  items: [
-                    {
-                      label: "Temperature",
-                      value: selectedRequest.temperature ?? "-",
-                    },
-                    {
-                      label: "Max Tokens",
-                      value: selectedRequest.maxTokens ?? "-",
-                    },
-                    { label: "Top P", value: selectedRequest.topP ?? "-" },
-                    { label: "Top K", value: selectedRequest.topK ?? "-" },
-                    {
-                      label: "Frequency Penalty",
-                      value: selectedRequest.frequencyPenalty ?? "-",
-                    },
-                    {
-                      label: "Presence Penalty",
-                      value: selectedRequest.presencePenalty ?? "-",
-                    },
-                  ],
-                },
-              ]
-            : []
-        }
+        sections={buildRequestDetailSections(selectedRequest)}
       >
         {selectedRequest && (
           <>
@@ -615,80 +394,14 @@ export default function SessionsPage() {
               );
             })()}
             {(() => {
-              // Reconstruct chat messages from request/response payloads
-              const req = selectedRequest;
-              const reqPayload = req?.requestPayload;
-              const resPayload = req?.responsePayload;
-              if (!reqPayload?.messages?.length) return null;
-
-              // Start with the prompt messages from the request
-              const chatMessages = [...reqPayload.messages];
-
-              // Append the assistant response
-              if (resPayload) {
-                const assistantMsg = {
-                  role: "assistant",
-                  content: "",
-                  model: req.model,
-                  provider: req.provider,
-                };
-
-                // Handle different response formats
-                if (resPayload.text) {
-                  assistantMsg.content = resPayload.text;
-                } else if (resPayload.content) {
-                  assistantMsg.content = resPayload.content;
-                } else if (resPayload.candidates?.[0]?.content?.parts) {
-                  assistantMsg.content = resPayload.candidates[0].content.parts
-                    .map((p) => p.text || "")
-                    .join("");
-                } else if (resPayload.choices?.[0]?.message?.content) {
-                  assistantMsg.content = resPayload.choices[0].message.content;
-                } else if (typeof resPayload === "string") {
-                  assistantMsg.content = resPayload;
-                }
-
-                // Extract tool calls if present
-                const toolCalls =
-                  resPayload.choices?.[0]?.message?.tool_calls ||
-                  resPayload.toolCalls;
-                if (toolCalls?.length) {
-                  assistantMsg.toolCalls = toolCalls.map((tc) => ({
-                    id: tc.id,
-                    name: tc.function?.name || tc.name,
-                    args:
-                      typeof tc.function?.arguments === "string"
-                        ? JSON.parse(tc.function.arguments)
-                        : tc.function?.arguments || tc.args || {},
-                  }));
-                }
-
-                // Extract generated images
-                if (resPayload.images?.length) {
-                  assistantMsg.images = resPayload.images;
-                }
-
-                // Extract thinking content
-                if (resPayload.thinking) {
-                  assistantMsg.thinking = resPayload.thinking;
-                }
-
-                if (assistantMsg.content || assistantMsg.toolCalls?.length || assistantMsg.images?.length) {
-                  chatMessages.push(assistantMsg);
-                }
-              }
-
-              const displayMessages = prepareDisplayMessages(chatMessages);
-              // Extract system prompt content for the banner
-              const systemMsg = chatMessages.find((m) => m.role === "system");
-              if (!displayMessages.length) return null;
-
+              const chat = reconstructChatMessages(selectedRequest);
+              if (!chat) return null;
               return (
                 <div className={styles.detailSection}>
                   <div className={styles.detailSectionTitle}>Chat Preview</div>
                   <ChatPreviewComponent
-                    messages={displayMessages}
-                    systemPrompt={systemMsg?.content}
+                    messages={chat.messages}
+                    systemPrompt={chat.systemPrompt}
                     readOnly
                   />
                 </div>

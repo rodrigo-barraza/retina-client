@@ -68,3 +68,10 @@ export const SETTINGS_DEFAULTS = {
   verbosity: "",
   reasoningSummary: "",
 };
+
+// ── Chart / UI color palette ─────────────────────────────────────
+/** Cycled by row index for provider charts, tables, and distribution bars. */
+export const PROVIDER_COLORS = [
+  "#6366f1", "#a855f7", "#ec4899", "#f59e0b",
+  "#10b981", "#3b82f6", "#ef4444", "#06b6d4",
+];

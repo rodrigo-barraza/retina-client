@@ -3,21 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Brain, RefreshCw, User, MessageSquare, FolderKanban, ExternalLink, Trash2, Sparkles, History, GitMerge } from "lucide-react";
 import PrismService from "../services/PrismService.js";
+import { formatTimeAgo } from "../utils/utilities";
 import styles from "./MemoriesPanel.module.css";
 
-/**
- * Human-readable relative timestamp from an ISO date string.
- */
-function timeAgo(dateStr) {
-  if (!dateStr) return "";
-  const ms = Date.now() - new Date(dateStr).getTime();
-  const days = Math.floor(ms / 86_400_000);
-  if (days === 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 30) return `${days}d ago`;
-  const months = Math.floor(days / 30);
-  return months === 1 ? "1 month ago" : `${months} months ago`;
-}
+
 
 /**
  * Type → icon mapping for memory categories.
@@ -283,7 +272,7 @@ export default function MemoriesPanel({ project, refreshKey, consolidationEvent 
                 <span className={`${styles.historyTrigger} ${styles[`trigger${run.trigger?.charAt(0).toUpperCase()}${run.trigger?.slice(1)}`] || ""}`}>
                   {TRIGGER_LABELS[run.trigger] || run.trigger || "unknown"}
                 </span>
-                <span className={styles.historyTime}>{timeAgo(run.runAt)}</span>
+                <span className={styles.historyTime}>{formatTimeAgo(run.runAt)}</span>
               </div>
               <div className={styles.historySummary}>{run.summary}</div>
               <div className={styles.historyStats}>
@@ -324,7 +313,7 @@ export default function MemoriesPanel({ project, refreshKey, consolidationEvent 
                   </span>
                   {memory.createdAt && (
                     <span className={styles.memoryAge}>
-                      {timeAgo(memory.createdAt)}
+                      {formatTimeAgo(memory.createdAt)}
                     </span>
                   )}
                 </div>

@@ -15,23 +15,17 @@ import {
   formatCost,
   formatLatency,
   formatTokensPerSec,
+  formatCompact,
+  formatTimeAgo,
   buildDateRangeParams,
 } from "../../../utils/utilities";
+import { PROVIDER_COLORS } from "../../../constants";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
 import useProjectFilter from "../../../hooks/useProjectFilter";
 import styles from "./page.module.css";
 
 
-const PROVIDER_COLORS = [
-  "#6366f1",
-  "#a855f7",
-  "#ec4899",
-  "#f59e0b",
-  "#10b981",
-  "#3b82f6",
-  "#ef4444",
-  "#06b6d4",
-];
+
 
 export default function ProvidersPage() {
   const { projectFilter, projectOptions, handleProjectChange } =
@@ -320,7 +314,7 @@ function ModelRateLimitCard({ modelName, modelData, dynamic }) {
   const { rateLimits, updatedAt } = modelData;
   if (!rateLimits) return null;
 
-  const timeAgo = updatedAt ? getTimeAgo(updatedAt) : null;
+  const timeAgo = updatedAt ? formatTimeAgo(updatedAt) : null;
 
   return (
     <div className={styles.rateLimitModelCard}>
@@ -418,23 +412,4 @@ function RateLimitMetric({ label, value }) {
   );
 }
 
-/**
- * Format large numbers compactly: 10000000 → 10M, 3000 → 3K, 42 → 42
- */
-function formatCompact(n) {
-  if (n == null) return "—";
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1)}K`;
-  return n.toLocaleString();
-}
 
-function getTimeAgo(isoString) {
-  const diff = Date.now() - new Date(isoString).getTime();
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 5) return "just now";
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  return `${hours}h ago`;
-}

@@ -42,6 +42,7 @@ import {
   getTotalInputTokens,
   formatCost,
 } from "./utilities";
+import { PROVIDER_COLORS } from "../constants";
 import styles from "../components/TableComponents.module.css";
 
 /* ── Helpers ────────────────────────────────────────────── */
@@ -87,11 +88,8 @@ export function formatDuration(ms) {
   return remMins > 0 ? `${hrs}h ${remMins}m` : `${hrs}h`;
 }
 
-/** Provider usage bar colors — cycled by row index */
-export const PROVIDER_COLORS = [
-  "#6366f1", "#a855f7", "#ec4899", "#f59e0b",
-  "#10b981", "#3b82f6", "#ef4444", "#06b6d4",
-];
+// Re-export PROVIDER_COLORS so existing consumers don't need to change imports
+export { PROVIDER_COLORS };
 
 /* ── Column Factories ───────────────────────────────────── */
 
