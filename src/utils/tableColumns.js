@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import ModelBadgeComponent from "../components/ModelBadgeComponent";
 import ProvidersBadgeComponent from "../components/ProvidersBadgeComponent";
+import AgentBadgeComponent from "../components/AgentBadgeComponent";
 import ProjectBadgeComponent from "../components/ProjectBadgeComponent";
 import UserBadgeComponent from "../components/UserBadgeComponent";
 import CountLinkComponent from "../components/CountLinkComponent";
@@ -548,12 +549,12 @@ export const agentColumn = () => ({
   key: "agent",
   label: "Agent",
   description: "The originating agent that made this request (e.g. CODING, LUPOS)",
-  render: (r) =>
-    r.agent ? (
-      <BadgeComponent variant="provider">{r.agent}</BadgeComponent>
-    ) : (
-      emptyDash()
-    ),
+  sortable: false,
+  render: (r) => {
+    // Normalize: sessions expose `agents` (array), requests expose `agent` (string)
+    const agents = r.agents || (r.agent ? [r.agent] : []);
+    return <AgentBadgeComponent agents={agents} />;
+  },
 });
 
 /* ·· Status ·· */

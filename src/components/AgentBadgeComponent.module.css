@@ -1,0 +1,44 @@
+/* ── AgentBadgeComponent ─────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  color: rgb(168, 85, 247);
+  background: rgba(168, 85, 247, 0.08);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.badge:hover {
+  border-color: rgba(168, 85, 247, 0.45);
+  background: rgba(168, 85, 247, 0.12);
+}
+
+.badge svg {
+  flex-shrink: 0;
+}
+
+.agentName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* ── Mini ─────────────────────────────────────────── */
+
+.mini {
+  font-size: 7px;
+  padding: 1px 4px;
+  gap: 2px;
+}
+
+.mini .agentName {
+  max-width: 120px;
+}
