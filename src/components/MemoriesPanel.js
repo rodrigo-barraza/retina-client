@@ -305,7 +305,7 @@ export default function MemoriesPanel({ project, refreshKey, consolidationEvent 
               </div>
               <div className={styles.memoryInfo}>
                 <div className={styles.memoryTitle}>
-                  {memory.title || memory.fact || "Untitled"}
+                  {memory.title || (memory.content ? memory.content.substring(0, 60) : "Untitled")}
                 </div>
                 <div className={styles.memoryMeta}>
                   <span className={`${styles.memoryTypeBadge} ${styles[badgeClass]}`}>
@@ -327,9 +327,9 @@ export default function MemoriesPanel({ project, refreshKey, consolidationEvent 
               </button>
             </div>
 
-            {(memory.content || memory.fact) && (
+            {memory.content && (
               <div className={styles.memoryContent}>
-                {memory.content || memory.fact}
+                {memory.content}
               </div>
             )}
 
