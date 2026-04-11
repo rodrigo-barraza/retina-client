@@ -1,0 +1,25 @@
+.page {
+  animation: fadeIn var(--transition-normal) ease-out;
+}
+
+/* Table */
+.tableWrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+/* Detail drawer sections */
+.detailSection {
+  margin-bottom: 20px;
+}
+
+.detailSectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}

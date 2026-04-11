@@ -290,7 +290,11 @@ function AdminShellInner({ children }) {
     const segment = pathname.replace("/admin", "").replace(/^\//, "");
     if (!segment) return "Dashboard";
     const first = segment.split("/")[0];
-    return first.charAt(0).toUpperCase() + first.slice(1);
+    // Convert "tool-requests" -> "Tool Requests"
+    return first
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
   })();
 
   return (
