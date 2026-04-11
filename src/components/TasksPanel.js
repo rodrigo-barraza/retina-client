@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  ListChecks, RefreshCw, Trash2, Plus,
+  ListChecks, RefreshCw, Trash2, Plus, Loader2,
   CircleDot, Play, CheckCircle2, ChevronDown, ChevronRight,
   X,
 } from "lucide-react";
@@ -287,6 +287,12 @@ export default function TasksPanel({ project, refreshKey }) {
                   <span className={`${styles.taskStatusBadge} ${styles[cfg.colorClass]}`}>
                     {cfg.label}
                   </span>
+                  {task.status === "in_progress" && task.activeForm && (
+                    <span className={styles.activeFormBadge}>
+                      <Loader2 size={9} className={styles.activeFormSpin} />
+                      {task.activeForm}
+                    </span>
+                  )}
                   {task.createdAt && (
                     <span className={styles.taskAge}>
                       {formatTimeAgo(task.createdAt)}

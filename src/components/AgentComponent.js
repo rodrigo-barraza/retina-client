@@ -80,6 +80,7 @@ export default function AgentComponent() {
   const [injectedSkills, setInjectedSkills] = useState([]);
   const [mcpServers, setMcpServers] = useState([]);
   const [memoriesRefreshKey, setMemoriesRefreshKey] = useState(0);
+  const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
   const [newMemoriesCount, setNewMemoriesCount] = useState(0);
   const { disabledBuiltIns, handleToggleBuiltIn, handleToggleAllBuiltIn } =
     useToolToggles(builtInTools, SK_TOOL_MEMORY_AGENT);
@@ -598,6 +599,11 @@ export default function AgentComponent() {
               });
               return updated;
             });
+
+            // Auto-refresh tasks panel when any task tool completes
+            if (data.status !== "calling" && tc.name?.startsWith("task_")) {
+              setTasksRefreshKey((k) => k + 1);
+            }
           },
           // LM Studio native MCP tool calls (toolCall events)
           onToolCall: (tc) => {
@@ -691,6 +697,10 @@ export default function AgentComponent() {
                 strategy: statusData.strategy,
                 estimatedTokens: statusData.estimatedTokens,
               });
+            } else if (statusData?.message === "tasks_updated") {
+              // Auto-expand tasks panel when agent creates/updates tasks
+              setLeftTab("tasks");
+              setTasksRefreshKey((k) => k + 1);
             }
           },
           onDone: (data) => {
@@ -998,7 +1008,7 @@ export default function AgentComponent() {
       )}
 
       {leftTab === "tasks" && (
-        <TasksPanel project={PROJECT_AGENT} />
+        <TasksPanel project={PROJECT_AGENT} refreshKey={tasksRefreshKey} />
       )}
 
       {leftTab === "mcp" && (
