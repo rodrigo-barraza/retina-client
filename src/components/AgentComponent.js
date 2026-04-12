@@ -707,6 +707,10 @@ export default function AgentComponent() {
               // Auto-expand tasks panel when agent creates/updates tasks
               setLeftTab("tasks");
               setTasksRefreshKey((k) => k + 1);
+            } else if (statusData?.message === "workers_updated") {
+              // Auto-expand workers panel when agent spawns/stops workers
+              setLeftTab("workers");
+              setTasksRefreshKey((k) => k + 1);
             }
           },
           onDone: (data) => {

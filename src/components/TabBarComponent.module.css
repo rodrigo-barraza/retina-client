@@ -8,6 +8,7 @@
 
 .tab {
   flex: 1;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -36,17 +37,22 @@
 }
 
 .tabBadge {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  font-size: 9px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  font-size: 8px;
   font-weight: 700;
-  color: #f97316;
-  background: color-mix(in srgb, #f97316 15%, transparent);
+  color: #fff;
+  background: #f97316;
   border-radius: 999px;
+  pointer-events: none;
   transition: all 0.2s ease;
 }
 
