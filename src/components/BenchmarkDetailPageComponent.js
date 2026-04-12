@@ -418,19 +418,20 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       toolsEnabled: !!toolsMap[m.instanceId],
     }));
 
-    // Append agent instances — each agent rides on a backing model
-    // (the first selected model, or a default cloud model)
-    const agentTargets = agentInstances.map((a) => {
-      const backingModel = selectedModels[0];
-      return {
-        provider: backingModel?.provider || "anthropic",
-        model: backingModel?.name || "claude-sonnet-4-20250514",
-        display_name: `🤖 ${a.name} (${backingModel?.label || backingModel?.name || "claude-sonnet-4"})`,
-        thinkingEnabled: !!thinkingMap[a.instanceId],
-        toolsEnabled: true,
-        agent: a.agentId,
-      };
-    });
+    // Append agent instances — each agent uses its own backing model
+    const agentTargets = agentInstances
+      .filter((a) => a.provider && a.modelName)  // skip agents without a backing model
+      .map((a) => {
+        const modelDef = allModels.find((m) => m.provider === a.provider && m.name === a.modelName);
+        return {
+          provider: a.provider,
+          model: a.modelName,
+          display_name: `🤖 ${a.name} (${modelDef?.label || modelDef?.display_name || a.modelName})`,
+          thinkingEnabled: !!thinkingMap[a.instanceId],
+          toolsEnabled: true,
+          agent: a.agentId,
+        };
+      });
 
     const models = [...modelTargets, ...agentTargets];
 
@@ -537,7 +538,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
         abortRef.current = null;
       },
     });
-  }, [benchmark, selectedModels, agentInstances, benchmarkId, thinkingMap, toolsMap]);
+  }, [benchmark, selectedModels, agentInstances, allModels, benchmarkId, thinkingMap, toolsMap]);
 
   // ── Stop benchmark ─────────────────────────────────────────
   const handleStop = useCallback(async () => {
@@ -621,6 +622,19 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       return next;
     });
     setThinkingMap((prev) => { const n = { ...prev }; delete n[instanceId]; return n; });
+  }, [selectedInstances]);
+
+  const handleChangeAgentModel = useCallback((instanceId, provider, modelName) => {
+    setAgentInstances((prev) => {
+      const next = prev.map((a) =>
+        a.instanceId === instanceId ? { ...a, provider, modelName } : a
+      );
+      StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, {
+        instances: selectedInstances,
+        agents: next,
+      });
+      return next;
+    });
   }, [selectedInstances]);
 
   // ── Add model instance to selection (always adds, never toggles) ────
@@ -747,6 +761,8 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
           onToggleTools={handleToggleTools}
           agentInstances={agentInstances}
           onRemoveAgent={removeAgent}
+          onChangeAgentModel={handleChangeAgentModel}
+          allModels={allModels}
         />
       }
       leftTitle="Run History"
