@@ -737,6 +737,10 @@ export default function AgentComponent() {
               // Auto-expand workers panel when agent spawns/stops workers
               setLeftTab("workers");
               setTasksRefreshKey((k) => k + 1);
+            } else if (statusData?.message === "memories_updated") {
+              // Auto-expand memories panel when agent saves a memory
+              setLeftTab("memories");
+              setMemoriesRefreshKey((k) => k + 1);
             }
           },
           onDone: (data) => {
