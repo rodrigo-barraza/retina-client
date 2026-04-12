@@ -38,7 +38,7 @@ export default function TasksPanel({ project, refreshKey }) {
   const [expandedId, setExpandedId] = useState(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
   const [statusFilter, setStatusFilter] = useState(null);
-  const initialLoadDone = useRef(false);
+  const hasData = useRef(false);
 
   // New task form
   const [showNewForm, setShowNewForm] = useState(false);
@@ -48,8 +48,9 @@ export default function TasksPanel({ project, refreshKey }) {
 
   // ── Load ────────────────────────────────────────────────────
 
-  const loadTasks = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
+  const loadTasks = useCallback(async () => {
+    // Only show full spinner on first load (no data yet)
+    if (!hasData.current) setLoading(true);
     setError(null);
     try {
       const result = await ToolsApiService.getAllAgenticTasks({
@@ -57,26 +58,19 @@ export default function TasksPanel({ project, refreshKey }) {
       });
       setTasks(result.tasks || []);
       setSummary(result.summary || null);
+      hasData.current = true;
     } catch (err) {
       console.error("Failed to load tasks:", err);
-      if (!silent) setError(err.message);
+      if (!hasData.current) setError(err.message);
     } finally {
       setLoading(false);
-      initialLoadDone.current = true;
     }
   }, [statusFilter]);
 
-  // Initial load
+  // Single effect — fires on mount, refreshKey changes, and statusFilter changes
   useEffect(() => {
-    loadTasks(false);
-  }, [loadTasks]);
-
-  // Silent refresh when refreshKey changes (agent tool calls)
-  useEffect(() => {
-    if (initialLoadDone.current && refreshKey > 0) {
-      loadTasks(true);
-    }
-  }, [refreshKey, loadTasks]);
+    loadTasks();
+  }, [loadTasks, refreshKey]);
 
   // ── Create ─────────────────────────────────────────────────
 

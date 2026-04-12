@@ -652,6 +652,11 @@ export default function AgentComponent() {
               });
               return updated;
             });
+
+            // Auto-refresh tasks panel when any task tool completes (MCP path)
+            if (tc.status !== "calling" && tc.name?.startsWith("task_")) {
+              setTasksRefreshKey((k) => k + 1);
+            }
           },
           onToolOutput: (data) => {
             if (data.event === "stdout" || data.event === "stderr") {
