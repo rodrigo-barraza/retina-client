@@ -13,6 +13,7 @@ import {
   Cpu,
   X,
   Brain,
+  Wrench,
 } from "lucide-react";
 import BadgeComponent from "./BadgeComponent";
 import ChatPreviewComponent from "./ChatPreviewComponent";
@@ -48,6 +49,9 @@ export default function RunHistorySidebarComponent({
   // Thinking toggle props
   thinkingMap = {},
   onToggleThinking,
+  // Tools toggle props
+  toolsMap = {},
+  onToggleTools,
 }) {
   // Derive assertions array (backward compat)
   const assertions = useMemo(() => {
@@ -81,6 +85,7 @@ export default function RunHistorySidebarComponent({
               const key = `${m.provider}:${m.name}`;
               const label = m.display_name || m.label || m.name;
               const isThinking = !!thinkingMap[key];
+              const isTools = !!toolsMap[key];
               const supportsThinking = !!m.thinking;
               return (
                 <div key={key} className={styles.modelCard}>
@@ -104,19 +109,32 @@ export default function RunHistorySidebarComponent({
                     <span className={styles.modelCardProvider}>
                       {m.provider}
                     </span>
-                    {supportsThinking && (
+                    <div className={styles.modelCardToggles}>
                       <button
-                        className={`${styles.thinkingToggle} ${isThinking ? styles.thinkingToggleActive : ""}`}
+                        className={`${styles.toolsToggle} ${isTools ? styles.toolsToggleActive : ""}`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          onToggleThinking?.(key);
+                          onToggleTools?.(key);
                         }}
-                        title={isThinking ? "Disable thinking" : "Enable thinking"}
+                        title={isTools ? "Disable tools" : "Enable tools (calculator)"}
                       >
-                        <Brain size={10} />
-                        <span>{isThinking ? "On" : "Off"}</span>
+                        <Wrench size={10} />
+                        <span>Tools</span>
                       </button>
-                    )}
+                      {supportsThinking && (
+                        <button
+                          className={`${styles.thinkingToggle} ${isThinking ? styles.thinkingToggleActive : ""}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleThinking?.(key);
+                          }}
+                          title={isThinking ? "Disable thinking" : "Enable thinking"}
+                        >
+                          <Brain size={10} />
+                          <span>Think</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

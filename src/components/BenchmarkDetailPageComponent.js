@@ -99,6 +99,9 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
   // Per-model thinking toggle: Map<"provider:name", boolean>
   const [thinkingMap, setThinkingMap] = useState({});
 
+  // Per-model tools toggle: Map<"provider:name", boolean>
+  const [toolsMap, setToolsMap] = useState({});
+
   // Compute the active row key for table highlight
   const getActiveKey = useCallback((results) => {
     if (!selectedResult) return undefined;
@@ -384,6 +387,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       model: m.name,
       display_name: m.display_name || m.label || m.name,
       thinkingEnabled: !!thinkingMap[`${m.provider}:${m.name}`],
+      toolsEnabled: !!toolsMap[`${m.provider}:${m.name}`],
     }));
 
     abortRef.current = PrismService.streamBenchmarkRun(benchmarkId, models, {
@@ -489,7 +493,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
         abortRef.current = null;
       },
     });
-  }, [benchmark, selectedModels, benchmarkId, thinkingMap]);
+  }, [benchmark, selectedModels, benchmarkId, thinkingMap, toolsMap]);
 
   // ── Stop benchmark ─────────────────────────────────────────
   const handleStop = useCallback(async () => {
@@ -579,6 +583,11 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
     setThinkingMap((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
+  // ── Toggle tools per model ────────────────────────────────
+  const handleToggleTools = useCallback((key) => {
+    setToolsMap((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
   // ── Delete benchmark ──────────────────────────────────────
   const handleDelete = useCallback(async () => {
     setDeleting(true);
@@ -650,6 +659,8 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
           onClearSelection={clearModelSelection}
           thinkingMap={thinkingMap}
           onToggleThinking={handleToggleThinking}
+          toolsMap={toolsMap}
+          onToggleTools={handleToggleTools}
         />
       }
       leftTitle="Run History"
@@ -936,6 +947,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
                 role: "assistant",
                 content: selectedResult.response,
                 thinking: selectedResult.thinking || undefined,
+                toolCalls: selectedResult.toolCalls || undefined,
                 model: selectedResult.label || selectedResult.model,
                 provider: selectedResult.provider,
               }] : []),

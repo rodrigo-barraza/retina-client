@@ -11,7 +11,7 @@ export { getModalities } from "../utils/utilities";
 
 
 export default function HistoryPanel({
-  sessions,
+  sessions = [],
   activeId,
   onSelect,
   onNew,
