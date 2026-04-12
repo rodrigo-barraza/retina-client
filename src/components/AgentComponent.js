@@ -1257,9 +1257,12 @@ export default function AgentComponent() {
           onNew={handleNewChat}
           onDelete={handleDeleteConversation}
           disableNew={messages.length === 0 && !activeId}
+          newLabel="New Session"
+          emptyText="No recent sessions"
+          searchText="Search sessions..."
         />
       }
-      rightTitle={`${conversations.length} Conversations`}
+      rightTitle={`${conversations.length} Sessions`}
       headerTitle={title}
       headerCenter={
         <ModelPickerPopoverComponent
