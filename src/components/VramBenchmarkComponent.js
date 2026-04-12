@@ -491,7 +491,7 @@ export default function VramBenchmarkComponent() {
   const [rawData, setRawData] = useState([]);
   const [machines, setMachines] = useState([]);
   const [settingsLabels, setSettingsLabels] = useState([]);
-  const [contextLengths, setContextLengths] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -499,7 +499,10 @@ export default function VramBenchmarkComponent() {
   const [machineFilter, setMachineFilter] = useState("all");
   const [providerFilter, setProviderFilter] = useState("all");
   const [settingsFilter, setSettingsFilter] = useState("all");
-  const [ctxFilter, setCtxFilter] = useState("all");
+  const [parallelFilter, setParallelFilter] = useState("all");
+  const [batchFilter, setBatchFilter] = useState("all");
+  const [ctxMin, setCtxMin] = useState("");
+  const [ctxMax, setCtxMax] = useState("");
   const [sortBy, setSortBy] = useState("vram");
   const [scatterMode, setScatterMode] = useState("vram_vs_speed");
   const [vramClipMin, setVramClipMin] = useState("");
@@ -536,6 +539,26 @@ export default function VramBenchmarkComponent() {
     return isNaN(v) || v <= 0 ? undefined : v;
   }, [scatterClipXMax]);
 
+  // Parsed context range values (in thousands → multiply by 1024 for actual ctx)
+  const ctxMinVal = useMemo(() => {
+    const v = parseFloat(ctxMin);
+    return isNaN(v) || v < 0 ? undefined : v * 1024;
+  }, [ctxMin]);
+  const ctxMaxVal = useMemo(() => {
+    const v = parseFloat(ctxMax);
+    return isNaN(v) || v <= 0 ? undefined : v * 1024;
+  }, [ctxMax]);
+
+  // Distinct parallel and batch options from SETTINGS_INFO
+  const parallelOptions = useMemo(() => {
+    const set = new Set(Object.values(SETTINGS_INFO).map((s) => s.parallel));
+    return [...set].sort((a, b) => a - b);
+  }, []);
+  const batchOptions = useMemo(() => {
+    const set = new Set(Object.values(SETTINGS_INFO).map((s) => s.batch));
+    return [...set].sort((a, b) => a - b);
+  }, []);
+
   // Active scatter mode config
   const activeScatterMode = useMemo(
     () => SCATTER_MODES.find((m) => m.key === scatterMode) || SCATTER_MODES[0],
@@ -566,18 +589,16 @@ export default function VramBenchmarkComponent() {
   const fetchData = useCallback(async () => {
     try {
       setError(null);
-      const [benchRes, machinesRes, settingsRes, contextsRes] = await Promise.all([
+      const [benchRes, machinesRes, settingsRes] = await Promise.all([
         PrismService.getVramBenchmarks({
           ...(settingsFilter !== "all" ? { settings: settingsFilter } : {}),
         }),
         PrismService.getVramBenchmarkMachines(),
         PrismService.getVramBenchmarkSettings(),
-        PrismService.getVramBenchmarkContexts(),
       ]);
       setRawData(benchRes.data || []);
       setMachines(machinesRes || []);
       setSettingsLabels(settingsRes || []);
-      setContextLengths(contextsRes || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -613,10 +634,30 @@ export default function VramBenchmarkComponent() {
       filtered = filtered.filter((d) => d.provider === providerFilter);
     }
 
-    if (ctxFilter !== "all") {
-      filtered = filtered.filter(
-        (d) => d.contextLength === parseInt(ctxFilter),
-      );
+    // Context range filter (min-max in actual context length units)
+    if (ctxMinVal !== undefined) {
+      filtered = filtered.filter((d) => d.contextLength >= ctxMinVal);
+    }
+    if (ctxMaxVal !== undefined) {
+      filtered = filtered.filter((d) => d.contextLength <= ctxMaxVal);
+    }
+
+    // Parallel filter — match via SETTINGS_INFO lookup
+    if (parallelFilter !== "all") {
+      const pVal = parseInt(parallelFilter);
+      filtered = filtered.filter((d) => {
+        const info = SETTINGS_INFO[d.settings?.label];
+        return info?.parallel === pVal;
+      });
+    }
+
+    // Batch filter — match via SETTINGS_INFO lookup
+    if (batchFilter !== "all") {
+      const bVal = parseInt(batchFilter);
+      filtered = filtered.filter((d) => {
+        const info = SETTINGS_INFO[d.settings?.label];
+        return info?.batch === bVal;
+      });
     }
 
     // Deduplicate: one per model+context combo
@@ -677,7 +718,7 @@ export default function VramBenchmarkComponent() {
     }
 
     return result;
-  }, [rawData, machineFilter, providerFilter, ctxFilter, sortBy]);
+  }, [rawData, machineFilter, providerFilter, ctxMinVal, ctxMaxVal, parallelFilter, batchFilter, sortBy]);
 
   // ── All filtered data (including all context per model for context chart) ─
 
@@ -694,8 +735,31 @@ export default function VramBenchmarkComponent() {
       filtered = filtered.filter((d) => d.provider === providerFilter,
       );
     }
+    // Context range filter
+    if (ctxMinVal !== undefined) {
+      filtered = filtered.filter((d) => d.contextLength >= ctxMinVal);
+    }
+    if (ctxMaxVal !== undefined) {
+      filtered = filtered.filter((d) => d.contextLength <= ctxMaxVal);
+    }
+    // Parallel filter
+    if (parallelFilter !== "all") {
+      const pVal = parseInt(parallelFilter);
+      filtered = filtered.filter((d) => {
+        const info = SETTINGS_INFO[d.settings?.label];
+        return info?.parallel === pVal;
+      });
+    }
+    // Batch filter
+    if (batchFilter !== "all") {
+      const bVal = parseInt(batchFilter);
+      filtered = filtered.filter((d) => {
+        const info = SETTINGS_INFO[d.settings?.label];
+        return info?.batch === bVal;
+      });
+    }
     return filtered;
-  }, [rawData, machineFilter, providerFilter]);
+  }, [rawData, machineFilter, providerFilter, ctxMinVal, ctxMaxVal, parallelFilter, batchFilter]);
 
   // ── Stats ────────────────────────────────────────────────
 
@@ -1094,7 +1158,9 @@ export default function VramBenchmarkComponent() {
 
     const ctx = canvas.getContext("2d");
     const mode = activeScatterMode;
-    const showAllCtx = ctxFilter === "all";
+    // With range-based context filter, check if multiple distinct contexts exist
+    const distinctCtx = new Set(allFilteredData.map((d) => d.contextLength));
+    const showAllCtx = distinctCtx.size > 1;
     let datasets;
 
     // Helper to build bubble data point from a model entry
@@ -1143,9 +1209,6 @@ export default function VramBenchmarkComponent() {
 
     if (machineFilter === "all") {
       let source = allFilteredData;
-      if (!showAllCtx) {
-        source = source.filter((d) => d.contextLength === parseInt(ctxFilter));
-      }
       if (mode.filter) {
         source = source.filter(mode.filter);
       }
@@ -1375,12 +1438,15 @@ export default function VramBenchmarkComponent() {
                 title: (items) => items[0]?.raw?.model?.displayName || "",
                 label: (item) => {
                   const m = item.raw.model;
+                  const sInfo = SETTINGS_INFO[m.settings?.label];
                   const lines = [
                     `GPU: ${shortGPU(m.system?.gpu?.name)}`,
                     `VRAM: ${m.modelVramGiB.toFixed(2)} GiB (est: ${m.estimatedGiB.toFixed(2)})`,
+                    `Parallel: ${sInfo?.parallel ?? '?'}`,
+                    `Batch: ${sInfo?.batch ?? '?'}`,
+                    `Context: ${(m.contextLength / 1024).toFixed(0)}K`,
                     `Speed: ${m.tokensPerSecond?.toFixed(1) || '0'} tok/s`,
                     `File: ${m.fileSizeGB.toFixed(1)} GB · ${m.quantization} (${m.bitsPerWeight || '?'} bpw)`,
-                    `Context: ${(m.contextLength / 1024).toFixed(0)}K`,
                     `Efficiency: ${(m.tokensPerSecond / m.modelVramGiB).toFixed(1)} TPS/GiB`,
                   ];
                   if (m.vramDuringGen?.peakGiB) lines.push(`Peak VRAM (gen): ${m.vramDuringGen.peakGiB.toFixed(2)} GiB`);
@@ -1403,7 +1469,7 @@ export default function VramBenchmarkComponent() {
         },
       });
     }
-  }, [models, machineFilter, allFilteredData, ctxFilter, activeScatterMode]);
+  }, [models, machineFilter, allFilteredData, activeScatterMode]);
 
   // ── Shared range data for bar charts ──────────────────────
 
@@ -1656,8 +1722,12 @@ export default function VramBenchmarkComponent() {
                   ? item.raw?.entry
                   : models[item.dataIndex];
                 if (!m) return "";
+                const sInfo = SETTINGS_INFO[m.settings?.label];
                 const lines = [
                   "",
+                  `Parallel: ${sInfo?.parallel ?? '?'}`,
+                  `Batch: ${sInfo?.batch ?? '?'}`,
+                  `Context: ${(m.contextLength / 1024).toFixed(0)}K`,
                   `Speed: ${m.tokensPerSecond?.toFixed(1) || '0'} tok/s`,
                   `File: ${m.fileSizeGB.toFixed(1)} GB · ${m.bitsPerWeight || '?'} bpw`,
                   `Efficiency: ${(m.tokensPerSecond / m.modelVramGiB).toFixed(1)} TPS/GiB`,
@@ -1865,12 +1935,15 @@ export default function VramBenchmarkComponent() {
                   ? item.raw?.entry
                   : sorted[item.dataIndex];
                 if (!m) return "";
+                const sInfo = SETTINGS_INFO[m.settings?.label];
                 const lines = [
                   "",
                   ` VRAM: ${m.modelVramGiB.toFixed(2)} GiB`,
+                  ` Parallel: ${sInfo?.parallel ?? '?'}`,
+                  ` Batch: ${sInfo?.batch ?? '?'}`,
+                  ` Context: ${(m.contextLength / 1024).toFixed(0)}K`,
                   ` Efficiency: ${(m.tokensPerSecond / m.modelVramGiB).toFixed(1)} TPS/GiB`,
                   ` Quant: ${m.quantization} (${m.bitsPerWeight || '?'} bpw)`,
-                  ` Context: ${(m.contextLength / 1024).toFixed(0)}K`,
                 ];
                 if (m.ttft?.ms) lines.push(` TTFT: ${m.ttft.ms.toFixed(0)} ms`);
                 if (m.loadTimeMs) lines.push(` Load: ${(m.loadTimeMs / 1000).toFixed(1)}s`);
@@ -2393,9 +2466,13 @@ export default function VramBenchmarkComponent() {
                   ? item.raw?.entry
                   : sorted[item.dataIndex];
                 if (!m) return "";
+                const sInfo = SETTINGS_INFO[m.settings?.label];
                 const lines = [
                   "",
                   `VRAM: ${m.modelVramGiB.toFixed(2)} GiB`,
+                  `Parallel: ${sInfo?.parallel ?? '?'}`,
+                  `Batch: ${sInfo?.batch ?? '?'}`,
+                  `Context: ${(m.contextLength / 1024).toFixed(0)}K`,
                   `Efficiency: ${(m.tokensPerSecond / m.modelVramGiB).toFixed(1)} TPS/GiB`,
                   `Quant: ${m.quantization} (${m.bitsPerWeight || "?"} bpw)`,
                 ];
@@ -2542,9 +2619,12 @@ export default function VramBenchmarkComponent() {
               title: (items) => items[0]?.dataset?.label || "",
               label: (item) => {
                 const d = item.raw.ctx;
+                const sInfo = SETTINGS_INFO[d?.settings?.label];
                 const lines = [
-                  ` Context: ${item.raw.x}K`,
                   ` VRAM: ${item.raw.y.toFixed(2)} GiB`,
+                  ` Parallel: ${sInfo?.parallel ?? '?'}`,
+                  ` Batch: ${sInfo?.batch ?? '?'}`,
+                  ` Context: ${item.raw.x}K`,
                 ];
                 if (d?.system?.gpu?.name) lines.push(` GPU: ${shortGPU(d.system.gpu.name)}`);
                 if (d?.tokensPerSecond) lines.push(` Speed: ${d.tokensPerSecond.toFixed(1)} tok/s`);
@@ -2797,18 +2877,54 @@ export default function VramBenchmarkComponent() {
               ]}
             />
             {activeView !== "context" && (
-              <FilterSelectComponent
-                value={ctxFilter}
-                onChange={setCtxFilter}
-                options={[
-                  { value: "all", label: "All Contexts" },
-                  ...contextLengths.map((c) => ({
-                    value: String(c),
-                    label: c >= 1024 ? `${(c / 1024).toFixed(0)}K Context` : `${c} Context`,
-                  })),
-                ]}
-              />
+              <div className={styles.vramClipGroup}>
+                <label className={styles.vramClipLabel}>Context Range</label>
+                <div className={styles.vramClipInputs}>
+                  <input
+                    type="number"
+                    className={styles.vramClipInput}
+                    placeholder="Min"
+                    value={ctxMin}
+                    onChange={(e) => setCtxMin(e.target.value)}
+                    min="0"
+                    step="1"
+                  />
+                  <span className={styles.vramClipSeparator}>–</span>
+                  <input
+                    type="number"
+                    className={styles.vramClipInput}
+                    placeholder="Max"
+                    value={ctxMax}
+                    onChange={(e) => setCtxMax(e.target.value)}
+                    min="0"
+                    step="1"
+                  />
+                  <span className={styles.vramClipUnit}>K</span>
+                </div>
+              </div>
             )}
+            <FilterSelectComponent
+              value={parallelFilter}
+              onChange={setParallelFilter}
+              options={[
+                { value: "all", label: "All Parallel" },
+                ...parallelOptions.map((p) => ({
+                  value: String(p),
+                  label: `Parallel: ${p}`,
+                })),
+              ]}
+            />
+            <FilterSelectComponent
+              value={batchFilter}
+              onChange={setBatchFilter}
+              options={[
+                { value: "all", label: "All Batch" },
+                ...batchOptions.map((b) => ({
+                  value: String(b),
+                  label: `Batch: ${b}`,
+                })),
+              ]}
+            />
             {activeView === "scatter" && (
               <FilterSelectComponent
                 value={scatterMode}
