@@ -26,8 +26,8 @@ import {
 } from "../utils/FunctionCallingUtilities.js";
 import {
   getUniqueModels,
-  getConversationCost,
-  getConversationTokenStats,
+  getSessionCost,
+  getSessionTokenStats,
   getUsedTools,
   shuffleArray,
 } from "../utils/utilities.js";
@@ -294,11 +294,11 @@ export default function AgentComponent() {
   // System prompt is fully assembled server-side by SystemPromptAssembler.
   // The client sends a placeholder system message that gets replaced.
 
-  // ── Conversation stats for SettingsPanel ──────────────────
+  // ── Session stats for SettingsPanel ──────────────────
   const uniqueModels = useMemo(() => getUniqueModels(messages), [messages]);
-  const totalCost = useMemo(() => getConversationCost(messages), [messages]);
+  const totalCost = useMemo(() => getSessionCost(messages), [messages]);
   const { totalTokens, requestCount } = useMemo(
-    () => getConversationTokenStats(messages),
+    () => getSessionTokenStats(messages),
     [messages],
   );
   const usedTools = useMemo(() => getUsedTools(messages), [messages]);
@@ -406,8 +406,8 @@ export default function AgentComponent() {
 
   // ── Orchestration loop ───────────────────────────────────────
   const runOrchestrationLoop = useCallback(
-    async (conversationMessages, resolvedTitle) => {
-      const currentMessages = [...conversationMessages];
+    async (sessionMessages, resolvedTitle) => {
+      const currentMessages = [...sessionMessages];
 
       setMessages((prev) =>
         prev.filter((m) => !(m.role === "assistant" && !m.content?.trim())),
@@ -429,7 +429,7 @@ export default function AgentComponent() {
           thinkingEnabled: settings.thinkingEnabled ?? false,
           ...(settings.reasoningEffort && { reasoningEffort: settings.reasoningEffort }),
           ...(settings.thinkingBudget && { thinkingBudget: settings.thinkingBudget }),
-          // Local models need enough context for MCP tool schemas + conversation
+          // Local models need enough context for MCP tool schemas + session
           minContextLength: 150000,
           project: PROJECT_AGENT,
           conversationId: agentSessionId,
@@ -795,7 +795,7 @@ export default function AgentComponent() {
 
       let resolvedTitle = title;
       if (messages.length === 0) {
-        const titleText = text || "Agent conversation";
+        const titleText = text || "Agent session";
         resolvedTitle =
           titleText.length > 60 ? titleText.slice(0, 57) + "..." : titleText;
         setTitle(resolvedTitle);
@@ -852,7 +852,7 @@ export default function AgentComponent() {
     [handleSend],
   );
 
-  // ── Conversation management ──────────────────────────────────
+  // ── Session management ──────────────────────────────────
   const handleNewChat = useCallback(() => {
     if (isGenerating) return;
     setMessages([]);
@@ -899,7 +899,7 @@ export default function AgentComponent() {
           }));
         }
       } catch (err) {
-        console.error("Failed to load conversation:", err);
+        console.error("Failed to load session:", err);
       }
     },
     [isGenerating],
@@ -914,7 +914,7 @@ export default function AgentComponent() {
           handleNewChat();
         }
       } catch (err) {
-        console.error("Failed to delete conversation:", err);
+        console.error("Failed to delete session:", err);
       }
     },
     [activeId, handleNewChat],

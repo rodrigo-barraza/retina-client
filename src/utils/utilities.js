@@ -191,7 +191,7 @@ export function formatTimeAgo(isoString) {
 
 /**
  * Get unique model names from assistant messages.
- * Shared between HomePage and admin/conversations.
+ * Shared between HomePage, AgentComponent, and admin/conversations.
  */
 export function getUniqueModels(messages) {
   return [
@@ -206,15 +206,17 @@ export function getUniqueModels(messages) {
 /**
  * Sum estimatedCost across all messages.
  */
-export function getConversationCost(messages) {
+export function getSessionCost(messages) {
   return messages.reduce((sum, m) => sum + (m.estimatedCost || 0), 0);
 }
+/** @deprecated Use getSessionCost */
+export const getConversationCost = getSessionCost;
 
 /**
  * Aggregate input/output tokens and request count from assistant messages.
  * Returns { totalTokens: { input, output, total }, requestCount }.
  */
-export function getConversationTokenStats(messages) {
+export function getSessionTokenStats(messages) {
   let input = 0;
   let output = 0;
   let requests = 0;
@@ -229,6 +231,8 @@ export function getConversationTokenStats(messages) {
     requestCount: requests,
   };
 }
+/** @deprecated Use getSessionTokenStats */
+export const getConversationTokenStats = getSessionTokenStats;
 
 /**
  * Count tool invocations across all messages.
@@ -263,7 +267,7 @@ export function shuffleArray(arr) {
 }
 
 /**
- * Derive modality flags from a conversation's messages array.
+ * Derive modality flags from a session's messages array.
  * Returns an object with boolean flags for each modality
  * (textIn, textOut, imageIn, imageOut, audioIn, audioOut,
  * videoIn, docIn, webSearch, codeExecution, functionCalling, thinking).
