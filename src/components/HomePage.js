@@ -2043,6 +2043,7 @@ export default function HomePage({ initialConversationId = null }) {
                 {
                   key: "settings",
                   icon: <Settings size={14} />,
+                  tooltip: "Settings",
                 },
                 {
                   key: "tools",
@@ -2052,10 +2053,12 @@ export default function HomePage({ initialConversationId = null }) {
                     : undefined,
                   badgeDisabled: !settings.functionCallingEnabled,
                   disabled: !selectedModelSupportsFc,
+                  tooltip: "Tools",
                 },
                 {
                   key: "params",
                   icon: <SlidersHorizontal size={14} />,
+                  tooltip: "Parameters",
                 },
               ]}
               activeTab={leftTab}

@@ -438,10 +438,12 @@ export default function ConversationsPage({ initialId = null, sessionId = null }
                     {
                       key: "settings",
                       icon: <Settings size={14} />,
+                      tooltip: "Settings",
                     },
                     {
                       key: "params",
                       icon: <SlidersHorizontal size={14} />,
+                      tooltip: "Parameters",
                     },
                   ]}
                   activeTab={leftTab}

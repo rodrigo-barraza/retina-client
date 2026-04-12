@@ -573,6 +573,20 @@ export default class PrismService {
   }
 
   // ---------------------------------------------------------------------------
+  // Coordinator Workers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List coordinator workers, optionally filtered by session.
+   * @param {string} [sessionId] - Filter by coordinator session ID
+   * @returns {Promise<{ workers: Array }>}
+   */
+  static async getCoordinatorWorkers(sessionId) {
+    const qs = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
+    return PrismService._request(`/coordinator/workers${qs}`, { method: "GET" });
+  }
+
+  // ---------------------------------------------------------------------------
   // Chat
   // ---------------------------------------------------------------------------
 

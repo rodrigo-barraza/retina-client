@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Bot, Paperclip, X, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain, Plug, GitBranch, Scissors, Repeat, ListChecks } from "lucide-react";
+import { Bot, Paperclip, X, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain, Plug, GitBranch, Scissors, Repeat, ListChecks, BookOpen, Users } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
 import NavigationSidebarComponent from "./NavigationSidebarComponent.js";
@@ -13,6 +13,7 @@ import MemoriesPanel from "./MemoriesPanel.js";
 import TasksPanel from "./TasksPanel.js";
 import MCPServersPanel from "./MCPServersPanel.js";
 import CoordinatorPanel from "./CoordinatorPanel.js";
+import WorkersPanel from "./WorkersPanel.js";
 import MessageList, { prepareDisplayMessages } from "./MessageList.js";
 import ImagePreviewComponent from "./ImagePreviewComponent.js";
 import TabBarComponent from "./TabBarComponent.js";
@@ -925,34 +926,45 @@ export default function AgentComponent() {
     <>
       <TabBarComponent
         tabs={[
-          { key: "settings", icon: <Settings size={14} /> },
+          { key: "settings", icon: <Settings size={14} />, tooltip: "Settings" },
           {
             key: "tools",
             icon: <Wrench size={14} />,
             badge: allToolSchemas.length,
+            tooltip: "Tools",
           },
           {
             key: "skills",
-            icon: <Sparkles size={14} />,
+            icon: <BookOpen size={14} />,
             badge: skills.filter((s) => s.enabled).length || undefined,
+            tooltip: "Skills",
           },
           {
             key: "memories",
             icon: <Brain size={14} />,
             badge: newMemoriesCount || undefined,
+            tooltip: "Memories",
           },
           {
             key: "tasks",
             icon: <ListChecks size={14} />,
+            tooltip: "Tasks",
           },
           {
             key: "mcp",
             icon: <Plug size={14} />,
             badge: mcpServers.filter((s) => s.connected).length || undefined,
+            tooltip: "MCP Servers",
+          },
+          {
+            key: "workers",
+            icon: <Users size={14} />,
+            tooltip: "Workers",
           },
           {
             key: "coordinator",
             icon: <GitBranch size={14} />,
+            tooltip: "Coordinator",
           },
         ]}
         activeTab={leftTab}
@@ -1023,6 +1035,10 @@ export default function AgentComponent() {
           onServersChange={loadMCPServers}
           project={PROJECT_AGENT}
         />
+      )}
+
+      {leftTab === "workers" && (
+        <WorkersPanel sessionId={agentSessionId} refreshKey={tasksRefreshKey} />
       )}
 
       {leftTab === "coordinator" && (
