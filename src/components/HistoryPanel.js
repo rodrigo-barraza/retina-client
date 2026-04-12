@@ -11,7 +11,7 @@ export { getModalities } from "../utils/utilities";
 
 
 export default function HistoryPanel({
-  conversations,
+  sessions,
   activeId,
   onSelect,
   onNew,
@@ -25,15 +25,15 @@ export default function HistoryPanel({
   initialProviders,
   initialSearch = "",
   disableNew,
-  // Customisable labels — defaults match "conversations" context
+  // Customisable labels — defaults match conversation-session context
   newLabel = "New Conversation",
   emptyText = "No recent chats",
   searchText = "Search conversations...",
   itemIcon,
 }) {
-  // Normalize conversations into HistoryList items
+  // Normalize sessions into HistoryList items
   const items = useMemo(() => {
-    return conversations.map((conv) => {
+    return sessions.map((conv) => {
       const totalCost =
         conv.totalCost ||
         (conv.messages || []).reduce(
@@ -97,7 +97,7 @@ export default function HistoryPanel({
         ].join(" "),
       };
     });
-  }, [conversations, showProject]);
+  }, [sessions, showProject]);
 
   return (
     <div className={styles.container}>
@@ -118,7 +118,7 @@ export default function HistoryPanel({
         items={items}
         activeId={activeId}
         onSelect={(item) => {
-          const conv = conversations.find((c) => c.id === item.id);
+          const conv = sessions.find((c) => c.id === item.id);
           if (conv) onSelect(conv);
         }}
         onDelete={!readOnly && onDelete ? onDelete : undefined}

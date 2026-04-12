@@ -971,7 +971,7 @@ export default function AgentComponent() {
           lockedTools={AGENT_LOCKED_TOOLS}
           hideSystemPrompt
           sessionType="agent"
-          conversationStats={
+          sessionStats={
             messages.length > 0
               ? {
                   messageCount: messages.length,
@@ -1252,7 +1252,7 @@ export default function AgentComponent() {
       leftTitle={null}
       rightPanel={
         <HistoryPanel
-          conversations={sessions}
+          sessions={sessions}
           activeId={activeId}
           onSelect={handleSelectSession}
           onNew={handleNewChat}

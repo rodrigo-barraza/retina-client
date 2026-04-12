@@ -454,7 +454,7 @@ export default function ConversationsPage({ initialId = null, sessionId = null }
                     readOnly
                     hideProviderModel
                     workflows={workflows}
-                    conversationStats={
+                    sessionStats={
                       selectedConv?.messages?.length > 0
                         ? (() => {
                             const displayMessages = prepareDisplayMessages(selectedConv.messages);
@@ -492,7 +492,7 @@ export default function ConversationsPage({ initialId = null, sessionId = null }
           }
           rightPanel={
             <HistoryPanel
-              conversations={conversations}
+              sessions={conversations}
               activeId={selectedId}
               onSelect={(conv) => selectConversation(conv.id)}
               readOnly

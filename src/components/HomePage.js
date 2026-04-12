@@ -2080,7 +2080,7 @@ export default function HomePage({ initialConversationId = null }) {
                 showSystemPromptModal={showSystemPromptModal}
                 onCloseSystemPromptModal={() => setShowSystemPromptModal(false)}
                 workflows={workflows}
-                conversationStats={
+                sessionStats={
                   messages.length > 0
                     ? {
                         messageCount: messages.length,
@@ -2120,7 +2120,7 @@ export default function HomePage({ initialConversationId = null }) {
         }
         rightPanel={
           <HistoryPanel
-            conversations={conversations}
+            sessions={conversations}
             activeId={activeId}
             onSelect={handleSelectConversation}
             onNew={handleNewChatClick}

@@ -51,7 +51,7 @@ export default function SettingsPanel({
   showSystemPromptModal = false,
   onCloseSystemPromptModal,
   workflows = [],
-  conversationStats = null,
+  sessionStats = null,
   lockedTools,
   sessionType = "conversation",
 }) {
@@ -205,59 +205,59 @@ export default function SettingsPanel({
   return (
     <>
       <div className={styles.container}>
-        {conversationStats && (
-          <div className={styles.conversationStats}>
+        {sessionStats && (
+          <div className={styles.sessionStats}>
             <div className={styles.statsHeader}>
               <Layers size={12} style={{ marginRight: 4 }} /> {sessionLabel}
             </div>
             <div className={styles.statsBadges}>
               <span className={styles.statBadge}>
                 <MessageSquare size={11} />
-                {conversationStats.messageCount} message{conversationStats.messageCount !== 1 ? "s" : ""}
-                {conversationStats.deletedCount > 0 && (
+                {sessionStats.messageCount} message{sessionStats.messageCount !== 1 ? "s" : ""}
+                {sessionStats.deletedCount > 0 && (
                   <span className={styles.statBadgeSub}>
-                    ({conversationStats.deletedCount} deleted)
+                    ({sessionStats.deletedCount} deleted)
                   </span>
                 )}
               </span>
-              {conversationStats.requestCount > 0 && (
+              {sessionStats.requestCount > 0 && (
                 <span className={styles.statBadge}>
                   <Zap size={11} />
-                  {conversationStats.requestCount} request{conversationStats.requestCount !== 1 ? "s" : ""}
+                  {sessionStats.requestCount} request{sessionStats.requestCount !== 1 ? "s" : ""}
                 </span>
               )}
-              {conversationStats.uniqueModels.length > 0 && (
+              {sessionStats.uniqueModels.length > 0 && (
                 <span className={styles.statBadge}>
                   <Cpu size={11} />
-                  {conversationStats.uniqueModels.length === 1
-                    ? conversationStats.uniqueModels[0]
-                    : `${conversationStats.uniqueModels.length} models`}
+                  {sessionStats.uniqueModels.length === 1
+                    ? sessionStats.uniqueModels[0]
+                    : `${sessionStats.uniqueModels.length} models`}
                 </span>
               )}
-              {conversationStats.totalTokens.total > 0 && (
+              {sessionStats.totalTokens.total > 0 && (
                 <>
                   <span className={styles.statBadge}>
                     <Hash size={11} />
-                    {conversationStats.totalTokens.input.toLocaleString()} tokens in
+                    {sessionStats.totalTokens.input.toLocaleString()} tokens in
                   </span>
                   <span className={styles.statBadge}>
                     <Hash size={11} />
-                    {conversationStats.totalTokens.output.toLocaleString()} tokens out
+                    {sessionStats.totalTokens.output.toLocaleString()} tokens out
                   </span>
                   <span className={styles.statBadge}>
                     <Hash size={11} />
-                    {conversationStats.totalTokens.total.toLocaleString()} tokens total
+                    {sessionStats.totalTokens.total.toLocaleString()} tokens total
                   </span>
                 </>
               )}
-              <CostBadgeComponent cost={conversationStats.totalCost} />
-              {conversationStats.originalTotalCost > 0 && conversationStats.originalTotalCost !== conversationStats.totalCost && (
+              <CostBadgeComponent cost={sessionStats.totalCost} />
+              {sessionStats.originalTotalCost > 0 && sessionStats.originalTotalCost !== sessionStats.totalCost && (
                 <span className={`${styles.statBadge} ${styles.statBadgeSub}`}>
-                  ({formatCost(conversationStats.originalTotalCost)} total)
+                  ({formatCost(sessionStats.originalTotalCost)} total)
                 </span>
               )}
-              {conversationStats.usedTools?.length > 0 &&
-                conversationStats.usedTools.map((tool) => {
+              {sessionStats.usedTools?.length > 0 &&
+                sessionStats.usedTools.map((tool) => {
                   const ToolIcon = TOOL_ICON_MAP[tool.name] || Wrench;
                   const color = TOOL_COLORS[tool.name] || "#c4956a";
                   return (
@@ -276,10 +276,10 @@ export default function SettingsPanel({
                   );
                 })}
               {/* Modality icons: input → output */}
-              {conversationStats.modalities &&
-                Object.values(conversationStats.modalities).some(Boolean) && (
+              {sessionStats.modalities &&
+                Object.values(sessionStats.modalities).some(Boolean) && (
                   <ModalityIconComponent
-                    modalities={conversationStats.modalities}
+                    modalities={sessionStats.modalities}
                   />
                 )}
             </div>
