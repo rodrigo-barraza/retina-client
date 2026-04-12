@@ -432,7 +432,7 @@ export default function AgentComponent() {
           // Local models need enough context for MCP tool schemas + session
           minContextLength: 150000,
           project: PROJECT_AGENT,
-          conversationId: agentSessionId,
+          agentSessionId,
           conversationMeta: {
             title: resolvedTitle,
           },
