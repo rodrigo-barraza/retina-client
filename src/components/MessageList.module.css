@@ -264,6 +264,8 @@
   word-break: break-word;
   max-height: 400px;
   overflow-y: auto;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
   border-top: 1px solid var(--border-color);
 }
 

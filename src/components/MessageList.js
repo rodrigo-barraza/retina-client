@@ -109,10 +109,13 @@ function ThinkingBlock({ thinking, isStreaming, children }) {
   // - Not streaming: collapsed unless user explicitly opened it
   const collapsed = isStreaming ? streamClosed : !manualOpen;
 
-  // Auto-scroll to bottom of thinking content while streaming
+  // Auto-scroll to bottom of thinking content while streaming (smooth)
   useEffect(() => {
     if (isStreaming && !streamClosed && contentRef.current) {
-      contentRef.current.scrollTop = contentRef.current.scrollHeight;
+      const el = contentRef.current;
+      requestAnimationFrame(() => {
+        el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      });
     }
   }, [thinking, isStreaming, streamClosed]);
 
