@@ -1227,62 +1227,37 @@ export default function MessageList({
                     }
 
                     // ── Normal rendering ──
-                    // If thinking is present: split into groups of consecutive thinking+tools,
-                    // separated by standalone text segments. Each thinking+tools group gets its
-                    // own ThinkingBlock, and text segments between them render as normal replies.
+                    // If thinking is present: all reasoning segments (thinking + tools +
+                    // intermediate text) are rendered inside a single ThinkingBlock.
+                    // Only text segments after the last thinking/tools boundary render
+                    // outside as the final answer.
                     if (hasThinking) {
-                      // Build groups: each group is either a "thinking" group (consecutive
-                      // thinking + tools segments) or a standalone text segment.
-                      const groups = []; // { type: "thinking", segs: [...] } | { type: "text", seg, origIdx }
-                      let currentThinkingGroup = null;
-
-                      for (let k = 0; k < segs.length; k++) {
-                        const seg = segs[k];
-                        if (seg.type === "thinking" || seg.type === "tools") {
-                          if (!currentThinkingGroup) {
-                            currentThinkingGroup = { type: "thinking", segs: [], startIdx: k };
-                            groups.push(currentThinkingGroup);
-                          }
-                          currentThinkingGroup.segs.push({ seg, origIdx: k });
-                        } else {
-                          // Text segment — closes any open thinking group
-                          currentThinkingGroup = null;
-                          groups.push({ type: "text", seg, origIdx: k });
-                        }
-                      }
-
-                      // The last group determines streaming state
-                      const lastGroup = groups[groups.length - 1];
-                      const lastGroupIsThinking = lastGroup?.type === "thinking";
+                      // All reasoning segments (thinking + tools + intermediate text)
+                      // go into a single ThinkingBlock. Only the final text after the
+                      // last thinking/tools segment renders outside as the answer.
+                      const thinkingIsStreaming = isStreaming && answerStartIdx >= segs.length;
 
                       return (
                         <>
-                          {groups.map((group, gi) => {
-                            if (group.type === "thinking") {
-                              const isLastGroup = gi === groups.length - 1;
-                              const thinkingIsStreaming = isStreaming && isLastGroup && lastGroupIsThinking;
-                              return (
-                                <ThinkingBlock key={`tg-${gi}`} isStreaming={thinkingIsStreaming}>
-                                  {group.segs.map(({ seg, origIdx }) =>
-                                    renderSeg(seg, origIdx, { insideThinking: true })
-                                  )}
-                                </ThinkingBlock>
-                              );
-                            }
-                            // Standalone text segment between thinking groups —
-                            // When the last group is thinking, suppress all text cursors
-                            // (the explicit cursor after the groups handles it).
-                            // Otherwise only the very last group gets the cursor.
-                            const isLastGroup = gi === groups.length - 1;
-                            const suppress = lastGroupIsThinking || !isLastGroup;
+                          {reasoningSegs.length > 0 && (
+                            <ThinkingBlock isStreaming={thinkingIsStreaming}>
+                              {reasoningSegs.map((seg, si) =>
+                                renderSeg(seg, si, { insideThinking: true })
+                              )}
+                            </ThinkingBlock>
+                          )}
+                          {/* Final answer text segments (after the last thinking/tools segment) */}
+                          {segs.slice(answerStartIdx).map((seg, si) => {
+                            const origIdx = answerStartIdx + si;
+                            const isLastTextSeg = origIdx === lastTextSegIdx;
                             return (
-                              <React.Fragment key={`tg-${gi}`}>
-                                {renderSeg(group.seg, group.origIdx, { suppressCursor: suppress })}
+                              <React.Fragment key={`ans-${si}`}>
+                                {renderSeg(seg, origIdx, { suppressCursor: !isLastTextSeg })}
                               </React.Fragment>
                             );
                           })}
-                          {/* Streaming cursor when the last group is thinking (answer hasn't started) */}
-                          {isStreaming && lastGroupIsThinking && (
+                          {/* Streaming cursor when answer hasn't started yet */}
+                          {isStreaming && answerStartIdx >= segs.length && (
                             <span className={styles.streamingCursor} />
                           )}
                         </>
