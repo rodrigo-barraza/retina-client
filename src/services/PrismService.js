@@ -260,6 +260,46 @@ export default class PrismService {
     );
   }
 
+  // ── Agent Sessions ─────────────────────────────────────────
+
+  /**
+   * List agent sessions for a specific project.
+   * @param {string} project
+   * @returns {Promise<Array>}
+   */
+  static async getAgentSessions(project) {
+    return PrismService._request(
+      `/agent-sessions?project=${encodeURIComponent(project)}`,
+      { method: "GET" },
+    );
+  }
+
+  /**
+   * Get a single agent session by ID.
+   * @param {string} id
+   * @param {string} project
+   * @returns {Promise<object>}
+   */
+  static async getAgentSession(id, project) {
+    return PrismService._request(
+      `/agent-sessions/${id}?project=${encodeURIComponent(project)}`,
+      { method: "GET" },
+    );
+  }
+
+  /**
+   * Delete an agent session.
+   * @param {string} id
+   * @param {string} project
+   * @returns {Promise<object>}
+   */
+  static async deleteAgentSession(id, project) {
+    return PrismService._request(
+      `/agent-sessions/${id}?project=${encodeURIComponent(project)}`,
+      { method: "DELETE" },
+    );
+  }
+
   /**
    * Append messages to a conversation, auto-creating it if it doesn't exist.
    * @param {string} id - Conversation ID

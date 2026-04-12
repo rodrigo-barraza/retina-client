@@ -30,7 +30,7 @@ const STATUS_CYCLE = ["pending", "in_progress", "completed"];
  * @param {string} props.project - Project identifier
  * @param {number} [props.refreshKey] - External refresh trigger
  */
-export default function TasksPanel({ project, refreshKey }) {
+export default function TasksPanel({ project, refreshKey, agentSessionId }) {
   const [tasks, setTasks] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,6 +55,7 @@ export default function TasksPanel({ project, refreshKey }) {
     try {
       const result = await ToolsApiService.getAllAgenticTasks({
         status: statusFilter || undefined,
+        agentSessionId: agentSessionId || undefined,
       });
       setTasks(result.tasks || []);
       setSummary(result.summary || null);
@@ -65,9 +66,16 @@ export default function TasksPanel({ project, refreshKey }) {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, agentSessionId]);
 
-  // Single effect — fires on mount, refreshKey changes, and statusFilter changes
+  // Reset on session change (new conversation = clean slate)
+  useEffect(() => {
+    hasData.current = false;
+    setTasks([]);
+    setSummary(null);
+  }, [agentSessionId]);
+
+  // Single effect — fires on mount, refreshKey changes, and statusFilter/session changes
   useEffect(() => {
     loadTasks();
   }, [loadTasks, refreshKey]);

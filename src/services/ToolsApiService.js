@@ -64,14 +64,16 @@ export default class ToolsApiService {
   }
 
   /**
-   * List all tasks across all projects (admin view).
+   * List all tasks, optionally scoped to an agent session.
    * @param {object} [options]
    * @param {string} [options.status]
+   * @param {string} [options.agentSessionId] - Scope to a specific agent session
    * @returns {Promise<{ tasks, summary }>}
    */
-  static async getAllAgenticTasks({ status } = {}) {
+  static async getAllAgenticTasks({ status, agentSessionId } = {}) {
     const params = new URLSearchParams();
     if (status) params.set("status", status);
+    if (agentSessionId) params.set("agentSessionId", agentSessionId);
     const query = params.toString();
     return ToolsApiService._fetch(`/agentic/task/list-all${query ? `?${query}` : ""}`);
   }

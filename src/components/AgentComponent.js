@@ -218,14 +218,14 @@ export default function AgentComponent() {
     }).catch(console.error);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load conversation history
+  // Load agent session history
   const loadConversations = useCallback(async () => {
     try {
       const convs =
-        await PrismService.getConversationsByProject(PROJECT_AGENT);
+        await PrismService.getAgentSessions(PROJECT_AGENT);
       setConversations(convs);
     } catch (err) {
-      console.error("Failed to load conversations:", err);
+      console.error("Failed to load agent sessions:", err);
     }
   }, []);
 
@@ -869,7 +869,7 @@ export default function AgentComponent() {
     async (conv) => {
       if (isGenerating) return;
       try {
-        const full = await PrismService.getConversationByProject(
+        const full = await PrismService.getAgentSession(
           conv.id,
           PROJECT_AGENT,
         );
@@ -908,7 +908,7 @@ export default function AgentComponent() {
   const handleDeleteConversation = useCallback(
     async (convId) => {
       try {
-        await PrismService.deleteConversationByProject(convId, PROJECT_AGENT);
+        await PrismService.deleteAgentSession(convId, PROJECT_AGENT);
         setConversations((prev) => prev.filter((c) => c.id !== convId));
         if (activeId === convId) {
           handleNewChat();
@@ -1013,7 +1013,7 @@ export default function AgentComponent() {
       )}
 
       {leftTab === "tasks" && (
-        <TasksPanel project={PROJECT_AGENT} refreshKey={tasksRefreshKey} />
+        <TasksPanel project={PROJECT_AGENT} refreshKey={tasksRefreshKey} agentSessionId={conversationId} />
       )}
 
       {leftTab === "mcp" && (
