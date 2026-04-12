@@ -77,6 +77,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+.statBadgeLive {
+  color: var(--accent-color);
+  border-color: color-mix(in srgb, var(--accent-color) 40%, transparent);
+  animation: statBadgePulse 2s ease-in-out infinite;
+  will-change: opacity;
+}
+
+@keyframes statBadgePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .container > * {
   flex-shrink: 0;
 }

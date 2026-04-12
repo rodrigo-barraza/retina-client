@@ -1,5 +1,5 @@
 "use client";
-// No React hooks needed — state is managed by parent
+import { useState, useEffect } from "react";
 import {
   Cpu,
   Edit3,
@@ -19,6 +19,7 @@ import {
   Layers,
   Zap,
   Hash,
+  Timer,
 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import SelectDropdown from "./SelectDropdown";
@@ -28,7 +29,7 @@ import SystemPromptModal from "./SystemPromptModal";
 import styles from "./SettingsPanel.module.css";
 import CostBadgeComponent from "./CostBadgeComponent";
 import ModelTypeBadgeComponent from "./ModelTypeBadgeComponent";
-import { formatCost } from "../utils/utilities";
+import { formatCost, formatElapsedTime } from "../utils/utilities";
 import {
   MODALITY_COLORS,
   TOOL_COLORS,
@@ -202,6 +203,25 @@ export default function SettingsPanel({
         return null;
     }
   };
+
+  // ── Live elapsed time ticker ──────────────────────────────────
+  // Store current time in state so render stays pure (no Date.now() calls)
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    if (!sessionStats?.currentTurnStart) return;
+    // Immediate tick via microtask to avoid synchronous setState in effect body
+    const immediate = setTimeout(() => setNowMs(Date.now()), 0);
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => { clearTimeout(immediate); clearInterval(id); };
+  }, [sessionStats?.currentTurnStart]);
+
+  // Compute displayed elapsed: completed turns + live current turn
+  const completedTime = sessionStats?.completedElapsedTime || 0;
+  const liveExtra = sessionStats?.currentTurnStart
+    ? Math.max(0, (nowMs - sessionStats.currentTurnStart) / 1000)
+    : 0;
+  const totalElapsedTime = completedTime + liveExtra;
+
   return (
     <>
       <div className={styles.container}>
@@ -254,6 +274,12 @@ export default function SettingsPanel({
               {sessionStats.originalTotalCost > 0 && sessionStats.originalTotalCost !== sessionStats.totalCost && (
                 <span className={`${styles.statBadge} ${styles.statBadgeSub}`}>
                   ({formatCost(sessionStats.originalTotalCost)} total)
+                </span>
+              )}
+              {totalElapsedTime > 0 && (
+                <span className={`${styles.statBadge} ${sessionStats.currentTurnStart ? styles.statBadgeLive : ""}`}>
+                  <Timer size={11} />
+                  {formatElapsedTime(totalElapsedTime)}
                 </span>
               )}
               {sessionStats.usedTools?.length > 0 &&

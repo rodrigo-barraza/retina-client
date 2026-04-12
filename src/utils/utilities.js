@@ -382,3 +382,41 @@ export function getModalities(messages) {
   return modalities;
 }
 
+/**
+ * Compute cumulative wall-clock elapsed time across all user→assistant turns.
+ * Each user message with a `timestamp` paired with a subsequent assistant
+ * message's `completedAt` constitutes one turn.
+ * Returns total elapsed seconds.
+ */
+export function getSessionElapsedTime(messages) {
+  let total = 0;
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
+    if (m.role !== "user" || !m.timestamp) continue;
+    // Find the next assistant message that completed
+    for (let j = i + 1; j < messages.length; j++) {
+      if (messages[j].role === "assistant" && messages[j].completedAt) {
+        const start = new Date(m.timestamp).getTime();
+        const end = new Date(messages[j].completedAt).getTime();
+        if (end > start) total += (end - start) / 1000;
+        break;
+      }
+    }
+  }
+  return total;
+}
+
+/**
+ * Format an elapsed duration (in seconds) into a human-readable string.
+ * e.g. 5 → "5s", 65 → "1m 5s", 3665 → "1h 1m"
+ */
+export function formatElapsedTime(seconds) {
+  if (seconds == null || seconds <= 0) return "0s";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  if (m > 0) return s > 0 ? `${m}m ${s}s` : `${m}m`;
+  return `${s}s`;
+}
+

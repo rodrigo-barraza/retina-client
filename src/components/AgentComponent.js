@@ -31,6 +31,7 @@ import {
   getSessionCost,
   getSessionTokenStats,
   getUsedTools,
+  getSessionElapsedTime,
   shuffleArray,
 } from "../utils/utilities.js";
 import { getModalities } from "../utils/utilities.js";
@@ -112,6 +113,7 @@ export default function AgentComponent() {
   const [planProposal, setPlanProposal] = useState(null); // { plan, steps, status }
   const [agenticProgress, setAgenticProgress] = useState(null); // { iteration, maxIterations }
   const [contextTruncated, setContextTruncated] = useState(null); // { strategy, estimatedTokens }
+  const [currentTurnStart, setCurrentTurnStart] = useState(null); // Date.now() when user sends
 
   const textareaRef = useRef(null);
   const endRef = useRef(null);
@@ -327,6 +329,7 @@ export default function AgentComponent() {
   );
   const usedTools = useMemo(() => getUsedTools(messages), [messages]);
   const modalities = useMemo(() => getModalities(messages), [messages]);
+  const completedElapsedTime = useMemo(() => getSessionElapsedTime(messages), [messages]);
 
   // Build final tool schemas
   const allToolSchemas = useMemo(
@@ -749,10 +752,12 @@ export default function AgentComponent() {
                   totalTime: data.totalTime,
                   tokensPerSec: data.tokensPerSec,
                   estimatedCost: data.estimatedCost,
+                  completedAt: new Date().toISOString(),
                 };
               }
               return updated;
             });
+            setCurrentTurnStart(null);
             // SessionSummarizer runs async after SSE stream closes —
             // poll every 2s for up to 20s until new memories are detected
             (async () => {
@@ -828,9 +833,11 @@ export default function AgentComponent() {
         setTitle(resolvedTitle);
       }
 
+      setCurrentTurnStart(Date.now());
       const userMessage = {
         role: "user",
         content: text,
+        timestamp: new Date().toISOString(),
         ...(currentImages.length > 0 ? { images: currentImages } : {}),
       };
       const updatedMessages = [...messages, userMessage];
@@ -855,6 +862,17 @@ export default function AgentComponent() {
       } finally {
         setIsGenerating(false);
         abortRef.current = null;
+        // Ensure timer stops even on abort/error — stamp completedAt if missing
+        setCurrentTurnStart(null);
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.role === "assistant" && !last.completedAt) {
+            const updated = [...prev];
+            updated[updated.length - 1] = { ...last, completedAt: new Date().toISOString() };
+            return updated;
+          }
+          return prev;
+        });
       }
     },
     [
@@ -1025,6 +1043,8 @@ export default function AgentComponent() {
                   originalTotalCost: 0,
                   usedTools,
                   modalities,
+                  completedElapsedTime,
+                  currentTurnStart,
                 }
               : null
           }
