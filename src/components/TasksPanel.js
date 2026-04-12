@@ -30,7 +30,7 @@ const STATUS_CYCLE = ["pending", "in_progress", "completed"];
  * @param {string} props.project - Project identifier
  * @param {number} [props.refreshKey] - External refresh trigger
  */
-export default function TasksPanel({ project, refreshKey, agentSessionId }) {
+export default function TasksPanel({ project, refreshKey, agentSessionId, onCountChange }) {
   const [tasks, setTasks] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -59,6 +59,7 @@ export default function TasksPanel({ project, refreshKey, agentSessionId }) {
       });
       setTasks(result.tasks || []);
       setSummary(result.summary || null);
+      onCountChange?.(result.summary?.total || (result.tasks || []).length);
       hasData.current = true;
     } catch (err) {
       console.error("Failed to load tasks:", err);
@@ -66,7 +67,7 @@ export default function TasksPanel({ project, refreshKey, agentSessionId }) {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, agentSessionId]);
+  }, [statusFilter, agentSessionId, onCountChange]);
 
   // Reset on session change (new conversation = clean slate)
   useEffect(() => {

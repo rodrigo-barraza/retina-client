@@ -50,7 +50,7 @@ const TRIGGER_LABELS = {
  * @param {number} props.refreshKey - External refresh trigger
  * @param {object} [props.consolidationEvent] - Real-time consolidation event from WebSocket
  */
-export default function MemoriesPanel({ project, refreshKey, consolidationEvent }) {
+export default function MemoriesPanel({ project, refreshKey, consolidationEvent, onCountChange }) {
   const [memories, setMemories] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -90,14 +90,16 @@ export default function MemoriesPanel({ project, refreshKey, consolidationEvent 
       }
 
       setMemories(fetched);
-      setTotal(result.total || 0);
+      const fetchedTotal = result.total || 0;
+      setTotal(fetchedTotal);
+      onCountChange?.(fetchedTotal);
     } catch (err) {
       console.error("Failed to load memories:", err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [project]);
+  }, [project, onCountChange]);
 
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true);

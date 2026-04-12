@@ -1,5 +1,6 @@
 /* ============================================================
    Workers Panel — Coordinator Worker Instances
+   Styled to match HistoryItemComponent.active aesthetic
    ============================================================ */
 
 .container {
@@ -55,55 +56,73 @@
 }
 
 /* ── Worker Card ──────────────────────────────────────────── */
+/* Mirrors .item + .active from HistoryItemComponent           */
 
 .workerCard {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  gap: 4px;
+  padding: 10px 12px;
+  background: rgba(99, 102, 241, 0.06);
+  border-bottom: 1px solid var(--border-color);
+  border-left: 3px solid transparent;
   border-radius: 6px;
+  cursor: default;
   transition:
+    background 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.2s ease;
 
   &:hover {
-    border-color: color-mix(in srgb, #a78bfa 30%, var(--border-color));
+    background: rgba(99, 102, 241, 0.1);
   }
 }
 
 .workerCardRunning {
-  border-color: color-mix(in srgb, #60a5fa 25%, var(--border-color));
+  border-left-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.06);
   box-shadow: 0 0 8px -2px color-mix(in srgb, #60a5fa 15%, transparent);
+
+  &:hover {
+    background: rgba(96, 165, 250, 0.1);
+  }
 }
 
 .workerCardComplete {
-  border-left: 2px solid #34d399;
+  border-left-color: var(--accent-color);
+  background: rgba(99, 102, 241, 0.1);
 }
 
 .workerCardFailed,
 .workerCardStopped {
-  border-left: 2px solid #f43f5e;
+  border-left-color: #f43f5e;
+  background: rgba(244, 63, 94, 0.06);
 }
 
-/* ── Card Header ──────────────────────────────────────────── */
+/* ── Title Row ───────────────────────────────────────────── */
 
-.workerHeader {
+.titleRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
-.workerIdBadge {
+/* ── Agent Badge — prominent styled badge ────────────────── */
+
+.agentBadge {
+  flex-shrink: 0;
   font-size: 10px;
   font-weight: 700;
-  font-family: var(--font-mono, "JetBrains Mono", "Fira Code", monospace);
-  color: #a78bfa;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--accent-color);
+  color: var(--bg-primary);
   text-transform: uppercase;
-  flex-shrink: 0;
 }
+
+/* ── Status Badge ────────────────────────────────────────── */
 
 .workerStatus {
   display: inline-flex;
@@ -149,33 +168,46 @@
 /* ── Description ──────────────────────────────────────────── */
 
 .workerDescription {
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text-primary);
   line-height: 1.4;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
-/* ── Meta Row ─────────────────────────────────────────────── */
+/* ── Meta Row — matches HistoryItemComponent .meta ────────── */
 
-.workerMeta {
+.meta {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
 }
 
-.metaBadge {
+.metaItem {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 10px;
-  color: var(--text-muted);
-  padding: 1px 5px;
-  background: color-mix(in srgb, var(--bg-tertiary) 60%, transparent);
-  border-radius: 3px;
+  white-space: nowrap;
 }
 
-.metaBadge svg {
+.metaItem svg {
   flex-shrink: 0;
+}
+
+/* ── Model Badge override ────────────────────────────────── */
+
+.modelBadge {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.modelBadge span {
+  max-width: none;
 }
 
 /* ── Files ────────────────────────────────────────────────── */

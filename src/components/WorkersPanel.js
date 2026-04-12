@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  Users, RefreshCw, Wrench, Clock, GitBranch, Cpu, FileCode,
+  Users, RefreshCw, Wrench, Clock, GitBranch, FileCode,
 } from "lucide-react";
 import PrismService from "../services/PrismService.js";
+import CostBadgeComponent from "./CostBadgeComponent.js";
+import ModelBadgeComponent from "./ModelBadgeComponent.js";
+import ModalityIconComponent from "./ModalityIconComponent.js";
 import styles from "./WorkersPanel.module.css";
 
 
@@ -45,6 +48,14 @@ function formatDuration(ms) {
 }
 
 /**
+ * Extract a short agent number from an agentId like "agent-1" → "1"
+ */
+function getAgentNumber(agentId) {
+  const match = agentId?.match(/agent-(\w+)/);
+  return match ? match[1].toUpperCase() : agentId;
+}
+
+/**
  * WorkersPanel — displays coordinator workers spawned during this agent session.
  *
  * Polls the coordinator /workers endpoint filtered by the current sessionId.
@@ -55,7 +66,7 @@ function formatDuration(ms) {
  * @param {string} [props.sessionId] - Current agent session ID to filter workers by
  * @param {number} [props.refreshKey] - External trigger to refresh worker list
  */
-export default function WorkersPanel({ sessionId, refreshKey }) {
+export default function WorkersPanel({ sessionId, refreshKey, onCountChange }) {
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -69,7 +80,9 @@ export default function WorkersPanel({ sessionId, refreshKey }) {
     setError(null);
     try {
       const result = await PrismService.getCoordinatorWorkers(sessionId);
-      setWorkers(result.workers || []);
+      const list = result.workers || [];
+      setWorkers(list);
+      onCountChange?.(list.length);
       hasData.current = true;
     } catch (err) {
       console.error("Failed to load workers:", err);
@@ -77,7 +90,7 @@ export default function WorkersPanel({ sessionId, refreshKey }) {
     } finally {
       setLoading(false);
     }
-  }, [sessionId]);
+  }, [sessionId, onCountChange]);
 
   // Reset on session change
   useEffect(() => {
@@ -168,15 +181,21 @@ export default function WorkersPanel({ sessionId, refreshKey }) {
         const statusClass = STATUS_CLASS[worker.status] || "statusPending";
         const cardClass = CARD_CLASS[worker.status] || "";
         const isLive = worker.status === "running";
+        const isComplete = worker.status === "complete";
+
+        // Workers are text-in → text-out agents
+        const workerModalities = { textIn: true, textOut: true };
 
         return (
           <div
             key={worker.agentId}
             className={`${styles.workerCard} ${cardClass ? styles[cardClass] : ""}`}
           >
-            {/* Header: ID + status */}
-            <div className={styles.workerHeader}>
-              <span className={styles.workerIdBadge}>{worker.agentId}</span>
+            {/* ── Title row (HistoryItem-style) ─────────────── */}
+            <div className={styles.titleRow}>
+              <span className={styles.agentBadge}>
+                Agent {getAgentNumber(worker.agentId)}
+              </span>
               <span className={`${styles.workerStatus} ${styles[statusClass]}`}>
                 {statusLabel}
               </span>
@@ -189,33 +208,42 @@ export default function WorkersPanel({ sessionId, refreshKey }) {
               </div>
             )}
 
-            {/* Meta badges */}
-            <div className={styles.workerMeta}>
-              {worker.toolCallCount > 0 && (
-                <span className={styles.metaBadge}>
-                  <Wrench size={9} />
-                  {worker.toolCallCount} tool{worker.toolCallCount !== 1 ? "s" : ""}
-                </span>
-              )}
+            {/* ── Meta row (time, cost — HistoryItem-style) ── */}
+            <div className={styles.meta}>
               {worker.durationMs > 0 && (
-                <span className={`${styles.metaBadge} ${isLive ? styles.durationLive : ""}`}>
-                  <Clock size={9} />
+                <span className={`${styles.metaItem} ${isLive ? styles.durationLive : ""}`}>
+                  <Clock size={10} />
                   {formatDuration(worker.durationMs)}
                 </span>
               )}
+              <CostBadgeComponent cost={worker.totalCost} mini showIcon={false} />
+              {worker.toolCallCount > 0 && (
+                <span className={styles.metaItem}>
+                  <Wrench size={10} />
+                  {worker.toolCallCount} tool{worker.toolCallCount !== 1 ? "s" : ""}
+                </span>
+              )}
               {worker.branchName && (
-                <span className={styles.metaBadge}>
-                  <GitBranch size={9} />
+                <span className={styles.metaItem}>
+                  <GitBranch size={10} />
                   {worker.branchName}
                 </span>
               )}
-              {worker.resolvedModel && (
-                <span className={styles.metaBadge}>
-                  <Cpu size={9} />
-                  {worker.resolvedModel.replace(/-\d{8}$/, "")}
-                </span>
-              )}
             </div>
+
+            {/* ── Model badge ────────────────────────────────── */}
+            {worker.resolvedModel && (
+              <ModelBadgeComponent
+                models={[worker.resolvedModel.replace(/-\d{8}$/, "")]}
+                mini
+                className={styles.modelBadge}
+              />
+            )}
+
+            {/* ── Modality icons ─────────────────────────────── */}
+            {isComplete && (
+              <ModalityIconComponent modalities={workerModalities} size={10} />
+            )}
 
             {/* Files */}
             {worker.files?.length > 0 && (

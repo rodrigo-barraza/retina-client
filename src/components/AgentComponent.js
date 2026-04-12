@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Bot, Paperclip, X, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain, Plug, GitBranch, Scissors, Repeat, ListChecks, BookOpen, Users } from "lucide-react";
 import PrismService from "../services/PrismService.js";
+import ToolsApiService from "../services/ToolsApiService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
 import NavigationSidebarComponent from "./NavigationSidebarComponent.js";
 import HistoryPanel from "./HistoryPanel.js";
@@ -83,6 +84,9 @@ export default function AgentComponent() {
   const [memoriesRefreshKey, setMemoriesRefreshKey] = useState(0);
   const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
   const [newMemoriesCount, setNewMemoriesCount] = useState(0);
+  const [totalMemoriesCount, setTotalMemoriesCount] = useState(0);
+  const [workersCount, setWorkersCount] = useState(0);
+  const [tasksCount, setTasksCount] = useState(0);
   const { disabledBuiltIns, handleToggleBuiltIn, handleToggleAllBuiltIn } =
     useToolToggles(builtInTools, SK_TOOL_MEMORY_AGENT);
 
@@ -291,6 +295,26 @@ export default function AgentComponent() {
     }
     loadAgenticTools().catch(console.error);
   }, []);
+
+  // ── Eager-fetch tab badge counts (fires on mount / session change) ──
+
+  useEffect(() => {
+    PrismService.getAgentMemories(PROJECT_AGENT, 1)
+      .then((r) => setTotalMemoriesCount(r.total || 0))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    ToolsApiService.getAllAgenticTasks({ agentSessionId })
+      .then((r) => setTasksCount(r.summary?.total || (r.tasks || []).length))
+      .catch(() => {});
+  }, [agentSessionId, tasksRefreshKey]);
+
+  useEffect(() => {
+    PrismService.getCoordinatorWorkers(agentSessionId)
+      .then((r) => setWorkersCount((r.workers || []).length))
+      .catch(() => {});
+  }, [agentSessionId, tasksRefreshKey]);
 
   // System prompt is fully assembled server-side by SystemPromptAssembler.
   // The client sends a placeholder system message that gets replaced.
@@ -946,12 +970,15 @@ export default function AgentComponent() {
           {
             key: "memories",
             icon: <Brain size={14} />,
-            badge: newMemoriesCount || undefined,
+            badge: totalMemoriesCount,
+            badgeDisabled: !newMemoriesCount,
             tooltip: "Memories",
           },
           {
             key: "tasks",
             icon: <ListChecks size={14} />,
+            badge: tasksCount,
+            badgeDisabled: true,
             tooltip: "Tasks",
           },
           {
@@ -963,6 +990,8 @@ export default function AgentComponent() {
           {
             key: "workers",
             icon: <Users size={14} />,
+            badge: workersCount,
+            badgeDisabled: true,
             tooltip: "Workers",
           },
           {
@@ -1026,11 +1055,11 @@ export default function AgentComponent() {
       )}
 
       {leftTab === "memories" && (
-        <MemoriesPanel project={PROJECT_AGENT} refreshKey={memoriesRefreshKey} />
+        <MemoriesPanel project={PROJECT_AGENT} refreshKey={memoriesRefreshKey} onCountChange={setTotalMemoriesCount} />
       )}
 
       {leftTab === "tasks" && (
-        <TasksPanel project={PROJECT_AGENT} refreshKey={tasksRefreshKey} agentSessionId={agentSessionId} />
+        <TasksPanel project={PROJECT_AGENT} refreshKey={tasksRefreshKey} agentSessionId={agentSessionId} onCountChange={setTasksCount} />
       )}
 
       {leftTab === "mcp" && (
@@ -1042,7 +1071,7 @@ export default function AgentComponent() {
       )}
 
       {leftTab === "workers" && (
-        <WorkersPanel sessionId={agentSessionId} refreshKey={tasksRefreshKey} />
+        <WorkersPanel sessionId={agentSessionId} refreshKey={tasksRefreshKey} onCountChange={setWorkersCount} />
       )}
 
       {leftTab === "coordinator" && (
