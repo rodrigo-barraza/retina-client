@@ -11,38 +11,38 @@ import styles from "./ToolIconComponent.module.css";
  * canonical "Function Calling" icon.
  *
  * Props:
- *   toolNames      — string[] of canonical tool names (e.g. "Web Search", "Thinking")
- *   toolCallNames  — string[] of raw tool function names (e.g. "get_web_content", "generate_image")
+ *   toolDisplayNames      — string[] of canonical tool names (e.g. "Web Search", "Thinking")
+ *   toolApiNames  — string[] of raw tool function names (e.g. "get_web_content", "generate_image")
  *   size           — icon size in px (default 12)
  *   className      — extra root class name
  */
 export default function ToolIconComponent({
-  toolNames,
-  toolCallNames,
+  toolDisplayNames,
+  toolApiNames,
   size = 12,
   className,
 }) {
-  if (!toolNames || toolNames.length === 0) {
+  if (!toolDisplayNames || toolDisplayNames.length === 0) {
     return <span style={{ color: "var(--text-muted)" }}>—</span>;
   }
 
   // Collect raw names that don't map to known canonical icons → shown in FC tooltip
   const functionCallRawNames = [];
-  for (const raw of toolNames) {
+  for (const raw of toolDisplayNames) {
     if (!TOOL_ICON_MAP[raw]) {
       functionCallRawNames.push(raw);
     }
   }
 
-  // If toolCallNames provided, use those for the Function Calling tooltip
+  // If toolApiNames provided, use those for the Function Calling tooltip
   // (they're the actual function names like get_web_content, generate_image)
-  const fcRawDisplay = toolCallNames?.length
-    ? toolCallNames
+  const fcRawDisplay = toolApiNames?.length
+    ? toolApiNames
     : functionCallRawNames;
 
   // De-duplicate and resolve unknown tools → "Function Calling"
   const resolved = new Map();
-  for (const raw of toolNames) {
+  for (const raw of toolDisplayNames) {
     if (TOOL_ICON_MAP[raw]) {
       if (!resolved.has(raw)) resolved.set(raw, TOOL_ICON_MAP[raw]);
     } else {

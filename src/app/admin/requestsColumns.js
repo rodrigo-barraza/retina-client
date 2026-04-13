@@ -43,8 +43,8 @@ export const getRequestsColumns = ({ totalCost = 1, totalDuration = 1, mini = fa
     sortable: true,
     align: "left",
     render: (r) => {
-      if (!r.toolsUsed || !r.toolNames?.length) return emptyDash();
-      return <ToolIconComponent toolNames={r.toolNames} toolCallNames={r.toolCallNames} size={mini ? 10 : undefined} />;
+      if (!r.toolsUsed || !r.toolDisplayNames?.length) return emptyDash();
+      return <ToolIconComponent toolDisplayNames={r.toolDisplayNames} toolApiNames={r.toolApiNames} size={mini ? 10 : undefined} />;
     },
   },
   ...tokenColumns({ inputKey: "inputTokens", outputKey: "outputTokens", tpsKey: "tokensPerSec" }),

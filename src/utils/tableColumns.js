@@ -228,19 +228,19 @@ export const modalitiesColumn = ({ mini = false, fromConversations = false } = {
 /* ·· Tools ·· */
 
 export const toolsColumn = ({ mini = false, configModels } = {}) => ({
-  key: "toolNames",
+  key: "toolDisplayNames",
   label: "Tools",
   description: "External tools and capabilities configured for this model",
   sortable: false,
   align: "left",
   render: (row) => {
-    // Support either direct toolNames array or config-based lookup
+    // Support either direct toolDisplayNames array or config-based lookup
     if (configModels) {
       const tools = configModels[`${row.provider}:${row.model}`];
       if (!tools?.length) return emptyDash();
-      return <ToolIconComponent toolNames={tools} size={mini ? 10 : undefined} />;
+      return <ToolIconComponent toolDisplayNames={tools} size={mini ? 10 : undefined} />;
     }
-    return <ToolIconComponent toolNames={row.toolNames} toolCallNames={row.toolCallNames} size={mini ? 10 : undefined} />;
+    return <ToolIconComponent toolDisplayNames={row.toolDisplayNames} toolApiNames={row.toolApiNames} size={mini ? 10 : undefined} />;
   },
 });
 

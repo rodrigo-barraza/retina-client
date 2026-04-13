@@ -1010,7 +1010,7 @@ function ModelsTableInner({
         render: (row) => {
           const tools = row._raw.tools;
           if (!tools?.length) return "—";
-          return <ToolIconComponent toolNames={tools} />;
+          return <ToolIconComponent toolDisplayNames={tools} />;
         },
       });
     }

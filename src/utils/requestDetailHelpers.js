@@ -153,21 +153,21 @@ export function buildRequestDetailSections(req) {
         },
         {
           label: "Tools",
-          value: req.toolNames?.length ? (
+          value: req.toolDisplayNames?.length ? (
             <ToolIconComponent
-              toolNames={req.toolNames}
-              toolCallNames={req.toolCallNames}
+              toolDisplayNames={req.toolDisplayNames}
+              toolApiNames={req.toolApiNames}
               size={14}
             />
           ) : (
             <BadgeComponent variant="info">No</BadgeComponent>
           ),
         },
-        ...(req.toolCallNames?.length
+        ...(req.toolApiNames?.length
           ? [
               {
                 label: "Tool Calls",
-                value: req.toolCallNames.join(", "),
+                value: req.toolApiNames.join(", "),
                 mono: true,
               },
             ]
