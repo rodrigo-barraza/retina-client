@@ -155,6 +155,26 @@
   border: 1px solid var(--warning, #f59e0b);
 }
 
+/* ── Task notification card (worker results) ── */
+.notificationNode {
+  border-left: 3px solid var(--accent-color, #6366f1);
+  padding: 8px 0 8px 0;
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.notificationNode:hover {
+  opacity: 1;
+}
+
+.notificationNode .avatar {
+  background: color-mix(in srgb, var(--accent-color, #6366f1) 10%, transparent);
+  color: var(--accent-color, #6366f1);
+  border: 1px solid color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent);
+}
+
 /* ── Content column ── */
 .content {
   flex: 1;

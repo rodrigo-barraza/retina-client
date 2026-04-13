@@ -36,6 +36,28 @@ import { formatCost, getTotalInputTokens } from "../utils/utilities";
 
 
 
+/* ── Task notification detection (Claude Code pattern) ───────
+ * Worker results arrive as user-role messages containing
+ * <task-notification> XML. Detect by content so it works for
+ * both live messages and already-persisted history.            */
+
+function parseTaskNotification(content) {
+  if (!content || !content.includes("<task-notification>")) return null;
+  const tag = (name) => {
+    const re = new RegExp(`<${name}>([\\s\\S]*?)</${name}>`);
+    const m = content.match(re);
+    return m ? m[1].trim() : null;
+  };
+  return {
+    taskId: tag("task-id"),
+    status: tag("status"),
+    summary: tag("summary"),
+    result: tag("result"),
+    toolUses: tag("tool_uses"),
+    durationMs: tag("duration_ms"),
+  };
+}
+
 /* ── Helpers ─────────────────────────────────────────────────── */
 
 function getOrdinalSuffix(day) {
@@ -631,7 +653,7 @@ export default function MessageList({
   // Find the last user message
   const lastUserMsgIndex = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === "user" && !messages[i].deleted) return i;
+      if (messages[i].role === "user" && !messages[i].deleted && !parseTaskNotification(messages[i].content)) return i;
     }
     return -1;
   }, [messages]);
@@ -1053,7 +1075,59 @@ export default function MessageList({
             );
           })()}
             {/* ── Normal (non-deleted) message ── */}
-            {!msg.deleted && (
+            {!msg.deleted && (() => {
+              // ── Task notification card (replaces user bubble for worker results) ──
+              const taskNotif = msg.role === "user" ? parseTaskNotification(msg.content) : null;
+              if (taskNotif) {
+                const statusIcon = taskNotif.status === "completed" ? "✓"
+                  : taskNotif.status === "failed" ? "✗" : "■";
+                const statusColor = taskNotif.status === "completed" ? "var(--color-success, #22c55e)"
+                  : taskNotif.status === "failed" ? "var(--color-danger, #ef4444)" : "var(--text-muted)";
+                const durationSec = taskNotif.durationMs ? (Number(taskNotif.durationMs) / 1000).toFixed(1) + "s" : null;
+                return (
+                  <div className={`${styles.message} ${styles.notificationNode || ""}`}>
+                    <div className={styles.avatar} style={{ color: statusColor, fontWeight: 700, fontSize: 14 }}>
+                      <Zap size={16} />
+                    </div>
+                    <div className={styles.content}>
+                      <div className={styles.messageHeader}>
+                        <div className={styles.roleLabel} style={{ color: statusColor }}>
+                          <span style={{ marginRight: 6, fontWeight: 700 }}>{statusIcon}</span>
+                          Worker
+                          {msg.timestamp && (
+                            <span className={styles.timestamp}>
+                              {formatTimestamp(msg.timestamp)}
+                            </span>
+                          )}
+                        </div>
+                        {!readOnly && (
+                          <div className={styles.messageActions}>
+                            <IconButtonComponent
+                              icon={<Trash2 size={14} />}
+                              onClick={() => onDelete?.(i)}
+                              tooltip="Delete notification"
+                              variant="danger"
+                              className={styles.actionBtn}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className={styles.text} style={{ opacity: 0.9, fontSize: 13 }}>
+                        {taskNotif.summary}
+                        {durationSec && <span style={{ marginLeft: 8, opacity: 0.5 }}>({durationSec})</span>}
+                        {taskNotif.toolUses && <span style={{ marginLeft: 8, opacity: 0.5 }}>{taskNotif.toolUses} tools</span>}
+                      </div>
+                      {taskNotif.result && (
+                        <div className={styles.text} style={{ opacity: 0.7, fontSize: 12, marginTop: 4, maxHeight: 120, overflow: "hidden" }}>
+                          {taskNotif.result.length > 400 ? taskNotif.result.slice(0, 400) + "…" : taskNotif.result}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+              // ── Normal message rendering ──
+              return (
             <div
               ref={i === lastUserMsgIndex && msg.role === "user" ? lastUserMsgRef : undefined}
               className={`${styles.message} ${roleClass}${coalesce?.isContinuation ? ` ${styles.continuationMessage}` : ""}`}
@@ -1478,7 +1552,8 @@ export default function MessageList({
                   )}
               </div>
             </div>
-            )}
+            );
+            })()}
           </React.Fragment>
         );
       })}
