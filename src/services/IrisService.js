@@ -192,14 +192,14 @@ export default class IrisService {
     return fetchJSON(`/workflows/${id}`);
   }
 
-  // ── Sessions ──────────────────────────────────────────────
-  static async getSessions(params = {}) {
+  // ── Traces ──────────────────────────────────────────────
+  static async getTraces(params = {}) {
     const query = new URLSearchParams(params).toString();
-    return fetchJSON(`/sessions${query ? `?${query}` : ""}`);
+    return fetchJSON(`/traces${query ? `?${query}` : ""}`);
   }
 
-  static async getSession(id) {
-    return fetchJSON(`/sessions/${id}`);
+  static async getTrace(id) {
+    return fetchJSON(`/traces/${id}`);
   }
 
   // ── Media ─────────────────────────────────────────────────

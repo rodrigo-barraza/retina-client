@@ -1,7 +1,7 @@
 import TableComponent from "./TableComponent";
 import RequestsTableComponent from "./RequestsTableComponent";
 import {
-  sessionIdColumn,
+  traceIdColumn,
   projectColumn,
   userColumn,
   agentColumn,
@@ -17,15 +17,15 @@ import {
   durationColumn,
   createdAtColumn,
 } from "../utils/tableColumns";
-import styles from "./SessionsTableComponent.module.css";
+import styles from "./TracesTableComponent.module.css";
 
 /**
- * SessionsTableComponent — reusable sessions table with expandable rows
+ * TracesTableComponent — reusable traces table with expandable rows
  * showing both a conversations table and a requests table side by side.
  *
  * @param {Object}  props
- * @param {Array}   props.sessions       - Array of session objects
- * @param {string}  [props.emptyText]    - Text shown when no sessions
+ * @param {Array}   props.traces       - Array of trace objects
+ * @param {string}  [props.emptyText]    - Text shown when no traces
  * @param {boolean} [props.compact]      - Hide some columns for compact layouts
  * @param {boolean} [props.mini]         - Mini density mode
  * @param {string}  [props.title]        - Optional table title
@@ -35,9 +35,9 @@ import styles from "./SessionsTableComponent.module.css";
  * @param {Function} [props.onSort]    - (key, dir) => void (server-side sort)
  * @param {Function} [props.onRequestRowClick] - (request) => void, opens detail drawer
  */
-export default function SessionsTableComponent({
-  sessions = [],
-  emptyText = "No sessions",
+export default function TracesTableComponent({
+  traces = [],
+  emptyText = "No traces",
   compact = false,
   mini = false,
   title,
@@ -48,7 +48,7 @@ export default function SessionsTableComponent({
   onRequestRowClick,
 }) {
   const SESSION_COLUMNS = [
-    sessionIdColumn(),
+    traceIdColumn(),
     projectColumn(),
     userColumn(),
     agentColumn(),
@@ -65,7 +65,7 @@ export default function SessionsTableComponent({
     createdAtColumn(),
   ];
 
-  // Remove costShare for sessions — not useful without a global total
+  // Remove costShare for traces — not useful without a global total
   const allColumns = SESSION_COLUMNS.filter((c) => c.key !== "costShare");
 
   const COMPACT_KEYS = [
@@ -79,15 +79,15 @@ export default function SessionsTableComponent({
   return (
     <TableComponent
       columns={columns}
-      data={sessions}
-      getRowKey={(s, i) => s.id || `session-${i}`}
+      data={traces}
+      getRowKey={(s, i) => s.id || `trace-${i}`}
       sortKey={sortKey}
       sortDir={sortDir}
       onSort={onSort}
-      renderExpandedContent={(session) => (
+      renderExpandedContent={(trace) => (
         <div className={styles.expandedPanels}>
           <RequestsTableComponent
-            requests={session.requests || []}
+            requests={trace.requests || []}
             emptyText="No requests"
             title="Requests"
             onRowClick={onRequestRowClick}
@@ -98,7 +98,7 @@ export default function SessionsTableComponent({
       title={title}
       maxHeight={maxHeight}
       mini={mini}
-      storageKey="sessions"
+      storageKey="traces"
     />
   );
 }

@@ -41,13 +41,13 @@ import styles from "./page.module.css";
 
 const POLL_INTERVAL = 5000; // 5s
 
-export default function ConversationsPage({ initialId = null, sessionId = null }) {
+export default function ConversationsPage({ initialId = null, traceId = null }) {
   const { projectFilter, projectOptions, handleProjectChange } =
     useProjectFilter();
   const searchParams = useSearchParams();
   const providerFilter = searchParams.get("provider") || null;
   const modelFilter = searchParams.get("model") || null;
-  const sessionParam = searchParams.get("session") || sessionId;
+  const traceParam = searchParams.get("trace") || traceId;
   const { setControls, setTitleBadge, dateRange, sessionFilter, setSessionFilter } = useAdminHeader();
   const [conversations, setConversations] = useState([]);
 
@@ -72,17 +72,17 @@ export default function ConversationsPage({ initialId = null, sessionId = null }
 
   // Sync the session parameter into the admin header context
   useEffect(() => {
-    if (sessionParam) {
-      setSessionFilter(sessionParam);
+    if (traceParam) {
+      setSessionFilter(traceParam);
     }
     return () => {
-      // Only clear if we set it — avoid clearing on unmount when there's no session
-      if (sessionParam) setSessionFilter(null);
+      // Only clear if we set it — avoid clearing on unmount when there's no trace
+      if (traceParam) setSessionFilter(null);
     };
-  }, [sessionParam, setSessionFilter]);
+  }, [traceParam, setSessionFilter]);
 
   // The active session filter (from URL param or context)
-  const activeSession = sessionParam || sessionFilter;
+  const activeSession = traceParam || sessionFilter;
 
   useEffect(() => {
     IrisService.getConfig()
@@ -131,7 +131,7 @@ export default function ConversationsPage({ initialId = null, sessionId = null }
       };
       // When filtering by session, skip date/project filters
       if (activeSession) {
-        params.session = activeSession;
+        params.trace = activeSession;
       } else {
         Object.assign(params, buildDateRangeParams(dateRange));
         if (projectFilter) params.project = projectFilter;
@@ -319,7 +319,7 @@ export default function ConversationsPage({ initialId = null, sessionId = null }
     setSelectedId(id);
     // Update URL for deep-linking (preserve all filter params)
     const params = new URLSearchParams();
-    if (activeSession) params.set("session", activeSession);
+    if (activeSession) params.set("trace", activeSession);
     if (projectFilter) params.set("project", projectFilter);
     if (providerFilter) params.set("provider", providerFilter);
     if (modelFilter) params.set("model", modelFilter);

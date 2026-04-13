@@ -58,15 +58,15 @@ function getAgentNumber(agentId) {
 /**
  * WorkersPanel — displays coordinator workers spawned during this agent session.
  *
- * Polls the coordinator /workers endpoint filtered by the current sessionId.
+ * Polls the coordinator /workers endpoint filtered by the current agentSessionId.
  * Workers represent parallel sub-agents spawned via the `spawn_agent` tool
  * during agentic coding sessions.
  *
  * @param {object} props
- * @param {string} [props.sessionId] - Current agent session ID to filter workers by
+ * @param {string} [props.agentSessionId] - Current agent session ID to filter workers by
  * @param {number} [props.refreshKey] - External trigger to refresh worker list
  */
-export default function WorkersPanel({ sessionId, refreshKey, onCountChange }) {
+export default function WorkersPanel({ agentSessionId, refreshKey, onCountChange }) {
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -79,7 +79,7 @@ export default function WorkersPanel({ sessionId, refreshKey, onCountChange }) {
     if (!hasData.current) setLoading(true);
     setError(null);
     try {
-      const result = await PrismService.getCoordinatorWorkers(sessionId);
+      const result = await PrismService.getCoordinatorWorkers(agentSessionId);
       const list = result.workers || [];
       setWorkers(list);
       onCountChange?.(list.length);
@@ -90,13 +90,13 @@ export default function WorkersPanel({ sessionId, refreshKey, onCountChange }) {
     } finally {
       setLoading(false);
     }
-  }, [sessionId, onCountChange]);
+  }, [agentSessionId, onCountChange]);
 
   // Reset on session change
   useEffect(() => {
     hasData.current = false;
     setWorkers([]);
-  }, [sessionId]);
+  }, [agentSessionId]);
 
   // Initial load + external refresh
   useEffect(() => {

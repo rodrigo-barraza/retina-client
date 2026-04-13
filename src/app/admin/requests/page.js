@@ -456,7 +456,7 @@ export default function RequestsPage() {
                             }}
                             icon={FolderOpen}
                             onClick={() =>
-                              router.push("/admin/sessions")
+                              router.push("/admin/traces")
                             }
                           />
                         ))}

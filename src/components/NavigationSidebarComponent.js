@@ -77,7 +77,7 @@ const ADMIN_NAV_ITEMS = [
     icon: MessageSquare,
     showBadge: "conversations",
   },
-  { href: "/admin/sessions", label: "Sessions", icon: FolderOpen, showBadge: "sessions" },
+  { href: "/admin/traces", label: "Traces", icon: FolderOpen, showBadge: "traces" },
   { href: "/admin/providers", label: "Providers", icon: Layers },
   { href: "/admin/media", label: "Media", icon: ImageIcon, showBadge: "media" },
   { href: "/admin/text", label: "Text", icon: Type, showBadge: "text" },
@@ -92,7 +92,7 @@ const ADMIN_EXPERIMENT_ITEMS = [
 export default function NavigationSidebarComponent({
   mode = "user",
   liveCount = 0,
-  sessionsCount = 0,
+  tracesCount = 0,
   requestsCount = 0,
   mediaCount = 0,
   textCount = 0,
@@ -102,7 +102,7 @@ export default function NavigationSidebarComponent({
 }) {
   const badgeCounts = {
     conversations: liveCount,
-    sessions: sessionsCount,
+    traces: tracesCount,
     requests: requestsCount,
     media: mediaCount,
     text: textCount,

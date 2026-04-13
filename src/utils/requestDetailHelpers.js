@@ -1,6 +1,6 @@
 /**
  * requestDetailHelpers.js — Shared helpers for the request detail drawer
- * used by both /admin/requests and /admin/sessions pages.
+ * used by both /admin/requests and /admin/traces pages.
  *
  * Centralises extractMediaAssets, getMediaTypeFromRef,
  * buildRequestDetailSections, and reconstructChatMessages so they
@@ -86,7 +86,7 @@ export function getMediaTypeFromRef(ref) {
  * Build the 4-section array (General, Usage, Timing, Parameters)
  * consumed by <RequestDetailsComponent sections={…}>.
  *
- * Both /admin/requests and /admin/sessions pass the exact same
+ * Both /admin/requests and /admin/traces pass the exact same
  * section definitions — this function is the single source of truth.
  */
 export function buildRequestDetailSections(req) {

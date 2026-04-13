@@ -71,7 +71,7 @@ export default function AgentComponent() {
   const [agentSessionId, setAgentSessionId] = useState(() =>
     crypto.randomUUID(),
   );
-  const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
+  const [traceId, setTraceId] = useState(() => crypto.randomUUID());
   const [sessions, setSessions] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [config, setConfig] = useState(null);
@@ -485,8 +485,8 @@ export default function AgentComponent() {
           conversationMeta: {
             title: resolvedTitle,
           },
-          // Session tracking — generated client-side
-          sessionId,
+          // Trace tracking — generated client-side
+          traceId,
           // Phase 1: Agentic controls
           autoApprove,
           planFirst,
@@ -855,7 +855,7 @@ export default function AgentComponent() {
       settings.reasoningEffort,
       settings.thinkingBudget,
       agentSessionId,
-      sessionId,
+      traceId,
       allToolSchemas,
       autoApprove,
       planFirst,
@@ -965,7 +965,7 @@ export default function AgentComponent() {
     setToolActivity([]);
     setPendingImages([]);
     setAgentSessionId(crypto.randomUUID());
-    setSessionId(null);
+    setTraceId(null);
     setActiveId(null);
     setTitle("Agent");
     textareaRef.current?.focus();
@@ -982,7 +982,7 @@ export default function AgentComponent() {
         const displayMessages = prepareDisplayMessages(full.messages || []);
         setMessages(displayMessages);
         setAgentSessionId(conv.id);
-        setSessionId(full.sessionId || null);
+        setTraceId(full.traceId || null);
         setActiveId(conv.id);
         setTitle(full.title || "Agent");
         setToolActivity([]);
@@ -1150,7 +1150,7 @@ export default function AgentComponent() {
       )}
 
       {leftTab === "workers" && (
-        <WorkersPanel sessionId={agentSessionId} refreshKey={tasksRefreshKey} onCountChange={setWorkersCount} />
+        <WorkersPanel agentSessionId={agentSessionId} refreshKey={tasksRefreshKey} onCountChange={setWorkersCount} />
       )}
 
       {leftTab === "coordinator" && (

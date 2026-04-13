@@ -12,7 +12,7 @@ import styles from "./AdminShell.module.css";
 
 function AdminShellInner({ children }) {
   const [newCount, setNewCount] = useState(0);
-  const [newSessionsCount, setNewSessionsCount] = useState(0);
+  const [newTracesCount, setNewTracesCount] = useState(0);
   const [newRequestsCount, setNewRequestsCount] = useState(0);
   const [newMediaCount, setNewMediaCount] = useState(0);
   const [newTextCount, setNewTextCount] = useState(0);
@@ -31,7 +31,7 @@ function AdminShellInner({ children }) {
     pathname.startsWith("/admin/conversations"),
   );
   const isOnSessionsRef = useRef(
-    pathname.startsWith("/admin/sessions"),
+    pathname.startsWith("/admin/traces"),
   );
   const isOnRequestsRef = useRef(
     pathname.startsWith("/admin/requests"),
@@ -46,7 +46,7 @@ function AdminShellInner({ children }) {
   // Keep refs in sync with pathname
   useEffect(() => {
     const onConvs = pathname.startsWith("/admin/conversations");
-    const onSessions = pathname.startsWith("/admin/sessions");
+    const onSessions = pathname.startsWith("/admin/traces");
     const onRequests = pathname.startsWith("/admin/requests");
     const onMedia = pathname.startsWith("/admin/media");
     const onText = pathname.startsWith("/admin/text");
@@ -56,7 +56,7 @@ function AdminShellInner({ children }) {
     isOnMediaRef.current = onMedia;
     isOnTextRef.current = onText;
     if (onConvs) setNewCount(0);
-    if (onSessions) setNewSessionsCount(0);
+    if (onSessions) setNewTracesCount(0);
     if (onRequests) setNewRequestsCount(0);
     if (onMedia) setNewMediaCount(0);
     if (onText) setNewTextCount(0);
@@ -97,8 +97,8 @@ function AdminShellInner({ children }) {
   useEffect(() => {
     async function fetchSessions() {
       try {
-        const data = await IrisService.getSessions({ page: 1, limit: 50 });
-        const list = data.data || data.sessions || [];
+        const data = await IrisService.getTraces({ page: 1, limit: 50 });
+        const list = data.data || data.traces || [];
         const currentIds = new Set(list.map((s) => s.id));
 
         if (knownSessionsRef.current === null) {
@@ -108,7 +108,7 @@ function AdminShellInner({ children }) {
           for (const id of currentIds) {
             if (!knownSessionsRef.current.has(id)) newOnes++;
           }
-          if (newOnes > 0) setNewSessionsCount((prev) => prev + newOnes);
+          if (newOnes > 0) setNewTracesCount((prev) => prev + newOnes);
           knownSessionsRef.current = currentIds;
         } else {
           knownSessionsRef.current = currentIds;
@@ -252,11 +252,9 @@ function AdminShellInner({ children }) {
           fetchMedia();
           fetchText();
         }
-        if (event.collection === "sessions") {
-          fetchSessions();
-        }
         if (event.collection === "requests") {
           fetchRequests();
+          fetchSessions(); // traces are derived from requests
         }
       },
     });
@@ -270,7 +268,7 @@ function AdminShellInner({ children }) {
 
   const handleNavClick = useCallback((href) => {
     if (href.startsWith("/admin/conversations")) setNewCount(0);
-    if (href.startsWith("/admin/sessions")) setNewSessionsCount(0);
+    if (href.startsWith("/admin/traces")) setNewTracesCount(0);
     if (href.startsWith("/admin/requests")) setNewRequestsCount(0);
     if (href.startsWith("/admin/media")) setNewMediaCount(0);
     if (href.startsWith("/admin/text")) setNewTextCount(0);
@@ -302,7 +300,7 @@ function AdminShellInner({ children }) {
       <NavigationSidebarComponent
         mode="admin"
         liveCount={newCount}
-        sessionsCount={newSessionsCount}
+        tracesCount={newTracesCount}
         requestsCount={newRequestsCount}
         mediaCount={newMediaCount}
         textCount={newTextCount}
@@ -325,7 +323,7 @@ function AdminShellInner({ children }) {
               onClick={handleClearSession}
               title="Clear session filter and show all conversations"
             >
-              <span className={styles.sessionBadgeLabel}>Session</span>
+              <span className={styles.sessionBadgeLabel}>Trace</span>
               <span className={styles.sessionBadgeId}>
                 {sessionFilter.slice(0, 8)}
               </span>

@@ -12,7 +12,7 @@ import {
   reconstructChatMessages,
 } from "../../../utils/requestDetailHelpers";
 import PaginationComponent from "../../../components/PaginationComponent";
-import SessionsTableComponent from "../../../components/SessionsTableComponent";
+import TracesTableComponent from "../../../components/TracesTableComponent";
 import SelectDropdown from "../../../components/SelectDropdown";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
 import useProjectFilter from "../../../hooks/useProjectFilter";
@@ -27,12 +27,12 @@ import styles from "./page.module.css";
 const PAGE_SIZE = 30;
 const POLL_INTERVAL = 5000; // 5s
 
-export default function SessionsPage() {
+export default function TracesPage() {
   const router = useRouter();
   const { projectFilter, projectOptions, handleProjectChange } =
     useProjectFilter();
   const { setControls, setTitleBadge, dateRange } = useAdminHeader();
-  const [sessions, setSessions] = useState([]);
+  const [traces, setTraces] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState("createdAt");
@@ -51,7 +51,7 @@ export default function SessionsPage() {
     [dateRange],
   );
 
-  const loadSessions = useCallback(async () => {
+  const loadTraces = useCallback(async () => {
     const gen = fetchGenRef.current;
     try {
       const params = {
@@ -63,14 +63,14 @@ export default function SessionsPage() {
       };
       if (projectFilter) params.project = projectFilter;
 
-      const data = await IrisService.getSessions(params);
+      const data = await IrisService.getTraces(params);
       // Discard stale responses from previous filter/page generations
       if (gen !== fetchGenRef.current) return;
-      setSessions(data.data || []);
+      setTraces(data.data || []);
       setTotal(data.total || 0);
     } catch (err) {
       if (gen !== fetchGenRef.current) return;
-      console.error("Failed to load sessions:", err);
+      console.error("Failed to load traces:", err);
     } finally {
       if (gen !== fetchGenRef.current) return;
       if (!initialLoadDone.current) {
@@ -86,28 +86,28 @@ export default function SessionsPage() {
     initialLoadDone.current = false;
     setLoading(true);
 
-    loadSessions();
+    loadTraces();
 
     // Subscribe to change stream SSE for real-time updates.
-    // Sessions are derived from requests, so we refresh on request changes.
+    // Traces are derived from requests, so we refresh on request changes.
     let pollInterval = null;
     let debounceTimer = null;
     const debouncedLoad = () => {
       if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(loadSessions, 800);
+      debounceTimer = setTimeout(loadTraces, 800);
     };
     const es = IrisService.subscribeCollectionChanges({
       onStatus: (data) => {
         if (!data.changeStreams) {
           // No Change Streams — fall back to polling
           if (!pollInterval) {
-            pollInterval = setInterval(loadSessions, POLL_INTERVAL);
+            pollInterval = setInterval(loadTraces, POLL_INTERVAL);
           }
         }
       },
       onChange: (event) => {
         if (event.collection === "requests") {
-          // Request changes update session data — debounce to batch streaming updates
+          // Request changes update trace data — debounce to batch streaming updates
           debouncedLoad();
         }
       },
@@ -118,7 +118,7 @@ export default function SessionsPage() {
       if (pollInterval) clearInterval(pollInterval);
       if (debounceTimer) clearTimeout(debounceTimer);
     };
-  }, [loadSessions]);
+  }, [loadTraces]);
 
   // Fetch associations when a request is selected
   useEffect(() => {
@@ -134,7 +134,7 @@ export default function SessionsPage() {
       })
       .catch(() => {
         if (!cancelled)
-          setAssociations({ conversations: [], workflows: [], sessions: [] });
+          setAssociations({ conversations: [], workflows: [], traces: [] });
       })
       .finally(() => {
         if (!cancelled) setLoadingAssociations(false);
@@ -188,20 +188,20 @@ export default function SessionsPage() {
       <div className={styles.page}>
         <div className={styles.loading}>
           <Loader size={16} className={styles.spinning} />
-          Loading sessions…
+          Loading traces…
         </div>
       </div>
     );
   }
 
-  if (sessions.length === 0) {
+  if (traces.length === 0) {
     return (
       <div className={styles.page}>
         <div className={styles.empty}>
           <FolderOpen size={36} style={{ opacity: 0.3 }} />
-          <div>No sessions yet</div>
+          <div>No traces yet</div>
           <div style={{ fontSize: 12 }}>
-            Sessions are created when AI calls are grouped together
+            Traces are created when AI calls are grouped together
           </div>
         </div>
       </div>
@@ -210,9 +210,9 @@ export default function SessionsPage() {
 
   return (
     <div className={styles.page}>
-      <SessionsTableComponent
-        sessions={sessions}
-        emptyText="No sessions"
+      <TracesTableComponent
+        traces={traces}
+        emptyText="No traces"
         sortKey={sort}
         sortDir={order}
         onSort={(key, dir) => {
@@ -325,11 +325,11 @@ export default function SessionsPage() {
                   </div>
                   <div className={styles.associationGroup}>
                     <span className={styles.associationGroupLabel}>
-                      <FolderOpen size={12} /> Sessions
+                      <FolderOpen size={12} /> Traces
                     </span>
-                    {associations?.sessions?.length > 0 ? (
+                    {associations?.traces?.length > 0 ? (
                       <div className={styles.associationList}>
-                        {associations.sessions.map((s) => (
+                        {associations.traces.map((s) => (
                           <HistoryItemComponent
                             key={s.id}
                             item={{
@@ -348,7 +348,7 @@ export default function SessionsPage() {
                             }}
                             icon={FolderOpen}
                             onClick={() =>
-                              router.push("/admin/sessions")
+                              router.push("/admin/traces")
                             }
                           />
                         ))}

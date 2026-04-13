@@ -349,14 +349,14 @@ export const latencyColumn = (key = "avgLatency", label = "Avg Latency") => ({
  */
 export const countLinkColumns = (entityKey, entityValue) => [
   {
-    key: "sessionCount",
-    label: "Sessions",
-    description: "Number of user sessions that used this entity",
+    key: "traceCount",
+    label: "Traces",
+    description: "Number of request traces that used this entity",
     align: "right",
     render: (row) => (
       <CountLinkComponent
-        count={row.sessionCount}
-        href={`/admin/sessions?${entityKey}=${encodeURIComponent(entityValue(row))}`}
+        count={row.traceCount}
+        href={`/admin/traces?${entityKey}=${encodeURIComponent(entityValue(row))}`}
         icon={FolderOpen}
       />
     ),
@@ -461,18 +461,18 @@ export const createdAtColumn = (key = "createdAt") => ({
   render: (row) => formatDateTime(row[key]),
 });
 
-/* ·· Session ID ·· */
+/* ·· Trace ID ·· */
 
-export const sessionIdColumn = () => ({
+export const traceIdColumn = () => ({
   key: "id",
-  label: "Session",
-  description: "Unique session identifier (click to view conversations)",
+  label: "Trace",
+  description: "Unique trace identifier (click to view conversations)",
   sortable: false,
   render: (s) => (
     <a
-      href={`/admin/conversations?session=${s.id}`}
+      href={`/admin/conversations?trace=${s.id}`}
       className={styles.sessionIdCell}
-      title={`View conversations for session ${s.id}`}
+      title={`View conversations for trace ${s.id}`}
       onClick={(e) => e.stopPropagation()}
     >
       <FolderOpen size={12} className={styles.sessionIcon} />

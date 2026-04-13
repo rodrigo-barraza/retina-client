@@ -34,7 +34,7 @@ import ProvidersTableComponent from "../../components/ProvidersTableComponent";
 import ModelsTableComponent from "../../components/ModelsTableComponent";
 import RequestsTableComponent from "../../components/RequestsTableComponent";
 import ConversationsTableComponent from "../../components/ConversationsTableComponent";
-import SessionsTableComponent from "../../components/SessionsTableComponent";
+import TracesTableComponent from "../../components/TracesTableComponent";
 
 import SelectDropdown from "../../components/SelectDropdown";
 import { ErrorMessage } from "../../components/StateMessageComponent";
@@ -53,7 +53,7 @@ export default function DashboardPage() {
 
   const [timeline, setTimeline] = useState([]);
   const [recentRequests, setRecentRequests] = useState([]);
-  const [recentSessions, setRecentSessions] = useState([]);
+  const [recentTraces, setRecentTraces] = useState([]);
   const [recentConversations, setRecentConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -76,7 +76,7 @@ export default function DashboardPage() {
       const filterParams = { ...dateParams };
       if (projectFilter) filterParams.project = projectFilter;
 
-      const [statsData, projects, models, timelineData, requestsData, sessionsData, conversationsData, prismConfig] =
+      const [statsData, projects, models, timelineData, requestsData, tracesData, conversationsData, prismConfig] =
         await Promise.all([
           IrisService.getStats(filterParams),
           IrisService.getProjectStats(filterParams),
@@ -88,7 +88,7 @@ export default function DashboardPage() {
             order: "desc",
             ...filterParams,
           }),
-          IrisService.getSessions({
+          IrisService.getTraces({
             page: 1,
             limit: 5,
             sort: "createdAt",
@@ -136,7 +136,7 @@ export default function DashboardPage() {
 
       setTimeline(timelineData.data || timelineData);
       setRecentRequests(requestsData.data || []);
-      setRecentSessions(sessionsData.data || []);
+      setRecentTraces(tracesData.data || []);
       setRecentConversations(conversationsData.data || []);
     } catch (err) {
       setError(err.message);
@@ -156,7 +156,7 @@ export default function DashboardPage() {
     setModelStats([]);
     setTimeline([]);
     setRecentRequests([]);
-    setRecentSessions([]);
+    setRecentTraces([]);
     setRecentConversations([]);
 
     loadDashboard();
@@ -356,7 +356,7 @@ export default function DashboardPage() {
           </span>
           <span className={styles.resourceLabel}>Models</span>
         </Link>
-        <Link href="/admin/sessions" className={styles.resourceCard}>
+        <Link href="/admin/traces" className={styles.resourceCard}>
           <FolderOpen size={18} className={styles.resourceIcon} />
           <span className={styles.resourceCount}>
             {loading ? "—" : formatNumber(stats?.sessionCount)}
@@ -491,9 +491,9 @@ export default function DashboardPage() {
         emptyText={loading ? "Loading..." : "No data yet"}
       />
 
-      {/* ── Recent Sessions ── */}
-      <SessionsTableComponent
-        sessions={recentSessions}
+      {/* ── Recent Traces ── */}
+      <TracesTableComponent
+        sessions={recentTraces}
         compact
         maxHeight={420}
         title={
@@ -505,13 +505,13 @@ export default function DashboardPage() {
               width: "100%",
             }}
           >
-            Recent Sessions
-            <Link href="/admin/sessions" className={styles.sectionAction}>
+            Recent Traces
+            <Link href="/admin/traces" className={styles.sectionAction}>
               View all →
             </Link>
           </span>
         }
-        emptyText={loading ? "Loading..." : "No sessions yet"}
+        emptyText={loading ? "Loading..." : "No traces yet"}
       />
 
       {/* ── Recent Conversations ── */}
