@@ -14,7 +14,8 @@ function easeOutCubic(t) {
 /**
  * CostBadgeComponent — green-tinted cost pill with optional icon.
  * When cost updates upward, the displayed number tweens (counting animation)
- * from the previous value to the new value.
+ * from the previous value to the new value, with a rainbow hue-rotate effect
+ * on the text while the tween is active.
  *
  * @param {number} cost — dollar amount
  * @param {boolean} [showIcon=true] — show Coins icon
@@ -30,6 +31,7 @@ export default function CostBadgeComponent({
   const prevCostRef = useRef(null);
   const rafRef = useRef(null);
   const [displayCost, setDisplayCost] = useState(cost);
+  const [tweening, setTweening] = useState(false);
 
   useEffect(() => {
     const from = prevCostRef.current;
@@ -38,11 +40,13 @@ export default function CostBadgeComponent({
     // First mount or no previous value — snap immediately
     if (from === null || from === cost) {
       setDisplayCost(cost);
+      setTweening(false);
       return;
     }
 
     const delta = cost - from;
     const start = performance.now();
+    setTweening(true);
 
     function tick(now) {
       const elapsed = now - start;
@@ -52,6 +56,8 @@ export default function CostBadgeComponent({
 
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(tick);
+      } else {
+        setTweening(false);
       }
     }
 
@@ -59,13 +65,16 @@ export default function CostBadgeComponent({
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      setTweening(false);
     };
   }, [cost]);
 
   if (!cost || cost <= 0) return null;
 
   return (
-    <span className={`${styles.badge} ${mini ? styles.mini : ""} ${className}`}>
+    <span
+      className={`${styles.badge} ${mini ? styles.mini : ""} ${tweening ? styles.tweening : ""} ${className}`}
+    >
       {showIcon && <Coins size={mini ? 8 : 10} />}
       {formatCost(displayCost)}
     </span>

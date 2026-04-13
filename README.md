@@ -50,6 +50,85 @@ Requires `ADMIN_SECRET` to be configured in `secrets.js`.
 - **LM Studio** (`/admin/lm-studio`) — load/unload local models remotely
 - **Stats Breakdowns** — per-project, per-model, and per-endpoint analytics
 
+## 📂 Directory Structure
+
+```
+retina/
+├── public/                                  # Static assets
+│   ├── pcm-processor.js                     # AudioWorklet for real-time PCM capture
+│   ├── playback-processor.js                # AudioWorklet for PCM playback
+│   └── *.svg, *.gif                         # Icons and animated assets
+└── src/
+    ├── app/                                 # Next.js App Router pages
+    │   ├── layout.js                        # Root layout with ThemeProvider
+    │   ├── globals.css                      # Global CSS variables and base styles
+    │   ├── page.js                          # Home / chat page
+    │   ├── conversations/                   # Conversation list and detail views
+    │   ├── settings/                        # User settings page
+    │   ├── models/                          # Model catalog browser
+    │   ├── media/                           # Generated media gallery
+    │   ├── text/                            # Plain text generation page
+    │   ├── synthesis/                       # Synthesis session page
+    │   ├── benchmarks/                      # Benchmark creation and history
+    │   ├── workflows/                       # Visual workflow editor
+    │   ├── vram-benchmark/                  # VRAM benchmark interface
+    │   ├── coding-agent/                    # Coding agent chat interface
+    │   └── admin/                           # Admin dashboard pages
+    │       ├── page.js                      # Admin overview (stats, timeline)
+    │       ├── requests/                    # Request log browser with filters
+    │       ├── conversations/               # Cross-project conversation browser
+    │       ├── traces/                      # Request trace viewer
+    │       ├── tool-calls/                  # Tool call log viewer
+    │       ├── tool-requests/               # Tool request analytics
+    │       ├── models/                      # Model usage analytics
+    │       ├── providers/                   # Provider usage analytics
+    │       ├── media/                       # Admin media browser
+    │       ├── text/                        # Admin text generation
+    │       └── workflows/                   # Admin workflow browser
+    ├── components/                          # Reusable React components (~100+)
+    │   ├── ChatComponent.js                 # Main chat interface with message input
+    │   ├── MessageList.js                   # Scrollable message feed
+    │   ├── MarkdownContent.js               # Markdown renderer with syntax highlighting
+    │   ├── NavigationSidebarComponent.js     # App-wide navigation sidebar
+    │   ├── HistoryPanel.js                  # Conversation history sidebar
+    │   ├── SettingsPanel.js                 # Chat settings (model, params, tools)
+    │   ├── ModelPickerPopoverComponent.js   # Model selection popover with search
+    │   ├── CostBadgeComponent.js            # Animated rolling cost display
+    │   ├── WorkflowCanvas.js                # Visual node graph for workflows
+    │   ├── BenchmarkComponent.js            # Benchmark runner and results
+    │   ├── SynthesisComponent.js            # Multi-model synthesis interface
+    │   ├── ToolCardComponent.js             # Tool call result card
+    │   ├── ToolResultRenderers.js           # Specialized tool result renderers
+    │   ├── DocumentViewer.js                # PDF and document inline viewer
+    │   ├── DrawingCanvas.js                 # Drawing pad for image input
+    │   ├── ThemeProvider.js                 # CSS theme (dark/light) manager
+    │   └── ...                              # Many more UI primitives and composites
+    ├── hooks/                               # Custom React hooks
+    │   ├── useModelMemory.js                # Remembers last-used model per type
+    │   ├── useProjectFilter.js              # Project filter state
+    │   └── useToolToggles.js                # Tool enable/disable state
+    ├── services/                            # API communication and business logic
+    │   ├── PrismService.js                  # HTTP + WebSocket client for Prism API
+    │   ├── SSEManager.js                    # Server-Sent Events connection manager
+    │   ├── LiveSessionService.js            # Real-time session monitoring
+    │   ├── AudioPlayerService.js            # Audio playback with queue management
+    │   ├── StorageService.js                # localStorage persistence layer
+    │   ├── ToolsApiService.js               # Client for the Tools API
+    │   ├── IrisService.js                   # Iris integration service
+    │   ├── WorkflowService.js               # Workflow CRUD client
+    │   ├── WorkflowExecutor.js              # Client-side workflow execution engine
+    │   └── serviceHeaders.js                # Shared auth/project headers
+    ├── utils/                               # Utility helpers
+    │   ├── utilities.js                     # General formatting and helpers
+    │   ├── FunctionCallingUtilities.js       # Tool call formatting
+    │   ├── benchmarkPresets.js              # Predefined benchmark configurations
+    │   ├── datePresets.js                   # Date range presets for filters
+    │   ├── requestDetailHelpers.js          # Request detail view formatters
+    │   └── tableColumns.js                  # Column definitions for data tables
+    ├── constants.js                         # App-wide constants and enums
+    └── middleware.js                        # Next.js Edge middleware
+```
+
 ## ⚙️ Prerequisites
 
 - **Node.js** v20+

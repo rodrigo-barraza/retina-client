@@ -33,3 +33,21 @@
   padding: 1px 4px;
   gap: 2px;
 }
+
+/* ── Rainbow hue-rotate while tweening ───────────── */
+
+.tweening {
+  color: hsl(0, 90%, 65%);
+  filter: hue-rotate(0deg);
+  animation: costRainbow 0.6s linear;
+  will-change: filter;
+}
+
+@keyframes costRainbow {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
