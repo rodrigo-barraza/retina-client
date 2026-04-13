@@ -24,7 +24,7 @@
   text-transform: none;
   letter-spacing: 0;
   user-select: none;
-  min-width: 100%;
+  max-width: 100%;
 }
 
 .trigger:hover {
@@ -112,8 +112,11 @@
 .triggerWrap {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 4px;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .triggerCapabilities {

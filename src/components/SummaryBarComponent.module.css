@@ -80,11 +80,16 @@
   min-width: 0;
 }
 
-/* Row for icon + value */
+/* Row for icon + value — overrides CostBadge .badge box model */
 .valueRow {
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 0;
+  font-size: inherit;
 }
 
 .icon {

@@ -19,7 +19,8 @@
 .contentMain {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 20px;
   position: relative;
   display: flex;

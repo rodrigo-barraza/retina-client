@@ -1,6 +1,7 @@
 "use client";
 
 import styles from "./SummaryBarComponent.module.css";
+import costBadgeStyles from "./CostBadgeComponent.module.css";
 
 /**
  * SummaryBarComponent — A horizontal stats strip with stacked value/label pairs.
@@ -50,7 +51,7 @@ export default function SummaryBarComponent({ items, live = false, className }) 
               </div>
             ) : (
               <>
-                <div className={styles.valueRow}>
+                <div className={`${costBadgeStyles.badge} ${styles.valueRow}`}>
                   {item.icon && <span className={styles.icon}>{item.icon}</span>}
                   <span
                     className={styles.value}

@@ -6,38 +6,25 @@ import {
   Volume2,
   Video,
   FileText,
-  Wrench,
   Brain,
   DollarSign,
 } from "lucide-react";
-import ToggleSwitch from "./ToggleSwitch";
 import styles from "./SettingsPanel.module.css";
 import ModelTypeBadgeComponent from "./ModelTypeBadgeComponent";
-import {
-  MODALITY_COLORS,
-  TOOL_COLORS,
-  TOOL_ICON_MAP,
-  TOGGLEABLE_TOOLS,
-} from "./WorkflowNodeConstants";
+import { MODALITY_COLORS } from "./WorkflowNodeConstants";
 
 /**
- * ModelInfoPanel — Displays model metadata: type badge, modalities,
- * token limits, pricing, arena scores, and tools.
+ * ModelInfoPanel — Displays model metadata: type badge,
+ * token limits, pricing, and arena scores.
  *
  * Extracted from SettingsPanel to live in its own "Info" tab.
  *
- * @param {object} config       — Full Prism config (used to resolve model definitions)
- * @param {object} settings     — Current settings (provider, model, tool toggles)
- * @param {Function} onChange   — Setting update callback
- * @param {boolean} readOnly    — If true, show tools as read-only badges
- * @param {Set} [lockedTools]   — Tools that cannot be toggled off
+ * @param {object} config    — Full Prism config (used to resolve model definitions)
+ * @param {object} settings  — Current settings (provider, model)
  */
 export default function ModelInfoPanel({
   config,
   settings,
-  onChange,
-  readOnly = false,
-  lockedTools,
 }) {
   const { textToText = {} } = config || {};
   const textModelsMap = textToText.models || {};
@@ -86,96 +73,6 @@ export default function ModelInfoPanel({
     (m) => m.name === settings.model,
   );
 
-  const handleThinkingEnabledChange = (val) =>
-    onChange({ thinkingEnabled: val });
-
-  // Provider-aware display labels for generic tool names
-  const TOOL_LABELS = {
-    google: { "Web Search": "Google Search" },
-    anthropic: selectedModelDef?.webFetch ? { "Web Search": "Web Fetch" } : {},
-  };
-  const providerToolLabels = TOOL_LABELS[settings.provider] || {};
-  const getToolLabel = (tool) => providerToolLabels[tool] || tool;
-
-  // Get toggle state/handler for a tool
-  const getToolToggle = (tool) => {
-    switch (tool) {
-      case "Thinking": {
-        const isLmStudio = settings.provider === "lm-studio";
-        const isLive = selectedModelDef?.liveAPI;
-        const canDisable =
-          !selectedModelDef?.thinkingLevels ||
-          selectedModelDef.thinkingLevels.includes("minimal");
-        const alwaysOn = !canDisable && settings.provider === "google";
-
-        const modelName = (settings.model || "").toLowerCase();
-        const nameBasedThinking = ["qwen3", "deepseek-r1", "deepseek-v3", "gpt-oss", "gemma-4"]
-          .some((p) => modelName.includes(p));
-        const lmCanToggle = isLmStudio && (selectedModelDef?.thinking || nameBasedThinking);
-        const lmLocked = isLmStudio && !lmCanToggle;
-
-        return {
-          checked: isLive
-            ? (settings.liveThinkingLevel || "none") !== "none"
-            : lmLocked || alwaysOn
-              ? true
-              : isLmStudio
-                ? (settings.thinkingEnabled !== false)
-                : (settings.thinkingEnabled || false),
-          onChange: isLive
-            ? (val) =>
-                onChange({
-                  liveThinkingLevel: val ? "low" : "none",
-                })
-            : (lmLocked || alwaysOn)
-              ? () => {}
-              : handleThinkingEnabledChange,
-          disabled: lmLocked || alwaysOn,
-        };
-      }
-      case "Web Search":
-      case "Google Search":
-      case "Web Fetch":
-        return {
-          checked: settings.webSearchEnabled || false,
-          onChange: (val) => onChange({ webSearchEnabled: val }),
-          disabled: settings.codeExecutionEnabled,
-        };
-      case "Code Execution":
-        return {
-          checked: settings.codeExecutionEnabled || false,
-          onChange: (val) => {
-            const updates = { codeExecutionEnabled: val };
-            if (val) {
-              updates.webSearchEnabled = false;
-              updates.urlContextEnabled = false;
-            }
-            onChange(updates);
-          },
-          disabled: false,
-        };
-      case "URL Context":
-        return {
-          checked: settings.urlContextEnabled || false,
-          onChange: (val) => onChange({ urlContextEnabled: val }),
-          disabled: settings.codeExecutionEnabled,
-        };
-      case "Function Calling":
-        return {
-          checked: lockedTools?.has("Function Calling") || settings.functionCallingEnabled || false,
-          onChange: lockedTools?.has("Function Calling") ? () => {} : (val) => onChange({ functionCallingEnabled: val }),
-          disabled: !!lockedTools?.has("Function Calling"),
-        };
-      case "Image Generation":
-        return {
-          checked: settings.forceImageGeneration || false,
-          onChange: (val) => onChange({ forceImageGeneration: val }),
-          disabled: false,
-        };
-      default:
-        return null;
-    }
-  };
 
   if (!selectedModelDef) {
     return (
@@ -211,7 +108,7 @@ export default function ModelInfoPanel({
           video: <Video size={12} />,
           pdf: <FileText size={12} />,
         };
-        const modalities = allTypes
+        const mods = allTypes
           .map((t) => {
             const isIn = inputs.includes(t);
             const isOut = outputs.includes(t);
@@ -222,11 +119,11 @@ export default function ModelInfoPanel({
             return { type: t, status, supported: isIn || isOut };
           })
           .filter((m) => m.supported);
-        if (modalities.length === 0) return null;
+        if (mods.length === 0) return null;
         return (
           <div className={styles.section}>
             <div className={styles.sectionHeader}>Modalities</div>
-            {modalities.map((m) => (
+            {mods.map((m) => (
               <div key={m.type} className={styles.modalityRow}>
                 <span
                   className={styles.modalityIcon}
@@ -268,6 +165,7 @@ export default function ModelInfoPanel({
           )}
         </div>
       )}
+
 
       {/* Pricing */}
       {(() => {
@@ -343,73 +241,7 @@ export default function ModelInfoPanel({
         );
       })()}
 
-      {/* Tools */}
-      {selectedModelDef.tools && selectedModelDef.tools.length > 0 && (
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>Tools</div>
-          {selectedModelDef.tools.map((tool) => {
-            const toggle = TOGGLEABLE_TOOLS.has(tool)
-              ? getToolToggle(tool)
-              : null;
-            return (
-              <div
-                key={tool}
-                className={`${styles.modalityRow} ${toggle ? styles.toolToggleRow : ""}`}
-              >
-                <span className={styles.modalityIcon}>
-                  {(() => {
-                    const ToolIcon = TOOL_ICON_MAP[tool];
-                    return ToolIcon ? (
-                      <ToolIcon
-                        size={12}
-                        style={{ color: TOOL_COLORS[tool] }}
-                      />
-                    ) : (
-                      <Wrench
-                        size={12}
-                        style={{ color: TOOL_COLORS[tool] }}
-                      />
-                    );
-                  })()}
-                </span>
-                <span className={styles.modalityName}>
-                  {getToolLabel(tool)}
-                </span>
-                {readOnly ? (
-                  toggle ? (
-                    <span
-                      className={`${styles.modalityStatus} ${toggle.checked ? styles.modalityActive : ""}`}
-                    >
-                      {tool === "Image Generation"
-                        ? (toggle.checked ? "Forced" : "Default")
-                        : (toggle.checked ? "On" : "Off")}
-                    </span>
-                  ) : (
-                    <span
-                      className={`${styles.modalityStatus} ${styles.modalityActive}`}
-                    >
-                      Supported
-                    </span>
-                  )
-                ) : toggle ? (
-                  <ToggleSwitch
-                    checked={toggle.checked}
-                    onChange={toggle.onChange}
-                    disabled={toggle.disabled}
-                    size="small"
-                  />
-                ) : (
-                  <span
-                    className={`${styles.modalityStatus} ${styles.modalityActive}`}
-                  >
-                    Supported
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+
     </div>
   );
 }

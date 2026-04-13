@@ -931,6 +931,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
           onRemoveAgent={removeAgent}
           onChangeAgentModel={handleChangeAgentModel}
           allModels={allModels}
+          config={prismConfig}
         />
       }
       rightPanel={rightSidebar}

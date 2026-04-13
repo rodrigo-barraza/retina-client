@@ -15,9 +15,9 @@ import {
   Brain,
   Wrench,
   Copy,
-  Bot,
   Settings,
 } from "lucide-react";
+import AgentCardComponent from "./AgentCardComponent";
 import BadgeComponent from "./BadgeComponent";
 import ChatPreviewComponent from "./ChatPreviewComponent";
 import TabBarComponent from "./TabBarComponent";
@@ -67,6 +67,8 @@ export default function RunHistorySidebarComponent({
   onRemoveAgent,
   onChangeAgentModel,
   allModels = [],
+  // Config for ModelPickerPopoverComponent inside AgentCardComponent
+  config,
 }) {
   const [activeTab, setActiveTab] = useState("general");
 
@@ -248,79 +250,21 @@ export default function RunHistorySidebarComponent({
                   <div className={styles.modelCards}>
                     {agentInstances.map((a) => {
                       const isThinking = !!thinkingMap[a.instanceId];
-                      // Filter to models that support function calling
-                      const fcModels = allModels.filter((m) =>
-                        (m.tools || []).includes("Function Calling")
-                      );
-                      const currentKey = a.provider && a.modelName
-                        ? `${a.provider}:${a.modelName}`
-                        : "";
-                      // Find current model to check thinking support
                       const currentModelDef = allModels.find(
                         (m) => m.provider === a.provider && m.name === a.modelName
                       );
                       const supportsThinking = currentModelDef?.thinking || (currentModelDef?.tools || []).includes("Thinking");
                       return (
-                        <div key={a.instanceId} className={`${styles.modelCard} ${styles.agentCard}`}>
-                          <div className={styles.modelCardHeader}>
-                            <Bot size={14} className={styles.agentBotIcon} />
-                            <span className={styles.modelCardName} title={a.name}>
-                              {a.name}
-                            </span>
-                            <span className={styles.agentBadge}>Agent</span>
-                            <button
-                              className={styles.modelCardRemove}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onRemoveAgent?.(a.instanceId);
-                              }}
-                              title="Remove"
-                            >
-                              <X size={10} />
-                            </button>
-                          </div>
-                          {/* Model selector */}
-                          <div className={styles.agentModelSelect}>
-                            {a.provider && (
-                              <ProviderLogo provider={a.provider} size={12} />
-                            )}
-                            <select
-                              className={styles.agentSelect}
-                              value={currentKey}
-                              onChange={(e) => {
-                                const [p, ...rest] = e.target.value.split(":");
-                                onChangeAgentModel?.(a.instanceId, p, rest.join(":"));
-                              }}
-                            >
-                              <option value="" disabled>Select model…</option>
-                              {fcModels.map((m) => (
-                                <option key={`${m.provider}:${m.name}`} value={`${m.provider}:${m.name}`}>
-                                  {m.display_name || m.label || m.name} ({m.provider})
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className={styles.modelCardFooter}>
-                            <span className={styles.modelCardProvider}>
-                              {a.description}
-                            </span>
-                            <div className={styles.modelCardToggles}>
-                              {supportsThinking && (
-                                <button
-                                  className={`${styles.thinkingToggle} ${isThinking ? styles.thinkingToggleActive : ""}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onToggleThinking?.(a.instanceId);
-                                  }}
-                                  title={isThinking ? "Disable thinking" : "Enable thinking"}
-                                >
-                                  <Brain size={10} />
-                                  <span>Think</span>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                        <AgentCardComponent
+                          key={a.instanceId}
+                          agent={a}
+                          isThinking={isThinking}
+                          supportsThinking={supportsThinking}
+                          config={config}
+                          onRemove={onRemoveAgent}
+                          onChangeModel={onChangeAgentModel}
+                          onToggleThinking={onToggleThinking}
+                        />
                       );
                     })}
                   </div>

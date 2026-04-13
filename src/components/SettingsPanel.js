@@ -14,11 +14,6 @@ import {
   Zap,
   Hash,
   Timer,
-  Type,
-  Image as ImageIcon,
-  Volume2,
-  Video,
-  FileText,
 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import SelectDropdown from "./SelectDropdown";
@@ -31,7 +26,6 @@ import styles from "./SettingsPanel.module.css";
 import CostBadgeComponent from "./CostBadgeComponent";
 import { formatCost, formatElapsedTime } from "../utils/utilities";
 import {
-  MODALITY_COLORS,
   TOOL_COLORS,
   TOOL_ICON_MAP,
   TOGGLEABLE_TOOLS,
@@ -505,7 +499,6 @@ export default function SettingsPanel({
                 {toggle.type === "cycle" ? (
                   <CycleButton
                     value={toggle.value}
-                    displayValue={toggle.displayValue}
                     isActive={toggle.isActive}
                     onClick={toggle.onChange}
                     title={toggle.title}
@@ -522,52 +515,6 @@ export default function SettingsPanel({
           </div>
         )}
 
-        {/* ── Modalities ──────────────────────────────────────────── */}
-        {selectedModelDef && (() => {
-          const allTypes = ["text", "image", "audio", "video", "pdf"];
-          const inputs = selectedModelDef.inputTypes || [];
-          const outputs = selectedModelDef.outputTypes || [];
-          const iconMap = {
-            text: <Type size={12} />,
-            image: <ImageIcon size={12} />,
-            audio: <Volume2 size={12} />,
-            video: <Video size={12} />,
-            pdf: <FileText size={12} />,
-          };
-          const mods = allTypes
-            .map((t) => {
-              const isIn = inputs.includes(t);
-              const isOut = outputs.includes(t);
-              let status = null;
-              if (isIn && isOut) status = "Input & Output";
-              else if (isIn) status = "Input only";
-              else if (isOut) status = "Output only";
-              return { type: t, status, supported: isIn || isOut };
-            })
-            .filter((m) => m.supported);
-          if (mods.length === 0) return null;
-          return (
-            <div className={styles.section}>
-              <div className={styles.sectionHeader}>Modalities</div>
-              {mods.map((m) => (
-                <div key={m.type} className={styles.modalityRow}>
-                  <span
-                    className={styles.modalityIcon}
-                    style={{ color: MODALITY_COLORS[m.type] }}
-                  >
-                    {iconMap[m.type]}
-                  </span>
-                  <span className={styles.modalityName}>{m.type}</span>
-                  <span
-                    className={`${styles.modalityStatus} ${styles.modalityActive}`}
-                  >
-                    {m.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          );
-        })()}
 
         {/* ── Tools ───────────────────────────────────────────────── */}
         {selectedModelDef?.tools && selectedModelDef.tools.length > 0 && (() => {

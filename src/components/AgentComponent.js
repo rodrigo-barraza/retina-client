@@ -1119,7 +1119,6 @@ export default function AgentComponent() {
               icon: <Repeat size={12} />,
               label: "Max Tool Iterations",
               value: maxIterations,
-              displayValue: Number.isFinite(maxIterations) ? String(maxIterations) : "∞",
               isActive: true,
               title: "Click to cycle: 10 → 25 → 50 → 100 → ∞",
               onChange: () => {

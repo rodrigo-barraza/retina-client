@@ -148,76 +148,8 @@
   }
 }
 
-/* ── Agent Card Variant ──────────────────────────────────── */
 
-.agentCard {
-  border-left: 2px solid color-mix(in srgb, var(--success) 60%, transparent);
 
-  &:hover {
-    border-color: color-mix(in srgb, var(--success) 50%, transparent);
-    border-left-color: var(--success);
-  }
-}
-
-.agentBotIcon {
-  color: var(--success);
-  flex-shrink: 0;
-}
-
-.agentBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--success);
-  background: color-mix(in srgb, var(--success) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--success) 25%, transparent);
-  padding: 1px 6px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-
-/* ── Agent Model Selector ────────────────────────────────── */
-
-.agentModelSelect {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.agentSelect {
-  flex: 1;
-  min-width: 0;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  color: var(--text-primary);
-  font-size: 10px;
-  font-family: var(--font-mono);
-  padding: 3px 6px;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  appearance: auto;
-
-  &:hover {
-    border-color: color-mix(in srgb, var(--accent-color) 40%, transparent);
-  }
-
-  &:focus {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 15%, transparent);
-  }
-
-  & option {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-  }
-}
 
 .modelCardFooter {
   display: flex;

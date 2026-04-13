@@ -1,0 +1,156 @@
+/* ============================================================
+   AgentCardComponent — individual agent instance card
+   ============================================================ */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-left: 2px solid color-mix(in srgb, var(--success) 60%, transparent);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  animation: fadeIn 0.15s ease-out;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--success) 50%, transparent);
+    border-left-color: var(--success);
+    box-shadow: 0 1px 4px color-mix(in srgb, var(--success) 8%, transparent);
+  }
+}
+
+/* ── Header row ─────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.botIcon {
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 25%, transparent);
+  padding: 1px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.removeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  opacity: 0.4;
+
+  &:hover {
+    background: var(--danger-subtle);
+    color: var(--danger);
+    opacity: 1;
+  }
+}
+
+/* ── Footer row ─────────────────────────────────────────── */
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.description {
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+}
+
+/* ── Toggles ────────────────────────────────────────────── */
+
+.toggles {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.thinkingToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+
+  & svg {
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+  }
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--accent-color) 40%, transparent);
+    color: var(--text-secondary);
+    background: color-mix(in srgb, var(--accent-color) 6%, transparent);
+  }
+}
+
+.thinkingToggleActive {
+  background: color-mix(in srgb, var(--accent-color) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent-color) 50%, transparent);
+  color: var(--accent-color);
+
+  & svg {
+    color: var(--accent-color);
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--accent-color) 18%, transparent);
+    border-color: var(--accent-color);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

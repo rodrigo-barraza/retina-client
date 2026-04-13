@@ -1,7 +1,7 @@
 /* ── CycleButton ──────────────────────────────────────────────
    A compact clickable pill that cycles through a list of values
-   on each click. Designed to fit in the same slot as ToggleSwitch
-   within modalityRow / toolToggleRow layouts.
+   on each click. Features a number-tween counting animation
+   and a large ∞ glyph for infinity state.
    ──────────────────────────────────────────────────────────── */
 
 .cycleButton {
@@ -26,7 +26,8 @@
     border-color 0.2s,
     color 0.2s,
     transform 0.15s,
-    box-shadow 0.2s;
+    box-shadow 0.2s,
+    font-size 0.25s ease;
   flex-shrink: 0;
 }
 
@@ -60,4 +61,35 @@
   background: var(--accent-hover);
   border-color: var(--accent-hover);
   color: #fff;
+}
+
+/* ── Infinity glyph — big, bold, expressive ────────────── */
+.infinity {
+  font-size: 18px;
+  font-weight: 700;
+  min-width: 38px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+/* ── Rainbow tween while counting ──────────────────────── */
+.tweening {
+  color: hsl(0, 90%, 65%);
+  filter: hue-rotate(0deg);
+  animation: cycleCountRainbow 0.5s linear;
+  will-change: filter;
+}
+
+/* Override the slow hue cycle during active tweening */
+.cycleButtonActive.tweening {
+  animation: cycleCountRainbow 0.5s linear;
+}
+
+@keyframes cycleCountRainbow {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(360deg);
+  }
 }
