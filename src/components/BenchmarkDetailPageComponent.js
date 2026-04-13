@@ -679,7 +679,57 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
     setLatestRun(run);
     setActiveRunId(run.id);
     setSelectedResult(null);
-  }, []);
+
+    // Hydrate model/agent selection from this run's results
+    if (run.models?.length > 0) {
+      const configMap = new Map();
+      for (const m of allModels) configMap.set(`${m.provider}:${m.name}`, m);
+
+      const nextInstances = [];
+      const nextAgents = [];
+      const nextThinking = {};
+      const nextTools = {};
+
+      for (const result of run.models) {
+        const key = `${result.provider}:${result.model}`;
+        const available = configMap.has(key);
+        if (!available) continue;
+
+        if (result.agent) {
+          // Agent entry — restore as agent instance
+          const inst = {
+            instanceId: crypto.randomUUID(),
+            agentId: result.agent,
+            name: result.label?.replace(/^🤖\s*/, "").replace(/\s*\(.*\)$/, "") || result.agent,
+            description: "",
+            provider: result.provider,
+            modelName: result.model,
+          };
+          nextAgents.push(inst);
+          if (result.thinkingEnabled) nextThinking[inst.instanceId] = true;
+        } else {
+          // Regular model entry
+          const inst = {
+            instanceId: crypto.randomUUID(),
+            provider: result.provider,
+            name: result.model,
+          };
+          nextInstances.push(inst);
+          if (result.thinkingEnabled) nextThinking[inst.instanceId] = true;
+          if (result.toolsEnabled) nextTools[inst.instanceId] = true;
+        }
+      }
+
+      setSelectedInstances(nextInstances);
+      setAgentInstances(nextAgents);
+      setThinkingMap(nextThinking);
+      setToolsMap(nextTools);
+      StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, {
+        instances: nextInstances,
+        agents: nextAgents,
+      });
+    }
+  }, [allModels]);
 
   const handleAddAgent = useCallback((agentDef) => {
     const instance = {
