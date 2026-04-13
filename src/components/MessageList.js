@@ -1340,7 +1340,8 @@ export default function MessageList({
                 )}
 
                 {/* Streaming audio (live session in progress) */}
-                {msg.role === "assistant" &&
+                {!readOnly &&
+                  msg.role === "assistant" &&
                   msg._liveStreaming &&
                   !msg.audio && (
                     <div className={styles.audioCard}>
