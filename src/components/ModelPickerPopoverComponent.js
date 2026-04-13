@@ -516,7 +516,11 @@ function buildAllModels(config, modelTypeFilter) {
 
   // Apply modelType filter if specified
   if (modelTypeFilter) {
-    result = result.filter((m) => m.modelType === modelTypeFilter);
+    result = result.filter(
+      (m) =>
+        m.modelType === modelTypeFilter ||
+        (m.name || "").toLowerCase().includes(modelTypeFilter),
+    );
   }
 
   return result;

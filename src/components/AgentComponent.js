@@ -1437,15 +1437,18 @@ export default function AgentComponent() {
             <Repeat size={10} />
             {Number.isFinite(maxIterations) ? maxIterations : "∞"}
           </button>
-          {config?.localModelConcurrency > 1 && (
-            <span
-              className={`${styles.headerToggle} ${styles.headerToggleInfo}`}
-              title={`Local GPU concurrency: ${config.localModelConcurrency} slots — ${config.localModelConcurrency - 1} available for workers`}
-            >
-              <Cpu size={10} />
-              ×{config.localModelConcurrency - 1}
-            </span>
-          )}
+          {(() => {
+            const totalSlots = (config?.localProviders || []).reduce((sum, lp) => sum + (lp.concurrency || 1), 0);
+            return totalSlots > 1 ? (
+              <span
+                className={`${styles.headerToggle} ${styles.headerToggleInfo}`}
+                title={`Local GPU concurrency: ${totalSlots} slots — ${totalSlots - 1} available for workers`}
+              >
+                <Cpu size={10} />
+                ×{totalSlots - 1}
+              </span>
+            ) : null;
+          })()}
 
         </div>
       }
