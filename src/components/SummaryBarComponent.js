@@ -38,7 +38,7 @@ export default function SummaryBarComponent({ items, live = false, className }) 
           <div className={styles.item}>
             {item.bar != null ? (
               <div className={styles.progressWrapper}>
-                <div className={styles.passBar}>
+                <div className={`${styles.passBar} ${item.bar != null ? styles.passBarHasRuns : ''}`}>
                   <div
                     className={styles.passBarFill}
                     style={{ width: `${Math.min(item.bar, 100)}%` }}

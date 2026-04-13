@@ -1,0 +1,38 @@
+/* ── BenchmarksTableComponent ─────────────────────── */
+
+/* Running-model row: progress bar overlay spanning the full row */
+.runningRow {
+  position: relative;
+}
+
+/* Tint all cells */
+.runningRow td {
+  background: color-mix(in srgb, var(--accent-color) 4%, transparent) !important;
+}
+
+/* Full-width progress bar overlay on the row itself */
+.runningRow::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--progress, 0%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--success) 10%, transparent) 0%,
+    color-mix(in srgb, var(--success) 18%, transparent) 70%,
+    color-mix(in srgb, var(--success) 8%, transparent) 100%
+  );
+  border-right: 2px solid color-mix(in srgb, var(--success) 30%, transparent);
+  transition: width 0.12s linear;
+  will-change: width;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Keep cell content above the bar */
+.runningRow td {
+  position: relative;
+  z-index: 1;
+}

@@ -235,10 +235,14 @@
   width: 40px;
   height: 3px;
   border-radius: 2px;
-  background: var(--danger-subtle);
+  background: var(--bg-tertiary);
   overflow: hidden;
   margin-left: auto;
   flex-shrink: 0;
+}
+
+.miniPassBarHasRuns {
+  background: var(--danger);
 }
 
 .miniPassBarFill {

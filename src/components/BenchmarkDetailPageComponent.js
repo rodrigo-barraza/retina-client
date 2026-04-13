@@ -5,11 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   Play,
   Copy,
-  CheckCircle2,
   Coins,
   Loader2,
-  XCircle,
-  AlertCircle,
   Square,
   Trash2,
 } from "lucide-react";
@@ -25,7 +22,7 @@ import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent";
 import AgentPickerPopoverComponent from "./AgentPickerPopoverComponent";
 import BenchmarksTableComponent from "./BenchmarksTableComponent";
 import ChatPreviewComponent from "./ChatPreviewComponent";
-import ProviderLogo from "./ProviderLogos";
+
 import StorageService from "../services/StorageService";
 import { SK_MODEL_MEMORY_BENCHMARKS } from "../constants";
 import { formatCost } from "../utils/utilities";
@@ -107,9 +104,15 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
   // Selected result (for chat preview)
   const [selectedResult, setSelectedResult] = useState(null);
 
-  // Per-model thinking toggle: Map<"provider:name", boolean>
-  const [thinkingMap, setThinkingMap] = useState({});
-  const [toolsMap, setToolsMap] = useState({});
+  // Per-model thinking toggle: Map<instanceId, boolean>
+  const [thinkingMap, setThinkingMap] = useState(() => {
+    const saved = StorageService.get(SK_MODEL_MEMORY_BENCHMARKS);
+    return saved?.thinkingMap && typeof saved.thinkingMap === "object" ? saved.thinkingMap : {};
+  });
+  const [toolsMap, setToolsMap] = useState(() => {
+    const saved = StorageService.get(SK_MODEL_MEMORY_BENCHMARKS);
+    return saved?.toolsMap && typeof saved.toolsMap === "object" ? saved.toolsMap : {};
+  });
 
   // Agent instances — same instance-based pattern as models
   const [agentInstances, setAgentInstances] = useState(() => {
@@ -479,6 +482,9 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
 
     const models = [...modelTargets, ...agentTargets];
 
+    // Notify sidebar to begin polling for active state
+    window.dispatchEvent(new Event("benchmark-run-started"));
+
     abortRef.current = PrismService.streamBenchmarkRun(benchmarkId, models, {
       onRunInfo: (data) => {
         setStreamingTotal(data.totalModels || 0);
@@ -727,6 +733,8 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, {
         instances: nextInstances,
         agents: nextAgents,
+        thinkingMap: nextThinking,
+        toolsMap: nextTools,
       });
     }
   }, [allModels]);
@@ -744,10 +752,12 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, {
         instances: selectedInstances,
         agents: next,
+        thinkingMap,
+        toolsMap,
       });
       return next;
     });
-  }, [selectedInstances]);
+  }, [selectedInstances, thinkingMap, toolsMap]);
 
   const removeAgent = useCallback((instanceId) => {
     setAgentInstances((prev) => {
@@ -755,11 +765,13 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, {
         instances: selectedInstances,
         agents: next,
+        thinkingMap,
+        toolsMap,
       });
       return next;
     });
     setThinkingMap((prev) => { const n = { ...prev }; delete n[instanceId]; return n; });
-  }, [selectedInstances]);
+  }, [selectedInstances, thinkingMap, toolsMap]);
 
   const handleChangeAgentModel = useCallback((instanceId, provider, modelName) => {
     setAgentInstances((prev) => {
@@ -769,10 +781,12 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, {
         instances: selectedInstances,
         agents: next,
+        thinkingMap,
+        toolsMap,
       });
       return next;
     });
-  }, [selectedInstances]);
+  }, [selectedInstances, thinkingMap, toolsMap]);
 
   // ── Add model instance to selection (always adds, never toggles) ────
   const handleModelSelect = useCallback((rawModel) => {
@@ -786,10 +800,12 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, {
         instances: next,
         agents: agentInstances,
+        thinkingMap,
+        toolsMap,
       });
       return next;
     });
-  }, [agentInstances]);
+  }, [agentInstances, thinkingMap, toolsMap]);
 
   const removeModel = useCallback((instanceId) => {
     setSelectedInstances((prev) => {
@@ -797,30 +813,44 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, {
         instances: next,
         agents: agentInstances,
+        thinkingMap,
+        toolsMap,
       });
       return next;
     });
     // Clean up thinking/tools state for removed instance
     setThinkingMap((prev) => { const n = { ...prev }; delete n[instanceId]; return n; });
     setToolsMap((prev) => { const n = { ...prev }; delete n[instanceId]; return n; });
-  }, [agentInstances]);
+  }, [agentInstances, thinkingMap, toolsMap]);
 
   const clearModelSelection = useCallback(() => {
     setSelectedInstances([]);
     setAgentInstances([]);
     setThinkingMap({});
     setToolsMap({});
-    StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, { instances: [], agents: [] });
+    StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, { instances: [], agents: [], thinkingMap: {}, toolsMap: {} });
   }, []);
 
   // ── Toggle thinking per instance ──────────────────────────
   const handleToggleThinking = useCallback((instanceId) => {
-    setThinkingMap((prev) => ({ ...prev, [instanceId]: !prev[instanceId] }));
+    setThinkingMap((prev) => {
+      const next = { ...prev, [instanceId]: !prev[instanceId] };
+      // Persist updated toggle state
+      const saved = StorageService.get(SK_MODEL_MEMORY_BENCHMARKS) || {};
+      StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, { ...saved, thinkingMap: next });
+      return next;
+    });
   }, []);
 
   // ── Toggle tools per instance ─────────────────────────────
   const handleToggleTools = useCallback((instanceId) => {
-    setToolsMap((prev) => ({ ...prev, [instanceId]: !prev[instanceId] }));
+    setToolsMap((prev) => {
+      const next = { ...prev, [instanceId]: !prev[instanceId] };
+      // Persist updated toggle state
+      const saved = StorageService.get(SK_MODEL_MEMORY_BENCHMARKS) || {};
+      StorageService.set(SK_MODEL_MEMORY_BENCHMARKS, { ...saved, toolsMap: next });
+      return next;
+    });
   }, []);
 
   // ── Delete benchmark ──────────────────────────────────────
@@ -1064,79 +1094,19 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
                 ]}
               />
 
-              {/* Live model feed */}
-              <div className={styles.streamingFeed}>
-                {streamingResults.map((r, i) => (
-                  <div
-                    key={`${r.provider}:${r.model}:${i}`}
-                    className={`${styles.streamingItem} ${r.passed ? styles.streamingPassed : styles.streamingFailed}`}
-                  >
-                    <span className={styles.streamingIcon}>
-                      {r.error ? (
-                        <AlertCircle size={13} />
-                      ) : r.passed ? (
-                        <CheckCircle2 size={13} />
-                      ) : (
-                        <XCircle size={13} />
-                      )}
-                    </span>
-                    <ProviderLogo provider={r.provider} size={14} />
-                    <span className={styles.streamingLabel}>
-                      {r.label || r.model}
-                    </span>
-                    <span className={styles.streamingLatency}>
-                      {r.latency?.toFixed(1)}s
-                    </span>
-                    {r.estimatedCost > 0 && (
-                      <span className={styles.streamingCost}>
-                        {formatCost(r.estimatedCost)}
-                      </span>
-                    )}
-                    {r.error && (
-                      <span className={styles.streamingError}>
-                        {r.error.slice(0, 60)}
-                      </span>
-                    )}
-                  </div>
-                ))}
-
-                {/* Currently running model */}
-                {activeModel && (
-                  <div className={`${styles.streamingItem} ${styles.streamingActive}`}>
-                    <div
-                      className={styles.streamingProgressBar}
-                      style={{ width: `${activeProgress * 100}%` }}
-                    />
-                    <span className={styles.streamingIcon}>
-                      <Loader2 size={13} className={styles.spinIcon} />
-                    </span>
-                    <ProviderLogo provider={activeModel.provider} size={14} />
-                    <span className={styles.streamingLabel}>
-                      {activeModel.label || activeModel.model}
-                    </span>
-                    <span className={styles.streamingPhase}>
-                      {activePhase}
-                    </span>
-                    <span className={styles.streamingPct}>
-                      {Math.round(activeProgress * 100)}%
-                    </span>
-                  </div>
-                )}
+              {/* Progressive results table (includes active model row) */}
+              <div className={styles.streamingTableWrapper}>
+                <BenchmarksTableComponent
+                  results={streamingResults}
+                  expectedValue={benchmark.expectedValue}
+                  modelConfigMap={modelConfigMap}
+                  onRowClick={setSelectedResult}
+                  activeRowKey={getActiveKey(streamingResults)}
+                  activeModel={activeModel}
+                  activeProgress={activeProgress}
+                  activePhase={activePhase}
+                />
               </div>
-
-              {/* Progressive results table */}
-              {streamingResults.length > 0 && (
-                <div className={styles.streamingTableWrapper}>
-                  <BenchmarksTableComponent
-                    results={streamingResults}
-                    expectedValue={benchmark.expectedValue}
-                    modelConfigMap={modelConfigMap}
-                    onRowClick={setSelectedResult}
-                    activeRowKey={getActiveKey(streamingResults)}
-
-                  />
-                </div>
-              )}
             </div>
             );
           })()}

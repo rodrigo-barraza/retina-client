@@ -616,10 +616,14 @@
   width: 36px;
   height: 3px;
   border-radius: 2px;
-  background: var(--danger-subtle);
+  background: var(--bg-tertiary);
   overflow: hidden;
   margin-left: auto;
   flex-shrink: 0;
+}
+
+.miniPassBarHasRuns {
+  background: var(--danger);
 }
 
 .miniPassBarFill {
@@ -627,10 +631,6 @@
   background: var(--success);
   border-radius: 2px;
   transition: width 0.3s ease-out;
-}
-
-.miniPassBarAllFailed {
-  background: var(--danger);
 }
 
 /* ── Running Indicator ───────────────────────────────────── */

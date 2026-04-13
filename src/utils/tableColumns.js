@@ -21,6 +21,9 @@ import {
   Gauge,
   HardDrive,
   Calendar,
+  Brain,
+  Wrench,
+  Loader2,
 } from "lucide-react";
 import ModelBadgeComponent from "../components/ModelBadgeComponent";
 import ProvidersBadgeComponent from "../components/ProvidersBadgeComponent";
@@ -575,8 +578,16 @@ export const benchmarkStatusColumn = () => ({
   key: "status",
   label: "Status",
   description: "Whether the model passed, failed, or errored on this benchmark",
-  sortValue: (r) => (r.error ? -1 : r.passed ? 1 : 0),
+  sortValue: (r) => (r._running ? -2 : r.error ? -1 : r.passed ? 1 : 0),
   render: (r) => {
+    if (r._running) {
+      return (
+        <span className={styles.benchmarkStatusCell}>
+          <Loader2 size={16} className={styles.benchmarkRunningIcon} />
+          <span>{r._phase || "Running"}</span>
+        </span>
+      );
+    }
     if (r.error) {
       return (
         <span className={styles.benchmarkStatusCell}>
@@ -610,8 +621,47 @@ export const benchmarkModelColumn = () => ({
     <span className={styles.benchmarkModelCell}>
       <span className={styles.benchmarkModelName}>{r.label}</span>
       <span className={styles.benchmarkModelProvider}>{r.provider}</span>
+      {r._running && r._progress > 0 && (
+        <span className={styles.benchmarkProgressPct}>
+          {Math.round(r._progress * 100)}%
+        </span>
+      )}
     </span>
   ),
+});
+
+export const benchmarkToolsColumn = () => ({
+  key: "toolsEnabled",
+  label: "Tools",
+  description: "Whether tool use (function calling) was enabled for this run",
+  sortable: true,
+  sortValue: (r) => (r.toolsEnabled ? 1 : 0),
+  defaultHidden: true,
+  render: (r) =>
+    r.toolsEnabled ? (
+      <BadgeComponent variant="warning" mini>
+        <Wrench size={10} /> Tools
+      </BadgeComponent>
+    ) : (
+      emptyDash()
+    ),
+});
+
+export const benchmarkThinkingColumn = () => ({
+  key: "thinkingEnabled",
+  label: "Thinking",
+  description: "Whether extended thinking / chain-of-thought was enabled",
+  sortable: true,
+  sortValue: (r) => (r.thinkingEnabled ? 1 : 0),
+  defaultHidden: true,
+  render: (r) =>
+    r.thinkingEnabled ? (
+      <BadgeComponent variant="accent" mini>
+        <Brain size={10} /> Thinking
+      </BadgeComponent>
+    ) : (
+      emptyDash()
+    ),
 });
 
 /**

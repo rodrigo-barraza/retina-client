@@ -222,6 +222,7 @@ export default function TableComponent({
   onRowMouseEnter,
   onRowMouseLeave,
   getRowClassName,
+  getRowStyle,
   mini = false,
   storageKey,
 }) {
@@ -440,6 +441,7 @@ export default function TableComponent({
                 const isHighlighted =
                   highlightedRowKey != null && key === highlightedRowKey;
                 const customClass = getRowClassName ? getRowClassName(row, ri) : "";
+                const customStyle = getRowStyle ? getRowStyle(row, ri) : undefined;
 
                 return (
                   <Fragment key={key}>
@@ -451,6 +453,7 @@ export default function TableComponent({
                           : undefined
                       }
                       className={`${styles.tr} ${clickable ? styles.clickable : ""} ${isExpandable ? styles.expandableRow : ""} ${isActive ? styles.activeRow : ""} ${isHighlighted ? styles.highlightedRow : ""} ${customClass}`}
+                      style={customStyle}
                       onClick={
                         isExpandable
                           ? () => toggleExpand(key)

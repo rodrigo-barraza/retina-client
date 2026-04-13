@@ -131,6 +131,27 @@
   color: var(--warning);
 }
 
+.benchmarkRunningIcon {
+  color: var(--accent-color);
+  animation: benchmarkSpin 1s linear infinite;
+}
+
+@keyframes benchmarkSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.benchmarkProgressPct {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+  padding: 1px 5px;
+  border-radius: 2px;
+  align-self: flex-start;
+}
+
 .benchmarkModelCell {
   display: flex;
   flex-direction: column;

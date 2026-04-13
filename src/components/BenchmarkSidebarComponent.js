@@ -49,22 +49,38 @@ export default function BenchmarkSidebarComponent({ activeBenchmarkId }) {
     loadBenchmarks();
   }, [loadBenchmarks]);
 
-  // ── Poll active benchmarks (running indicator) ─────────────
+  // ── Adaptive poll: only keep polling while benchmarks are active ──
   useEffect(() => {
     let cancelled = false;
+    let interval = null;
 
     const poll = async () => {
       try {
         const { activeIds } = await PrismService.getActiveBenchmarks();
-        if (!cancelled) setActiveBenchmarkIds(new Set(activeIds || []));
+        if (cancelled) return;
+
+        const ids = activeIds || [];
+        setActiveBenchmarkIds(new Set(ids));
+
+        // Start polling if active runs exist, stop if none
+        if (ids.length > 0 && !interval) {
+          interval = setInterval(poll, 3000);
+        } else if (ids.length === 0 && interval) {
+          clearInterval(interval);
+          interval = null;
+        }
       } catch { /* ignore */ }
     };
 
-    poll();
-    const interval = setInterval(poll, 3000);
+    // Re-check when a run starts elsewhere on the page
+    const onRunStarted = () => poll();
+    window.addEventListener("benchmark-run-started", onRunStarted);
+
+    poll(); // single check on mount
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
+      window.removeEventListener("benchmark-run-started", onRunStarted);
     };
   }, []);
 
@@ -188,7 +204,7 @@ export default function BenchmarkSidebarComponent({ activeBenchmarkId }) {
                     </span>
                     <CostBadgeComponent cost={b.cumulativeCost} mini />
                     {/* Pass rate bar */}
-                    <div className={styles.miniPassBar}>
+                    <div className={`${styles.miniPassBar} ${styles.miniPassBarHasRuns}`}>
                       <div
                         className={styles.miniPassBarFill}
                         style={{

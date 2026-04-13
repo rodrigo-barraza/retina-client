@@ -19,7 +19,7 @@
 .contentMain {
   flex: 1;
   min-width: 0;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 20px;
   position: relative;
   display: flex;
@@ -965,8 +965,12 @@
   width: 80px;
   height: 4px;
   border-radius: 2px;
-  background: var(--danger-subtle);
+  background: var(--bg-tertiary);
   overflow: hidden;
+}
+
+.passBarHasRuns {
+  background: var(--danger);
 }
 
 .passBarFill {

@@ -71,10 +71,7 @@
   opacity: 0.5;
 }
 
-.tabDimmed > svg {
-  opacity: 0.5;
-  transition: opacity 0.2s ease;
-}
+
 
 .tabDisabled {
   opacity: 0.3;

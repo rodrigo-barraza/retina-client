@@ -133,6 +133,10 @@
   flex-shrink: 0;
 }
 
+.passBarHasRuns {
+  background: var(--danger);
+}
+
 .passBarFill {
   height: 100%;
   background: var(--success);

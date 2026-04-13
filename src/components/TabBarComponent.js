@@ -27,7 +27,7 @@ export default function TabBarComponent({
         const button = (
           <button
             key={tab.key}
-            className={`${styles.tab}${activeTab === tab.key ? ` ${styles.tabActive}` : ""}${tab.disabled ? ` ${styles.tabDisabled}` : ""}${tab.badgeDisabled ? ` ${styles.tabDimmed}` : ""}${glowingTabs.includes(tab.key) ? ` ${styles.tabGlow}` : ""}`}
+            className={`${styles.tab}${activeTab === tab.key ? ` ${styles.tabActive}` : ""}${tab.disabled ? ` ${styles.tabDisabled}` : ""}${glowingTabs.includes(tab.key) ? ` ${styles.tabGlow}` : ""}`}
             onClick={() => !tab.disabled && onChange(tab.key)}
             onMouseEnter={() => onTabHover?.(tab.key)}
             onMouseLeave={() => onTabHover?.(null)}
