@@ -35,7 +35,7 @@ export const SK_TOOL_MEMORY_BENCHMARKS = "toolMemory:benchmarks";
 
 // ── Application constants ────────────────────────────────────────
 export const MAX_TOOL_ITERATIONS = 25;
-export const PROJECT_AGENT = "retina-agent";
+export const PROJECT_AGENT = "coding";
 
 // ── Raw localStorage keys (no namespace prefix) ─────────────────
 export const LS_PANEL_LEFT = "panel_left";
