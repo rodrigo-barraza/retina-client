@@ -362,7 +362,7 @@ export default function ModelPickerPopoverComponent({
   })();
 
   // Build modalities object for the currently selected model
-  const triggerModalities = useMemo(() => {
+  const triggerCapabilities = useMemo(() => {
     if (!currentModel || multiSelect) return null;
     const INPUT_MAP = { text: "textIn", image: "imageIn", audio: "audioIn", video: "videoIn", pdf: "docIn" };
     const OUTPUT_MAP = { text: "textOut", image: "imageOut", audio: "audioOut", embedding: "embeddingOut" };
@@ -416,53 +416,53 @@ export default function ModelPickerPopoverComponent({
 
   return (
     <>
-      {/* ── Trigger pill ─────────────────────────────────────────── */}
-      <button
-        ref={triggerRef}
-        className={`${styles.trigger} ${open ? styles.triggerOpen : ""} ${readOnly ? styles.triggerReadOnly : ""} ${loadingProgress != null ? styles.triggerLoading : ""} ${multiSelect && selectedKeys?.size > 0 ? styles.triggerActive : ""}`}
-        onClick={
-          readOnly ? undefined : open ? () => setOpen(false) : openPopover
-        }
-        data-model-picker-trigger
-        title={readOnly ? displayLabel : multiSelect ? "Select models" : "Switch model"}
-        style={readOnly ? { cursor: "default" } : undefined}
-      >
-        <span className={styles.triggerContent}>
-          {triggerIconElement}
-          <span className={styles.triggerLabel}>
-            {loadingProgress != null
-              ? `Loading… ${Math.round((loadingProgress ?? 0) * 100)}%`
-              : displayLabel}
+      {/* ── Trigger pill + modalities row ─────────────────────────── */}
+      <div className={styles.triggerWrap}>
+        <button
+          ref={triggerRef}
+          className={`${styles.trigger} ${open ? styles.triggerOpen : ""} ${readOnly ? styles.triggerReadOnly : ""} ${loadingProgress != null ? styles.triggerLoading : ""} ${multiSelect && selectedKeys?.size > 0 ? styles.triggerActive : ""}`}
+          onClick={
+            readOnly ? undefined : open ? () => setOpen(false) : openPopover
+          }
+          data-model-picker-trigger
+          title={readOnly ? displayLabel : multiSelect ? "Select models" : "Switch model"}
+          style={readOnly ? { cursor: "default" } : undefined}
+        >
+          <span className={styles.triggerContent}>
+            {triggerIconElement}
+            <span className={styles.triggerLabel}>
+              {loadingProgress != null
+                ? `Loading… ${Math.round((loadingProgress ?? 0) * 100)}%`
+                : displayLabel}
+            </span>
           </span>
-          {triggerModalities && loadingProgress == null && (
-            <>
-              <ModalityIconComponent
-                modalities={triggerModalities}
-                size={10}
-                className={styles.triggerModalities}
-              />
-              <ModelToolsComponent
-                tools={triggerModalities}
-                size={10}
-                className={styles.triggerModalities}
-              />
-            </>
+          {!readOnly && loadingProgress == null && (
+            <ChevronDown
+              size={14}
+              className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`}
+            />
           )}
-        </span>
-        {!readOnly && loadingProgress == null && (
-          <ChevronDown
-            size={14}
-            className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`}
-          />
+          {/* Progress bar overlay */}
+          {loadingProgress != null && (
+            <span
+              className={styles.triggerProgressBar}
+              style={{ transform: `scaleX(${loadingProgress ?? 0})` }}
+            />
+          )}
+        </button>
+        {triggerCapabilities && loadingProgress == null && (
+          <div className={styles.triggerCapabilities}>
+            <ModalityIconComponent
+              modalities={triggerCapabilities}
+              size={10}
+            />
+            <ModelToolsComponent
+              tools={triggerCapabilities}
+              size={10}
+            />
+          </div>
         )}
-        {/* Progress bar overlay */}
-        {loadingProgress != null && (
-          <span
-            className={styles.triggerProgressBar}
-            style={{ transform: `scaleX(${loadingProgress ?? 0})` }}
-          />
-        )}
-      </button>
+      </div>
 
       {/* ── Popover portal ─────────────────────────────────────────── */}
       {open &&

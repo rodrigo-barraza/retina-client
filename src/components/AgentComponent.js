@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Bot, Paperclip, X, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain, Plug, GitBranch, Scissors, Repeat, ListChecks, BookOpen, Users, Cpu, Info } from "lucide-react";
+import { Bot, Paperclip, X, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain, Plug, GitBranch, Scissors, Repeat, ListChecks, BookOpen, Users, Info } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ToolsApiService from "../services/ToolsApiService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
@@ -1098,6 +1098,33 @@ export default function AgentComponent() {
           lockedTools={AGENT_LOCKED_TOOLS}
           hideSystemPrompt
           sessionType="agent"
+          agentToggles={[
+            {
+              key: "plan",
+              icon: <ClipboardList size={12} />,
+              label: "Plan First",
+              checked: planFirst,
+              onChange: () => setPlanFirst((v) => !v),
+            },
+            {
+              key: "auto",
+              icon: <Zap size={12} />,
+              label: "Auto Approve",
+              checked: autoApprove,
+              onChange: () => setAutoApprove((v) => !v),
+            },
+            {
+              key: "iterations",
+              icon: <Repeat size={12} />,
+              label: `Max Iterations: ${Number.isFinite(maxIterations) ? maxIterations : "∞"}`,
+              checked: maxIterations !== MAX_TOOL_ITERATIONS,
+              onChange: () => {
+                const steps = [10, 25, 50, 100, Infinity];
+                const idx = steps.indexOf(maxIterations);
+                setMaxIterations(steps[(idx + 1) % steps.length]);
+              },
+            },
+          ]}
           sessionStats={
             messages.length > 0
               ? {
@@ -1443,65 +1470,8 @@ export default function AgentComponent() {
           }}
         />
       }
-      headerMeta={
-        messages.length > 0 ? (
-          <div className={styles.headerMeta}>
-            <span>
-              {
-                messages.filter(
-                  (m) => m.role === "user" || m.role === "assistant",
-                ).length
-              }{" "}
-              messages
-            </span>
-          </div>
-        ) : null
-      }
-      headerControls={
-        <div className={styles.headerControls}>
-          <button
-            className={`${styles.headerToggle} ${planFirst ? styles.headerToggleActive : ""}`}
-            onClick={() => setPlanFirst((v) => !v)}
-            title="Plan First: Generate a plan for approval before executing"
-          >
-            <ClipboardList size={10} />
-            Plan
-          </button>
-          <button
-            className={`${styles.headerToggle} ${autoApprove ? styles.headerToggleActive : ""}`}
-            onClick={() => setAutoApprove((v) => !v)}
-            title="Auto Mode: Skip approval prompts for all tool calls"
-          >
-            <Zap size={10} />
-            Auto
-          </button>
-          <button
-            className={`${styles.headerToggle} ${maxIterations !== MAX_TOOL_ITERATIONS ? styles.headerToggleActive : ""}`}
-            onClick={() => {
-              const steps = [10, 25, 50, 100, Infinity];
-              const idx = steps.indexOf(maxIterations);
-              setMaxIterations(steps[(idx + 1) % steps.length]);
-            }}
-            title={`Max agentic iterations: ${Number.isFinite(maxIterations) ? maxIterations : "∞ (unlimited)"} (click to cycle)`}
-          >
-            <Repeat size={10} />
-            {Number.isFinite(maxIterations) ? maxIterations : "∞"}
-          </button>
-          {(() => {
-            const totalSlots = (config?.localProviders || []).reduce((sum, lp) => sum + (lp.concurrency || 1), 0);
-            return totalSlots > 1 ? (
-              <span
-                className={`${styles.headerToggle} ${styles.headerToggleInfo}`}
-                title={`Local GPU concurrency: ${totalSlots} slots — ${totalSlots - 1} available for workers`}
-              >
-                <Cpu size={10} />
-                ×{totalSlots - 1}
-              </span>
-            ) : null;
-          })()}
-
-        </div>
-      }
+      headerMeta={null}
+      headerControls={null}
     >
       {chatContent}
     </ThreePanelLayout>

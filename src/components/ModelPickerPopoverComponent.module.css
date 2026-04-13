@@ -24,7 +24,7 @@
   text-transform: none;
   letter-spacing: 0;
   user-select: none;
-  min-width: 0;
+  min-width: 100%;
 }
 
 .trigger:hover {
@@ -108,19 +108,26 @@
   color: var(--text-primary);
 }
 
-.triggerModalities {
-  flex-shrink: 0;
-  padding-left: 6px;
-  border-left: 1px solid color-mix(in srgb, var(--text-secondary) 20%, transparent);
+/* Wrapper: stacks trigger button + modalities row vertically */
+.triggerWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
-.trigger:hover .triggerModalities {
-  opacity: 1;
+.triggerCapabilities {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .chevron {
   color: var(--text-secondary);
   flex-shrink: 0;
+  margin-left: auto;
   transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

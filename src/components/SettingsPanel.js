@@ -14,9 +14,15 @@ import {
   Zap,
   Hash,
   Timer,
+  Type,
+  Image as ImageIcon,
+  Volume2,
+  Video,
+  FileText,
 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import SelectDropdown from "./SelectDropdown";
+import ToggleSwitch from "./ToggleSwitch";
 import ModalityIconComponent from "./ModalityIconComponent";
 import ModelToolsComponent from "./ModelToolsComponent";
 import SystemPromptModal from "./SystemPromptModal";
@@ -24,8 +30,10 @@ import styles from "./SettingsPanel.module.css";
 import CostBadgeComponent from "./CostBadgeComponent";
 import { formatCost, formatElapsedTime } from "../utils/utilities";
 import {
+  MODALITY_COLORS,
   TOOL_COLORS,
   TOOL_ICON_MAP,
+  TOGGLEABLE_TOOLS,
 } from "./WorkflowNodeConstants";
 
 
@@ -44,8 +52,9 @@ export default function SettingsPanel({
   onCloseSystemPromptModal,
   workflows = [],
   sessionStats = null,
-  _lockedTools,
+  lockedTools,
   sessionType = "conversation",
+  agentToggles,
 }) {
   const sessionLabel = sessionType === "agent" ? "Session" : "Conversation";
   const { _providers = {}, textToText = {} } = config || {};
@@ -476,6 +485,229 @@ export default function SettingsPanel({
               </div>
             </div>
           )}
+
+        {/* ── Agent Toggles (Plan, Auto, Iterations) ──────────────── */}
+        {agentToggles && (
+          <div className={styles.modalities}>
+            <div className={styles.modalitiesHeader}>Agent</div>
+            {agentToggles.map((toggle) => (
+              <div
+                key={toggle.key}
+                className={`${styles.modalityRow} ${styles.toolToggleRow}`}
+              >
+                <span className={styles.modalityIcon}>
+                  {toggle.icon}
+                </span>
+                <span className={styles.modalityName}>
+                  {toggle.label}
+                </span>
+                <ToggleSwitch
+                  checked={toggle.checked}
+                  onChange={toggle.onChange}
+                  size="small"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Modalities ──────────────────────────────────────────── */}
+        {selectedModelDef && (() => {
+          const allTypes = ["text", "image", "audio", "video", "pdf"];
+          const inputs = selectedModelDef.inputTypes || [];
+          const outputs = selectedModelDef.outputTypes || [];
+          const iconMap = {
+            text: <Type size={12} />,
+            image: <ImageIcon size={12} />,
+            audio: <Volume2 size={12} />,
+            video: <Video size={12} />,
+            pdf: <FileText size={12} />,
+          };
+          const mods = allTypes
+            .map((t) => {
+              const isIn = inputs.includes(t);
+              const isOut = outputs.includes(t);
+              let status = null;
+              if (isIn && isOut) status = "Input & Output";
+              else if (isIn) status = "Input only";
+              else if (isOut) status = "Output only";
+              return { type: t, status, supported: isIn || isOut };
+            })
+            .filter((m) => m.supported);
+          if (mods.length === 0) return null;
+          return (
+            <div className={styles.modalities}>
+              <div className={styles.modalitiesHeader}>Modalities</div>
+              {mods.map((m) => (
+                <div key={m.type} className={styles.modalityRow}>
+                  <span
+                    className={styles.modalityIcon}
+                    style={{ color: MODALITY_COLORS[m.type] }}
+                  >
+                    {iconMap[m.type]}
+                  </span>
+                  <span className={styles.modalityName}>{m.type}</span>
+                  <span
+                    className={`${styles.modalityStatus} ${styles.modalityActive}`}
+                  >
+                    {m.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* ── Tools ───────────────────────────────────────────────── */}
+        {selectedModelDef?.tools && selectedModelDef.tools.length > 0 && (() => {
+          const TOOL_LABELS = {
+            google: { "Web Search": "Google Search" },
+            anthropic: selectedModelDef?.webFetch ? { "Web Search": "Web Fetch" } : {},
+          };
+          const providerToolLabels = TOOL_LABELS[settings.provider] || {};
+          const getToolLabel = (tool) => providerToolLabels[tool] || tool;
+
+          const getToolToggle = (tool) => {
+            switch (tool) {
+              case "Thinking": {
+                const isLmStudio = settings.provider === "lm-studio";
+                const isLive = selectedModelDef?.liveAPI;
+                const canDisable =
+                  !selectedModelDef?.thinkingLevels ||
+                  selectedModelDef.thinkingLevels.includes("minimal");
+                const alwaysOn = !canDisable && settings.provider === "google";
+                const modelName = (settings.model || "").toLowerCase();
+                const nameBasedThinking = ["qwen3", "deepseek-r1", "deepseek-v3", "gpt-oss", "gemma-4"]
+                  .some((p) => modelName.includes(p));
+                const lmCanToggle = isLmStudio && (selectedModelDef?.thinking || nameBasedThinking);
+                const lmLocked = isLmStudio && !lmCanToggle;
+                return {
+                  checked: isLive
+                    ? (settings.liveThinkingLevel || "none") !== "none"
+                    : lmLocked || alwaysOn
+                      ? true
+                      : isLmStudio
+                        ? (settings.thinkingEnabled !== false)
+                        : (settings.thinkingEnabled || false),
+                  onChange: isLive
+                    ? (val) => onChange({ liveThinkingLevel: val ? "low" : "none" })
+                    : (lmLocked || alwaysOn)
+                      ? () => {}
+                      : (val) => onChange({ thinkingEnabled: val }),
+                  disabled: lmLocked || alwaysOn,
+                };
+              }
+              case "Web Search":
+              case "Google Search":
+              case "Web Fetch":
+                return {
+                  checked: settings.webSearchEnabled || false,
+                  onChange: (val) => onChange({ webSearchEnabled: val }),
+                  disabled: settings.codeExecutionEnabled,
+                };
+              case "Code Execution":
+                return {
+                  checked: settings.codeExecutionEnabled || false,
+                  onChange: (val) => {
+                    const updates = { codeExecutionEnabled: val };
+                    if (val) {
+                      updates.webSearchEnabled = false;
+                      updates.urlContextEnabled = false;
+                    }
+                    onChange(updates);
+                  },
+                  disabled: false,
+                };
+              case "URL Context":
+                return {
+                  checked: settings.urlContextEnabled || false,
+                  onChange: (val) => onChange({ urlContextEnabled: val }),
+                  disabled: settings.codeExecutionEnabled,
+                };
+              case "Function Calling":
+                return {
+                  checked: lockedTools?.has("Function Calling") || settings.functionCallingEnabled || false,
+                  onChange: lockedTools?.has("Function Calling") ? () => {} : (val) => onChange({ functionCallingEnabled: val }),
+                  disabled: !!lockedTools?.has("Function Calling"),
+                };
+              case "Image Generation":
+                return {
+                  checked: settings.forceImageGeneration || false,
+                  onChange: (val) => onChange({ forceImageGeneration: val }),
+                  disabled: false,
+                };
+              default:
+                return null;
+            }
+          };
+
+          return (
+            <div className={styles.modalities}>
+              <div className={styles.modalitiesHeader}>Tools</div>
+              {selectedModelDef.tools.map((tool) => {
+                const toggle = TOGGLEABLE_TOOLS.has(tool)
+                  ? getToolToggle(tool)
+                  : null;
+                return (
+                  <div
+                    key={tool}
+                    className={`${styles.modalityRow} ${toggle ? styles.toolToggleRow : ""}`}
+                  >
+                    <span className={styles.modalityIcon}>
+                      {(() => {
+                        const ToolIcon = TOOL_ICON_MAP[tool];
+                        return ToolIcon ? (
+                          <ToolIcon
+                            size={12}
+                            style={{ color: TOOL_COLORS[tool] }}
+                          />
+                        ) : (
+                          <Wrench
+                            size={12}
+                            style={{ color: TOOL_COLORS[tool] }}
+                          />
+                        );
+                      })()}
+                    </span>
+                    <span className={styles.modalityName}>
+                      {getToolLabel(tool)}
+                    </span>
+                    {readOnly ? (
+                      toggle ? (
+                        <span
+                          className={`${styles.modalityStatus} ${toggle.checked ? styles.modalityActive : ""}`}
+                        >
+                          {tool === "Image Generation"
+                            ? (toggle.checked ? "Forced" : "Default")
+                            : (toggle.checked ? "On" : "Off")}
+                        </span>
+                      ) : (
+                        <span
+                          className={`${styles.modalityStatus} ${styles.modalityActive}`}
+                        >
+                          Supported
+                        </span>
+                      )
+                    ) : toggle ? (
+                      <ToggleSwitch
+                        checked={toggle.checked}
+                        onChange={toggle.onChange}
+                        disabled={toggle.disabled}
+                        size="small"
+                      />
+                    ) : (
+                      <span
+                        className={`${styles.modalityStatus} ${styles.modalityActive}`}
+                      >
+                        Supported
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       {!readOnly && showSystemPromptModal && (
