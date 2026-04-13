@@ -1,0 +1,63 @@
+/* ── CycleButton ──────────────────────────────────────────────
+   A compact clickable pill that cycles through a list of values
+   on each click. Designed to fit in the same slot as ToggleSwitch
+   within modalityRow / toolToggleRow layouts.
+   ──────────────────────────────────────────────────────────── */
+
+.cycleButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 20px;
+  padding: 0 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  background: var(--select-bg);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s,
+    transform 0.15s,
+    box-shadow 0.2s;
+  flex-shrink: 0;
+}
+
+.cycleButton:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  background: var(--accent-glow);
+}
+
+.cycleButton:active {
+  transform: scale(0.94);
+}
+
+/* Highlighted state — when value differs from the default */
+.cycleButtonActive {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #fff;
+  filter: hue-rotate(0deg);
+  animation: cycleHue 4s linear infinite;
+  will-change: filter;
+}
+
+@keyframes cycleHue {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+.cycleButtonActive:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: #fff;
+}

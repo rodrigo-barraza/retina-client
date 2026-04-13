@@ -23,6 +23,7 @@ import {
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import SelectDropdown from "./SelectDropdown";
 import ToggleSwitch from "./ToggleSwitch";
+import CycleButton from "./CycleButton";
 import ModalityIconComponent from "./ModalityIconComponent";
 import ModelToolsComponent from "./ModelToolsComponent";
 import SystemPromptModal from "./SystemPromptModal";
@@ -226,8 +227,8 @@ export default function SettingsPanel({
         )}
 
         {workflows.length > 0 && (
-          <div className={styles.modalities} style={{ marginBottom: 12 }}>
-            <div className={styles.modalitiesHeader}>
+          <div className={styles.section} style={{ marginBottom: 12 }}>
+            <div className={styles.sectionHeader}>
               <GitBranch size={12} style={{ marginRight: 4 }} /> Workflow
             </div>
             {workflows.map((wf) => (
@@ -488,8 +489,8 @@ export default function SettingsPanel({
 
         {/* ── Agent Toggles (Plan, Auto, Iterations) ──────────────── */}
         {agentToggles && (
-          <div className={styles.modalities}>
-            <div className={styles.modalitiesHeader}>Agent</div>
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>Agent</div>
             {agentToggles.map((toggle) => (
               <div
                 key={toggle.key}
@@ -501,11 +502,21 @@ export default function SettingsPanel({
                 <span className={styles.modalityName}>
                   {toggle.label}
                 </span>
-                <ToggleSwitch
-                  checked={toggle.checked}
-                  onChange={toggle.onChange}
-                  size="small"
-                />
+                {toggle.type === "cycle" ? (
+                  <CycleButton
+                    value={toggle.value}
+                    displayValue={toggle.displayValue}
+                    isActive={toggle.isActive}
+                    onClick={toggle.onChange}
+                    title={toggle.title}
+                  />
+                ) : (
+                  <ToggleSwitch
+                    checked={toggle.checked}
+                    onChange={toggle.onChange}
+                    size="small"
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -536,8 +547,8 @@ export default function SettingsPanel({
             .filter((m) => m.supported);
           if (mods.length === 0) return null;
           return (
-            <div className={styles.modalities}>
-              <div className={styles.modalitiesHeader}>Modalities</div>
+            <div className={styles.section}>
+              <div className={styles.sectionHeader}>Modalities</div>
               {mods.map((m) => (
                 <div key={m.type} className={styles.modalityRow}>
                   <span
@@ -642,8 +653,8 @@ export default function SettingsPanel({
           };
 
           return (
-            <div className={styles.modalities}>
-              <div className={styles.modalitiesHeader}>Tools</div>
+            <div className={styles.section}>
+              <div className={styles.sectionHeader}>Tools</div>
               {selectedModelDef.tools.map((tool) => {
                 const toggle = TOGGLEABLE_TOOLS.has(tool)
                   ? getToolToggle(tool)

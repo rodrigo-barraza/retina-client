@@ -1109,15 +1109,19 @@ export default function AgentComponent() {
             {
               key: "auto",
               icon: <Zap size={12} />,
-              label: "Auto Approve",
+              label: "Auto Approve Tool Use",
               checked: autoApprove,
               onChange: () => setAutoApprove((v) => !v),
             },
             {
               key: "iterations",
+              type: "cycle",
               icon: <Repeat size={12} />,
-              label: `Max Iterations: ${Number.isFinite(maxIterations) ? maxIterations : "∞"}`,
-              checked: maxIterations !== MAX_TOOL_ITERATIONS,
+              label: "Max Tool Iterations",
+              value: maxIterations,
+              displayValue: Number.isFinite(maxIterations) ? String(maxIterations) : "∞",
+              isActive: true,
+              title: "Click to cycle: 10 → 25 → 50 → 100 → ∞",
               onChange: () => {
                 const steps = [10, 25, 50, 100, Infinity];
                 const idx = steps.indexOf(maxIterations);

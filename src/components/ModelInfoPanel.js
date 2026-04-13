@@ -180,8 +180,8 @@ export default function ModelInfoPanel({
   if (!selectedModelDef) {
     return (
       <div className={styles.container}>
-        <div className={styles.modalities}>
-          <div className={styles.modalitiesHeader}>Model Info</div>
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>Model Info</div>
           <div className={styles.modalityRow}>
             <span className={styles.modalityName} style={{ opacity: 0.5 }}>
               Select a model to view details
@@ -224,8 +224,8 @@ export default function ModelInfoPanel({
           .filter((m) => m.supported);
         if (modalities.length === 0) return null;
         return (
-          <div className={styles.modalities}>
-            <div className={styles.modalitiesHeader}>Modalities</div>
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>Modalities</div>
             {modalities.map((m) => (
               <div key={m.type} className={styles.modalityRow}>
                 <span
@@ -248,8 +248,8 @@ export default function ModelInfoPanel({
 
       {/* Token Limits */}
       {(selectedModelDef.contextLength || selectedModelDef.maxOutputTokens) && (
-        <div className={styles.modalities}>
-          <div className={styles.modalitiesHeader}>Token Limits</div>
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>Token Limits</div>
           {selectedModelDef.contextLength && (
             <div className={styles.modalityRow}>
               <span className={styles.modalityName}>Context Window</span>
@@ -291,8 +291,8 @@ export default function ModelInfoPanel({
           .filter(([key]) => PRICING_LABELS[key])
           .map(([key, value]) => ({ ...PRICING_LABELS[key], value }));
         return entries.length > 0 ? (
-          <div className={styles.modalities}>
-            <div className={styles.modalitiesHeader}>Pricing</div>
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>Pricing</div>
             {entries.map((e) => (
               <div key={e.label} className={styles.modalityRow}>
                 <span className={styles.modalityIcon}>
@@ -324,8 +324,8 @@ export default function ModelInfoPanel({
         const entries = Object.entries(arena).filter(([, v]) => v != null);
         if (entries.length === 0) return null;
         return (
-          <div className={styles.modalities}>
-            <div className={styles.modalitiesHeader}>Arena Scores</div>
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>Arena Scores</div>
             {entries.map(([key, value]) => (
               <div key={key} className={styles.modalityRow}>
                 <span className={styles.modalityIcon}>
@@ -345,8 +345,8 @@ export default function ModelInfoPanel({
 
       {/* Tools */}
       {selectedModelDef.tools && selectedModelDef.tools.length > 0 && (
-        <div className={styles.modalities}>
-          <div className={styles.modalitiesHeader}>Tools</div>
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>Tools</div>
           {selectedModelDef.tools.map((tool) => {
             const toggle = TOGGLEABLE_TOOLS.has(tool)
               ? getToolToggle(tool)

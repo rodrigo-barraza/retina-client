@@ -191,7 +191,7 @@
   padding: 4px 10px;
 }
 
-.modalities {
+.section {
   margin-top: 8px;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
@@ -199,7 +199,7 @@
   background: var(--bg-secondary);
 }
 
-.modalitiesHeader {
+.sectionHeader {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
