@@ -503,6 +503,35 @@ export default class PrismService {
   }
 
   // ---------------------------------------------------------------------------
+  // Settings
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Fetch current server-side settings.
+   * @returns {Promise<object>}
+   */
+  static async getSettings() {
+    return PrismService._request("/settings", { method: "GET" });
+  }
+
+  /**
+   * Update server-side settings (deep merge).
+   * @param {object} data - Partial settings object
+   * @returns {Promise<object>} Updated settings
+   */
+  static async updateSettings(data) {
+    return PrismService._request("/settings", { method: "PUT", body: data });
+  }
+
+  /**
+   * Get compiled defaults for settings (useful for reset buttons).
+   * @returns {Promise<object>}
+   */
+  static async getSettingsDefaults() {
+    return PrismService._request("/settings/defaults", { method: "GET" });
+  }
+
+  // ---------------------------------------------------------------------------
   // MCP Servers
   // ---------------------------------------------------------------------------
 

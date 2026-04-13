@@ -137,10 +137,17 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
   const abortRef = useRef(null);
   const progressRef = useRef(null);
 
-  // Cleanup progress interval on unmount
+  // Live streaming text for the currently-running model
+  const liveTextRef = useRef("");
+  const liveThinkingRef = useRef("");
+  const liveFlushRef = useRef(null);
+  const [liveSnapshot, setLiveSnapshot] = useState({ text: "", thinking: "" });
+
+  // Cleanup intervals on unmount
   useEffect(() => {
     return () => {
       if (progressRef.current) clearInterval(progressRef.current);
+      if (liveFlushRef.current) clearInterval(liveFlushRef.current);
     };
   }, []);
 
@@ -443,6 +450,15 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
         setActiveModel(data);
         setActiveProgress(0);
         setActivePhase(data.isLocal ? "Loading model" : "Connecting");
+        // Reset live text for new model
+        liveTextRef.current = "";
+        liveThinkingRef.current = "";
+        setLiveSnapshot({ text: "", thinking: "" });
+        // Start periodic flush of live text to state (60fps → 100ms batches)
+        if (liveFlushRef.current) clearInterval(liveFlushRef.current);
+        liveFlushRef.current = setInterval(() => {
+          setLiveSnapshot({ text: liveTextRef.current, thinking: liveThinkingRef.current });
+        }, 100);
 
         // Clear any previous interval
         if (progressRef.current) clearInterval(progressRef.current);
@@ -496,18 +512,38 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
           clearInterval(progressRef.current);
           progressRef.current = null;
         }
+        if (liveFlushRef.current) {
+          clearInterval(liveFlushRef.current);
+          liveFlushRef.current = null;
+        }
         setActiveProgress(0);
         setActivePhase("");
+        liveTextRef.current = "";
+        liveThinkingRef.current = "";
+        setLiveSnapshot({ text: "", thinking: "" });
         setStreamingResults((prev) => [...prev, result]);
         setActiveModel(null);
+      },
+      onChunk: (content) => {
+        liveTextRef.current += content;
+      },
+      onThinking: (content) => {
+        liveThinkingRef.current += content;
       },
       onRunComplete: async (run) => {
         if (progressRef.current) {
           clearInterval(progressRef.current);
           progressRef.current = null;
         }
+        if (liveFlushRef.current) {
+          clearInterval(liveFlushRef.current);
+          liveFlushRef.current = null;
+        }
         setActiveProgress(0);
         setActivePhase("");
+        liveTextRef.current = "";
+        liveThinkingRef.current = "";
+        setLiveSnapshot({ text: "", thinking: "" });
         setLatestRun(run);
         setActiveRunId(run.id);
         setRunning(false);
@@ -530,8 +566,15 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
           clearInterval(progressRef.current);
           progressRef.current = null;
         }
+        if (liveFlushRef.current) {
+          clearInterval(liveFlushRef.current);
+          liveFlushRef.current = null;
+        }
         setActiveProgress(0);
         setActivePhase("");
+        liveTextRef.current = "";
+        liveThinkingRef.current = "";
+        setLiveSnapshot({ text: "", thinking: "" });
         console.error("Benchmark run error:", err);
         setRunning(false);
         setActiveModel(null);
@@ -558,8 +601,15 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       clearInterval(progressRef.current);
       progressRef.current = null;
     }
+    if (liveFlushRef.current) {
+      clearInterval(liveFlushRef.current);
+      liveFlushRef.current = null;
+    }
     setActiveProgress(0);
     setActivePhase("");
+    liveTextRef.current = "";
+    liveThinkingRef.current = "";
+    setLiveSnapshot({ text: "", thinking: "" });
     setRunning(false);
     setActiveModel(null);
     setStreamingTotal(0);
@@ -706,7 +756,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       <ThreePanelLayout
         navSidebar={navSidebar}
         leftPanel={null}
-        leftTitle="Run History"
+
         rightPanel={rightSidebar}
         rightTitle="Benchmarks"
         headerTitle="Loading…"
@@ -726,7 +776,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       <ThreePanelLayout
         navSidebar={navSidebar}
         leftPanel={null}
-        leftTitle="Run History"
+
         rightPanel={rightSidebar}
         rightTitle="Benchmarks"
         headerTitle="Not found"
@@ -744,6 +794,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
   return (
     <ThreePanelLayout
       navSidebar={navSidebar}
+      leftTitle={null}
       leftPanel={
         <RunHistorySidebarComponent
           benchmark={benchmark}
@@ -765,7 +816,6 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
           allModels={allModels}
         />
       }
-      leftTitle="Run History"
       rightPanel={rightSidebar}
       rightTitle="Benchmarks"
       headerTitle={benchmark.name}
@@ -1054,20 +1104,31 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
             </div>
           )}
 
-          <ChatPreviewComponent
-            systemPrompt={benchmark.systemPrompt}
-            messages={[
-              { role: "user", content: benchmark.prompt },
-              ...(selectedResult?.response ? [{
-                role: "assistant",
-                content: selectedResult.response,
-                thinking: selectedResult.thinking || undefined,
-                toolCalls: selectedResult.toolCalls || undefined,
-                model: selectedResult.label || selectedResult.model,
-                provider: selectedResult.provider,
-              }] : []),
-            ]}
-          />
+          {/* ── Chat Preview: selected result or live streaming ── */}
+          {(selectedResult || activeModel) ? (
+            <ChatPreviewComponent
+              systemPrompt={benchmark.systemPrompt}
+              messages={[
+                { role: "user", content: benchmark.prompt },
+                ...(selectedResult?.response ? [{
+                  role: "assistant",
+                  content: selectedResult.response,
+                  thinking: selectedResult.thinking || undefined,
+                  toolCalls: selectedResult.toolCalls || undefined,
+                  model: selectedResult.label || selectedResult.model,
+                  provider: selectedResult.provider,
+                }] : []),
+                ...(activeModel && !selectedResult && liveSnapshot.text ? [{
+                  role: "assistant",
+                  content: liveSnapshot.text,
+                  thinking: liveSnapshot.thinking || undefined,
+                  model: activeModel.label || activeModel.model,
+                  provider: activeModel.provider,
+                  streaming: true,
+                }] : []),
+              ]}
+            />
+          ) : null}
 
         </div>
         </div>

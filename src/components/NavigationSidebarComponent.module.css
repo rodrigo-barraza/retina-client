@@ -152,6 +152,19 @@
     background: var(--accent-color);
     border-radius: 0 2px 2px 0;
   }
+
+  & .navIcon {
+    color: hsl(0, 90%, 65%);
+    filter: hue-rotate(0deg);
+    animation: rainbowHue 4s linear infinite;
+    will-change: filter;
+  }
+}
+
+@keyframes rainbowHue {
+  to {
+    filter: hue-rotate(360deg);
+  }
 }
 
 .themeToggle {

@@ -9,13 +9,12 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  Coins,
 } from "lucide-react";
 import PrismService from "../services/PrismService";
 import ButtonComponent from "./ButtonComponent";
 import BadgeComponent from "./BadgeComponent";
+import CostBadgeComponent from "./CostBadgeComponent";
 import SearchInputComponent from "./SearchInputComponent";
-import { formatCost } from "../utils/utilities";
 import styles from "./BenchmarkSidebarComponent.module.css";
 
 /**
@@ -187,12 +186,7 @@ export default function BenchmarkSidebarComponent({ activeBenchmarkId }) {
                       <XCircle size={10} />
                       {run.summary.failed + (run.summary.errored || 0)}
                     </span>
-                    {b.cumulativeCost > 0 && (
-                      <span className={styles.statCost}>
-                        <Coins size={10} />
-                        {formatCost(b.cumulativeCost)}
-                      </span>
-                    )}
+                    <CostBadgeComponent cost={b.cumulativeCost} mini />
                     {/* Pass rate bar */}
                     <div className={styles.miniPassBar}>
                       <div

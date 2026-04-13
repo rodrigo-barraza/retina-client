@@ -7,6 +7,14 @@
   overflow: visible;
 }
 
+.tooltipWrapper {
+  flex: 1;
+
+  & > button {
+    width: 100%;
+  }
+}
+
 .tab {
   flex: 1;
   position: relative;
