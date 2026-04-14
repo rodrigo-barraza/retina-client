@@ -14,7 +14,7 @@ import {
 } from "./utilities";
 import BadgeComponent from "../components/BadgeComponent";
 import ModalityIconComponent from "../components/ModalityIconComponent";
-import ModelToolsComponent from "../components/ModelToolsComponent";
+
 import CostBadgeComponent from "../components/CostBadgeComponent";
 import ToolIconComponent from "../components/ToolIconComponent";
 import { prepareDisplayMessages } from "../components/MessageList";
@@ -139,10 +139,7 @@ export function buildRequestDetailSections(req) {
         {
           label: "Modalities",
           value: req.modalities ? (
-            <>
-              <ModalityIconComponent modalities={req.modalities} size={14} />
-              <ModelToolsComponent tools={req.modalities} size={14} />
-            </>
+            <ModalityIconComponent modalities={req.modalities} size={14} />
           ) : "-",
         },
         {

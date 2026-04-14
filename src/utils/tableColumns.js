@@ -35,7 +35,7 @@ import CountLinkComponent from "../components/CountLinkComponent";
 import CostBadgeComponent from "../components/CostBadgeComponent";
 import ProportionBarComponent from "../components/ProportionBarComponent";
 import ModalityIconComponent from "../components/ModalityIconComponent";
-import ModelToolsComponent from "../components/ModelToolsComponent";
+
 import ToolIconComponent from "../components/ToolIconComponent";
 import BadgeComponent from "../components/BadgeComponent";
 import ProviderLogo from "../components/ProviderLogos";
@@ -223,12 +223,7 @@ export const modalitiesColumn = ({ mini = false, fromConversations = false } = {
       ? mergeModalities(row.conversations || [])
       : row.modalities;
     if (!mods) return emptyDash();
-    return (
-      <>
-        <ModalityIconComponent modalities={mods} size={mini ? 9 : 12} />
-        <ModelToolsComponent tools={mods} size={mini ? 9 : 12} />
-      </>
-    );
+    return <ModalityIconComponent modalities={mods} size={mini ? 9 : 12} />;
   },
 });
 
