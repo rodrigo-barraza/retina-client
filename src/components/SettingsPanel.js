@@ -17,8 +17,8 @@ import SelectDropdown from "./SelectDropdown";
 import ToggleSwitch from "./ToggleSwitch";
 import CycleButton from "./CycleButton";
 import ModalityIconComponent from "./ModalityIconComponent";
-import ModelToolsComponent from "./ModelToolsComponent";
 import SystemPromptModal from "./SystemPromptModal";
+import ModelBadgeComponent from "./ModelBadgeComponent";
 import styles from "./SettingsPanel.module.css";
 import CostBadgeComponent from "./CostBadgeComponent";
 import TokenCountBadgeComponent from "./TokenCountBadgeComponent";
@@ -142,12 +142,7 @@ export default function SettingsPanel({
                 count={sessionStats.requestCount}
               />
               {sessionStats.uniqueModels.length > 0 && (
-                <span className={styles.statBadge}>
-                  <Cpu size={11} />
-                  {sessionStats.uniqueModels.length === 1
-                    ? sessionStats.uniqueModels[0]
-                    : `${sessionStats.uniqueModels.length} models`}
-                </span>
+                <ModelBadgeComponent models={sessionStats.uniqueModels} />
               )}
               {sessionStats.totalTokens.total > 0 && (
                 <>
@@ -199,14 +194,9 @@ export default function SettingsPanel({
               {/* Modality icons: input → output */}
               {sessionStats.modalities &&
                 Object.values(sessionStats.modalities).some(Boolean) && (
-                  <>
-                    <ModalityIconComponent
-                      modalities={sessionStats.modalities}
-                    />
-                    <ModelToolsComponent
-                      tools={sessionStats.modalities}
-                    />
-                  </>
+                  <ModalityIconComponent
+                    modalities={sessionStats.modalities}
+                  />
                 )}
             </div>
           </div>

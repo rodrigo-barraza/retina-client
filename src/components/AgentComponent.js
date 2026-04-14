@@ -360,13 +360,20 @@ export default function AgentComponent() {
   // ── Fetch backend-aggregate session stats ────────────────
   const fetchSessionStats = useCallback((sessionId) => {
     if (!sessionId) return;
-    // Small delay to let async request logs flush (embed, memory extraction)
-    const timer = setTimeout(() => {
+    // Two-phase fetch: first at 2s catches iteration requests,
+    // second at 8s catches background requests (memory extraction,
+    // embedding) that take longer to flush to the DB.
+    const t1 = setTimeout(() => {
       IrisService.getSessionStats(sessionId)
         .then((stats) => setBackendSessionStats(stats))
         .catch(() => {}); // silently ignore if no requests yet
     }, 2000);
-    return () => clearTimeout(timer);
+    const t2 = setTimeout(() => {
+      IrisService.getSessionStats(sessionId)
+        .then((stats) => setBackendSessionStats(stats))
+        .catch(() => {});
+    }, 8000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
   // Build final tool schemas
@@ -790,8 +797,7 @@ export default function AgentComponent() {
               setLeftTab("tasks");
               setTasksRefreshKey((k) => k + 1);
             } else if (statusData?.message === "workers_updated") {
-              // Auto-expand workers panel when agent spawns/stops workers
-              setLeftTab("workers");
+              // Refresh workers data without switching the active tab
               setTasksRefreshKey((k) => k + 1);
             } else if (statusData?.message === "memories_updated") {
               // Auto-expand memories panel when agent saves a memory
