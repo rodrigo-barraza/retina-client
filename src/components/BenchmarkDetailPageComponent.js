@@ -9,6 +9,9 @@ import {
   Loader2,
   Square,
   Trash2,
+  Hash,
+  CircleCheck,
+  CircleX,
 } from "lucide-react";
 import PrismService from "../services/PrismService";
 import ThreePanelLayout from "./ThreePanelLayout";
@@ -137,6 +140,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
   const [activeModel, setActiveModel] = useState(null);
   const [activeProgress, setActiveProgress] = useState(0);
   const [activePhase, setActivePhase] = useState("");
+  const [pendingTargets, setPendingTargets] = useState([]);
   const abortRef = useRef(null);
   const progressRef = useRef(null);
 
@@ -482,6 +486,9 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
 
     const models = [...modelTargets, ...agentTargets];
 
+    // Pre-populate pending targets so the table shows all rows immediately
+    setPendingTargets(models);
+
     // Notify sidebar to begin polling for active state
     window.dispatchEvent(new Event("benchmark-run-started"));
 
@@ -593,6 +600,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
         setStreamingResults([]);
         setActiveModel(null);
         setStreamingTotal(0);
+        setPendingTargets([]);
         abortRef.current = null;
 
         try {
@@ -621,6 +629,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
         console.error("Benchmark run error:", err);
         setRunning(false);
         setActiveModel(null);
+        setPendingTargets([]);
         abortRef.current = null;
       },
     });
@@ -655,6 +664,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
     setLiveSnapshot({ text: "", thinking: "" });
     setRunning(false);
     setActiveModel(null);
+    setPendingTargets([]);
     setStreamingTotal(0);
 
     // Synthesize a partial run from whatever streaming results we have
@@ -997,7 +1007,6 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
           </ButtonComponent>
           <ButtonComponent
             variant="primary"
-            size="sm"
             icon={running ? Square : Play}
             onClick={running ? handleStop : handleRun}
             loading={running}
@@ -1006,7 +1015,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
             {running
               ? "Stop"
               : (selectedModels.length + agentInstances.length) > 0
-                ? `Run ${selectedModels.length + agentInstances.length} Model${(selectedModels.length + agentInstances.length) > 1 ? "s" : ""}`
+                ? "Run Benchmark"
                 : "Select Models"}
           </ButtonComponent>
         </div>
@@ -1089,15 +1098,15 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
               <SummaryBarComponent
                 live
                 items={[
-                  { value: `${completed}/${totalExpected}`, label: "Completed" },
-                  ...(runningCount > 0 ? [{
+                  { value: `${completed}/${totalExpected}`, label: "Completed", icon: <Hash size={14} /> },
+                  {
                     value: runningCount,
                     label: "Running",
                     color: "var(--accent-color)",
                     icon: <Loader2 size={14} className={styles.spinIcon} />,
-                  }] : []),
-                  { value: passed, label: "Passed", color: "var(--success)" },
-                  { value: failed, label: "Failed", color: "var(--danger)" },
+                  },
+                  { value: passed, label: "Passed", color: "var(--success)", icon: <CircleCheck size={14} /> },
+                  { value: failed, label: "Failed", color: "var(--danger)", icon: <CircleX size={14} /> },
                   ...(errored > 0 ? [{ value: errored, label: "Errors", color: "var(--warning)" }] : []),
                   { bar: passRate, label: completed > 0 ? `${Math.round(passRate)}%` : "\u2014" },
                   ...(totalCost > 0 ? [{
@@ -1120,6 +1129,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
                   activeModel={activeModel}
                   activeProgress={activeProgress}
                   activePhase={activePhase}
+                  pendingTargets={pendingTargets}
                 />
               </div>
             </div>
@@ -1151,9 +1161,9 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
               {/* Summary Bar */}
               <SummaryBarComponent
                 items={[
-                  { value: latestRun.summary.total, label: "Total" },
-                  { value: latestRun.summary.passed, label: "Passed", color: "var(--success)" },
-                  { value: latestRun.summary.failed, label: "Failed", color: "var(--danger)" },
+                  { value: latestRun.summary.total, label: "Total", icon: <Hash size={14} /> },
+                  { value: latestRun.summary.passed, label: "Passed", color: "var(--success)", icon: <CircleCheck size={14} /> },
+                  { value: latestRun.summary.failed, label: "Failed", color: "var(--danger)", icon: <CircleX size={14} /> },
                   ...(latestRun.summary.errored > 0 ? [{ value: latestRun.summary.errored, label: "Errors", color: "var(--warning)" }] : []),
                   { bar: (latestRun.summary.passed / latestRun.summary.total) * 100, label: `${Math.round((latestRun.summary.passed / latestRun.summary.total) * 100)}%` },
                   ...((latestRun.summary.totalCost > 0 || latestRun.models?.some(r => r.estimatedCost > 0)) ? [{

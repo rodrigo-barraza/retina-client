@@ -104,22 +104,22 @@
   }
 }
 
-/* Currently selected / active row */
-.activeRow td {
+/* Currently selected / active row — .tr qualifier boosts specificity above zebra-stripe :nth-child(even) */
+.tr.activeRow td {
   background: color-mix(in srgb, var(--accent-color) 18%, transparent);
   color: var(--text-primary);
 }
 
-.activeRow td:first-child {
+.tr.activeRow td:first-child {
   background: color-mix(in srgb, var(--accent-color) 24%, transparent);
   box-shadow: inset 4px 0 0 var(--accent-color);
 }
 
-.activeRow:hover td {
+.tr.activeRow:hover td {
   background: color-mix(in srgb, var(--accent-color) 22%, transparent);
 }
 
-.activeRow:hover td:first-child {
+.tr.activeRow:hover td:first-child {
   background: color-mix(in srgb, var(--accent-color) 28%, transparent);
 }
 

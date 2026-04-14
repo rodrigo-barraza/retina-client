@@ -4,6 +4,8 @@
    navLink animation.
    ============================================================ */
 
+/* ── Inactive state — clearly clickable ────────────────── */
+
 .toggle {
   display: inline-flex;
   align-items: center;
@@ -15,41 +17,53 @@
   letter-spacing: 0.3px;
   text-transform: uppercase;
   color: var(--text-muted);
-  background: transparent;
-  border: 1px dashed color-mix(in srgb, var(--text-muted) 35%, transparent);
+  background: color-mix(in srgb, var(--text-muted) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-muted) 22%, transparent);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
   user-select: none;
   position: relative;
 
   & svg {
     flex-shrink: 0;
-    transition: color 0.2s ease, filter 0.2s ease;
+    opacity: 0.55;
+    transition: color 0.25s ease, filter 0.25s ease, opacity 0.25s ease;
   }
 
   & span {
-    transition: color 0.2s ease, filter 0.2s ease;
+    opacity: 0.7;
+    transition: color 0.25s ease, filter 0.25s ease, opacity 0.25s ease;
   }
 
   &:hover {
-    border-style: solid;
-    border-color: color-mix(in srgb, var(--text-secondary) 50%, transparent);
+    border-color: color-mix(in srgb, var(--text-secondary) 55%, transparent);
     color: var(--text-secondary);
-    background: color-mix(in srgb, var(--text-secondary) 6%, transparent);
+    background: color-mix(in srgb, var(--text-secondary) 10%, transparent);
+
+    & svg,
+    & span {
+      opacity: 1;
+    }
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 }
 
 /* ── Active state — rainbow hue-rotate ─────────────────── */
 
 .active {
-  border-style: solid;
   border-color: color-mix(in srgb, hsl(0, 90%, 65%) 50%, transparent);
   background: color-mix(in srgb, hsl(0, 90%, 65%) 10%, transparent);
   color: hsl(0, 90%, 65%);
+  animation: toggleRainbowBorder 4s linear infinite;
+  will-change: filter;
 
   & svg,
   & span {
     color: hsl(0, 90%, 65%);
+    opacity: 1;
     filter: hue-rotate(0deg);
     animation: toggleRainbow 4s linear infinite;
     will-change: filter;
@@ -59,12 +73,6 @@
     border-color: color-mix(in srgb, hsl(0, 90%, 65%) 70%, transparent);
     background: color-mix(in srgb, hsl(0, 90%, 65%) 15%, transparent);
   }
-}
-
-/* Also animate the border & bg hue */
-.active {
-  animation: toggleRainbowBorder 4s linear infinite;
-  will-change: filter;
 }
 
 @keyframes toggleRainbow {

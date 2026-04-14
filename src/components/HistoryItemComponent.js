@@ -26,7 +26,7 @@ import ModelBadgeComponent from "./ModelBadgeComponent";
  *   onDelete      — (id) => void  (omit to hide)
  *   onDownload    — (id) => void  (omit to hide)
  *   onCopy        — (id) => void  (omit to hide)
- *   icon          — lucide icon component rendered at the start
+
  *   readOnly      — disables destructive actions
  *   admin         — shows username tag, hides delete
  *   isNew         — shows NEW badge
@@ -43,7 +43,7 @@ export default function HistoryItemComponent({
   onDelete,
   onDownload,
   onCopy,
-  icon: ItemIcon,
+
   readOnly = false,
   admin = false,
   isNew = false,
@@ -64,11 +64,6 @@ export default function HistoryItemComponent({
       onClick={() => onClick?.(item)}
       {...(dataPanelClose ? { "data-panel-close": true } : {})}
     >
-      {ItemIcon && (
-        <div className={styles.icon}>
-          <ItemIcon size={14} />
-        </div>
-      )}
       {onToggleFavorite && (
         <button
           className={`${styles.favBtn} ${isFavorite ? styles.favBtnActive : ""}`}

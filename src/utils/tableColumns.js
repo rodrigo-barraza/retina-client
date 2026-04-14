@@ -24,6 +24,7 @@ import {
   Brain,
   Wrench,
   Loader2,
+  Circle,
 } from "lucide-react";
 import ModelBadgeComponent from "../components/ModelBadgeComponent";
 import ProvidersBadgeComponent from "../components/ProvidersBadgeComponent";
@@ -584,8 +585,16 @@ export const benchmarkStatusColumn = () => ({
   key: "status",
   label: "Status",
   description: "Whether the model passed, failed, or errored on this benchmark",
-  sortValue: (r) => (r._running ? -2 : r.error ? -1 : r.passed ? 1 : 0),
+  sortValue: (r) => (r._running ? -2 : r._pending ? -3 : r.error ? -1 : r.passed ? 1 : 0),
   render: (r) => {
+    if (r._pending) {
+      return (
+        <span className={styles.benchmarkStatusCell}>
+          <Circle size={16} className={styles.benchmarkPendingIcon} />
+          <span>Queued</span>
+        </span>
+      );
+    }
     if (r._running) {
       return (
         <span className={styles.benchmarkStatusCell}>
@@ -624,7 +633,7 @@ export const benchmarkModelColumn = () => ({
   label: "Model",
   description: "The model and provider tested",
   render: (r) => (
-    <span className={styles.benchmarkModelCell}>
+    <span className={`${styles.benchmarkModelCell} ${r._pending ? styles.benchmarkModelPending : ""}`}>
       <span className={styles.benchmarkModelName}>{r.label}</span>
       <span className={styles.benchmarkModelProviderRow}>
         <span className={styles.benchmarkModelProvider}>{r.provider}</span>

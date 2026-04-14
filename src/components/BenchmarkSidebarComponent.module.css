@@ -146,13 +146,24 @@
 
 /* ── Item Header ──────────────────────────────────────────── */
 
-.itemHeader {
+/* Row 1: date (left) · cost (right) */
+.topRow {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
-  min-width: 0;
 }
 
+.time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Row 2: name */
 .itemName {
   font-size: 12px;
   font-weight: 600;
@@ -160,7 +171,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
   min-width: 0;
 }
 
@@ -168,29 +178,15 @@
   color: var(--accent-color);
 }
 
-/* ── Item Meta ────────────────────────────────────────────── */
-
-.itemMeta {
+/* Row 3: passed/failed (left) · pass bar (right) */
+.bottomRow {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
-  overflow: hidden;
 }
 
-.itemExpected {
-  font-size: 10px;
-  font-family: var(--font-mono);
-  color: var(--text-tertiary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-  min-width: 0;
-}
-
-/* ── Item Stats (latest run) ──────────────────────────────── */
-
-.itemStats {
+.statsLeft {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -237,7 +233,6 @@
   border-radius: 2px;
   background: var(--bg-tertiary);
   overflow: hidden;
-  margin-left: auto;
   flex-shrink: 0;
 }
 

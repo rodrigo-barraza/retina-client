@@ -5,10 +5,7 @@
   position: relative;
 }
 
-/* Tint all cells */
-.runningRow td {
-  background: color-mix(in srgb, var(--accent-color) 4%, transparent) !important;
-}
+/* Running cells stay transparent — the ::after progress overlay provides visual feedback */
 
 /* Full-width progress bar overlay on the row itself */
 .runningRow::after {
@@ -35,4 +32,9 @@
 .runningRow td {
   position: relative;
   z-index: 1;
+}
+
+/* Pending/queued model row — dimmed to indicate not yet started */
+.pendingRow {
+  opacity: 0.5;
 }

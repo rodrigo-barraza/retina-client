@@ -10,9 +10,9 @@ import {
   XCircle,
   Clock,
 } from "lucide-react";
+import { DateTime } from "luxon";
 import PrismService from "../services/PrismService";
 import ButtonComponent from "./ButtonComponent";
-import BadgeComponent from "./BadgeComponent";
 import CostBadgeComponent from "./CostBadgeComponent";
 import SearchInputComponent from "./SearchInputComponent";
 import styles from "./BenchmarkSidebarComponent.module.css";
@@ -162,6 +162,7 @@ export default function BenchmarkSidebarComponent({ activeBenchmarkId }) {
             const isActive = activeBenchmarkId === b.id;
             const isRunning = activeBenchmarkIds.has(b.id);
             const run = b.latestRun;
+            const dt = DateTime.fromISO(b.updatedAt || b.createdAt).toRelative();
 
             return (
               <div
@@ -170,40 +171,33 @@ export default function BenchmarkSidebarComponent({ activeBenchmarkId }) {
                 onClick={() => navigate(b)}
                 data-panel-close
               >
-                <div className={styles.itemHeader}>
-                  {isRunning && (
-                    <Loader2 size={12} className={styles.spinIcon} />
-                  )}
-                  <span className={styles.itemName}>{b.name}</span>
-                </div>
-
-                <div className={styles.itemMeta}>
-                  <BadgeComponent variant="accent" mini>
-                    {b.assertions?.[0]?.matchMode || b.matchMode || "contains"}
-                  </BadgeComponent>
-                  <span className={styles.itemExpected}>
-                    {b.assertions?.[0]?.expectedValue || b.expectedValue}
+                {/* Row 1: date (left) · cost (right) */}
+                <div className={styles.topRow}>
+                  <span className={styles.time}>
+                    {isRunning && (
+                      <Loader2 size={10} className={styles.spinIcon} />
+                    )}
+                    {dt}
                   </span>
-                  {(b.assertions?.length || 0) > 1 && (
-                    <BadgeComponent variant={b.assertionOperator === "OR" ? "warning" : "info"} mini>
-                      +{b.assertions.length - 1}
-                    </BadgeComponent>
-                  )}
+                  <CostBadgeComponent cost={b.cumulativeCost} />
                 </div>
 
-                {/* Latest run summary */}
+                {/* Row 2: name */}
+                <span className={styles.itemName}>{b.name}</span>
+
+                {/* Row 3: passed/failed (left) · pass bar (right) */}
                 {run ? (
-                  <div className={styles.itemStats}>
-                    <span className={styles.statPassed}>
-                      <CheckCircle2 size={10} />
-                      {run.summary.passed}
-                    </span>
-                    <span className={styles.statFailed}>
-                      <XCircle size={10} />
-                      {run.summary.failed + (run.summary.errored || 0)}
-                    </span>
-                    <CostBadgeComponent cost={b.cumulativeCost} mini />
-                    {/* Pass rate bar */}
+                  <div className={styles.bottomRow}>
+                    <div className={styles.statsLeft}>
+                      <span className={styles.statPassed}>
+                        <CheckCircle2 size={10} />
+                        {run.summary.passed}
+                      </span>
+                      <span className={styles.statFailed}>
+                        <XCircle size={10} />
+                        {run.summary.failed + (run.summary.errored || 0)}
+                      </span>
+                    </div>
                     <div className={`${styles.miniPassBar} ${styles.miniPassBarHasRuns}`}>
                       <div
                         className={styles.miniPassBarFill}
@@ -214,9 +208,11 @@ export default function BenchmarkSidebarComponent({ activeBenchmarkId }) {
                     </div>
                   </div>
                 ) : (
-                  <div className={styles.itemStats}>
-                    <Clock size={10} />
-                    <span className={styles.noRuns}>No runs yet</span>
+                  <div className={styles.bottomRow}>
+                    <div className={styles.statsLeft}>
+                      <Clock size={10} />
+                      <span className={styles.noRuns}>No runs yet</span>
+                    </div>
                   </div>
                 )}
               </div>

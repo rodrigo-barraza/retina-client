@@ -691,12 +691,7 @@
 .runProgress {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  animation: fadeIn 0.2s ease-out;
+  gap: 12px;
 }
 
 .progressHeader {
@@ -896,11 +891,6 @@
   max-width: 200px;
 }
 
-.streamingTableWrapper {
-  margin-top: 4px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-color);
-}
 
 /* ── Run History ──────────────────────────────────────────── */
 

@@ -136,6 +136,15 @@
   animation: benchmarkSpin 1s linear infinite;
 }
 
+.benchmarkPendingIcon {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.benchmarkModelPending {
+  opacity: 0.45;
+}
+
 @keyframes benchmarkSpin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
