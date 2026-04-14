@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import styles from "./CycleButton.module.css";
+import SoundService from "@/services/SoundService";
 
 /** Duration of the count-up tween in ms. */
 const TWEEN_MS = 500;
@@ -141,7 +142,8 @@ export default function CycleButton({
     <button
       type="button"
       className={`${styles.cycleButton} ${isActive ? styles.cycleButtonActive : ""} ${tweening ? styles.tweening : ""} ${showInfinity ? styles.infinity : ""}`}
-      onClick={onClick}
+      onClick={(e) => { SoundService.playClickButton({ event: e }); onClick?.(); }}
+      onMouseEnter={(e) => SoundService.playHoverButton({ event: e })}
       title={title}
     >
       {label}

@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import styles from "./TooltipComponent.module.css";
-import SoundService from "@/services/SoundService";
 
 /**
  * TooltipComponent — a reusable pop-up bubble rendered via portal.
@@ -179,8 +178,8 @@ export default function TooltipComponent({
     <span
       ref={wrapperRef}
       className={`${styles.wrapper} ${trigger === "hover" ? styles.hoverTrigger : ""} ${className}`}
-      onClick={trigger === "click" ? (e) => { SoundService.playClick({ left: 80, right: 50 }); show(e); } : undefined}
-      onMouseEnter={(e) => { SoundService.playHover({ left: 80, right: 50 }); handleMouseEnter(e); }}
+      onClick={trigger === "click" ? show : undefined}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {children}

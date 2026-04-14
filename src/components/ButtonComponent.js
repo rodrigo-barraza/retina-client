@@ -1,4 +1,5 @@
 import styles from "./ButtonComponent.module.css";
+import SoundService from "@/services/SoundService";
 
 /**
  * Standardized button component used across Retina and admin pages.
@@ -20,6 +21,7 @@ export default function ButtonComponent({
   fullWidth = false,
   children,
   className = "",
+  onClick,
   ...rest
 }) {
   const classes = [
@@ -34,7 +36,13 @@ export default function ButtonComponent({
     .join(" ");
 
   return (
-    <button className={classes} disabled={disabled || loading} {...rest}>
+    <button
+      className={classes}
+      disabled={disabled || loading}
+      onMouseEnter={(e) => SoundService.playHoverButton({ event: e })}
+      onClick={(e) => { SoundService.playClickButton({ event: e }); onClick?.(e); }}
+      {...rest}
+    >
       {loading ? (
         <span className={styles.spinner} />
       ) : Icon ? (
@@ -48,3 +56,4 @@ export default function ButtonComponent({
     </button>
   );
 }
+

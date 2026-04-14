@@ -214,9 +214,9 @@ export default function NavigationSidebarComponent({
                       key={item.href}
                       href={item.href}
                       className={`${styles.navLink} ${isActive ? styles.active : ""}`}
-                      onMouseEnter={() => SoundService.playHover({ left: 100, right: 10 })}
-                      onClick={() => {
-                        SoundService.playClick({ left: 100, right: 10 });
+                      onMouseEnter={(e) => SoundService.playHover({ event: e })}
+                      onClick={(e) => {
+                        SoundService.playClick({ event: e });
                         onNavClick?.(item.href);
                         setMobileOpen(false);
                       }}
@@ -251,9 +251,9 @@ export default function NavigationSidebarComponent({
                           key={item.href}
                           href={item.href}
                           className={`${styles.navLink} ${isActive ? styles.active : ""}`}
-                          onMouseEnter={() => SoundService.playHover({ left: 100, right: 10 })}
-                          onClick={() => {
-                            SoundService.playClick({ left: 100, right: 10 });
+                          onMouseEnter={(e) => SoundService.playHover({ event: e })}
+                          onClick={(e) => {
+                            SoundService.playClick({ event: e });
                             onNavClick?.(item.href);
                             setMobileOpen(false);
                           }}
@@ -356,8 +356,8 @@ export default function NavigationSidebarComponent({
                 key={item.href}
                 href={item.href}
                 className={`${styles.navLink} ${isActive ? styles.active : ""}`}
-                onMouseEnter={() => SoundService.playHover({ left: 100, right: 10 })}
-                onClick={() => { SoundService.playClick({ left: 100, right: 10 }); onNavClick?.(item.href); }}
+                onMouseEnter={(e) => SoundService.playHover({ event: e })}
+                onClick={(e) => { SoundService.playClick({ event: e }); onNavClick?.(item.href); }}
               >
                 <Icon className={styles.navIcon} />
                 <span className={styles.navLabel}>{item.label}</span>
@@ -389,8 +389,8 @@ export default function NavigationSidebarComponent({
                     key={item.href}
                     href={item.href}
                     className={`${styles.navLink} ${isActive ? styles.active : ""}`}
-                    onMouseEnter={() => SoundService.playHover({ left: 100, right: 10 })}
-                    onClick={() => { SoundService.playClick({ left: 100, right: 10 }); onNavClick?.(item.href); }}
+                    onMouseEnter={(e) => SoundService.playHover({ event: e })}
+                    onClick={(e) => { SoundService.playClick({ event: e }); onNavClick?.(item.href); }}
                   >
                     <Icon className={styles.navIcon} />
                     <span className={styles.navLabel}>{item.label}</span>
@@ -404,12 +404,12 @@ export default function NavigationSidebarComponent({
         {/* Footer */}
         <div className={styles.footer}>
           {isAdmin ? (
-            <Link href="/" className={styles.navLink} onMouseEnter={() => SoundService.playHover({ left: 100, right: 10 })} onClick={() => SoundService.playClick({ left: 100, right: 10 })}>
+            <Link href="/" className={styles.navLink} onMouseEnter={(e) => SoundService.playHover({ event: e })} onClick={(e) => SoundService.playClick({ event: e })}>
               <ArrowLeft className={styles.navIcon} />
               <span className={styles.navLabel}>Back to Retina</span>
             </Link>
           ) : isLocal ? (
-            <Link href="/admin" className={styles.navLink} onMouseEnter={() => SoundService.playHover({ left: 100, right: 10 })} onClick={() => SoundService.playClick({ left: 100, right: 10 })}>
+            <Link href="/admin" className={styles.navLink} onMouseEnter={(e) => SoundService.playHover({ event: e })} onClick={(e) => SoundService.playClick({ event: e })}>
               <Settings className={styles.navIcon} />
               <span className={styles.navLabel}>Admin</span>
             </Link>

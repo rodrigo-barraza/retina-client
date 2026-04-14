@@ -62,8 +62,8 @@ export default function HistoryItemComponent({
   return (
     <div
       className={`${styles.item} ${isActive ? styles.active : ""} ${className || ""}`}
-      onClick={() => { SoundService.playClick({ left: 10, right: 100 }); onClick?.(item); }}
-      onMouseEnter={() => SoundService.playHover({ left: 10, right: 100 })}
+      onClick={(e) => { SoundService.playClick({ event: e }); onClick?.(item); }}
+      onMouseEnter={(e) => SoundService.playHover({ event: e })}
       {...(dataPanelClose ? { "data-panel-close": true } : {})}
     >
       {onToggleFavorite && (

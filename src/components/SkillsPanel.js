@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ToggleSwitchComponent from "./ToggleSwitch.js";
+import ButtonComponent from "./ButtonComponent.js";
 import styles from "./SkillsPanel.module.css";
 
 const CONTENT_WARN_CHARS = 2000;
@@ -234,10 +235,9 @@ export default function SkillsPanel({ skills, onSkillsChange, project }) {
               size="small"
             />
           )}
-          <button className={styles.addBtn} onClick={handleCreate}>
-            <Plus size={12} />
+          <ButtonComponent variant="ghost" size="xs" icon={Plus} onClick={handleCreate}>
             New
-          </button>
+          </ButtonComponent>
         </div>
       </div>
 
@@ -252,10 +252,9 @@ export default function SkillsPanel({ skills, onSkillsChange, project }) {
             system prompt. Add coding conventions, project rules, or
             domain-specific context.
           </div>
-          <button className={styles.addBtn} onClick={handleCreate}>
-            <Plus size={12} />
+          <ButtonComponent variant="ghost" size="sm" icon={Plus} onClick={handleCreate}>
             Create your first skill
-          </button>
+          </ButtonComponent>
         </div>
       )}
 

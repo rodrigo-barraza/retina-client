@@ -29,8 +29,8 @@ export default function TabBarComponent({
           <button
             key={tab.key}
             className={`${styles.tab}${activeTab === tab.key ? ` ${styles.tabActive}` : ""}${tab.disabled ? ` ${styles.tabDisabled}` : ""}${glowingTabs.includes(tab.key) ? ` ${styles.tabGlow}` : ""}`}
-            onClick={() => { SoundService.playClick({ left: 80, right: 50 }); !tab.disabled && onChange(tab.key); }}
-            onMouseEnter={() => { SoundService.playHover({ left: 80, right: 50 }); onTabHover?.(tab.key); }}
+            onClick={(e) => { SoundService.playClick({ event: e }); !tab.disabled && onChange(tab.key); }}
+            onMouseEnter={(e) => { SoundService.playHover({ event: e }); onTabHover?.(tab.key); }}
             onMouseLeave={() => onTabHover?.(null)}
           >
             {tab.icon}

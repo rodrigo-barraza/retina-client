@@ -1,6 +1,7 @@
 "use client";
 
 import styles from "./ToggleSwitch.module.css";
+import SoundService from "@/services/SoundService";
 
 /**
  * Reusable toggle-switch component, styled to match SelectDropdown.
@@ -23,13 +24,14 @@ export default function ToggleSwitch({
   return (
     <label
       className={`${styles.toggle} ${disabled ? styles.disabled : ""} ${isSmall ? styles.small : ""}`}
+      onMouseEnter={(e) => SoundService.playHoverButton({ event: e })}
     >
       <input
         type="checkbox"
         className={styles.hiddenInput}
         checked={checked}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.checked)}
+        onChange={(e) => { SoundService.playClickButton({ event: e }); onChange(e.target.checked); }}
       />
       <span
         className={`${styles.track} ${checked ? styles.active : ""}`}

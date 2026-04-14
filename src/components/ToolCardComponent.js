@@ -2,6 +2,7 @@
 
 import { CircleCheck, Circle, Lock } from "lucide-react";
 import styles from "./ToolCardComponent.module.css";
+import SoundService from "@/services/SoundService";
 
 /**
  * ToolCardComponent — A compact card showing a tool's icon, name, and description.
@@ -36,7 +37,7 @@ export default function ToolCardComponent({
     <div
       className={`${styles.card}${!enabled ? ` ${styles.cardDisabled}` : ""}${glowing ? ` ${styles.cardGlow}` : ""}${locked ? ` ${styles.cardLocked}` : ""}`}
       style={{ "--tool-color": color }}
-      onClick={locked ? undefined : onClick}
+      onClick={locked ? undefined : (e) => { SoundService.playClickButton({ event: e }); onClick?.(); }}
       role={onClick && !locked ? "button" : undefined}
       tabIndex={onClick && !locked ? 0 : undefined}
       onKeyDown={
@@ -49,7 +50,7 @@ export default function ToolCardComponent({
             }
           : undefined
       }
-      onMouseEnter={() => onHover?.(true)}
+      onMouseEnter={(e) => { SoundService.playHoverButton({ event: e }); onHover?.(true); }}
       onMouseLeave={() => onHover?.(false)}
     >
       <div className={styles.icon}>{icon}</div>

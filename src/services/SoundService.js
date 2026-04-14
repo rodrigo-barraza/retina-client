@@ -19,6 +19,12 @@ let hoverBuffer = null;
 /** @type {AudioBuffer|null} Cached click buffer */
 let clickBuffer = null;
 
+/** @type {AudioBuffer|null} Cached button hover buffer */
+let buttonHoverBuffer = null;
+
+/** @type {AudioBuffer|null} Cached button click buffer */
+let buttonClickBuffer = null;
+
 /**
  * Lazily initialise the shared AudioContext.
  * Must be called from a user-gesture context on first invocation.
@@ -113,6 +119,85 @@ function getClickBuffer() {
   return clickBuffer;
 }
 
+/**
+ * Build (or return cached) a mono AudioBuffer for a soft button
+ * hover ping — a brief, pure sine tone at 2400 Hz with a fast
+ * exponential decay. Feels like a light "blip" — cleaner and
+ * more tonal than the general-purpose noise tick.
+ * Duration ~15 ms.
+ */
+function getButtonHoverBuffer() {
+  if (buttonHoverBuffer) return buttonHoverBuffer;
+
+  const audio = ensureContext();
+  const sampleRate = audio.sampleRate;
+  const duration = 0.015; // 15 ms
+  const length = Math.ceil(sampleRate * duration);
+
+  buttonHoverBuffer = audio.createBuffer(1, length, sampleRate);
+  const data = buttonHoverBuffer.getChannelData(0);
+
+  const freq = 2400;
+
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    const sine = Math.sin(2 * Math.PI * freq * t);
+    const envelope = Math.exp(-t * 500);
+    data[i] = sine * envelope * 0.03;
+  }
+
+  return buttonHoverBuffer;
+}
+
+/**
+ * Build (or return cached) a mono AudioBuffer for a punchy button
+ * click — a two-tone chord (900 + 1350 Hz, a perfect fifth) with
+ * a descending pitch bend and noise transient. Gives a satisfying,
+ * rich "snap" that feels intentional and premium.
+ * Duration ~30 ms.
+ */
+function getButtonClickBuffer() {
+  if (buttonClickBuffer) return buttonClickBuffer;
+
+  const audio = ensureContext();
+  const sampleRate = audio.sampleRate;
+  const duration = 0.030; // 30 ms
+  const length = Math.ceil(sampleRate * duration);
+
+  buttonClickBuffer = audio.createBuffer(1, length, sampleRate);
+  const data = buttonClickBuffer.getChannelData(0);
+
+  const baseFreq = 900;
+  const fifthFreq = 1350; // perfect fifth
+  let phaseA = 0;
+  let phaseB = 0;
+
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    const progress = i / length;
+
+    // Slight downward pitch bend
+    const bend = 1 - progress * 0.15;
+    const freqA = baseFreq * bend;
+    const freqB = fifthFreq * bend;
+
+    phaseA += (2 * Math.PI * freqA) / sampleRate;
+    phaseB += (2 * Math.PI * freqB) / sampleRate;
+
+    const toneA = Math.sin(phaseA) * 0.5;
+    const toneB = Math.sin(phaseB) * 0.3;
+    const envelope = Math.exp(-t * 200);
+
+    // Noise transient — first ~8 ms
+    const noiseAmt = Math.exp(-t * 600);
+    const noise = (Math.random() * 2 - 1) * noiseAmt * 0.2;
+
+    data[i] = ((toneA + toneB) * envelope + noise) * 0.05;
+  }
+
+  return buttonClickBuffer;
+}
+
 // ─── Stereo routing helper ─────────────────────────────────────────
 
 /**
@@ -159,24 +244,56 @@ function connectStereo(source, left, right) {
   merger.connect(audio.destination);
 }
 
+// ─── Spatial stereo helper ─────────────────────────────────────────
+
+/**
+ * Derive left/right speaker volumes (0–100) from an element's
+ * horizontal center relative to the viewport width.
+ *
+ * Element at left edge  → { left: 100, right: 0 }
+ * Element at center     → { left: 50,  right: 50 }
+ * Element at right edge → { left: 0,   right: 100 }
+ *
+ * @param {Event} event — any DOM event whose currentTarget has getBoundingClientRect
+ * @returns {{ left: number, right: number }}
+ */
+function spatialFromEvent(event) {
+  const el = event?.currentTarget;
+  if (!el?.getBoundingClientRect) return { left: 50, right: 50 };
+
+  const rect = el.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const ratio = Math.max(0, Math.min(1, centerX / window.innerWidth));
+
+  return {
+    left: Math.round((1 - ratio) * 100),
+    right: Math.round(ratio * 100),
+  };
+}
+
 // ─── Public API ────────────────────────────────────────────────────
 
 const SoundService = {
   /**
    * Play the hover tick sound — ultra-quiet noise burst.
    *
+   * By default, stereo is calculated from the event target's
+   * position in the viewport. Pass explicit left/right to override.
+   *
    * @param {object}  [options]
-   * @param {number}  [options.left=100]  — Left speaker volume 0-100
-   * @param {number}  [options.right=100] — Right speaker volume 0-100
+   * @param {Event}   [options.event] — DOM event for spatial stereo
+   * @param {number}  [options.left]  — Left speaker volume 0-100 (override)
+   * @param {number}  [options.right] — Right speaker volume 0-100 (override)
    */
-  playHover({ left = 100, right = 100 } = {}) {
+  playHover({ event, left, right } = {}) {
     const audio = ensureContext();
     const buffer = getHoverBuffer();
+    const spatial = spatialFromEvent(event);
 
     const source = audio.createBufferSource();
     source.buffer = buffer;
 
-    connectStereo(source, left, right);
+    connectStereo(source, left ?? spatial.left, right ?? spatial.right);
     source.start(0);
   },
 
@@ -184,18 +301,63 @@ const SoundService = {
    * Play the click sound — descending sine sweep + noise transient.
    * Slightly louder and punchier than the hover tick.
    *
+   * By default, stereo is calculated from the event target's
+   * position in the viewport. Pass explicit left/right to override.
+   *
    * @param {object}  [options]
-   * @param {number}  [options.left=100]  — Left speaker volume 0-100
-   * @param {number}  [options.right=100] — Right speaker volume 0-100
+   * @param {Event}   [options.event] — DOM event for spatial stereo
+   * @param {number}  [options.left]  — Left speaker volume 0-100 (override)
+   * @param {number}  [options.right] — Right speaker volume 0-100 (override)
    */
-  playClick({ left = 100, right = 100 } = {}) {
+  playClick({ event, left, right } = {}) {
     const audio = ensureContext();
     const buffer = getClickBuffer();
+    const spatial = spatialFromEvent(event);
 
     const source = audio.createBufferSource();
     source.buffer = buffer;
 
-    connectStereo(source, left, right);
+    connectStereo(source, left ?? spatial.left, right ?? spatial.right);
+    source.start(0);
+  },
+
+  /**
+   * Play the button hover sound — soft sine ping.
+   *
+   * @param {object}  [options]
+   * @param {Event}   [options.event] — DOM event for spatial stereo
+   * @param {number}  [options.left]  — Left speaker volume 0-100 (override)
+   * @param {number}  [options.right] — Right speaker volume 0-100 (override)
+   */
+  playHoverButton({ event, left, right } = {}) {
+    const audio = ensureContext();
+    const buffer = getButtonHoverBuffer();
+    const spatial = spatialFromEvent(event);
+
+    const source = audio.createBufferSource();
+    source.buffer = buffer;
+
+    connectStereo(source, left ?? spatial.left, right ?? spatial.right);
+    source.start(0);
+  },
+
+  /**
+   * Play the button click sound — two-tone chord snap.
+   *
+   * @param {object}  [options]
+   * @param {Event}   [options.event] — DOM event for spatial stereo
+   * @param {number}  [options.left]  — Left speaker volume 0-100 (override)
+   * @param {number}  [options.right] — Right speaker volume 0-100 (override)
+   */
+  playClickButton({ event, left, right } = {}) {
+    const audio = ensureContext();
+    const buffer = getButtonClickBuffer();
+    const spatial = spatialFromEvent(event);
+
+    const source = audio.createBufferSource();
+    source.buffer = buffer;
+
+    connectStereo(source, left ?? spatial.left, right ?? spatial.right);
     source.start(0);
   },
 
@@ -209,6 +371,8 @@ const SoundService = {
     }
     hoverBuffer = null;
     clickBuffer = null;
+    buttonHoverBuffer = null;
+    buttonClickBuffer = null;
   },
 };
 

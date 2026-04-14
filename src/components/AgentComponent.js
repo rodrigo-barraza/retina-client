@@ -23,6 +23,7 @@ import EmptyStateComponent from "./EmptyStateComponent.js";
 import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent.js";
 import ApprovalCardComponent from "./ApprovalCardComponent.js";
 import PlanCardComponent from "./PlanCardComponent.js";
+import ButtonComponent from "./ButtonComponent.js";
 
 import {
   buildToolSchemas,
@@ -1216,8 +1217,10 @@ export default function AgentComponent() {
             subtitle="Read, edit, search, and browse your codebase with AI-powered tools."
           >
             {randomPrompts.map((prompt) => (
-              <button
+              <ButtonComponent
                 key={prompt}
+                variant="ghost"
+                size="sm"
                 className={styles.quickPrompt}
                 onClick={() => {
                   setInputValue(prompt);
@@ -1225,7 +1228,7 @@ export default function AgentComponent() {
                 }}
               >
                 {prompt}
-              </button>
+              </ButtonComponent>
             ))}
           </EmptyStateComponent>
         )}

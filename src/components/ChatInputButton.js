@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import TooltipComponent from "./TooltipComponent";
 import styles from "./ChatInputButton.module.css";
+import SoundService from "@/services/SoundService";
 
 const TYPE_ICON_MAP = {
   paperclip: Paperclip,
@@ -123,7 +124,8 @@ export default function ChatInputButton({
     <button
       type={isSubmit ? "submit" : "button"}
       className={classes}
-      onClick={onClick}
+      onClick={(e) => { SoundService.playClickButton({ event: e }); onClick?.(e); }}
+      onMouseEnter={(e) => SoundService.playHoverButton({ event: e })}
       disabled={disabled}
       aria-label={label}
       {...props}
