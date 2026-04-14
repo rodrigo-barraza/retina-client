@@ -1021,7 +1021,7 @@
   }
 }
 
-/* ── Streaming chunk gradient-mask reveal (left → right wipe) ── */
+/* ── Streaming chunk fade-in for markdown text ── */
 .streamingText p,
 .streamingText li,
 .streamingText h1,
@@ -1030,46 +1030,7 @@
 .streamingText h4,
 .streamingText blockquote,
 .streamingText pre {
-  animation:
-    streamChunkReveal 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both,
-    streamChunkFadeIn 0.8s ease-out both;
-
-  /*
-   * Gradient mask: left side opaque → right side transparent.
-   * The mask-size starts at 0% (fully hidden) and animates to 300%
-   * (fully revealed with the gradient tail swept past the right edge).
-   * Using mask-size instead of mask-position because @property isn't
-   * needed — percentage-based mask-size animates natively.
-   */
-  -webkit-mask-image: linear-gradient(
-    to right,
-    #000 0%,
-    #000 40%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    #000 0%,
-    #000 40%,
-    transparent 100%
-  );
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-size: 0% 100%;
-  mask-size: 0% 100%;
-  will-change: mask-size, opacity, transform;
-}
-
-/* The mask wipes from 0% width to 300%+ so the gradient tail clears past the right edge */
-@keyframes streamChunkReveal {
-  from {
-    -webkit-mask-size: 0% 100%;
-    mask-size: 0% 100%;
-  }
-  to {
-    -webkit-mask-size: 350% 100%;
-    mask-size: 350% 100%;
-  }
+  animation: streamChunkFadeIn 1s ease-out both;
 }
 
 @keyframes streamChunkFadeIn {

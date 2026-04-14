@@ -37,6 +37,7 @@ import styles from "./NavigationSidebarComponent.module.css";
 import { LS_PANEL_NAV } from "../constants";
 
 import RainbowCanvasComponent from "./RainbowCanvasComponent";
+import SoundService from "@/services/SoundService";
 
 function RainbowCanvas({ turbo = false }) {
   return (
@@ -213,7 +214,9 @@ export default function NavigationSidebarComponent({
                       key={item.href}
                       href={item.href}
                       className={`${styles.navLink} ${isActive ? styles.active : ""}`}
+                      onMouseEnter={() => SoundService.playHover({ left: 100, right: 10 })}
                       onClick={() => {
+                        SoundService.playClick({ left: 100, right: 10 });
                         onNavClick?.(item.href);
                         setMobileOpen(false);
                       }}
@@ -248,7 +251,9 @@ export default function NavigationSidebarComponent({
                           key={item.href}
                           href={item.href}
                           className={`${styles.navLink} ${isActive ? styles.active : ""}`}
+                          onMouseEnter={() => SoundService.playHover({ left: 100, right: 10 })}
                           onClick={() => {
+                            SoundService.playClick({ left: 100, right: 10 });
                             onNavClick?.(item.href);
                             setMobileOpen(false);
                           }}
@@ -351,7 +356,8 @@ export default function NavigationSidebarComponent({
                 key={item.href}
                 href={item.href}
                 className={`${styles.navLink} ${isActive ? styles.active : ""}`}
-                onClick={() => onNavClick?.(item.href)}
+                onMouseEnter={() => SoundService.playHover({ left: 100, right: 10 })}
+                onClick={() => { SoundService.playClick({ left: 100, right: 10 }); onNavClick?.(item.href); }}
               >
                 <Icon className={styles.navIcon} />
                 <span className={styles.navLabel}>{item.label}</span>
@@ -383,7 +389,8 @@ export default function NavigationSidebarComponent({
                     key={item.href}
                     href={item.href}
                     className={`${styles.navLink} ${isActive ? styles.active : ""}`}
-                    onClick={() => onNavClick?.(item.href)}
+                    onMouseEnter={() => SoundService.playHover({ left: 100, right: 10 })}
+                    onClick={() => { SoundService.playClick({ left: 100, right: 10 }); onNavClick?.(item.href); }}
                   >
                     <Icon className={styles.navIcon} />
                     <span className={styles.navLabel}>{item.label}</span>
@@ -397,12 +404,12 @@ export default function NavigationSidebarComponent({
         {/* Footer */}
         <div className={styles.footer}>
           {isAdmin ? (
-            <Link href="/" className={styles.navLink}>
+            <Link href="/" className={styles.navLink} onMouseEnter={() => SoundService.playHover({ left: 100, right: 10 })} onClick={() => SoundService.playClick({ left: 100, right: 10 })}>
               <ArrowLeft className={styles.navIcon} />
               <span className={styles.navLabel}>Back to Retina</span>
             </Link>
           ) : isLocal ? (
-            <Link href="/admin" className={styles.navLink}>
+            <Link href="/admin" className={styles.navLink} onMouseEnter={() => SoundService.playHover({ left: 100, right: 10 })} onClick={() => SoundService.playClick({ left: 100, right: 10 })}>
               <Settings className={styles.navIcon} />
               <span className={styles.navLabel}>Admin</span>
             </Link>

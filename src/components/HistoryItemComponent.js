@@ -13,6 +13,7 @@ import { DateTime } from "luxon";
 import styles from "./HistoryItemComponent.module.css";
 import CostBadgeComponent from "./CostBadgeComponent";
 import ModelBadgeComponent from "./ModelBadgeComponent";
+import SoundService from "@/services/SoundService";
 
 /**
  * HistoryItemComponent — a single row within HistoryList or any list that
@@ -61,7 +62,8 @@ export default function HistoryItemComponent({
   return (
     <div
       className={`${styles.item} ${isActive ? styles.active : ""} ${className || ""}`}
-      onClick={() => onClick?.(item)}
+      onClick={() => { SoundService.playClick({ left: 10, right: 100 }); onClick?.(item); }}
+      onMouseEnter={() => SoundService.playHover({ left: 10, right: 100 })}
       {...(dataPanelClose ? { "data-panel-close": true } : {})}
     >
       {onToggleFavorite && (

@@ -2,6 +2,7 @@
 
 import styles from "./TabBarComponent.module.css";
 import TooltipComponent from "./TooltipComponent";
+import SoundService from "@/services/SoundService";
 
 /**
  * TabBarComponent — An inline tab switcher for sidebars/panels.
@@ -28,8 +29,8 @@ export default function TabBarComponent({
           <button
             key={tab.key}
             className={`${styles.tab}${activeTab === tab.key ? ` ${styles.tabActive}` : ""}${tab.disabled ? ` ${styles.tabDisabled}` : ""}${glowingTabs.includes(tab.key) ? ` ${styles.tabGlow}` : ""}`}
-            onClick={() => !tab.disabled && onChange(tab.key)}
-            onMouseEnter={() => onTabHover?.(tab.key)}
+            onClick={() => { SoundService.playClick({ left: 80, right: 50 }); !tab.disabled && onChange(tab.key); }}
+            onMouseEnter={() => { SoundService.playHover({ left: 80, right: 50 }); onTabHover?.(tab.key); }}
             onMouseLeave={() => onTabHover?.(null)}
           >
             {tab.icon}
