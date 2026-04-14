@@ -517,6 +517,7 @@ export default function ConversationsPage({ initialId = null, traceId = null }) 
               newIds={newIds}
               initialProviders={providerFilter ? [providerFilter] : undefined}
               initialSearch={modelFilter || ""}
+              countLabel="conversations"
             />
           }
           rightTitle={`${conversations.length} Conversations`}

@@ -48,6 +48,7 @@ export default function HistoryList({
   onToggleFavorite,
   initialProviders,
   initialSearch = "",
+  countLabel,
 }) {
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [activeModalities, setActiveModalities] = useState(new Set());
@@ -229,6 +230,16 @@ export default function HistoryList({
         onDateChange={setDateRange}
         dateStorageKey={LS_DATE_RANGE}
       />
+
+      {countLabel && (
+        <div className={styles.countRow}>
+          <span className={styles.countLabel}>
+            {filtered.length === items.length
+              ? `${items.length} ${countLabel}`
+              : `${filtered.length} of ${items.length} ${countLabel}`}
+          </span>
+        </div>
+      )}
 
       <div className={styles.list}>
         {filtered.map((item) => (

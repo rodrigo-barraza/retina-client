@@ -73,6 +73,25 @@
   }
 }
 
+/* ── Count Row ── */
+.countRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  flex-shrink: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+}
+
+.countLabel {
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
 /* ── List ── */
 .list {
   flex: 1;

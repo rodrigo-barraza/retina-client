@@ -231,7 +231,6 @@ export default function ThreePanelLayout({
               style={transitionStyle}
               onClick={handleSidebarClick(toggleRight)}
             >
-              <div className={styles.sidebarHeader}>{resolvedRightTitle}</div>
               {rightPanel}
             </aside>
           )}

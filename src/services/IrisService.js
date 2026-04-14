@@ -191,6 +191,10 @@ export default class IrisService {
     return fetchJSON(`/traces/${id}`);
   }
 
+  static async getSessionStats(agentSessionId) {
+    return fetchJSON(`/sessions/${agentSessionId}/stats`);
+  }
+
   // ── Media ─────────────────────────────────────────────────
   static async getMedia(params = {}) {
     const query = new URLSearchParams(params).toString();

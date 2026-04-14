@@ -27,6 +27,7 @@ export default function HistoryPanel({
   emptyText = "No recent chats",
   searchText = "Search conversations...",
   itemIcon,
+  countLabel,
 }) {
   // Normalize sessions into HistoryList items
   const items = useMemo(() => {
@@ -129,6 +130,7 @@ export default function HistoryPanel({
         onToggleFavorite={onToggleFavorite}
         initialProviders={initialProviders}
         initialSearch={initialSearch}
+        countLabel={countLabel}
       />
     </div>
   );

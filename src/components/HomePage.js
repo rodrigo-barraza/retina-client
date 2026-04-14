@@ -2158,6 +2158,7 @@ export default function HomePage({ initialConversationId = null }) {
                 }).catch(() => {});
               }
             }}
+            countLabel="conversations"
           />
         }
         headerTitle={title}

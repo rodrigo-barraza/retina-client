@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Bot, Paperclip, X, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain, Plug, GitBranch, Scissors, Repeat, ListChecks, BookOpen, Users, Info } from "lucide-react";
 import PrismService from "../services/PrismService.js";
+import IrisService from "../services/IrisService.js";
 import ToolsApiService from "../services/ToolsApiService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
 import NavigationSidebarComponent from "./NavigationSidebarComponent.js";
@@ -117,6 +118,7 @@ export default function AgentComponent() {
   const [agenticProgress, setAgenticProgress] = useState(null); // { iteration, maxIterations }
   const [contextTruncated, setContextTruncated] = useState(null); // { strategy, estimatedTokens }
   const [currentTurnStart, setCurrentTurnStart] = useState(null); // Date.now() when user sends
+  const [backendSessionStats, setBackendSessionStats] = useState(null); // aggregate from /admin/sessions/:id/stats
 
   const textareaRef = useRef(null);
   const endRef = useRef(null);
@@ -354,6 +356,18 @@ export default function AgentComponent() {
   const usedTools = useMemo(() => getUsedTools(messages), [messages]);
   const modalities = useMemo(() => getModalities(messages), [messages]);
   const completedElapsedTime = useMemo(() => getSessionElapsedTime(messages), [messages]);
+
+  // ── Fetch backend-aggregate session stats ────────────────
+  const fetchSessionStats = useCallback((sessionId) => {
+    if (!sessionId) return;
+    // Small delay to let async request logs flush (embed, memory extraction)
+    const timer = setTimeout(() => {
+      IrisService.getSessionStats(sessionId)
+        .then((stats) => setBackendSessionStats(stats))
+        .catch(() => {}); // silently ignore if no requests yet
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Build final tool schemas
   const allToolSchemas = useMemo(
@@ -821,6 +835,7 @@ export default function AgentComponent() {
               return updated;
             });
             setCurrentTurnStart(null);
+            fetchSessionStats(agentSessionId);
             // SessionSummarizer runs async after SSE stream closes —
             // poll every 2s for up to 20s until new memories are detected
             (async () => {
@@ -862,6 +877,7 @@ export default function AgentComponent() {
       autoApprove,
       planFirst,
       maxIterations,
+      fetchSessionStats,
     ],
   );
 
@@ -970,6 +986,7 @@ export default function AgentComponent() {
     setTraceId(null);
     setActiveId(null);
     setTitle("Agent");
+    setBackendSessionStats(null);
     textareaRef.current?.focus();
   }, [isGenerating]);
 
@@ -1006,11 +1023,13 @@ export default function AgentComponent() {
             ...(gs.thinkingBudget && { thinkingBudget: gs.thinkingBudget }),
           }));
         }
+        // Fetch backend aggregate stats for the loaded session
+        fetchSessionStats(conv.id);
       } catch (err) {
         console.error("Failed to load session:", err);
       }
     },
-    [isGenerating],
+    [isGenerating, fetchSessionStats],
   );
 
   const handleDeleteSession = useCallback(
@@ -1134,13 +1153,21 @@ export default function AgentComponent() {
               ? {
                   messageCount: messages.length,
                   deletedCount: 0,
-                  requestCount,
-                  uniqueModels,
-                  totalTokens,
-                  totalCost,
+                  requestCount: backendSessionStats?.requestCount || requestCount,
+                  uniqueModels: backendSessionStats?.models?.length > uniqueModels.length
+                    ? backendSessionStats.models
+                    : uniqueModels,
+                  totalTokens: backendSessionStats
+                    ? {
+                        input: backendSessionStats.totalInputTokens,
+                        output: backendSessionStats.totalOutputTokens,
+                        total: backendSessionStats.totalTokens,
+                      }
+                    : totalTokens,
+                  totalCost: backendSessionStats?.totalCost ?? totalCost,
                   originalTotalCost: 0,
                   usedTools,
-                  modalities,
+                  modalities: backendSessionStats?.modalities || modalities,
                   completedElapsedTime,
                   currentTurnStart,
                 }
@@ -1437,6 +1464,7 @@ export default function AgentComponent() {
           newLabel="New Session"
           emptyText="No recent sessions"
           searchText="Search sessions..."
+          countLabel="sessions"
         />
       }
       rightTitle={`${sessions.length} Sessions`}

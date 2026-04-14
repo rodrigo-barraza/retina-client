@@ -1178,6 +1178,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
             searchPlaceholder="Search workflows…"
             favorites={wfFavoriteKeys}
             onToggleFavorite={handleToggleFavorite}
+            countLabel="workflows"
           />
         </div>
       }
