@@ -484,9 +484,7 @@ export default function AgentComponent() {
     async (sessionMessages, resolvedTitle) => {
       const currentMessages = [...sessionMessages];
 
-      setMessages((prev) =>
-        prev.filter((m) => !(m.role === "assistant" && !m.content?.trim())),
-      );
+
 
       await new Promise((resolve, reject) => {
         // System prompt placeholder — replaced server-side by SystemPromptAssembler
@@ -964,7 +962,18 @@ export default function AgentComponent() {
         ...(currentImages.length > 0 ? { images: currentImages } : {}),
       };
       const updatedMessages = [...messages, userMessage];
-      setMessages(updatedMessages);
+      // Insert placeholder assistant message so the aiNode
+      // (with blinking cursor) appears immediately — matches /conversations
+      setMessages([
+        ...updatedMessages,
+        {
+          role: "assistant",
+          content: "",
+          timestamp: new Date().toISOString(),
+          provider: settings.provider,
+          model: settings.model,
+        },
+      ]);
 
       try {
         await runOrchestrationLoop(

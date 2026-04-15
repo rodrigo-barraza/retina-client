@@ -1,0 +1,42 @@
+/* ── StopwatchComponent ─────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.badge:hover {
+  border-color: color-mix(in srgb, var(--accent-color) 40%, transparent);
+  color: var(--text-primary);
+}
+
+.badge svg {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+/* ── Live pulsing variant ────────────────────────── */
+
+.live {
+  color: var(--accent-color);
+  border-color: color-mix(in srgb, var(--accent-color) 40%, transparent);
+  animation: stopwatchPulse 2s ease-in-out infinite;
+  will-change: opacity;
+}
+
+@keyframes stopwatchPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

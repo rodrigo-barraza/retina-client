@@ -25,6 +25,7 @@ import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent";
 import AgentPickerPopoverComponent from "./AgentPickerPopoverComponent";
 import BenchmarksTableComponent from "./BenchmarksTableComponent";
 import ChatPreviewComponent from "./ChatPreviewComponent";
+import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
 
 import StorageService from "../services/StorageService";
 import { SK_MODEL_MEMORY_BENCHMARKS } from "../constants";
@@ -1169,14 +1170,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
                     </BadgeComponent>
                   )}
                 </div>
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: "var(--text-tertiary)",
-                  }}
-                >
-                  {new Date(latestRun.completedAt).toLocaleString()}
-                </span>
+                <DateTimeBadgeComponent date={latestRun.completedAt} />
               </div>
 
               {/* Summary Bar */}

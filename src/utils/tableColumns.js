@@ -13,14 +13,11 @@ import {
   MessageSquare,
   Workflow,
   Zap,
-  Clock,
   CheckCircle2,
   XCircle,
   AlertTriangle,
-  Timer,
   Gauge,
   HardDrive,
-  Calendar,
   Brain,
   Wrench,
   Loader2,
@@ -43,11 +40,12 @@ import {
   formatTokenCount,
   formatLatency,
   formatTokensPerSec,
-  formatDateTime,
   getTotalInputTokens,
   formatCost,
 } from "./utilities";
 import { PROVIDER_COLORS } from "../constants";
+import DateTimeBadgeComponent from "../components/DateTimeBadgeComponent";
+import StopwatchComponent from "../components/StopwatchComponent";
 import styles from "../components/TableComponents.module.css";
 
 /* ── Helpers ────────────────────────────────────────────── */
@@ -428,10 +426,7 @@ export const durationColumn = ({ useDurationMs = false } = {}) => ({
     const dur = formatDuration(ms);
     if (!dur) return emptyDash();
     return (
-      <span className={styles.durationCell}>
-        <Clock size={10} />
-        {dur}
-      </span>
+      <StopwatchComponent seconds={ms / 1000} />
     );
   },
 });
@@ -460,7 +455,7 @@ export const createdAtColumn = (key = "createdAt") => ({
   description: "When this record was first created",
   sortable: true,
   align: "right",
-  render: (row) => formatDateTime(row[key]),
+  render: (row) => row[key] ? <DateTimeBadgeComponent date={row[key]} /> : emptyDash(),
 });
 
 /* ·· Trace ID ·· */
@@ -806,10 +801,7 @@ export const benchmarkDurationColumn = () => ({
   render: (r) => {
     if (!r.latency) return emptyDash();
     return (
-      <span className={styles.durationCell}>
-        <Timer size={10} />
-        {formatLatency(r.latency)}
-      </span>
+      <StopwatchComponent seconds={r.latency} />
     );
   },
 });
@@ -885,10 +877,7 @@ export const benchmarkDateColumn = () => ({
   align: "right",
   render: (r) =>
     r.completedAt ? (
-      <span className={styles.durationCell}>
-        <Calendar size={10} />
-        {formatDateTime(r.completedAt)}
-      </span>
+      <DateTimeBadgeComponent date={r.completedAt} />
     ) : (
       emptyDash()
     ),
@@ -1012,10 +1001,7 @@ export const dashboardAvgLatencyColumn = () => ({
   sortable: true,
   align: "right",
   render: (r) => (
-    <span className={styles.durationCell}>
-      <Clock size={12} />
-      {r.avgLatency.toFixed(1)}s
-    </span>
+    <StopwatchComponent seconds={r.avgLatency} />
   ),
 });
 

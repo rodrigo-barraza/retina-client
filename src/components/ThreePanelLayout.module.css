@@ -48,6 +48,12 @@
   white-space: nowrap;
 }
 
+/* Raise all direct header children above the absolutely-positioned center */
+.pageHeader > * {
+  position: relative;
+  z-index: 2;
+}
+
 .headerCenter {
   position: absolute;
   top: 0;

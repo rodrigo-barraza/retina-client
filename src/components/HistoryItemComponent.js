@@ -9,7 +9,7 @@ import {
 import IconButtonComponent from "./IconButtonComponent";
 import ModalityIconComponent from "./ModalityIconComponent";
 import ModelToolsComponent from "./ModelToolsComponent";
-import { DateTime } from "luxon";
+import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
 import styles from "./HistoryItemComponent.module.css";
 import CostBadgeComponent from "./CostBadgeComponent";
 import ModelBadgeComponent from "./ModelBadgeComponent";
@@ -54,7 +54,7 @@ export default function HistoryItemComponent({
   dataPanelClose = false,
   children,
 }) {
-  const dt = DateTime.fromISO(item.updatedAt || item.createdAt).toRelative();
+  const itemDate = item.updatedAt || item.createdAt;
   const mod = item.modalities || {};
   const hasModalities = mod && Object.keys(mod).length > 0;
   const hasModel = item.modelNames?.length > 0 || item.modelName;
@@ -81,7 +81,7 @@ export default function HistoryItemComponent({
         {/* Row 1: time + tags (left) · cost (right) */}
         <div className={styles.topRow}>
           <div className={styles.topLeft}>
-            <span className={styles.time}>{dt}</span>
+            <DateTimeBadgeComponent date={itemDate} mini />
             {admin && item.username && item.username !== "unknown" && (
               <span className={styles.usernameTag}>{item.username}</span>
             )}

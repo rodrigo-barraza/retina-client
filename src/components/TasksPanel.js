@@ -7,7 +7,7 @@ import {
   X,
 } from "lucide-react";
 import ToolsApiService from "../services/ToolsApiService.js";
-import { formatTimeAgo } from "../utils/utilities";
+import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
 import styles from "./TasksPanel.module.css";
 
 
@@ -314,9 +314,7 @@ export default function TasksPanel({ project, refreshKey, agentSessionId, onCoun
                     <span className={styles.taskProjectBadge}>{task.project}</span>
                   )}
                   {task.createdAt && (
-                    <span className={styles.taskAge}>
-                      {formatTimeAgo(task.createdAt)}
-                    </span>
+                    <DateTimeBadgeComponent date={task.createdAt} mini />
                   )}
                 </div>
               </div>

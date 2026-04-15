@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { Activity, AlertCircle, Users } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
+import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
+import StopwatchComponent from "./StopwatchComponent";
 import IrisService from "../services/IrisService";
-import { formatCost, formatLatency, formatCompact, formatTimeAgo } from "../utils/utilities";
+import { formatCost, formatCompact } from "../utils/utilities";
 import styles from "./SessionRequestsListComponent.module.css";
 
 /**
@@ -117,18 +119,14 @@ export default function SessionRequestsListComponent({ agentSessionId, refreshKe
                     </span>
                   )}
                   {req.totalTime > 0 && (
-                    <span className={styles.requestStat} title="Latency">
-                      {formatLatency(req.totalTime)}
-                    </span>
+                    <StopwatchComponent seconds={req.totalTime} />
                   )}
                   {req.estimatedCost > 0 && (
                     <span className={styles.requestCost} title="Cost">
                       {formatCost(req.estimatedCost)}
                     </span>
                   )}
-                  <span className={styles.requestTime} title={req.timestamp}>
-                    {formatTimeAgo(req.timestamp)}
-                  </span>
+                  <DateTimeBadgeComponent date={req.timestamp} mini />
                 </div>
               </div>
             );

@@ -10,10 +10,11 @@ import {
   XCircle,
   Clock,
 } from "lucide-react";
-import { DateTime } from "luxon";
 import PrismService from "../services/PrismService";
 import ButtonComponent from "./ButtonComponent";
 import CostBadgeComponent from "./CostBadgeComponent";
+import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
+import BenchmarkBarComponent from "./BenchmarkBarComponent";
 import SearchInputComponent from "./SearchInputComponent";
 import SoundService from "@/services/SoundService";
 import styles from "./BenchmarkSidebarComponent.module.css";
@@ -163,7 +164,6 @@ export default function BenchmarkSidebarComponent({ activeBenchmarkId }) {
             const isActive = activeBenchmarkId === b.id;
             const isRunning = activeBenchmarkIds.has(b.id);
             const run = b.latestRun;
-            const dt = DateTime.fromISO(b.updatedAt || b.createdAt).toRelative();
 
             return (
               <div
@@ -174,12 +174,13 @@ export default function BenchmarkSidebarComponent({ activeBenchmarkId }) {
               >
                 {/* Row 1: date (left) · cost (right) */}
                 <div className={styles.topRow}>
-                  <span className={styles.time}>
-                    {isRunning && (
-                      <Loader2 size={10} className={styles.spinIcon} />
-                    )}
-                    {dt}
-                  </span>
+                  <DateTimeBadgeComponent
+                    date={b.updatedAt || b.createdAt}
+                    mini
+                  />
+                  {isRunning && (
+                    <Loader2 size={10} className={styles.spinIcon} />
+                  )}
                   <CostBadgeComponent cost={b.cumulativeCost} />
                 </div>
 
@@ -199,14 +200,11 @@ export default function BenchmarkSidebarComponent({ activeBenchmarkId }) {
                         {run.summary.failed + (run.summary.errored || 0)}
                       </span>
                     </div>
-                    <div className={`${styles.miniPassBar} ${styles.miniPassBarHasRuns}`}>
-                      <div
-                        className={styles.miniPassBarFill}
-                        style={{
-                          width: `${(run.summary.passed / run.summary.total) * 100}%`,
-                        }}
-                      />
-                    </div>
+                    <BenchmarkBarComponent
+                      passed={run.summary.passed}
+                      total={run.summary.total}
+                      mini
+                    />
                   </div>
                 ) : (
                   <div className={styles.bottomRow}>

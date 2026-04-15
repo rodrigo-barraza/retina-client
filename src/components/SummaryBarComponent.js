@@ -2,6 +2,7 @@
 
 import styles from "./SummaryBarComponent.module.css";
 import costBadgeStyles from "./CostBadgeComponent.module.css";
+import BenchmarkBarComponent from "./BenchmarkBarComponent";
 
 /**
  * SummaryBarComponent — A horizontal stats strip with stacked value/label pairs.
@@ -38,17 +39,15 @@ export default function SummaryBarComponent({ items, live = false, className }) 
           {i > 0 && <div className={styles.divider} />}
           <div className={styles.item}>
             {item.bar != null ? (
-              <div className={styles.progressWrapper}>
-                <div className={`${styles.passBar} ${item.bar != null ? styles.passBarHasRuns : ''}`}>
-                  <div
-                    className={styles.passBarFill}
-                    style={{ width: `${Math.min(item.bar, 100)}%` }}
-                  />
-                </div>
+              <>
+                <BenchmarkBarComponent
+                  passed={Math.round((Math.min(item.bar, 100) / 100) * 100)}
+                  total={100}
+                />
                 {item.label && (
                   <span className={styles.label}>{item.label}</span>
                 )}
-              </div>
+              </>
             ) : (
               <>
                 <div className={`${costBadgeStyles.badge} ${styles.valueRow}`}>

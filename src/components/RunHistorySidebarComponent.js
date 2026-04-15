@@ -5,7 +5,6 @@ import {
   History,
   CheckCircle2,
   XCircle,
-  Coins,
   Clock,
   Loader2,
   ListChecks,
@@ -18,7 +17,9 @@ import ModelCardComponent from "./ModelCardComponent";
 import BadgeComponent from "./BadgeComponent";
 import ChatPreviewComponent from "./ChatPreviewComponent";
 import TabBarComponent from "./TabBarComponent";
-import { formatCost } from "../utils/utilities";
+import CostBadgeComponent from "./CostBadgeComponent";
+import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
+import BenchmarkBarComponent from "./BenchmarkBarComponent";
 import SoundService from "@/services/SoundService";
 import styles from "./RunHistorySidebarComponent.module.css";
 
@@ -260,9 +261,6 @@ export default function RunHistorySidebarComponent({
             ) : (
               runHistory.map((run, idx) => {
                 const isActive = activeRunId === run.id;
-                const passRate = run.summary.total > 0
-                  ? (run.summary.passed / run.summary.total) * 100
-                  : 0;
                 const totalCost =
                   run.summary.totalCost ??
                   run.models?.reduce((s, r) => s + (r.estimatedCost || 0), 0) ??
@@ -276,10 +274,9 @@ export default function RunHistorySidebarComponent({
                     data-panel-close
                   >
                     <div className={styles.runItemHeader}>
+                      <CostBadgeComponent cost={totalCost} mini />
                       <span className={styles.runIndex}>#{runHistory.length - idx}</span>
-                      <span className={styles.runDate}>
-                        {new Date(run.completedAt).toLocaleString()}
-                      </span>
+                      <DateTimeBadgeComponent date={run.completedAt} mini />
                       {run.aborted && (
                         <AlertTriangle size={11} style={{ color: "var(--warning)", flexShrink: 0 }} />
                       )}
@@ -293,18 +290,11 @@ export default function RunHistorySidebarComponent({
                         <XCircle size={10} />
                         {run.summary.failed + (run.summary.errored || 0)}
                       </span>
-                      {totalCost > 0 && (
-                        <span className={styles.statCost}>
-                          <Coins size={10} />
-                          {formatCost(totalCost)}
-                        </span>
-                      )}
-                      <div className={`${styles.miniPassBar} ${styles.miniPassBarHasRuns}`}>
-                        <div
-                          className={styles.miniPassBarFill}
-                          style={{ width: `${passRate}%` }}
-                        />
-                      </div>
+                      <BenchmarkBarComponent
+                        passed={run.summary.passed}
+                        total={run.summary.total}
+                        mini
+                      />
                     </div>
                   </div>
                 );

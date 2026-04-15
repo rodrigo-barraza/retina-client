@@ -10,7 +10,6 @@ import {
   ExternalLink,
   AudioLines,
   Layers,
-  Timer,
 } from "lucide-react";
 import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import SelectDropdown from "./SelectDropdown";
@@ -24,7 +23,8 @@ import CostBadgeComponent from "./CostBadgeComponent";
 import TokenCountBadgeComponent from "./TokenCountBadgeComponent";
 import RequestCountBadgeComponent from "./RequestCountBadgeComponent";
 import MessageCountBadgeComponent from "./MessageCountBadgeComponent";
-import { formatCost, formatElapsedTime } from "../utils/utilities";
+import StopwatchComponent from "./StopwatchComponent";
+import { formatCost } from "../utils/utilities";
 import {
   TOOL_COLORS,
   TOOL_ICON_MAP,
@@ -167,10 +167,10 @@ export default function SettingsPanel({
                 </span>
               )}
               {totalElapsedTime > 0 && (
-                <span className={`${styles.statBadge} ${sessionStats.currentTurnStart ? styles.statBadgeLive : ""}`}>
-                  <Timer size={11} />
-                  {formatElapsedTime(totalElapsedTime)}
-                </span>
+                <StopwatchComponent
+                  seconds={totalElapsedTime}
+                  live={!!sessionStats.currentTurnStart}
+                />
               )}
               {sessionStats.usedTools?.length > 0 &&
                 sessionStats.usedTools.map((tool) => {

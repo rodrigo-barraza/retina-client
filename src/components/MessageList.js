@@ -22,17 +22,22 @@ import {
   Terminal,
 } from "lucide-react";
 import { TOOL_ICON_MAP, TOOL_COLORS } from "./WorkflowNodeConstants";
-import ProviderLogo, { PROVIDER_LABELS } from "./ProviderLogos";
 import MarkdownContent from "./MarkdownContent";
 import StreamingCursorComponent from "./StreamingCursorComponent";
 import IconButtonComponent from "./IconButtonComponent";
 import CopyButtonComponent from "./CopyButtonComponent";
 import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import { ToolResultView } from "./ToolResultRenderers";
+import ProvidersBadgeComponent from "./ProvidersBadgeComponent";
+import ModelBadgeComponent from "./ModelBadgeComponent";
+import TokenCountBadgeComponent from "./TokenCountBadgeComponent";
+import CostBadgeComponent from "./CostBadgeComponent";
+import StopwatchComponent from "./StopwatchComponent";
+import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
+import BadgeComponent from "./BadgeComponent";
 import styles from "./MessageList.module.css";
-import { DateTime } from "luxon";
 import PrismService from "../services/PrismService";
-import { formatCost, getTotalInputTokens } from "../utils/utilities";
+import { getTotalInputTokens } from "../utils/utilities";
 
 
 
@@ -58,28 +63,6 @@ function parseTaskNotification(content) {
   };
 }
 
-/* ── Helpers ─────────────────────────────────────────────────── */
-
-function getOrdinalSuffix(day) {
-  if (day >= 11 && day <= 13) return "th";
-  switch (day % 10) {
-    case 1:
-      return "st";
-    case 2:
-      return "nd";
-    case 3:
-      return "rd";
-    default:
-      return "th";
-  }
-}
-
-function formatTimestamp(isoString) {
-  const dt = DateTime.fromISO(isoString);
-  const day = dt.day;
-  const suffix = getOrdinalSuffix(day);
-  return dt.toFormat(`LLLL d'${suffix},' yyyy '@' h:mm:ss a`);
-}
 
 function getMimeCategory(ref) {
   if (!ref) return "file";
@@ -916,16 +899,14 @@ export default function MessageList({
                       </span>
                       {groupCount === 1 && (
                         <>
-                          <span className={styles.deletedRoleBadge}>
+                          <BadgeComponent variant="info" mini>
                             {msg.role === "user" ? "User" : "Model"}
-                          </span>
+                          </BadgeComponent>
                           {msg.model && (
-                            <span className={styles.deletedModelLabel}>{msg.model}</span>
+                            <ModelBadgeComponent models={[msg.model]} mini />
                           )}
                           {msg.timestamp && (
-                            <span className={styles.deletedTimestamp}>
-                              {formatTimestamp(msg.timestamp)}
-                            </span>
+                            <DateTimeBadgeComponent date={msg.timestamp} mini />
                           )}
                           {msg.content && (
                             <span className={styles.deletedPreview}>
@@ -937,11 +918,11 @@ export default function MessageList({
                         </>
                       )}
                       {groupCount > 1 && (
-                        <span className={styles.deletedTimestamp}>
-                          {formatTimestamp(messages[groupIndices[0]].timestamp)}
-                          {" — "}
-                          {formatTimestamp(messages[groupIndices[groupCount - 1]].timestamp)}
-                        </span>
+                        <>
+                          <DateTimeBadgeComponent date={messages[groupIndices[0]].timestamp} mini />
+                          <span style={{ opacity: 0.5 }}>—</span>
+                          <DateTimeBadgeComponent date={messages[groupIndices[groupCount - 1]].timestamp} mini />
+                        </>
                       )}
                     </button>
                     {groupCount === 1 && !readOnly && onRestore && (
@@ -1000,16 +981,14 @@ export default function MessageList({
                         )}
                         <div className={styles.deletedGroupItem}>
                           <div className={styles.deletedGroupItemHeader}>
-                            <span className={styles.deletedRoleBadge}>
+                            <BadgeComponent variant="info" mini>
                               {gMsg.role === "user" ? "User" : "Model"}
-                            </span>
+                            </BadgeComponent>
                           {gMsg.model && (
-                            <span className={styles.deletedModelLabel}>{gMsg.model}</span>
+                            <ModelBadgeComponent models={[gMsg.model]} mini />
                           )}
                           {gMsg.timestamp && (
-                            <span className={styles.deletedTimestamp}>
-                              {formatTimestamp(gMsg.timestamp)}
-                            </span>
+                            <DateTimeBadgeComponent date={gMsg.timestamp} mini />
                           )}
                           <div className={styles.deletedActions} style={{ opacity: 1 }}>
                             {!readOnly && onRestore && (
@@ -1052,16 +1031,13 @@ export default function MessageList({
                                 <MarkdownContent content={gMsg.content} />
                               ) : null}
                               {gMsg.role === "assistant" && (gMsg.usage || gMsg.provider) && (
-                                <div className={styles.meta}>
-                                  <div className={styles.metaRow}>
-                                    {gMsg.provider && (
-                                      <span className={styles.metaProvider}>
-                                        <ProviderLogo provider={gMsg.provider} size={13} />
-                                        {PROVIDER_LABELS[gMsg.provider] || gMsg.provider}
-                                      </span>
-                                    )}
-                                    {gMsg.model && <>{" • "}{gMsg.model}</>}
-                                  </div>
+                                <div className={styles.metaBadges}>
+                                  {gMsg.provider && (
+                                    <ProvidersBadgeComponent providers={[gMsg.provider]} mini />
+                                  )}
+                                  {gMsg.model && (
+                                    <ModelBadgeComponent models={[gMsg.model]} mini />
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -1095,9 +1071,7 @@ export default function MessageList({
                           <span style={{ marginRight: 6, fontWeight: 700 }}>{statusIcon}</span>
                           Worker
                           {msg.timestamp && (
-                            <span className={styles.timestamp}>
-                              {formatTimestamp(msg.timestamp)}
-                            </span>
+                            <DateTimeBadgeComponent date={msg.timestamp} mini />
                           )}
                         </div>
                         {!readOnly && (
@@ -1151,9 +1125,7 @@ export default function MessageList({
                         ? "System"
                         : "Model"}
                     {msg.timestamp && (
-                      <span className={styles.timestamp}>
-                        {formatTimestamp(msg.timestamp)}
-                      </span>
+                      <DateTimeBadgeComponent date={msg.timestamp} mini />
                     )}
                   </div>
                   {!readOnly && (
@@ -1474,8 +1446,10 @@ export default function MessageList({
 
                 {/* User metadata */}
                 {msg.role === "user" && msg.content && (
-                  <div className={styles.meta}>
-                    {`${msg.content.trim().split(/\s+/).filter(Boolean).length} words`}
+                  <div className={styles.metaBadges}>
+                    <BadgeComponent variant="info" mini>
+                      {msg.content.trim().split(/\s+/).filter(Boolean).length} words
+                    </BadgeComponent>
                   </div>
                 )}
 
@@ -1483,69 +1457,62 @@ export default function MessageList({
                 {msg.role === "assistant" &&
                   (coalesce?.isLastInGroup !== false) &&
                   (msg.usage || msg.audio || msg.provider) && (
-                    <div className={styles.meta}>
-                      <div className={styles.metaRow}>
-                        {msg.provider && (
-                          <span className={styles.metaProvider}>
-                            <ProviderLogo provider={msg.provider} size={13} />
-                            {PROVIDER_LABELS[msg.provider] || msg.provider}
-                          </span>
-                        )}
-                        {msg.model && (
-                          <>
-                            {" • "}
-                            {msg.model}
-                          </>
-                        )}
-                      </div>
-                      <div className={styles.metaRow}>
-                        {msg.voice ? `🔊 ${msg.voice}` : ""}
-                        {msg.usage?.inputTokens != null &&
-                        msg.usage?.outputTokens != null
-                          ? (() => {
-                              const cacheRead =
-                                msg.usage.cacheReadInputTokens || 0;
-                              const cacheWrite =
-                                msg.usage.cacheCreationInputTokens || 0;
-                              const cached = cacheRead + cacheWrite;
-                              const totalIn = getTotalInputTokens(msg.usage);
-                              let inLabel;
-                              if (cached) {
-                                const parts = [];
-                                if (msg.usage.inputTokens)
-                                  parts.push(
-                                    `${msg.usage.inputTokens.toLocaleString()} new`,
-                                  );
-                                if (cacheRead)
-                                  parts.push(
-                                    `${cacheRead.toLocaleString()} read`,
-                                  );
-                                if (cacheWrite)
-                                  parts.push(
-                                    `${cacheWrite.toLocaleString()} write`,
-                                  );
-                                inLabel = `${totalIn.toLocaleString()} in (${parts.join(" · ")})`;
-                              } else {
-                                inLabel = `${msg.usage.inputTokens.toLocaleString()} in`;
-                              }
-                              return `${msg.voice ? " • " : ""}${inLabel} · ${msg.usage.outputTokens.toLocaleString()} out tokens`;
-                            })()
-                          : msg.usage?.outputTokens != null
-                            ? `${msg.voice ? " • " : ""}${msg.usage.outputTokens.toLocaleString()} tokens`
-                            : ""}
-                        {msg.content
-                          ? ` • ${msg.content.trim().split(/\s+/).filter(Boolean).length} words`
-                          : ""}
-                        {msg.totalTime != null
-                          ? ` • ${msg.totalTime.toFixed(1)}s`
-                          : ""}
-                        {msg.tokensPerSec ? ` • ${msg.tokensPerSec} tok/s` : ""}
-                        {msg.provider === "lm-studio" || msg.provider === "vllm"
-                          ? " • $0"
-                          : msg.estimatedCost
-                            ? ` • ${formatCost(msg.estimatedCost)}`
-                            : ""}
-                      </div>
+                    <div className={styles.metaBadges}>
+                      {msg.provider && (
+                        <ProvidersBadgeComponent providers={[msg.provider]} mini />
+                      )}
+                      {msg.model && (
+                        <ModelBadgeComponent models={[msg.model]} mini />
+                      )}
+                      {msg.voice && (
+                        <BadgeComponent variant="info" mini>🔊 {msg.voice}</BadgeComponent>
+                      )}
+                      {(() => {
+                        if (msg.usage?.inputTokens != null && msg.usage?.outputTokens != null) {
+                          const cacheRead = msg.usage.cacheReadInputTokens || 0;
+                          const cacheWrite = msg.usage.cacheCreationInputTokens || 0;
+                          const cached = cacheRead + cacheWrite;
+                          const totalIn = getTotalInputTokens(msg.usage);
+                          let inLabel = "in";
+                          if (cached) {
+                            const parts = [];
+                            if (msg.usage.inputTokens) parts.push(`${msg.usage.inputTokens.toLocaleString()} new`);
+                            if (cacheRead) parts.push(`${cacheRead.toLocaleString()} read`);
+                            if (cacheWrite) parts.push(`${cacheWrite.toLocaleString()} write`);
+                            inLabel = `in (${parts.join(" · ")})`;
+                          }
+                          return (
+                            <>
+                              <TokenCountBadgeComponent value={totalIn} label={inLabel} mini />
+                              <TokenCountBadgeComponent value={msg.usage.outputTokens} label="out" mini />
+                            </>
+                          );
+                        }
+                        if (msg.usage?.outputTokens != null) {
+                          return <TokenCountBadgeComponent value={msg.usage.outputTokens} label="tokens" mini />;
+                        }
+                        return null;
+                      })()}
+                      {msg.content && (
+                        <BadgeComponent variant="info" mini>
+                          {msg.content.trim().split(/\s+/).filter(Boolean).length} words
+                        </BadgeComponent>
+                      )}
+                      {msg.totalTime != null && (
+                        <StopwatchComponent seconds={msg.totalTime} showIcon={false} className={styles.metaMini} />
+                      )}
+                      {msg.tokensPerSec && (
+                        <BadgeComponent variant="info" mini>{msg.tokensPerSec} tok/s</BadgeComponent>
+                      )}
+                      {(msg.provider === "lm-studio" || msg.provider === "vllm")
+                        ? <BadgeComponent variant="success" mini>$0</BadgeComponent>
+                        : msg.estimatedCost
+                          ? <CostBadgeComponent cost={msg.estimatedCost} mini />
+                          : null
+                      }
+                      {msg.timestamp && (
+                        <DateTimeBadgeComponent date={msg.timestamp} mini />
+                      )}
                     </div>
                   )}
               </div>
