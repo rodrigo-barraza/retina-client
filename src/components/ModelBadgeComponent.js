@@ -9,9 +9,11 @@ import styles from "./ModelBadgeComponent.module.css";
  *
  * @param {string[]} models — array of model name strings
  * @param {string} [provider] — provider key for single-model icon (e.g. "openai", "google")
+ * @param {string[]} [providers] — provider keys; when a single unique provider exists, its logo is shown
  * @param {string} [className]
+ * @param {boolean} [mini]
  */
-export default function ModelBadgeComponent({ models = [], provider, className = "", mini = false }) {
+export default function ModelBadgeComponent({ models = [], provider, providers, className = "", mini = false }) {
   if (!models || models.length === 0) {
     return <span style={{ color: "var(--text-muted)" }}>—</span>;
   }
@@ -19,13 +21,16 @@ export default function ModelBadgeComponent({ models = [], provider, className =
   const iconSize = mini ? 8 : 10;
   const cls = `${styles.badge} ${mini ? styles.mini : ""} ${className}`;
 
+  /* Resolve a single provider key from explicit prop or providers array */
+  const resolvedProvider = provider || (providers?.length === 1 ? providers[0] : null);
+  const providerIcon = resolvedProvider
+    ? <ProviderLogo provider={resolvedProvider} size={iconSize} />
+    : null;
+
   if (models.length === 1) {
-    const icon = provider
-      ? <ProviderLogo provider={provider} size={iconSize} />
-      : null;
     return (
       <span className={cls} title={models[0]}>
-        {icon || <Cpu size={iconSize} />}
+        {providerIcon || <Cpu size={iconSize} />}
         <span className={styles.modelName}>{models[0]}</span>
       </span>
     );
@@ -34,7 +39,7 @@ export default function ModelBadgeComponent({ models = [], provider, className =
   return (
     <TooltipComponent label={models.join(", ")} position="top">
       <span className={cls}>
-        <Cpu size={iconSize} />
+        {providerIcon || <Cpu size={iconSize} />}
         {models.length} models
       </span>
     </TooltipComponent>

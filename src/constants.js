@@ -37,6 +37,13 @@ export const SK_TOOL_MEMORY_BENCHMARKS = "toolMemory:benchmarks";
 export const MAX_TOOL_ITERATIONS = 25;
 export const PROJECT_AGENT = "coding";
 
+/**
+ * Known local (self-hosted) provider identifiers.
+ * Models from these providers are considered "local" for memory,
+ * model-picker grouping, and progressive-config-load gating.
+ */
+export const LOCAL_PROVIDERS = new Set(["lm-studio", "ollama", "vllm", "llama-cpp"]);
+
 // ── Raw localStorage keys (no namespace prefix) ─────────────────
 export const LS_PANEL_LEFT = "panel_left";
 export const LS_PANEL_RIGHT = "panel_right";

@@ -17,6 +17,7 @@ import ModalityIconComponent from "./ModalityIconComponent";
 import ModelToolsComponent from "./ModelToolsComponent";
 import CloseButtonComponent from "./CloseButtonComponent";
 import SoundService from "@/services/SoundService";
+import { LOCAL_PROVIDERS } from "../constants.js";
 import styles from "./ModelPickerPopoverComponent.module.css";
 
 // ── Shared model-search store ──────────────────────────────────────────
@@ -362,7 +363,7 @@ export default function ModelPickerPopoverComponent({
   const currentModel = allModels.find(
     (m) => m.provider === settings?.provider && m.name === settings?.model,
   );
-  const LOCAL_PROVIDERS = new Set(["lm-studio", "ollama", "vllm", "llama-cpp"]);
+
 
   // Build display label
   const displayLabel = (() => {

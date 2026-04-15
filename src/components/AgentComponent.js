@@ -29,15 +29,8 @@ import ButtonComponent from "./ButtonComponent.js";
 import {
   buildToolSchemas,
 } from "../utils/FunctionCallingUtilities.js";
-import {
-  getUniqueModels,
-  getSessionCost,
-  getSessionTokenStats,
-  getUsedTools,
-  getSessionElapsedTime,
-  shuffleArray,
-} from "../utils/utilities.js";
-import { getModalities } from "../utils/utilities.js";
+import { shuffleArray } from "../utils/utilities.js";
+import useSessionStats from "../hooks/useSessionStats.js";
 import { PROJECT_AGENT, SETTINGS_DEFAULTS, SK_MODEL_MEMORY_AGENT, SK_TOOL_MEMORY_AGENT, MAX_TOOL_ITERATIONS } from "../constants.js";
 import chatStyles from "./ChatArea.module.css";
 import styles from "./AgentComponent.module.css";
@@ -349,15 +342,10 @@ export default function AgentComponent() {
   // The client sends a placeholder system message that gets replaced.
 
   // ── Session stats for SettingsPanel ──────────────────
-  const uniqueModels = useMemo(() => getUniqueModels(messages), [messages]);
-  const totalCost = useMemo(() => getSessionCost(messages), [messages]);
-  const { totalTokens, requestCount } = useMemo(
-    () => getSessionTokenStats(messages),
-    [messages],
-  );
-  const usedTools = useMemo(() => getUsedTools(messages), [messages]);
-  const modalities = useMemo(() => getModalities(messages), [messages]);
-  const completedElapsedTime = useMemo(() => getSessionElapsedTime(messages), [messages]);
+  const {
+    uniqueModels, uniqueProviders, totalCost, totalTokens, requestCount,
+    usedTools, modalities, elapsedTime: completedElapsedTime,
+  } = useSessionStats(messages);
 
   // ── Fetch backend-aggregate session stats ────────────────
   const fetchSessionStats = useCallback((sessionId) => {
@@ -1219,6 +1207,7 @@ export default function AgentComponent() {
                     deletedCount: 0,
                     requestCount: backendSessionStats.requestCount,
                     uniqueModels: backendSessionStats.models,
+                    uniqueProviders,
                     totalTokens: {
                       input: backendSessionStats.totalInputTokens,
                       output: backendSessionStats.totalOutputTokens,
@@ -1237,6 +1226,7 @@ export default function AgentComponent() {
                     deletedCount: 0,
                     requestCount,
                     uniqueModels,
+                    uniqueProviders,
                     totalTokens,
                     totalCost,
                     originalTotalCost: 0,

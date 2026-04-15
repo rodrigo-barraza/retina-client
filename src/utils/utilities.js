@@ -14,6 +14,12 @@ export function buildLmStudioLoadBody(model, options = {}) {
   return body;
 }
 
+/**
+ * Format a number with K/M abbreviation (truncated, no decimals).
+ * @see {@link formatCompact} — similar but with adaptive decimal precision
+ * @see {@link formatTokenCount} — full numeric display with separators
+ * @see {@link formatContextTokens} — context-window-specific formatting
+ */
 export function formatNumber(n) {
   if (n === null || n === undefined) return "0";
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(0)}M`;
@@ -107,6 +113,8 @@ export function buildDateRangeParams(dateRange) {
 
 /**
  * Format a context window token count (e.g. 128000 → "128K", 1000000 → "1M").
+ * @see {@link formatNumber} — general-purpose K/M abbreviation
+ * @see {@link formatCompact} — adaptive precision for arbitrary numbers
  */
 export function formatContextTokens(tokens) {
   if (!tokens) return null;
@@ -154,6 +162,9 @@ export async function copyToClipboard(text) {
  * Unlike formatNumber, this keeps a decimal when the value isn't
  * a clean multiple (3.5K vs 4K) and uses toLocaleString for
  * values under 1 000.
+ *
+ * @see {@link formatNumber} — simpler version without adaptive decimals
+ * @see {@link formatContextTokens} — context-window-specific formatting
  */
 export function formatCompact(n) {
   if (n == null) return "—";
@@ -199,6 +210,20 @@ export function getUniqueModels(messages) {
       messages
         .filter((m) => m.role === "assistant" && m.model)
         .map((m) => m.model),
+    ),
+  ];
+}
+
+/**
+ * Get unique provider keys from assistant messages.
+ * Shared between useSessionStats and SettingsPanel.
+ */
+export function getUniqueProviders(messages) {
+  return [
+    ...new Set(
+      messages
+        .filter((m) => m.role === "assistant" && m.provider)
+        .map((m) => m.provider),
     ),
   ];
 }

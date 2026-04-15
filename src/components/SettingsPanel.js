@@ -142,7 +142,7 @@ export default function SettingsPanel({
                 count={sessionStats.requestCount}
               />
               {sessionStats.uniqueModels.length > 0 && (
-                <ModelBadgeComponent models={sessionStats.uniqueModels} />
+                <ModelBadgeComponent models={sessionStats.uniqueModels} providers={sessionStats.uniqueProviders} />
               )}
               {sessionStats.totalTokens.total > 0 && (
                 <>

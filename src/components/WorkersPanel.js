@@ -240,6 +240,7 @@ export default function WorkersPanel({ agentSessionId, refreshKey, onCountChange
             {worker.resolvedModel && (
               <ModelBadgeComponent
                 models={[worker.resolvedModel.replace(/-\d{8}$/, "")]}
+                provider={worker.provider}
                 mini
                 className={styles.modelBadge}
               />

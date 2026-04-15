@@ -104,6 +104,7 @@ export default function HistoryItemComponent({
         {hasModel && (
           <ModelBadgeComponent
             models={item.modelNames?.length > 0 ? item.modelNames : [item.modelName]}
+            providers={item.providers}
             className={styles.modelBadge}
           />
         )}

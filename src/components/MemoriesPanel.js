@@ -5,7 +5,7 @@ import { Brain, RefreshCw, User, MessageSquare, FolderKanban, ExternalLink, Tras
 import Link from "next/link";
 import PrismService from "../services/PrismService.js";
 import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
-import { formatTimeAgo } from "../utils/utilities";
+import { formatTimeAgo, formatLatency } from "../utils/utilities";
 import styles from "./MemoriesPanel.module.css";
 
 
@@ -308,7 +308,7 @@ export default function MemoriesPanel({ project, refreshKey, consolidationEvent,
               <div className={styles.historyStats}>
                 <span><GitMerge size={9} /> {run.actionsApplied} action{run.actionsApplied !== 1 ? "s" : ""}</span>
                 <span>{run.memoriesBefore} → {run.memoriesAfter} memories</span>
-                {run.durationMs && <span>{(run.durationMs / 1000).toFixed(1)}s</span>}
+                {run.durationMs && <span>{formatLatency(run.durationMs / 1000)}</span>}
               </div>
             </div>
           ))}

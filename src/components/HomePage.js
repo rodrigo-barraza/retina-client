@@ -6,17 +6,11 @@ import styles from "../app/page.module.css";
 import PrismService from "../services/PrismService";
 import AudioPlayerService from "../services/AudioPlayerService";
 import { prepareDisplayMessages } from "./MessageList";
-import { getModalities } from "../utils/utilities";
 import StorageService from "../services/StorageService";
 import {
   buildToolSchemas,
 } from "../utils/FunctionCallingUtilities";
-import {
-  getUniqueModels,
-  getSessionCost,
-  getSessionTokenStats,
-  getUsedTools,
-} from "../utils/utilities";
+import useSessionStats from "../hooks/useSessionStats";
 import {
   SK_LAST_PROVIDER,
   SK_LAST_MODEL,
@@ -256,25 +250,10 @@ export default function HomePage({ initialConversationId = null }) {
     }
   };
 
-  const uniqueModels = useMemo(
-    () => getUniqueModels(messages),
-    [messages],
-  );
-
-  const totalCost = useMemo(
-    () => getSessionCost(messages),
-    [messages],
-  );
-
-  const { totalTokens, requestCount } = useMemo(
-    () => getSessionTokenStats(messages),
-    [messages],
-  );
-
-  // Derive tools used across all messages with invocation counts
-  const usedTools = useMemo(() => getUsedTools(messages), [messages]);
-
-  const modalities = useMemo(() => getModalities(messages), [messages]);
+  const {
+    uniqueModels, uniqueProviders, totalCost, totalTokens, requestCount,
+    usedTools, modalities,
+  } = useSessionStats(messages);
 
   // Auto-save system prompt on edit (debounced)
   useEffect(() => {
@@ -2096,6 +2075,7 @@ export default function HomePage({ initialConversationId = null }) {
                         deletedCount: originalMessageCount - messages.length,
                         requestCount,
                         uniqueModels,
+                        uniqueProviders,
                         totalTokens,
                         totalCost,
                         originalTotalCost,

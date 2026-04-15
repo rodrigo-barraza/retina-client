@@ -137,7 +137,7 @@ export const modelsListColumn = ({ mini = false } = {}) => ({
   label: "Models",
   description: "All distinct models used in this group",
   sortable: false,
-  render: (row) => <ModelBadgeComponent models={row.models} mini={mini} />,
+  render: (row) => <ModelBadgeComponent models={row.models} providers={row.providers} mini={mini} />,
 });
 
 export const modelCountColumn = () => ({
@@ -145,7 +145,7 @@ export const modelCountColumn = () => ({
   label: "Models",
   description: "Number of distinct models used",
   sortValue: (row) => (row.models?.length || row.modelCount || 0),
-  render: (row) => <ModelBadgeComponent models={row.models || []} />,
+  render: (row) => <ModelBadgeComponent models={row.models || []} providers={row.providers} />,
 });
 
 export const providersListColumn = ({ mini = false } = {}) => ({

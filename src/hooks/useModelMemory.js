@@ -1,11 +1,6 @@
 import { useCallback, useRef } from "react";
 import StorageService from "../services/StorageService.js";
-
-/**
- * Known local (self-hosted) provider identifiers.
- * Models from these providers are considered "local" for memory purposes.
- */
-const LOCAL_PROVIDERS = new Set(["lm-studio", "ollama", "vllm", "llama-cpp"]);
+import { LOCAL_PROVIDERS } from "../constants.js";
 
 /**
  * useModelMemory — Persist and restore the last-used model per page context.

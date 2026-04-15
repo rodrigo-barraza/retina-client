@@ -37,7 +37,7 @@ import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
 import BadgeComponent from "./BadgeComponent";
 import styles from "./MessageList.module.css";
 import PrismService from "../services/PrismService";
-import { getTotalInputTokens } from "../utils/utilities";
+import { getTotalInputTokens, formatLatency } from "../utils/utilities";
 
 
 
@@ -1059,7 +1059,7 @@ export default function MessageList({
                   : taskNotif.status === "failed" ? "✗" : "■";
                 const statusColor = taskNotif.status === "completed" ? "var(--color-success, #22c55e)"
                   : taskNotif.status === "failed" ? "var(--color-danger, #ef4444)" : "var(--text-muted)";
-                const durationSec = taskNotif.durationMs ? (Number(taskNotif.durationMs) / 1000).toFixed(1) + "s" : null;
+                const durationSec = taskNotif.durationMs ? formatLatency(Number(taskNotif.durationMs) / 1000) : null;
                 return (
                   <div className={`${styles.message} ${styles.notificationNode || ""}`}>
                     <div className={styles.avatar} style={{ color: statusColor, fontWeight: 700, fontSize: 14 }}>

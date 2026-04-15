@@ -25,15 +25,8 @@ import EmptyStateComponent from "./EmptyStateComponent.js";
 import ModelBadgeComponent from "./ModelBadgeComponent.js";
 import { useAdminHeader } from "./AdminHeaderContext.js";
 
-import {
-  getUniqueModels,
-  getSessionCost,
-  getSessionTokenStats,
-  getUsedTools,
-  getSessionElapsedTime,
-  getModalities,
-  formatNumber,
-} from "../utils/utilities.js";
+import { formatNumber } from "../utils/utilities.js";
+import useSessionStats from "../hooks/useSessionStats.js";
 import { PROJECT_AGENT } from "../constants.js";
 import chatStyles from "./ChatArea.module.css";
 import styles from "./AdminAgentViewerComponent.module.css";
@@ -193,15 +186,10 @@ export default function AdminAgentViewerComponent() {
   }, [config]);
 
   // ── Session stats ───────────────────────────────────────────
-  const uniqueModels = useMemo(() => getUniqueModels(messages), [messages]);
-  const totalCost = useMemo(() => getSessionCost(messages), [messages]);
-  const { totalTokens, requestCount } = useMemo(
-    () => getSessionTokenStats(messages),
-    [messages],
-  );
-  const usedTools = useMemo(() => getUsedTools(messages), [messages]);
-  const modalities = useMemo(() => getModalities(messages), [messages]);
-  const completedElapsedTime = useMemo(() => getSessionElapsedTime(messages), [messages]);
+  const {
+    uniqueModels, uniqueProviders, totalCost, totalTokens, requestCount,
+    usedTools, modalities, elapsedTime: completedElapsedTime,
+  } = useSessionStats(messages);
 
   // Fetch backend stats when session changes
   const fetchSessionStats = useCallback((sessionId) => {
@@ -335,6 +323,7 @@ export default function AdminAgentViewerComponent() {
                   uniqueModels: backendSessionStats?.models?.length > uniqueModels.length
                     ? backendSessionStats.models
                     : uniqueModels,
+                  uniqueProviders,
                   totalTokens: backendSessionStats
                     ? {
                         input: backendSessionStats.totalInputTokens,
@@ -477,7 +466,7 @@ export default function AdminAgentViewerComponent() {
         </span>
 
         {activeId && settings.model && (
-          <ModelBadgeComponent models={[settings.model]} />
+          <ModelBadgeComponent models={[settings.model]} provider={settings.provider} />
         )}
 
         <div style={{ flex: 1 }} />

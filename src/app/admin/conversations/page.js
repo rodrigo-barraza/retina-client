@@ -1,13 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import {
-  getUniqueModels,
-  getSessionCost,
-  getSessionTokenStats,
-  getUsedTools,
-  buildDateRangeParams,
-} from "../../../utils/utilities";
+import { buildDateRangeParams } from "../../../utils/utilities";
+import useSessionStats from "../../../hooks/useSessionStats";
 import { useSearchParams } from "next/navigation";
 import {
   Loader,
@@ -26,7 +21,6 @@ import SettingsPanel from "../../../components/SettingsPanel";
 import ModelInfoPanel from "../../../components/ModelInfoPanel";
 import ParametersPanelComponent from "../../../components/ParametersPanelComponent";
 import HistoryPanel from "../../../components/HistoryPanel";
-import { getModalities } from "../../../utils/utilities";
 
 import ThreePanelLayout from "../../../components/ThreePanelLayout";
 import SelectDropdown from "../../../components/SelectDropdown";
@@ -353,30 +347,10 @@ export default function ConversationsPage({ initialId = null, traceId = null }) 
     ? selectedConv.title || "Untitled Conversation"
     : "Select a conversation";
 
-  const msgs = useMemo(() => selectedConv?.messages || [], [selectedConv]);
-
-  const uniqueModels = useMemo(
-    () => getUniqueModels(msgs),
-    [msgs],
-  );
-
-  const totalCost = useMemo(
-    () => getSessionCost(msgs),
-    [msgs],
-  );
-
-  const { totalTokens, requestCount } = useMemo(
-    () => getSessionTokenStats(msgs),
-    [msgs],
-  );
-
-  // Derive tools used across all messages with invocation counts
-  const usedTools = useMemo(() => getUsedTools(msgs), [msgs]);
-
-  const modalities = useMemo(
-    () => getModalities(selectedConv?.messages || []),
-    [selectedConv],
-  );
+  const {
+    uniqueModels, uniqueProviders, totalCost, totalTokens, requestCount,
+    usedTools, modalities,
+  } = useSessionStats(selectedConv?.messages || []);
 
   const settingsWithDefaults = useMemo(
     () => ({ ...SETTINGS_DEFAULTS, ...(selectedConv?.settings || {}) }),
@@ -474,6 +448,7 @@ export default function ConversationsPage({ initialId = null, traceId = null }) 
                                 selectedConv.messages.length,
                               requestCount,
                               uniqueModels,
+                              uniqueProviders,
                               totalTokens,
                               totalCost,
                               originalTotalCost: selectedConv.totalCost || 0,
