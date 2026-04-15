@@ -1211,7 +1211,7 @@ export default function AgentComponent() {
                   originalTotalCost: 0,
                   usedTools,
                   modalities: backendSessionStats?.modalities || modalities,
-                  completedElapsedTime,
+                  completedElapsedTime: backendSessionStats?.totalElapsedTime || completedElapsedTime,
                   currentTurnStart,
                 }
               : null
