@@ -13,6 +13,11 @@ import {
   formatTokensPerSec,
 } from "./utilities";
 import BadgeComponent from "../components/BadgeComponent";
+import ModelBadgeComponent from "../components/ModelBadgeComponent";
+import ProvidersBadgeComponent from "../components/ProvidersBadgeComponent";
+import TokenCountBadgeComponent from "../components/TokenCountBadgeComponent";
+import DateTimeBadgeComponent from "../components/DateTimeBadgeComponent";
+import StopwatchComponent from "../components/StopwatchComponent";
 import ModalityIconComponent from "../components/ModalityIconComponent";
 
 import CostBadgeComponent from "../components/CostBadgeComponent";
@@ -104,7 +109,7 @@ export function buildRequestDetailSections(req) {
         {
           label: "Timestamp",
           value: req.timestamp
-            ? new Date(req.timestamp).toLocaleString()
+            ? <DateTimeBadgeComponent date={req.timestamp} />
             : "-",
         },
         {
@@ -132,10 +137,10 @@ export function buildRequestDetailSections(req) {
         {
           label: "Provider",
           value: req.provider ? (
-            <BadgeComponent variant="provider">{req.provider}</BadgeComponent>
+            <ProvidersBadgeComponent providers={[req.provider]} />
           ) : "-",
         },
-        { label: "Model", value: req.model || "-" },
+        { label: "Model", value: req.model ? <ModelBadgeComponent models={[req.model]} provider={req.provider} /> : "-" },
         {
           label: "Modalities",
           value: req.modalities ? (
@@ -198,11 +203,15 @@ export function buildRequestDetailSections(req) {
       items: [
         {
           label: "Input Tokens",
-          value: formatNumber(req.inputTokens),
+          value: req.inputTokens > 0
+            ? <TokenCountBadgeComponent value={req.inputTokens} label="in" />
+            : formatNumber(req.inputTokens),
         },
         {
           label: "Output Tokens",
-          value: formatNumber(req.outputTokens),
+          value: req.outputTokens > 0
+            ? <TokenCountBadgeComponent value={req.outputTokens} label="out" />
+            : formatNumber(req.outputTokens),
         },
         {
           label: "Estimated Cost",
@@ -210,7 +219,9 @@ export function buildRequestDetailSections(req) {
         },
         {
           label: "Tokens/sec",
-          value: formatTokensPerSec(req.tokensPerSec),
+          value: req.tokensPerSec > 0
+            ? <BadgeComponent variant="accent">{formatTokensPerSec(req.tokensPerSec)}</BadgeComponent>
+            : formatTokensPerSec(req.tokensPerSec),
         },
         {
           label: "Input Chars",
@@ -231,15 +242,21 @@ export function buildRequestDetailSections(req) {
       items: [
         {
           label: "Time to Generation",
-          value: formatLatency(req.timeToGeneration),
+          value: req.timeToGeneration > 0
+            ? <StopwatchComponent seconds={req.timeToGeneration} />
+            : formatLatency(req.timeToGeneration),
         },
         {
           label: "Generation Time",
-          value: formatLatency(req.generationTime),
+          value: req.generationTime > 0
+            ? <StopwatchComponent seconds={req.generationTime} />
+            : formatLatency(req.generationTime),
         },
         {
           label: "Total Time",
-          value: formatLatency(req.totalTime),
+          value: req.totalTime > 0
+            ? <StopwatchComponent seconds={req.totalTime} />
+            : formatLatency(req.totalTime),
         },
       ],
     },

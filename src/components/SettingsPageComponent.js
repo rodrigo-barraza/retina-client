@@ -5,6 +5,7 @@ import { Brain, Network, RotateCcw, Loader2, Check } from "lucide-react";
 import PrismService from "../services/PrismService";
 import PageHeaderComponent from "./PageHeaderComponent";
 import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent";
+import ButtonComponent from "./ButtonComponent";
 import styles from "./SettingsPageComponent.module.css";
 
 /**
@@ -245,15 +246,15 @@ export default function SettingsPageComponent() {
 
         {/* Reset */}
         <div className={styles.resetRow}>
-          <button
-            className={styles.resetBtn}
+          <ButtonComponent
+            variant="ghost"
+            size="sm"
+            icon={RotateCcw}
             onClick={handleResetMemory}
             disabled={saving}
-            title="Reset memory models to defaults"
           >
-            <RotateCcw size={12} />
             Reset to Defaults
-          </button>
+          </ButtonComponent>
         </div>
       </div>
 
@@ -294,15 +295,15 @@ export default function SettingsPageComponent() {
 
         {/* Reset */}
         <div className={styles.resetRow}>
-          <button
-            className={styles.resetBtn}
+          <ButtonComponent
+            variant="ghost"
+            size="sm"
+            icon={RotateCcw}
             onClick={handleResetAgents}
             disabled={saving}
-            title="Reset agent defaults"
           >
-            <RotateCcw size={12} />
             Reset to Defaults
-          </button>
+          </ButtonComponent>
         </div>
       </div>
     </div>

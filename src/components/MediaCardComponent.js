@@ -13,6 +13,8 @@ import {
 import Link from "next/link";
 import PrismService from "../services/PrismService";
 import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
+import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
+import ModelBadgeComponent from "./ModelBadgeComponent";
 import { MODALITY_COLORS } from "./WorkflowNodeConstants";
 import styles from "./MediaCardComponent.module.css";
 
@@ -170,14 +172,10 @@ export default function MediaCardComponent({
           )}
           <div className={styles.meta}>
             {m.model && (
-              <span className={styles.modelTag}>
-                {m.model.split("/").pop()}
-              </span>
+              <ModelBadgeComponent models={[m.model.split("/").pop()]} provider={m.provider} mini />
             )}
             {m.timestamp && (
-              <span className={styles.time}>
-                {new Date(m.timestamp).toLocaleDateString()}
-              </span>
+              <DateTimeBadgeComponent date={m.timestamp} mini />
             )}
           </div>
         </div>

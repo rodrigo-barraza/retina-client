@@ -274,9 +274,9 @@ export default function RunHistorySidebarComponent({
                     data-panel-close
                   >
                     <div className={styles.runItemHeader}>
+                      <DateTimeBadgeComponent date={run.completedAt} mini />
                       <CostBadgeComponent cost={totalCost} mini />
                       <span className={styles.runIndex}>#{runHistory.length - idx}</span>
-                      <DateTimeBadgeComponent date={run.completedAt} mini />
                       {run.aborted && (
                         <AlertTriangle size={11} style={{ color: "var(--warning)", flexShrink: 0 }} />
                       )}

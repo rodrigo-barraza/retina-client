@@ -5,8 +5,9 @@ import { Activity, AlertCircle, Users } from "lucide-react";
 import ProviderLogo from "./ProviderLogos";
 import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
 import StopwatchComponent from "./StopwatchComponent";
+import TokenCountBadgeComponent from "./TokenCountBadgeComponent";
 import IrisService from "../services/IrisService";
-import { formatCost, formatCompact } from "../utils/utilities";
+import { formatCost } from "../utils/utilities";
 import styles from "./SessionRequestsListComponent.module.css";
 
 /**
@@ -109,14 +110,10 @@ export default function SessionRequestsListComponent({ agentSessionId, refreshKe
                 </div>
                 <div className={styles.requestStats}>
                   {req.inputTokens > 0 && (
-                    <span className={styles.requestStat} title="Input tokens">
-                      ↑{formatCompact(req.inputTokens)}
-                    </span>
+                    <TokenCountBadgeComponent value={req.inputTokens} label="in" mini />
                   )}
                   {req.outputTokens > 0 && (
-                    <span className={styles.requestStat} title="Output tokens">
-                      ↓{formatCompact(req.outputTokens)}
-                    </span>
+                    <TokenCountBadgeComponent value={req.outputTokens} label="out" mini />
                   )}
                   {req.totalTime > 0 && (
                     <StopwatchComponent seconds={req.totalTime} />

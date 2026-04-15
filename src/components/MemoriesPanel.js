@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Brain, RefreshCw, User, MessageSquare, FolderKanban, ExternalLink, Trash2, Sparkles, History, GitMerge, Settings } from "lucide-react";
 import Link from "next/link";
 import PrismService from "../services/PrismService.js";
+import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
 import { formatTimeAgo } from "../utils/utilities";
 import styles from "./MemoriesPanel.module.css";
 
@@ -341,9 +342,7 @@ export default function MemoriesPanel({ project, refreshKey, consolidationEvent,
                     {type}
                   </span>
                   {memory.createdAt && (
-                    <span className={styles.memoryAge}>
-                      {formatTimeAgo(memory.createdAt)}
-                    </span>
+                    <DateTimeBadgeComponent date={memory.createdAt} mini />
                   )}
                 </div>
               </div>

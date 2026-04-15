@@ -41,11 +41,12 @@ import {
   formatLatency,
   formatTokensPerSec,
   getTotalInputTokens,
-  formatCost,
 } from "./utilities";
 import { PROVIDER_COLORS } from "../constants";
 import DateTimeBadgeComponent from "../components/DateTimeBadgeComponent";
 import StopwatchComponent from "../components/StopwatchComponent";
+import TokenCountBadgeComponent from "../components/TokenCountBadgeComponent";
+import TooltipComponent from "../components/TooltipComponent";
 import styles from "../components/TableComponents.module.css";
 
 /* ── Helpers ────────────────────────────────────────────── */
@@ -102,7 +103,7 @@ export const modelColumn = () => ({
   key: "model",
   label: "Model",
   description: "The AI model identifier used for the request",
-  render: (row) => <ModelBadgeComponent models={row.model ? [row.model] : []} />,
+  render: (row) => <ModelBadgeComponent models={row.model ? [row.model] : []} provider={row.provider} />,
 });
 
 export const providerColumn = () => ({
@@ -644,14 +645,21 @@ export const benchmarkToolsColumn = () => ({
   sortable: true,
   sortValue: (r) => (r.toolsEnabled ? 1 : 0),
   defaultHidden: true,
-  render: (r) =>
-    r.toolsEnabled ? (
+  render: (r) => {
+    if (!r.toolsEnabled) return emptyDash();
+    const toolNames = r.toolCalls?.length
+      ? [...new Set(r.toolCalls.map((tc) => tc.name).filter(Boolean))]
+      : null;
+    const badge = (
       <BadgeComponent variant="warning" mini>
-        <Wrench size={10} /> Tools
+        <Wrench size={10} /> Tools{toolNames ? ` (${toolNames.length})` : ""}
       </BadgeComponent>
-    ) : (
-      emptyDash()
-    ),
+    );
+    if (!toolNames?.length) return badge;
+    return (
+      <TooltipComponent content={toolNames.join(", ")}>{badge}</TooltipComponent>
+    );
+  },
 });
 
 export const benchmarkThinkingColumn = () => ({
@@ -815,7 +823,7 @@ export const benchmarkTokensInColumn = () => ({
   align: "right",
   render: (r) => {
     const v = getTotalInputTokens(r.usage);
-    return v > 0 ? <span className={styles.monoCell}>{formatTokenCount(v)}</span> : emptyDash();
+    return v > 0 ? <TokenCountBadgeComponent value={v} label="in" mini /> : emptyDash();
   },
 });
 
@@ -828,7 +836,7 @@ export const benchmarkTokensOutColumn = () => ({
   align: "right",
   render: (r) => {
     const v = r.usage?.outputTokens || 0;
-    return v > 0 ? <span className={styles.monoCell}>{formatTokenCount(v)}</span> : emptyDash();
+    return v > 0 ? <TokenCountBadgeComponent value={v} label="out" mini /> : emptyDash();
   },
 });
 
@@ -863,7 +871,7 @@ export const benchmarkCostColumn = () => ({
   align: "right",
   render: (r) =>
     r.estimatedCost != null ? (
-      <span className={styles.monoCell}>{formatCost(r.estimatedCost)}</span>
+      <CostBadgeComponent cost={r.estimatedCost} mini />
     ) : (
       emptyDash()
     ),
@@ -1013,7 +1021,7 @@ export const dashboardCostColumn = () => ({
   align: "right",
   render: (r) =>
     r.totalCost > 0 ? (
-      <span className={styles.monoCell}>{formatCost(r.totalCost)}</span>
+      <CostBadgeComponent cost={r.totalCost} mini />
     ) : (
       emptyDash()
     ),

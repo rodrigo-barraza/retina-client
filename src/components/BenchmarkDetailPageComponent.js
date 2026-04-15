@@ -26,6 +26,7 @@ import AgentPickerPopoverComponent from "./AgentPickerPopoverComponent";
 import BenchmarksTableComponent from "./BenchmarksTableComponent";
 import ChatPreviewComponent from "./ChatPreviewComponent";
 import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
+import StopwatchComponent from "./StopwatchComponent";
 
 import StorageService from "../services/StorageService";
 import { SK_MODEL_MEMORY_BENCHMARKS } from "../constants";
@@ -1170,7 +1171,13 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
                     </BadgeComponent>
                   )}
                 </div>
-                <DateTimeBadgeComponent date={latestRun.completedAt} />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {(() => {
+                    const totalDuration = (latestRun.models || []).reduce((sum, r) => sum + (r.latency || 0), 0);
+                    return totalDuration > 0 ? <StopwatchComponent seconds={totalDuration} /> : null;
+                  })()}
+                  <DateTimeBadgeComponent date={latestRun.completedAt} />
+                </div>
               </div>
 
               {/* Summary Bar */}
