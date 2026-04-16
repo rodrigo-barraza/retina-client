@@ -314,7 +314,8 @@
   }
 
   .headerCenter {
-    left: 44px !important;
-    right: 44px !important;
+    left: 90px !important;
+    right: 90px !important;
+    overflow: hidden;
   }
 }
