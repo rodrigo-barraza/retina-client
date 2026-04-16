@@ -70,7 +70,7 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
-/* ── Mini Cats (concurrent API calls) ── */
+/* ── Mini Cats (concurrent API calls — JS-driven bouncing) ── */
 
 .miniCat {
   position: absolute;
@@ -81,23 +81,8 @@
   z-index: 0;
   pointer-events: none;
   transform: translate(-50%, -50%);
-  opacity: 0;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
-  animation: miniCatIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  will-change: transform, opacity;
-  --cat-dx: 0px;
-  --cat-dy: 0px;
-}
-
-@keyframes miniCatIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0);
-  }
-  to {
-    opacity: 0.8;
-    transform: translate(calc(-50% + var(--cat-dx)), calc(-50% + var(--cat-dy))) scale(1);
-  }
+  opacity: 0.85;
+  will-change: transform, filter, left, top;
 }
 
 .rainbowCanvas {

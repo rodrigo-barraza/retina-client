@@ -158,28 +158,100 @@ export default function NavigationSidebarComponent({
     });
   }, []);
 
-  // ── Mini cats for concurrent API calls ─────────────────────────
-  const miniCatPoolRef = useRef([]);
-  const [miniCatPositions, setMiniCatPositions] = useState([]);
+  // ── Bouncing mini cats for concurrent API calls ────────────────
+  const bannerRef = useRef(null);
+  const catStateRef = useRef(new Map());
+  const catElsRef = useRef(new Map());
+  const [miniCats, setMiniCats] = useState([]);
 
   useEffect(() => {
-    const needed = Math.max(0, (activeApiCount || 0) - 1);
-    const pool = miniCatPoolRef.current;
-    if (needed <= pool.length) {
-      setMiniCatPositions(pool.slice(0, needed));
-      return;
-    }
-    const next = [...pool];
-    while (next.length < needed) {
-      const angle = Math.random() * Math.PI * 2;
-      const distance = 25 + Math.random() * 45;
-      const dx = Math.cos(angle) * distance;
-      const dy = Math.sin(angle) * distance;
-      next.push({ dx, dy, size: 30 + Math.floor(Math.random() * 18) });
-    }
-    miniCatPoolRef.current = next;
-    setMiniCatPositions(next);
+    setMiniCats((prev) => {
+      const needed = Math.max(0, (activeApiCount || 0) - 1);
+      if (needed === prev.length) return prev;
+      if (needed < prev.length) {
+        const kept = prev.slice(0, needed);
+        const keptIds = new Set(kept.map((c) => c.id));
+        for (const id of catStateRef.current.keys()) {
+          if (!keptIds.has(id)) {
+            catStateRef.current.delete(id);
+            catElsRef.current.delete(id);
+          }
+        }
+        return kept;
+      }
+      const next = [...prev];
+      while (next.length < needed) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 30 + Math.random() * 40;
+        next.push({
+          id: crypto.randomUUID(),
+          size: 45 + Math.floor(Math.random() * 22),
+          initVx: Math.cos(angle) * speed,
+          initVy: Math.sin(angle) * speed,
+        });
+      }
+      return next;
+    });
   }, [activeApiCount]);
+
+  // Single RAF loop: specular-reflection bouncing + SpinningCat-style FX ramp
+  useEffect(() => {
+    if (miniCats.length === 0) return;
+    let lastTime = 0;
+    let rafId;
+
+    const tick = (now) => {
+      if (!lastTime) { lastTime = now; rafId = requestAnimationFrame(tick); return; }
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+
+      const banner = bannerRef.current;
+      if (!banner) { rafId = requestAnimationFrame(tick); return; }
+      const bw = banner.offsetWidth;
+      const bh = banner.offsetHeight;
+
+      for (const cat of miniCats) {
+        let p = catStateRef.current.get(cat.id);
+        if (!p) {
+          p = { x: bw / 2, y: bh / 2, vx: cat.initVx, vy: cat.initVy, accelTime: 0 };
+          catStateRef.current.set(cat.id, p);
+        }
+
+        // Move
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.accelTime += dt;
+
+        // Specular reflection off edges
+        const hs = cat.size / 2;
+        if (p.x < hs) { p.x = hs; p.vx = Math.abs(p.vx); }
+        else if (p.x > bw - hs) { p.x = bw - hs; p.vx = -Math.abs(p.vx); }
+        if (p.y < hs) { p.y = hs; p.vy = Math.abs(p.vy); }
+        else if (p.y > bh - hs) { p.y = bh - hs; p.vy = -Math.abs(p.vy); }
+
+        // SpinningCat-style quadratic FX ramp
+        const speedMult = 0.2 + 0.08 * p.accelTime * p.accelTime;
+        const intensity = Math.min((speedMult - 0.2) / (5 - 0.2), 1);
+        const scale = 1 + intensity * 0.5;
+        const brightness = 1 + intensity * 2;
+        const glowR = intensity * 12;
+        const glowO = intensity * 0.9;
+
+        const el = catElsRef.current.get(cat.id);
+        if (el) {
+          el.style.left = `${p.x}px`;
+          el.style.top = `${p.y}px`;
+          el.style.transform = `translate(-50%, -50%) scale(${scale})`;
+          el.style.filter = `brightness(${brightness}) drop-shadow(0 0 ${glowR}px rgba(255,255,255,${glowO}))`;
+        }
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [miniCats]);
 
   const navItems = mode === "admin" ? ADMIN_NAV_ITEMS : USER_NAV_ITEMS;
   const experimentItems = mode === "admin" ? ADMIN_EXPERIMENT_ITEMS : USER_EXPERIMENT_ITEMS;
@@ -219,22 +291,6 @@ export default function NavigationSidebarComponent({
               {/* Rainbow strip */}
               <div className={styles.rainbowStrip}>
                 <RainbowCanvas turbo={isGenerating} />
-                {miniCatPositions.map((pos, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={i}
-                    src="/cat-spinning.gif"
-                    alt=""
-                    className={styles.miniCat}
-                    style={{
-                      '--cat-dx': `${pos.dx}px`,
-                      '--cat-dy': `${pos.dy}px`,
-                      width: `${pos.size}px`,
-                      height: `${pos.size}px`,
-                      animationDelay: `${i * 0.06}s`,
-                    }}
-                  />
-                ))}
                 <SpinningCatComponent animate={isGenerating} />
               </div>
 
@@ -368,22 +424,17 @@ export default function NavigationSidebarComponent({
       {/* Expanded sidebar */}
       <aside className={styles.sidebar}>
         {/* Rainbow logo banner */}
-        <div className={styles.logoBanner}>
+        <div className={styles.logoBanner} ref={bannerRef}>
           <RainbowCanvas turbo={isGenerating} />
-          {miniCatPositions.map((pos, i) => (
+          {miniCats.map((cat) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              key={i}
+              key={cat.id}
+              ref={(el) => { if (el) catElsRef.current.set(cat.id, el); else catElsRef.current.delete(cat.id); }}
               src="/cat-spinning.gif"
               alt=""
               className={styles.miniCat}
-              style={{
-                '--cat-dx': `${pos.dx}px`,
-                '--cat-dy': `${pos.dy}px`,
-                width: `${pos.size}px`,
-                height: `${pos.size}px`,
-                animationDelay: `${i * 0.06}s`,
-              }}
+              style={{ width: `${cat.size}px`, height: `${cat.size}px` }}
             />
           ))}
           <SpinningCatComponent animate={isGenerating} />

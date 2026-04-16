@@ -11,6 +11,7 @@
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
+  align-self: center;
 }
 
 .chatInputBtn:hover:not(:disabled) {
@@ -32,6 +33,9 @@
 
 /* ── Submit variant ── */
 .chatInputBtn.submit {
+  align-self: stretch;
+  height: auto;
+  min-height: 40px;
   background: var(--accent-color);
   color: white;
   margin-left: auto;
