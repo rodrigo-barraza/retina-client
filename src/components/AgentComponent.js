@@ -143,6 +143,7 @@ export default function AgentComponent() {
   const textareaRef = useRef(null);
   const endRef = useRef(null);
   const abortRef = useRef(null);
+  const scrollBehaviorRef = useRef("smooth"); // "smooth" for streaming, "instant" for history loads
   const fileInputRef = useRef(null);
 
   const handleStop = useCallback(() => {
@@ -194,7 +195,9 @@ export default function AgentComponent() {
   // ── Effects ──────────────────────────────────────────────────
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    endRef.current?.scrollIntoView({ behavior: scrollBehaviorRef.current });
+    // Reset to smooth after each scroll so streaming remains animated
+    scrollBehaviorRef.current = "smooth";
   }, [messages, toolActivity]);
 
   useEffect(() => {
@@ -1117,6 +1120,7 @@ export default function AgentComponent() {
           PROJECT_AGENT,
         );
         const displayMessages = prepareDisplayMessages(full.messages || []);
+        scrollBehaviorRef.current = "instant";
         setMessages(displayMessages);
         setAgentSessionId(conv.id);
         setTraceId(full.traceId || null);
