@@ -131,6 +131,7 @@ export default function AgentComponent() {
   // Phase 1: Agentic controls
   const [autoApprove, setAutoApprove] = useState(false);
   const [maxIterations, setMaxIterations] = useState(MAX_TOOL_ITERATIONS);
+  const [maxWorkerIterations, setMaxWorkerIterations] = useState(MAX_TOOL_ITERATIONS);
   const [planFirst, setPlanFirst] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [planProposal, setPlanProposal] = useState(null); // { plan, steps, status }
@@ -531,6 +532,7 @@ export default function AgentComponent() {
           autoApprove,
           planFirst,
           maxIterations: Number.isFinite(maxIterations) ? maxIterations : 0,
+          maxWorkerIterations: Number.isFinite(maxWorkerIterations) ? maxWorkerIterations : 0,
         };
 
         let streamedText = "";
@@ -979,6 +981,7 @@ export default function AgentComponent() {
       autoApprove,
       planFirst,
       maxIterations,
+      maxWorkerIterations,
       fetchSessionStats,
       markTabNew,
     ],
@@ -1286,6 +1289,20 @@ export default function AgentComponent() {
                 const steps = [10, 25, 50, 100, Infinity];
                 const idx = steps.indexOf(maxIterations);
                 setMaxIterations(steps[(idx + 1) % steps.length]);
+              },
+            },
+            {
+              key: "workerIterations",
+              type: "cycle",
+              icon: <Repeat size={12} />,
+              label: "Max Worker Tool Iterations",
+              value: maxWorkerIterations,
+              isActive: true,
+              title: "Click to cycle: 10 → 25 → 50 → 100 → ∞",
+              onChange: () => {
+                const steps = [10, 25, 50, 100, Infinity];
+                const idx = steps.indexOf(maxWorkerIterations);
+                setMaxWorkerIterations(steps[(idx + 1) % steps.length]);
               },
             },
           ]}

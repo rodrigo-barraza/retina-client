@@ -36,9 +36,10 @@ import CostBadgeComponent from "./CostBadgeComponent";
 import StopwatchBadgeComponent from "./StopwatchBadgeComponent";
 import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
 import BadgeComponent from "./BadgeComponent";
+import WorkerNotificationComponent from "./WorkerNotificationComponent";
 import styles from "./MessageList.module.css";
 import PrismService from "../services/PrismService";
-import { getTotalInputTokens, formatLatency } from "../utils/utilities";
+import { getTotalInputTokens } from "../utils/utilities";
 
 
 
@@ -224,7 +225,6 @@ function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
             const name = formatName(tc.name);
             const { Icon, color } = resolveToolVisuals(tc.name);
 
-            const argEntries = tc.args ? Object.entries(tc.args) : [];
             const isCalling = tc.status === "calling";
             const isError = tc.status === "error";
 
@@ -244,17 +244,6 @@ function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
                 </span>
                 <span className={styles.toolCallName}>{name}</span>
 
-                {/* Arg pills — inline after name (skip keys shown in ToolResultRenderers) */}
-                {argEntries.length > 0 && argEntries
-                  .filter(([k]) => k !== "description" && k !== "prompt")
-                  .map(([k, v]) => (
-                    <span key={k} className={styles.toolCallArgPill}>
-                      <span className={styles.toolCallArgKey}>{k}</span>
-                      <span className={styles.toolCallArgValue}>
-                        {typeof v === "string" ? v : JSON.stringify(v)}
-                      </span>
-                    </span>
-                  ))}
 
                 {/* Worker tool badges — show which tools a spawned agent used */}
                 {tc.name === "spawn_agent" && (() => {
@@ -1047,49 +1036,13 @@ export default function MessageList({
               // ── Task notification card (replaces user bubble for worker results) ──
               const taskNotif = msg.role === "user" ? parseTaskNotification(msg.content) : null;
               if (taskNotif) {
-                const statusIcon = taskNotif.status === "completed" ? "✓"
-                  : taskNotif.status === "failed" ? "✗" : "■";
-                const statusColor = taskNotif.status === "completed" ? "var(--color-success, #22c55e)"
-                  : taskNotif.status === "failed" ? "var(--color-danger, #ef4444)" : "var(--text-muted)";
-                const durationSec = taskNotif.durationMs ? formatLatency(Number(taskNotif.durationMs) / 1000) : null;
                 return (
-                  <div className={`${styles.message} ${styles.notificationNode || ""}`}>
-                    <div className={styles.avatar} style={{ color: statusColor, fontWeight: 700, fontSize: 14 }}>
-                      <Zap size={16} />
-                    </div>
-                    <div className={styles.content}>
-                      <div className={styles.messageHeader}>
-                        <div className={styles.roleLabel} style={{ color: statusColor }}>
-                          <span style={{ marginRight: 6, fontWeight: 700 }}>{statusIcon}</span>
-                          Worker
-                          {msg.timestamp && (
-                            <DateTimeBadgeComponent date={msg.timestamp} mini />
-                          )}
-                        </div>
-                        {!readOnly && (
-                          <div className={styles.messageActions}>
-                            <IconButtonComponent
-                              icon={<Trash2 size={14} />}
-                              onClick={() => onDelete?.(i)}
-                              tooltip="Delete notification"
-                              variant="danger"
-                              className={styles.actionBtn}
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <div className={styles.text} style={{ opacity: 0.9, fontSize: 13 }}>
-                        {taskNotif.summary}
-                        {durationSec && <span style={{ marginLeft: 8, opacity: 0.5 }}>({durationSec})</span>}
-                        {taskNotif.toolUses && <span style={{ marginLeft: 8, opacity: 0.5 }}>{taskNotif.toolUses} tools</span>}
-                      </div>
-                      {taskNotif.result && (
-                        <div className={styles.text} style={{ opacity: 0.7, fontSize: 12, marginTop: 4 }}>
-                          {taskNotif.result}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <WorkerNotificationComponent
+                    taskNotif={taskNotif}
+                    timestamp={msg.timestamp}
+                    readOnly={readOnly}
+                    onDelete={() => onDelete?.(i)}
+                  />
                 );
               }
               // ── Normal message rendering ──

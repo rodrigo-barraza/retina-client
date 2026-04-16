@@ -159,28 +159,43 @@ export default function NavigationSidebarComponent({
   }, []);
 
   // ── Bouncing mini cats for concurrent API calls ────────────────
+  // Lifecycle: active → windingDown → idle → fading → removed
   const bannerRef = useRef(null);
   const catStateRef = useRef(new Map());
   const catElsRef = useRef(new Map());
+  const isGenRef = useRef(isGenerating);
+  const prevIsGenRef = useRef(false);
+  const miniCatsRef = useRef([]);
   const [miniCats, setMiniCats] = useState([]);
 
+  // Mirror props into refs for RAF access
+  useEffect(() => { isGenRef.current = isGenerating; }, [isGenerating]);
+  useEffect(() => { miniCatsRef.current = miniCats; }, [miniCats]);
+
+  // Add cats when workers spawn, retire cats when workers finish
   useEffect(() => {
+    const needed = Math.max(0, (activeApiCount || 0) - 1);
     setMiniCats((prev) => {
-      const needed = Math.max(0, (activeApiCount || 0) - 1);
-      if (needed === prev.length) return prev;
-      if (needed < prev.length) {
-        const kept = prev.slice(0, needed);
-        const keptIds = new Set(kept.map((c) => c.id));
-        for (const id of catStateRef.current.keys()) {
-          if (!keptIds.has(id)) {
-            catStateRef.current.delete(id);
-            catElsRef.current.delete(id);
+      const activeCount = prev.filter((c) => !c.retired).length;
+      if (needed === activeCount) return prev;
+
+      if (needed < activeCount) {
+        // Retire excess active cats (last ones first)
+        let toRetire = activeCount - needed;
+        const next = [...prev];
+        for (let i = next.length - 1; i >= 0 && toRetire > 0; i--) {
+          if (!next[i].retired) {
+            next[i] = { ...next[i], retired: true };
+            toRetire--;
           }
         }
-        return kept;
+        return next;
       }
+
+      // Spawn new cats
       const next = [...prev];
-      while (next.length < needed) {
+      const toAdd = needed - activeCount;
+      for (let j = 0; j < toAdd; j++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = 30 + Math.random() * 40;
         next.push({
@@ -188,19 +203,27 @@ export default function NavigationSidebarComponent({
           size: 45 + Math.floor(Math.random() * 22),
           initVx: Math.cos(angle) * speed,
           initVy: Math.sin(angle) * speed,
+          retired: false,
         });
       }
       return next;
     });
   }, [activeApiCount]);
 
-  // Single RAF loop: specular-reflection bouncing + SpinningCat-style FX ramp
+  // Always-on RAF: movement, bouncing, FX, lifecycle phases
   useEffect(() => {
-    if (miniCats.length === 0) return;
     let lastTime = 0;
     let rafId;
 
     const tick = (now) => {
+      const cats = miniCatsRef.current;
+      if (cats.length === 0) {
+        lastTime = 0;
+        prevIsGenRef.current = isGenRef.current;
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+
       if (!lastTime) { lastTime = now; rafId = requestAnimationFrame(tick); return; }
       const dt = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
@@ -209,41 +232,150 @@ export default function NavigationSidebarComponent({
       if (!banner) { rafId = requestAnimationFrame(tick); return; }
       const bw = banner.offsetWidth;
       const bh = banner.offsetHeight;
+      const isGen = isGenRef.current;
 
-      for (const cat of miniCats) {
+      // Detect primary cat stop: isGenerating true → false → fade ALL cats
+      if (prevIsGenRef.current && !isGen) {
+        for (const [, p] of catStateRef.current) {
+          if (p.phase !== "fading") {
+            p.phase = "fading";
+            p.fadeStart = now;
+          }
+        }
+      }
+      prevIsGenRef.current = isGen;
+
+      const toRemove = [];
+
+      for (const cat of cats) {
         let p = catStateRef.current.get(cat.id);
         if (!p) {
-          p = { x: bw / 2, y: bh / 2, vx: cat.initVx, vy: cat.initVy, accelTime: 0 };
+          p = {
+            x: bw / 2, y: bh / 2,
+            vx: cat.initVx, vy: cat.initVy,
+            accelTime: 0,
+            phase: "active",
+            fadeStart: null,
+          };
           catStateRef.current.set(cat.id, p);
         }
 
-        // Move
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.accelTime += dt;
-
-        // Specular reflection off edges
-        const hs = cat.size / 2;
-        if (p.x < hs) { p.x = hs; p.vx = Math.abs(p.vx); }
-        else if (p.x > bw - hs) { p.x = bw - hs; p.vx = -Math.abs(p.vx); }
-        if (p.y < hs) { p.y = hs; p.vy = Math.abs(p.vy); }
-        else if (p.y > bh - hs) { p.y = bh - hs; p.vy = -Math.abs(p.vy); }
-
-        // SpinningCat-style quadratic FX ramp
-        const speedMult = 0.2 + 0.08 * p.accelTime * p.accelTime;
-        const intensity = Math.min((speedMult - 0.2) / (5 - 0.2), 1);
-        const scale = 1 + intensity * 0.5;
-        const brightness = 1 + intensity * 2;
-        const glowR = intensity * 12;
-        const glowO = intensity * 0.9;
-
         const el = catElsRef.current.get(cat.id);
-        if (el) {
+        if (!el) continue;
+
+        // Phase transition: worker finished → start winding down
+        if (cat.retired && p.phase === "active") {
+          p.phase = "windingDown";
+        }
+
+        // Bounce helper (specular reflection)
+        const hs = cat.size / 2;
+        const bounce = () => {
+          if (p.x < hs) { p.x = hs; p.vx = Math.abs(p.vx); }
+          else if (p.x > bw - hs) { p.x = bw - hs; p.vx = -Math.abs(p.vx); }
+          if (p.y < hs) { p.y = hs; p.vy = Math.abs(p.vy); }
+          else if (p.y > bh - hs) { p.y = bh - hs; p.vy = -Math.abs(p.vy); }
+        };
+
+        // FX helper (SpinningCat-style quadratic ramp)
+        const computeFx = () => {
+          const sm = 0.2 + 0.08 * p.accelTime * p.accelTime;
+          const t = Math.min((sm - 0.2) / 4.8, 1);
+          return {
+            scale: 1 + t * 0.5,
+            brightness: 1 + t * 2,
+            glowR: t * 12,
+            glowO: t * 0.9,
+          };
+        };
+
+        if (p.phase === "active") {
+          // ─── Active: bouncing, FX ramping up ───
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.accelTime += dt;
+          bounce();
+
+          const fx = computeFx();
+          el.style.left = `${p.x}px`;
+          el.style.top = `${p.y}px`;
+          el.style.transform = `translate(-50%, -50%) scale(${fx.scale})`;
+          el.style.filter = `brightness(${fx.brightness}) drop-shadow(0 0 ${fx.glowR}px rgba(255,255,255,${fx.glowO}))`;
+          el.style.opacity = "0.85";
+          if (!el.src.endsWith("cat-spinning.gif")) el.src = "/cat-spinning.gif";
+
+        } else if (p.phase === "windingDown") {
+          // ─── Winding down: decelerating, FX reversing ───
+          const smoothing = Math.pow(0.97, dt * 60);
+          p.vx *= smoothing;
+          p.vy *= smoothing;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          bounce();
+
+          // Reverse FX (wind down twice as fast as ramp up)
+          p.accelTime = Math.max(0, p.accelTime - dt * 2);
+          const fx = computeFx();
+          el.style.left = `${p.x}px`;
+          el.style.top = `${p.y}px`;
+          el.style.transform = `translate(-50%, -50%) scale(${fx.scale})`;
+          el.style.filter = `brightness(${fx.brightness}) drop-shadow(0 0 ${fx.glowR}px rgba(255,255,255,${fx.glowO}))`;
+
+          // Stopped → transition to idle, switch to static cat
+          if (Math.sqrt(p.vx * p.vx + p.vy * p.vy) < 2) {
+            p.vx = 0;
+            p.vy = 0;
+            p.phase = "idle";
+            el.src = "/cat.gif";
+          }
+
+        } else if (p.phase === "idle") {
+          // ─── Idle: sitting still, static sprite, waiting ───
+          el.style.transform = "translate(-50%, -50%)";
+          el.style.filter = "drop-shadow(0 1px 4px rgba(0,0,0,0.45))";
+          el.style.opacity = "0.85";
+
+        } else if (p.phase === "fading") {
+          // ─── Fading: decelerating + fade/shrink over 3 seconds ───
+          const smoothing = Math.pow(0.95, dt * 60);
+          p.vx *= smoothing;
+          p.vy *= smoothing;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          bounce();
+
+          // Wind down remaining FX
+          p.accelTime = Math.max(0, p.accelTime - dt * 3);
+          const fx = computeFx();
+
+          const elapsed = (now - p.fadeStart) / 1000;
+          const progress = Math.min(elapsed / 3, 1);
+          const opacity = 0.85 * (1 - progress);
+          const scale = 1 - progress * 0.3;
+
           el.style.left = `${p.x}px`;
           el.style.top = `${p.y}px`;
           el.style.transform = `translate(-50%, -50%) scale(${scale})`;
-          el.style.filter = `brightness(${brightness}) drop-shadow(0 0 ${glowR}px rgba(255,255,255,${glowO}))`;
+          el.style.filter = `brightness(${fx.brightness}) drop-shadow(0 0 ${fx.glowR}px rgba(255,255,255,${fx.glowO}))`;
+          el.style.opacity = `${opacity}`;
+
+          // Switch to static cat once slowed enough
+          if (Math.sqrt(p.vx * p.vx + p.vy * p.vy) < 2 && el.src.endsWith("cat-spinning.gif")) {
+            el.src = "/cat.gif";
+          }
+
+          if (progress >= 1) toRemove.push(cat.id);
         }
+      }
+
+      // Clean up fully faded cats
+      if (toRemove.length > 0) {
+        const removeSet = new Set(toRemove);
+        for (const id of removeSet) {
+          catStateRef.current.delete(id);
+          catElsRef.current.delete(id);
+        }
+        setMiniCats((prev) => prev.filter((c) => !removeSet.has(c.id)));
       }
 
       rafId = requestAnimationFrame(tick);
@@ -251,7 +383,7 @@ export default function NavigationSidebarComponent({
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [miniCats]);
+  }, []);
 
   const navItems = mode === "admin" ? ADMIN_NAV_ITEMS : USER_NAV_ITEMS;
   const experimentItems = mode === "admin" ? ADMIN_EXPERIMENT_ITEMS : USER_EXPERIMENT_ITEMS;

@@ -429,41 +429,6 @@
   letter-spacing: 0.01em;
 }
 
-/* ── Argument pills ── */
-.toolCallArgPill {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 4px;
-  overflow: hidden;
-  font-size: 11px;
-  line-height: 1;
-  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
-  background: var(--bg-tertiary);
-  transition: border-color 0.15s ease;
-
-  &:hover {
-    border-color: var(--border-color);
-  }
-}
-
-.toolCallArgKey {
-  padding: 3px 6px;
-  color: var(--text-secondary);
-  font-weight: 600;
-  background: color-mix(in srgb, var(--bg-secondary) 50%, var(--bg-tertiary));
-  letter-spacing: 0.02em;
-}
-
-.toolCallArgValue {
-  padding: 3px 7px;
-  color: var(--text-primary);
-  font-weight: 400;
-  max-width: 260px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 
 
 /* ── Images / media ── */
