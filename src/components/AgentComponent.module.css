@@ -134,10 +134,14 @@
 }
 
 .iterationDot.iterationDotActive {
-  background: #f59e0b;
+  background: hsl(0, 90%, 65%);
   transform: scale(1.4);
-  box-shadow: 0 0 8px color-mix(in srgb, #f59e0b 50%, transparent);
-  animation: iterationPulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 8px hsl(0, 90%, 65%, 0.5);
+  filter: hue-rotate(0deg);
+  animation:
+    iterationPulse 1.2s ease-in-out infinite,
+    rainbowHue 4s linear infinite;
+  will-change: filter, transform, opacity;
 }
 
 @keyframes iterationPulse {

@@ -162,11 +162,7 @@
   }
 }
 
-@keyframes rainbowHue {
-  to {
-    filter: hue-rotate(360deg);
-  }
-}
+
 
 .themeToggle {
   :global([data-theme="light"]) & {

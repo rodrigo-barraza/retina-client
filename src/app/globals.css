@@ -265,6 +265,12 @@ select option {
   }
 }
 
+@keyframes rainbowHue {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
 @keyframes pulseScale {
   0%,
   100% {

@@ -825,6 +825,22 @@ export default function ChatArea({
           </div>
         ))}
 
+      {/* ── Status indicator bar (thin bar above input) ── */}
+      {isGenerating && (() => {
+        const lastMsg = messages[messages.length - 1];
+        const status = lastMsg?.status;
+        const phase = lastMsg?.statusPhase;
+        if (!status) return null;
+        const phaseIcon = { starting: "⚡", loading: "📦", processing: "⚙️", generating: "✨" }[phase] || "⏳";
+        return (
+          <div className={styles.statusBar}>
+            <span className={styles.statusBarIcon}>{phaseIcon}</span>
+            <span className={styles.statusBarMessage}>{status}</span>
+            <span className={styles.statusBarPulse} />
+          </div>
+        );
+      })()}
+
       <div className={styles.inputWrapper}>
         {showToolsBubble && activeTools.length > 0 && (
           <div className={styles.toolsBubble} ref={toolsBubbleRef}>
