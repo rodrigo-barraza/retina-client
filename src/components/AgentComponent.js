@@ -1404,51 +1404,51 @@ export default function AgentComponent() {
       </div>
 
       {/* Input area */}
-      {agenticProgress && isGenerating && (
-        <div className={styles.iterationBar}>
-          <span className={styles.iterationLabel}>
-            <Zap size={11} />
-            Iteration {agenticProgress.iteration}/{Number.isFinite(maxIterations) ? maxIterations : "∞"}
+      <div className={styles.iterationBar}>
+        <span className={styles.iterationLabel}>
+          <Zap size={11} />
+          Iteration {agenticProgress ? agenticProgress.iteration : 0}/{Number.isFinite(maxIterations) ? maxIterations : "∞"}
+        </span>
+        {injectedSkills.length > 0 && (
+          <span className={styles.skillsBadge}>
+            <Sparkles size={9} />
+            {injectedSkills.length} skill{injectedSkills.length !== 1 ? "s" : ""}
           </span>
-          {injectedSkills.length > 0 && (
-            <span className={styles.skillsBadge}>
-              <Sparkles size={9} />
-              {injectedSkills.length} skill{injectedSkills.length !== 1 ? "s" : ""}
-            </span>
-          )}
-          {contextTruncated && (
-            <span className={styles.contextBadge} title={`Strategy: ${contextTruncated.strategy} — ~${Math.round(contextTruncated.estimatedTokens / 1000)}k tokens`}>
-              <Scissors size={9} />
-              ctx trimmed
-            </span>
-          )}
-          <div className={styles.iterationDots}>
-            {Array.from({ length: Math.min(maxIterations, 50) }, (_, i) => {
-              const step = i + 1;
-              const isDone = step < agenticProgress.iteration;
-              const isActive = step === agenticProgress.iteration;
-              return (
-                <div
-                  key={step}
-                  className={`${styles.iterationDot}${isDone ? ` ${styles.iterationDotDone}` : ""}${isActive ? ` ${styles.iterationDotActive}` : ""}`}
-                />
-              );
-            })}
-          </div>
+        )}
+        {contextTruncated && (
+          <span className={styles.contextBadge} title={`Strategy: ${contextTruncated.strategy} — ~${Math.round(contextTruncated.estimatedTokens / 1000)}k tokens`}>
+            <Scissors size={9} />
+            ctx trimmed
+          </span>
+        )}
+        <div className={styles.iterationDots}>
+          {Array.from({ length: Math.min(maxIterations, 50) }, (_, i) => {
+            const step = i + 1;
+            const isDone = agenticProgress ? step < agenticProgress.iteration : false;
+            const isActive = isGenerating && agenticProgress ? step === agenticProgress.iteration : false;
+            return (
+              <div
+                key={step}
+                className={`${styles.iterationDot}${isDone ? ` ${styles.iterationDotDone}` : ""}${isActive ? ` ${styles.iterationDotActive}` : ""}`}
+              />
+            );
+          })}
         </div>
-      )}
-      {/* ── Status indicator bar (thin bar above input) ── */}
-      {isGenerating && (() => {
+      </div>
+      {/* ── Status indicator bar (always visible thin bar above input) ── */}
+      {(() => {
         const lastMsg = messages[messages.length - 1];
-        const status = lastMsg?.status;
-        const phase = lastMsg?.statusPhase;
-        if (!status) return null;
-        const phaseIcon = { starting: "⚡", loading: "📦", processing: "⚙️", generating: "✨" }[phase] || "⏳";
+        const status = isGenerating ? (lastMsg?.status || "Generating...") : null;
+        const phase = isGenerating ? lastMsg?.statusPhase : null;
+        const phaseIcon = isGenerating
+          ? ({ starting: "⚡", loading: "📦", processing: "⚙️", generating: "✨" }[phase] || "✨")
+          : "✓";
+        const label = status || "Ready";
         return (
-          <div className={styles.statusBar}>
+          <div className={`${styles.statusBar}${isGenerating ? ` ${styles.statusBarActive}` : ""}`}>
             <span className={styles.statusBarIcon}>{phaseIcon}</span>
-            <span className={styles.statusBarMessage}>{status}</span>
-            <span className={styles.statusBarPulse} />
+            <span className={styles.statusBarMessage}>{label}</span>
+            {isGenerating && <span className={styles.statusBarPulse} />}
           </div>
         );
       })()}

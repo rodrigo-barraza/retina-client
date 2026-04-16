@@ -10,6 +10,7 @@
 .messagesList {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 30px 30px 60px;
   display: flex;
   flex-direction: column;
@@ -1294,5 +1295,77 @@
   }
   50% {
     box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+/* ── Status Bar (thin indicator above input) ───────────────── */
+
+.statusBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 5px 16px;
+  background: transparent;
+  border-top: 1px solid var(--border-color);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.statusBarActive {
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--accent-color) 6%, transparent),
+    color-mix(in srgb, var(--accent-color) 12%, transparent),
+    color-mix(in srgb, var(--accent-color) 6%, transparent)
+  );
+  border-top-color: color-mix(in srgb, var(--accent-color) 18%, var(--border-color));
+}
+
+.statusBarIcon {
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.statusBarMessage {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusBarPulse {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  flex-shrink: 0;
+  animation: statusBarPulseDot 1.4s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+@keyframes statusBarSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes statusBarPulseDot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.6);
   }
 }

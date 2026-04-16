@@ -153,29 +153,7 @@ function ThinkingBlock({ thinking, isStreaming, children }) {
   );
 }
 
-/**
- * Status indicator for LM Studio lifecycle phases.
- * Shows contextual icon + message while the model is loading,
- * processing the prompt, or starting generation.
- */
-function StatusIndicator({ status, phase }) {
-  if (!status) return null;
 
-  const phaseIcon = {
-    starting: "⚡",
-    loading:  "📦",
-    processing: "⚙️",
-    generating: "✨",
-  }[phase] || "⏳";
-
-  return (
-    <div className={styles.statusIndicator}>
-      <span className={styles.statusIcon}>{phaseIcon}</span>
-      <span className={styles.statusMessage}>{status}</span>
-      <span className={styles.statusPulse} />
-    </div>
-  );
-}
 
 /**
  * Extract a concise, human-readable summary from tool result data.
@@ -1213,11 +1191,6 @@ export default function MessageList({
                 </div>
                 )}
 
-                {/* ── LM Studio lifecycle status (always visible above content) ── */}
-                {isStreaming && msg.status && (
-                  <StatusIndicator status={msg.status} phase={msg.statusPhase} />
-                )}
-
                 {/* ── Interleaved content: thinking + tool calls + text ── */}
                 {msg.contentSegments && msg.contentSegments.length > 0 ? (
                   (() => {
@@ -1253,7 +1226,7 @@ export default function MessageList({
                           );
                         }
                         if (isStreaming && isLastTextSeg && showCursor) {
-                          return <span key={`seg-x-${si}`} className={styles.streamingCursor} />;
+                          return <StreamingCursorComponent key={`seg-x-${si}`} active standalone />;
                         }
                         return null;
                       }
@@ -1327,7 +1300,7 @@ export default function MessageList({
                           })}
                           {/* Streaming cursor when no visible content yet */}
                           {isStreaming && visibleSegs.length === 0 && !msg.status && (
-                            <span className={styles.streamingCursor} />
+                            <StreamingCursorComponent active standalone />
                           )}
                         </>
                       );
@@ -1385,7 +1358,7 @@ export default function MessageList({
                         <StreamingCursorComponent active={isStreaming} />
                       </MarkdownContent>
                     ) : isStreaming && !msg.status ? (
-                      <span className={styles.streamingCursor} />
+                      <StreamingCursorComponent active standalone />
                     ) : null}
                   </>
                 )}

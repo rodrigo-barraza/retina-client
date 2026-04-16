@@ -825,18 +825,20 @@ export default function ChatArea({
           </div>
         ))}
 
-      {/* ── Status indicator bar (thin bar above input) ── */}
-      {isGenerating && (() => {
+      {/* ── Status indicator bar (always visible thin bar above input) ── */}
+      {(() => {
         const lastMsg = messages[messages.length - 1];
-        const status = lastMsg?.status;
-        const phase = lastMsg?.statusPhase;
-        if (!status) return null;
-        const phaseIcon = { starting: "⚡", loading: "📦", processing: "⚙️", generating: "✨" }[phase] || "⏳";
+        const status = isGenerating ? (lastMsg?.status || "Generating...") : null;
+        const phase = isGenerating ? lastMsg?.statusPhase : null;
+        const phaseIcon = isGenerating
+          ? ({ starting: "⚡", loading: "📦", processing: "⚙️", generating: "✨" }[phase] || "✨")
+          : "✓";
+        const label = status || "Ready";
         return (
-          <div className={styles.statusBar}>
+          <div className={`${styles.statusBar}${isGenerating ? ` ${styles.statusBarActive}` : ""}`}>
             <span className={styles.statusBarIcon}>{phaseIcon}</span>
-            <span className={styles.statusBarMessage}>{status}</span>
-            <span className={styles.statusBarPulse} />
+            <span className={styles.statusBarMessage}>{label}</span>
+            {isGenerating && <span className={styles.statusBarPulse} />}
           </div>
         );
       })()}
