@@ -169,12 +169,19 @@ export default function AgentComponent() {
   const fileInputRef = useRef(null);
   const messagesListRef = useRef(null);
 
+  const agentSessionIdRef = useRef(agentSessionId);
+  agentSessionIdRef.current = agentSessionId;
+
   const handleStop = useCallback(() => {
     if (abortRef.current) {
       abortRef.current();
       abortRef.current = null;
     }
     setIsGenerating(false);
+
+    // Explicitly abort any running workers for this session — belt-and-suspenders
+    // alongside the backend SSE disconnect handler
+    PrismService.stopCoordinatorWorkers(agentSessionIdRef.current).catch(() => {});
   }, []);
 
   // ── Filtered config: only function-calling models ────────────

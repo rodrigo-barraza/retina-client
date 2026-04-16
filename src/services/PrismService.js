@@ -621,6 +621,17 @@ export default class PrismService {
     return PrismService._request(`/coordinator/workers${qs}`, { method: "GET" });
   }
 
+  /**
+   * Abort all running workers for a given agent session.
+   * @param {string} agentSessionId - The coordinator session to stop workers for
+   * @returns {Promise<{ stopped: string[], alreadyStopped: string[] }>}
+   */
+  static async stopCoordinatorWorkers(agentSessionId) {
+    return PrismService._request("/coordinator/workers/stop", {
+      body: { agentSessionId },
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Chat
   // ---------------------------------------------------------------------------
