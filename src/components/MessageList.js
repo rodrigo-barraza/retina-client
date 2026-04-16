@@ -28,6 +28,7 @@ import IconButtonComponent from "./IconButtonComponent";
 import CopyButtonComponent from "./CopyButtonComponent";
 import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import { ToolResultView } from "./ToolResultRenderers";
+import { ToolBadgeRow } from "./ToolBadgeComponent";
 import ProvidersBadgeComponent from "./ProvidersBadgeComponent";
 import ModelBadgeComponent from "./ModelBadgeComponent";
 import TokenCountBadgeComponent from "./TokenCountBadgeComponent";
@@ -254,6 +255,13 @@ function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
                       </span>
                     </span>
                   ))}
+
+                {/* Worker tool badges — show which tools a spawned agent used */}
+                {tc.name === "spawn_agent" && (() => {
+                  const agentId = tc.result ? (typeof tc.result === "string" ? (() => { try { return JSON.parse(tc.result); } catch { return null; } })() : tc.result)?.agent_id : null;
+                  const activity = agentId && workerToolActivity ? workerToolActivity[agentId] : null;
+                  return activity?.toolNames ? <ToolBadgeRow tools={activity.toolNames} /> : null;
+                })()}
 
 
 

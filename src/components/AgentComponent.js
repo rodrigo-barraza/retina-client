@@ -842,14 +842,18 @@ export default function AgentComponent() {
           // ── Worker agent live events ─────────────────────────────
           onWorkerToolExecution: (data) => {
             setWorkerToolActivity((prev) => {
-              const entry = prev[data.workerId] || { toolCount: 0, currentTool: null, iteration: 0 };
+              const raw = prev[data.workerId];
+              const entry = { toolCount: 0, currentTool: null, iteration: 0, toolNames: {}, ...raw };
               if (data.status === "calling") {
+                const toolName = data.tool?.name || "unknown";
+                const updatedToolNames = { ...entry.toolNames, [toolName]: (entry.toolNames[toolName] || 0) + 1 };
                 return {
                   ...prev,
                   [data.workerId]: {
                     ...entry,
-                    currentTool: data.tool?.name || null,
+                    currentTool: toolName,
                     toolCount: entry.toolCount + 1,
+                    toolNames: updatedToolNames,
                     phase: null, // Clear phase — tool is now active
                   },
                 };
