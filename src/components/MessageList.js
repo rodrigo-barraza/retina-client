@@ -260,7 +260,7 @@ function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
                 {tc.name === "spawn_agent" && (() => {
                   const agentId = tc.result ? (typeof tc.result === "string" ? (() => { try { return JSON.parse(tc.result); } catch { return null; } })() : tc.result)?.agent_id : null;
                   const activity = agentId && workerToolActivity ? workerToolActivity[agentId] : null;
-                  return activity?.toolNames ? <ToolBadgeRow tools={activity.toolNames} /> : null;
+                  return activity?.toolNames ? <ToolBadgeRow tools={activity.toolNames} activeTool={activity.currentTool} /> : null;
                 })()}
 
 

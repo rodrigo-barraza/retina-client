@@ -51,13 +51,13 @@ function resolveToolVisuals(rawName) {
  * @param {string} props.name - Raw tool function name (e.g. "read_file")
  * @param {number} [props.count] - Optional usage count
  */
-export default function ToolBadgeComponent({ name, count }) {
+export default function ToolBadgeComponent({ name, count, active }) {
   const displayName = TOOL_DISPLAY_NAMES[name]
     || name.replace(/^(get_|mcp__\w+__)/, "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const { Icon, color } = resolveToolVisuals(name);
 
   return (
-    <span className={styles.badge} title={name}>
+    <span className={`${styles.badge}${active ? ` ${styles.badgeActive}` : ""}`} title={name}>
       <Icon size={10} style={{ color }} />
       <span>{displayName}</span>
       {count != null && count > 1 && (
@@ -73,7 +73,7 @@ export default function ToolBadgeComponent({ name, count }) {
  * @param {object} props
  * @param {Object<string, number>} props.tools - { toolName: count }
  */
-export function ToolBadgeRow({ tools }) {
+export function ToolBadgeRow({ tools, activeTool }) {
   if (!tools || Object.keys(tools).length === 0) return null;
 
   return (
@@ -81,7 +81,7 @@ export function ToolBadgeRow({ tools }) {
       {Object.entries(tools)
         .sort(([, a], [, b]) => b - a)
         .map(([name, count]) => (
-          <ToolBadgeComponent key={name} name={name} count={count} />
+          <ToolBadgeComponent key={name} name={name} count={count} active={name === activeTool} />
         ))}
     </div>
   );

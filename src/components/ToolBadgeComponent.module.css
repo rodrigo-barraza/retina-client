@@ -16,7 +16,7 @@
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   white-space: nowrap;
-  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  transition: border-color 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s;
   line-height: 1;
 }
 
@@ -28,6 +28,23 @@
 .badge svg {
   flex-shrink: 0;
   opacity: 0.6;
+}
+
+.badgeActive {
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent-color) 8%, var(--bg-tertiary));
+  box-shadow: 0 0 6px -1px color-mix(in srgb, var(--accent-color) 40%, transparent);
+
+  & svg {
+    opacity: 1;
+    animation: toolBadgePulse 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes toolBadgePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 .count {
