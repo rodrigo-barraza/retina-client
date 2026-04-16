@@ -21,8 +21,10 @@ import {
   StopCircle,
 } from "lucide-react";
 import MarkdownContent from "./MarkdownContent";
+import RainbowCanvasComponent from "./RainbowCanvasComponent";
 import PrismService from "../services/PrismService";
 import styles from "./ToolResultRenderers.module.css";
+import mlStyles from "./MessageList.module.css";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -785,7 +787,68 @@ function BrowserActionRenderer({ result, args }) {
 
 // ── 13. Coordinator Tools ───────────────────────────────────────────────────
 
-function SpawnAgentRenderer({ result, args }) {
+const PHASE_LABELS = { starting: "Starting…", loading: "Loading…", processing: "Processing…", generating: "Generating…", thinking: "Thinking…" };
+const PHASE_ICONS  = { starting: "⚡", loading: "📦", processing: "⚙️", generating: "✨", thinking: "🧠" };
+
+/**
+ * Mini status bar for an individual spawned worker agent.
+ * Mirrors the main AgentComponent statusBarOverlay exactly.
+ */
+function WorkerStatusBar({ activity }) {
+  if (!activity) return null;
+  const { currentTool, toolCount = 0, iteration = 0, maxIterations, phase } = activity;
+  const isToolActive = !!currentTool;
+  const hasPhase = !!phase;
+  const isGenPhase = phase === "generating";
+  const isActive = isToolActive || hasPhase;
+  const toolLabel = currentTool
+    ? currentTool.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : null;
+
+  const statusLabel = isToolActive ? toolLabel : (PHASE_LABELS[phase] || null);
+  const statusIcon = isToolActive ? null : (PHASE_ICONS[phase] || null);
+
+  return (
+    <div className={`${mlStyles.workerStatusBar}${isActive ? ` ${mlStyles.workerStatusBarActive}` : ""}`}>
+      <RainbowCanvasComponent
+        turbo={isToolActive || hasPhase}
+        animate={!isActive}
+        greyscale={isActive ? !isGenPhase : true}
+        className={mlStyles.workerStatusBarCanvas}
+      />
+      <div className={mlStyles.workerStatusBarOverlay}>
+        {isActive ? (
+          <>
+            <span className={mlStyles.workerStatusBarEmoji}>{statusIcon || "🔧"}</span>
+            <span className={mlStyles.workerStatusBarMessage}>
+              {statusLabel}
+              {iteration > 0 && (
+                <span className={mlStyles.workerStatusBarIter}>
+                  iter {iteration}{maxIterations ? `/${maxIterations}` : ""}
+                </span>
+              )}
+            </span>
+            <span className={mlStyles.workerStatusBarPulse} />
+          </>
+        ) : (
+          <>
+            <Users size={10} className={mlStyles.workerStatusBarIcon} />
+            <span className={mlStyles.workerStatusBarMessage}>
+              {toolCount > 0 ? `${toolCount} tools used` : "Worker idle"}
+              {iteration > 0 && (
+                <span className={mlStyles.workerStatusBarIter}>
+                  iter {iteration}{maxIterations ? `/${maxIterations}` : ""}
+                </span>
+              )}
+            </span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SpawnAgentRenderer({ result, args, workerToolActivity }) {
   const parsed = tryParse(result);
   if (!parsed) return <RawResultToggle result={result} />;
 
@@ -793,6 +856,11 @@ function SpawnAgentRenderer({ result, args }) {
   const description = args?.description || parsed.description || "";
   const status = parsed.status || "unknown";
   const hasError = !!parsed.error;
+
+  // Resolve live worker activity for real-time status
+  const workerActivity = agentId && workerToolActivity
+    ? workerToolActivity[agentId] || null
+    : null;
 
   return (
     <div className={styles.rendererBlock}>
@@ -810,6 +878,9 @@ function SpawnAgentRenderer({ result, args }) {
         </div>
       )}
       {hasError && <div className={styles.errorText}>{parsed.error}</div>}
+      {workerActivity && (
+        <WorkerStatusBar activity={workerActivity} />
+      )}
     </div>
   );
 }
@@ -927,8 +998,9 @@ export function resolveToolResultRenderer(toolName) {
  * @param {object} props
  * @param {object} props.toolCall - The tool call object { name, args, result, id }
  * @param {string} [props.streamingOutput] - Live streaming output for compute tools
+ * @param {object} [props.workerToolActivity] - Live worker activity map for spawn_agent
  */
-export function ToolResultView({ toolCall, streamingOutput }) {
+export function ToolResultView({ toolCall, streamingOutput, workerToolActivity }) {
   const { Renderer, language } = resolveToolResultRenderer(toolCall.name);
 
   return (
@@ -939,6 +1011,7 @@ export function ToolResultView({ toolCall, streamingOutput }) {
         args={toolCall.args}
         streamingOutput={streamingOutput}
         language={language}
+        workerToolActivity={workerToolActivity}
       />
       <OutputResultToggle result={toolCall.result} />
     </>

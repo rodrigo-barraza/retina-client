@@ -18,7 +18,6 @@ import {
   Loader,
   Wrench,
   User,
-  Users,
   Bot,
   Terminal,
 } from "lucide-react";
@@ -36,7 +35,6 @@ import CostBadgeComponent from "./CostBadgeComponent";
 import StopwatchComponent from "./StopwatchComponent";
 import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
 import BadgeComponent from "./BadgeComponent";
-import RainbowCanvasComponent from "./RainbowCanvasComponent";
 import styles from "./MessageList.module.css";
 import PrismService from "../services/PrismService";
 import { getTotalInputTokens, formatLatency } from "../utils/utilities";
@@ -230,89 +228,6 @@ function resolveToolVisuals(rawName) {
 }
 
 
-/**
- * Extract the agent_id from a spawn_agent tool call result.
- * The result may be a JSON string or an already-parsed object.
- */
-function extractWorkerAgentId(tc) {
-  if (tc.name !== "spawn_agent" || !tc.result) return null;
-  try {
-    const parsed = typeof tc.result === "string" ? JSON.parse(tc.result) : tc.result;
-    return parsed?.agent_id || null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Mini status bar for an individual spawned worker agent.
- * Mirrors the main AgentComponent statusBarOverlay exactly.
- *
- * Visual states:
- *  1. Tool executing:    turbo rainbow + tool name
- *  2. LLM phase active:  greyscale turbo (processing/loading) or color (generating) + phase label
- *  3. Idle:              greyscale slow + tool count
- */
-const PHASE_LABELS = { starting: "Starting…", loading: "Loading…", processing: "Processing…", generating: "Generating…", thinking: "Thinking…" };
-const PHASE_ICONS  = { starting: "⚡", loading: "📦", processing: "⚙️", generating: "✨", thinking: "🧠" };
-
-function WorkerStatusBar({ activity }) {
-  if (!activity) return null;
-  const { currentTool, toolCount = 0, iteration = 0, maxIterations, phase } = activity;
-  const isToolActive = !!currentTool;
-  const hasPhase = !!phase;
-  const isGenPhase = phase === "generating";
-  const isActive = isToolActive || hasPhase;
-  const toolLabel = currentTool
-    ? currentTool.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-    : null;
-
-  const statusLabel = isToolActive ? toolLabel : (PHASE_LABELS[phase] || null);
-  const statusIcon = isToolActive ? null : (PHASE_ICONS[phase] || null);
-
-  // Turbo when tool is running, normal animate for LLM phases
-  // Greyscale for non-generating phases (processing, loading) — color for generating
-  return (
-    <div className={`${styles.workerStatusBar}${isActive ? ` ${styles.workerStatusBarActive}` : ""}`}>
-      <RainbowCanvasComponent
-        turbo={isToolActive || hasPhase}
-        animate={!isActive}
-        greyscale={isActive ? !isGenPhase : true}
-        className={styles.workerStatusBarCanvas}
-      />
-      <div className={styles.workerStatusBarOverlay}>
-        {isActive ? (
-          <>
-            <span className={styles.workerStatusBarEmoji}>{statusIcon || "🔧"}</span>
-            <span className={styles.workerStatusBarMessage}>
-              {statusLabel}
-              {iteration > 0 && (
-                <span className={styles.workerStatusBarIter}>
-                  iter {iteration}{maxIterations ? `/${maxIterations}` : ""}
-                </span>
-              )}
-            </span>
-            <span className={styles.workerStatusBarPulse} />
-          </>
-        ) : (
-          <>
-            <Users size={10} className={styles.workerStatusBarIcon} />
-            <span className={styles.workerStatusBarMessage}>
-              {toolCount > 0 ? `${toolCount} tools used` : "Worker idle"}
-              {iteration > 0 && (
-                <span className={styles.workerStatusBarIter}>
-                  iter {iteration}{maxIterations ? `/${maxIterations}` : ""}
-                </span>
-              )}
-            </span>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-
 function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   if (!toolCalls || toolCalls.length === 0) return null;
@@ -365,12 +280,6 @@ function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
             const isCalling = tc.status === "calling";
             const isError = tc.status === "error";
 
-            // Resolve live worker activity for spawn_agent tool calls
-            const workerAgentId = extractWorkerAgentId(tc);
-            const workerActivity = workerAgentId && workerToolActivity
-              ? workerToolActivity[workerAgentId] || null
-              : null;
-
             return (
               <div key={j} className={styles.toolCallItem}>
                 {/* Status indicator */}
@@ -409,12 +318,8 @@ function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
                 <ToolResultView
                   toolCall={tc}
                   streamingOutput={streamingOutputs?.get(tc.id)}
+                  workerToolActivity={workerToolActivity}
                 />
-
-                {/* Worker agent live status bar */}
-                {workerActivity && (
-                  <WorkerStatusBar activity={workerActivity} />
-                )}
               </div>
             );
           })}
