@@ -249,7 +249,11 @@ function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
                 {tc.name === "spawn_agent" && (() => {
                   const parsed = tc.result ? (typeof tc.result === "string" ? (() => { try { return JSON.parse(tc.result); } catch { return null; } })() : tc.result) : null;
                   const agentId = parsed?.agent_id;
-                  const activity = agentId && workerToolActivity ? workerToolActivity[agentId] : null;
+                  let activity = agentId && workerToolActivity ? workerToolActivity[agentId] : null;
+                  // Fallback: match by description during calling state
+                  if (!activity && workerToolActivity && tc.args?.description) {
+                    activity = Object.values(workerToolActivity).find((v) => v.description === tc.args.description) || null;
+                  }
                   // Live badges during execution
                   if (activity?.toolNames) return <ToolBadgeRow tools={activity.toolNames} activeTool={activity.currentTool} />;
                   // Static badge from completed result

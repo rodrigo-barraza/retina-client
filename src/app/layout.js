@@ -1,3 +1,4 @@
+import Script from "next/script";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "../components/ThemeProvider";
 import "./globals.css";
@@ -35,7 +36,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
       </head>
       <body className={inter.variable}>
         <ThemeProvider>{children}</ThemeProvider>

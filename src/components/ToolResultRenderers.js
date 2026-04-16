@@ -811,7 +811,7 @@ function WorkerStatusBar({ activity }) {
               {statusLabel}
               {iteration > 0 && (
                 <span className={mlStyles.workerStatusBarIter}>
-                  iter {iteration}{maxIterations ? `/${maxIterations}` : ""}
+                  Iteration {iteration}{maxIterations ? `/${maxIterations}` : ""}
                 </span>
               )}
             </span>
@@ -824,7 +824,7 @@ function WorkerStatusBar({ activity }) {
               {toolCount > 0 ? `${toolCount} tools used` : "Worker idle"}
               {iteration > 0 && (
                 <span className={mlStyles.workerStatusBarIter}>
-                  iter {iteration}{maxIterations ? `/${maxIterations}` : ""}
+                  Iteration {iteration}{maxIterations ? `/${maxIterations}` : ""}
                 </span>
               )}
             </span>
@@ -838,19 +838,43 @@ function WorkerStatusBar({ activity }) {
 function SpawnAgentRenderer({ result, args, workerToolActivity }) {
   const [resultExpanded, setResultExpanded] = useState(false);
   const parsed = tryParse(result);
-  if (!parsed) return <RawResultToggle result={result} />;
+  const description = args?.description || parsed?.description || "";
 
-  const agentId = parsed.agent_id || "";
-  const description = args?.description || parsed.description || "";
+  // Resolve live worker activity — by agentId if result available,
+  // otherwise by description match (for the "calling" state before
+  // the blocking tool returns a result with the agent_id).
+  let workerActivity = null;
+  if (workerToolActivity) {
+    const agentId = parsed?.agent_id;
+    if (agentId) {
+      workerActivity = workerToolActivity[agentId] || null;
+    } else if (description) {
+      // Match by description during the calling state
+      const match = Object.values(workerToolActivity).find((v) => v.description === description);
+      if (match) workerActivity = match;
+    }
+  }
+
+  // ── Calling state: no result yet, worker is running ──
+  if (!parsed) {
+    return (
+      <div className={styles.rendererBlock}>
+        <div className={styles.rendererHeader}>
+          <Users size={13} />
+          <span className={styles.rendererTitle}>
+            Spawned worker: <strong>{description}</strong>
+          </span>
+          <StatusBadge success={true} label="running" />
+        </div>
+        {workerActivity && (
+          <WorkerStatusBar activity={workerActivity} />
+        )}
+      </div>
+    );
+  }
+
+  // ── Done state: result available ──
   const hasError = !!parsed.error;
-
-  // Resolve live worker activity for real-time status bar
-  const workerActivity = agentId && workerToolActivity
-    ? workerToolActivity[agentId] || null
-    : null;
-
-  // Since spawn_agent now blocks, the parsed result contains the full
-  // completion data: status, summary, result, toolUses, durationMs, diff.
   const displayStatus = parsed.status || "unknown";
   const isTerminal = displayStatus === "completed" || displayStatus === "failed" || displayStatus === "stopped";
   const isCompleted = displayStatus === "completed";
@@ -894,6 +918,9 @@ function SpawnAgentRenderer({ result, args, workerToolActivity }) {
             )}
             {parsed.toolUses > 0 && (
               <span className={styles.workerResultMeta}>{parsed.toolUses} tools</span>
+            )}
+            {parsed.iterations > 0 && (
+              <span className={styles.workerResultMeta}>{parsed.iterations} iteration{parsed.iterations !== 1 ? 's' : ''}</span>
             )}
             {resultExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           </button>

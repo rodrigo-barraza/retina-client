@@ -10,6 +10,8 @@ import {
   ExternalLink,
   AudioLines,
   Layers,
+  Users,
+  Bot,
 } from "lucide-react";
 import ProviderLogo, { resolveProviderLabel } from "./ProviderLogos";
 import SelectDropdown from "./SelectDropdown";
@@ -125,6 +127,98 @@ export default function SettingsPanel({
     : 0;
   const totalElapsedTime = completedTime + liveExtra;
 
+  // ── Stats tab (All / Orchestrator / Workers) ──────────────
+  const [statsTab, setStatsTab] = useState("all");
+  const hasSubStats = !!(sessionStats?.orchestrator || sessionStats?.workers);
+
+  // Resolve which stats object to render based on active tab
+  const activeStats = sessionStats
+    ? statsTab === "orchestrator" ? sessionStats.orchestrator
+    : statsTab === "workers" ? sessionStats.workers
+    : sessionStats
+    : null;
+
+  // Compute displayed elapsed for the active tab
+  const activeElapsedTime = statsTab === "all"
+    ? totalElapsedTime
+    : (activeStats?.completedElapsedTime || 0);
+
+  const renderStatsBadges = (stats, showFull) => (
+    <div className={styles.statsBadges}>
+      {showFull && (
+        <MessageCountBadgeComponent
+          count={stats.messageCount}
+          deletedCount={stats.deletedCount}
+        />
+      )}
+      <RequestCountBadgeComponent
+        count={stats.requestCount}
+      />
+      {stats.uniqueModels?.length > 0 && (
+        <ModelBadgeComponent models={stats.uniqueModels} providers={stats.uniqueProviders} />
+      )}
+      {stats.totalTokens?.total > 0 && (
+        <>
+          <TokenCountBadgeComponent
+            value={stats.totalTokens.input}
+            label="tokens in"
+          />
+          <TokenCountBadgeComponent
+            value={stats.totalTokens.output}
+            label="tokens out"
+          />
+          <TokenCountBadgeComponent
+            value={stats.totalTokens.total}
+            label="tokens total"
+          />
+        </>
+      )}
+      <CostBadgeComponent cost={stats.totalCost} />
+      {stats.originalTotalCost > 0 && stats.originalTotalCost !== stats.totalCost && (
+        <span className={`${styles.statBadge} ${styles.statBadgeSub}`}>
+          ({formatCost(stats.originalTotalCost)} total)
+        </span>
+      )}
+      {showFull && activeElapsedTime > 0 && (
+        <StopwatchBadgeComponent
+          seconds={activeElapsedTime}
+          live={!!stats.currentTurnStart}
+        />
+      )}
+      {!showFull && stats.completedElapsedTime > 0 && (
+        <StopwatchBadgeComponent
+          seconds={stats.completedElapsedTime}
+          live={false}
+        />
+      )}
+      {stats.usedTools?.length > 0 &&
+        stats.usedTools.map((tool) => {
+          const ToolIcon = TOOL_ICON_MAP[tool.name] || Wrench;
+          const color = TOOL_COLORS[tool.name] || "#c4956a";
+          return (
+            <span
+              key={tool.name}
+              className={styles.statBadge}
+              style={{
+                color,
+                borderColor: `color-mix(in srgb, ${color} 30%, transparent)`,
+              }}
+            >
+              <ToolIcon size={11} />
+              {tool.name}
+              <span className={styles.statBadgeCount}>×{tool.count}</span>
+            </span>
+          );
+        })}
+      {stats.modalities &&
+        Object.values(stats.modalities).some(Boolean) && (
+          <ModalityIconComponent
+            modalities={stats.modalities}
+          />
+        )}
+    </div>
+  );
+
   return (
     <>
       <div className={styles.container}>
@@ -132,73 +226,32 @@ export default function SettingsPanel({
           <div className={styles.sessionStats}>
             <div className={styles.statsHeader}>
               <Layers size={12} style={{ marginRight: 4 }} /> {sessionLabel}
-            </div>
-            <div className={styles.statsBadges}>
-              <MessageCountBadgeComponent
-                count={sessionStats.messageCount}
-                deletedCount={sessionStats.deletedCount}
-              />
-              <RequestCountBadgeComponent
-                count={sessionStats.requestCount}
-              />
-              {sessionStats.uniqueModels.length > 0 && (
-                <ModelBadgeComponent models={sessionStats.uniqueModels} providers={sessionStats.uniqueProviders} />
-              )}
-              {sessionStats.totalTokens.total > 0 && (
-                <>
-                  <TokenCountBadgeComponent
-                    value={sessionStats.totalTokens.input}
-                    label="tokens in"
-                  />
-                  <TokenCountBadgeComponent
-                    value={sessionStats.totalTokens.output}
-                    label="tokens out"
-                  />
-                  <TokenCountBadgeComponent
-                    value={sessionStats.totalTokens.total}
-                    label="tokens total"
-                  />
-                </>
-              )}
-              <CostBadgeComponent cost={sessionStats.totalCost} />
-              {sessionStats.originalTotalCost > 0 && sessionStats.originalTotalCost !== sessionStats.totalCost && (
-                <span className={`${styles.statBadge} ${styles.statBadgeSub}`}>
-                  ({formatCost(sessionStats.originalTotalCost)} total)
-                </span>
-              )}
-              {totalElapsedTime > 0 && (
-                <StopwatchBadgeComponent
-                  seconds={totalElapsedTime}
-                  live={!!sessionStats.currentTurnStart}
-                />
-              )}
-              {sessionStats.usedTools?.length > 0 &&
-                sessionStats.usedTools.map((tool) => {
-                  const ToolIcon = TOOL_ICON_MAP[tool.name] || Wrench;
-                  const color = TOOL_COLORS[tool.name] || "#c4956a";
-                  return (
-                    <span
-                      key={tool.name}
-                      className={styles.statBadge}
-                      style={{
-                        color,
-                        borderColor: `color-mix(in srgb, ${color} 30%, transparent)`,
-                      }}
+              {hasSubStats && (
+                <div className={styles.statsTabBar}>
+                  {[
+                    { key: "all", label: "All", icon: <Layers size={10} /> },
+                    { key: "orchestrator", label: "Orchestrator", icon: <Bot size={10} /> },
+                    { key: "workers", label: "Workers", icon: <Users size={10} /> },
+                  ].map((tab) => (
+                    <button
+                      key={tab.key}
+                      className={`${styles.statsTabBtn}${statsTab === tab.key ? ` ${styles.statsTabBtnActive}` : ""}`}
+                      onClick={() => setStatsTab(tab.key)}
                     >
-                      <ToolIcon size={11} />
-                      {tool.name}
-                      <span className={styles.statBadgeCount}>×{tool.count}</span>
-                    </span>
-                  );
-                })}
-              {/* Modality icons: input → output */}
-              {sessionStats.modalities &&
-                Object.values(sessionStats.modalities).some(Boolean) && (
-                  <ModalityIconComponent
-                    modalities={sessionStats.modalities}
-                  />
-                )}
+                      {tab.icon}
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+            {activeStats ? (
+              renderStatsBadges(activeStats, statsTab === "all")
+            ) : (
+              <div className={styles.statsBadges}>
+                <span className={`${styles.statBadge} ${styles.statBadgeSub}`}>No data</span>
+              </div>
+            )}
           </div>
         )}
 

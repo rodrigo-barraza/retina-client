@@ -28,6 +28,52 @@
   color: var(--text-secondary);
   padding: 6px 10px;
   border-bottom: 1px solid var(--border-color);
+  gap: 6px;
+}
+
+.statsTabBar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.statsTabBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.statsTabBtn:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--border-color) 50%, transparent);
+}
+
+.statsTabBtnActive {
+  color: var(--accent-color);
+  background: var(--accent-glow);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-color) 20%, transparent);
+}
+
+.statsTabBtnActive:hover {
+  background: var(--accent-glow);
+  color: var(--accent-color);
 }
 
 .statsBadges {

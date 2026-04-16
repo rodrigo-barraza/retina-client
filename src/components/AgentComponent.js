@@ -130,8 +130,18 @@ export default function AgentComponent() {
 
   // Phase 1: Agentic controls
   const [autoApprove, setAutoApprove] = useState(false);
-  const [maxIterations, setMaxIterations] = useState(MAX_TOOL_ITERATIONS);
-  const [maxWorkerIterations, setMaxWorkerIterations] = useState(MAX_TOOL_ITERATIONS);
+  const [maxIterations, setMaxIterations] = useState(() => {
+    const stored = localStorage.getItem("agent:maxIterations");
+    if (stored === "Infinity") return Infinity;
+    const parsed = Number(stored);
+    return [10, 25, 50, 100].includes(parsed) ? parsed : MAX_TOOL_ITERATIONS;
+  });
+  const [maxWorkerIterations, setMaxWorkerIterations] = useState(() => {
+    const stored = localStorage.getItem("agent:maxWorkerIterations");
+    if (stored === "Infinity") return Infinity;
+    const parsed = Number(stored);
+    return [10, 25, 50, 100].includes(parsed) ? parsed : MAX_TOOL_ITERATIONS;
+  });
   const [planFirst, setPlanFirst] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [planProposal, setPlanProposal] = useState(null); // { plan, steps, status }
@@ -872,7 +882,18 @@ export default function AgentComponent() {
             });
           },
           onWorkerStatus: (data) => {
-            if (data.message === "iteration_progress") {
+            if (data.message === "spawned") {
+              // Early mapping: store workerId indexed by description
+              // so SpawnAgentRenderer can look up activity before tool result arrives
+              setWorkerToolActivity((prev) => ({
+                ...prev,
+                [data.workerId]: {
+                  ...(prev[data.workerId] || { toolCount: 0, currentTool: null, iteration: 0, toolNames: {} }),
+                  description: data.description,
+                  phase: "spawned",
+                },
+              }));
+            } else if (data.message === "iteration_progress") {
               setWorkerToolActivity((prev) => ({
                 ...prev,
                 [data.workerId]: {
@@ -1262,7 +1283,9 @@ export default function AgentComponent() {
               onChange: () => {
                 const steps = [10, 25, 50, 100, Infinity];
                 const idx = steps.indexOf(maxIterations);
-                setMaxIterations(steps[(idx + 1) % steps.length]);
+                const next = steps[(idx + 1) % steps.length];
+                setMaxIterations(next);
+                localStorage.setItem("agent:maxIterations", String(next));
               },
             },
             {
@@ -1276,32 +1299,56 @@ export default function AgentComponent() {
               onChange: () => {
                 const steps = [10, 25, 50, 100, Infinity];
                 const idx = steps.indexOf(maxWorkerIterations);
-                setMaxWorkerIterations(steps[(idx + 1) % steps.length]);
+                const next = steps[(idx + 1) % steps.length];
+                setMaxWorkerIterations(next);
+                localStorage.setItem("agent:maxWorkerIterations", String(next));
               },
             },
           ]}
           sessionStats={
             messages.length > 0
               ? backendSessionStats
-                ? {
-                    // ── Backend is source of truth (all requests incl. background) ──
-                    messageCount: messages.length,
-                    deletedCount: 0,
-                    requestCount: backendSessionStats.requestCount,
-                    uniqueModels: backendSessionStats.models,
-                    uniqueProviders,
-                    totalTokens: {
-                      input: backendSessionStats.totalInputTokens,
-                      output: backendSessionStats.totalOutputTokens,
-                      total: backendSessionStats.totalTokens,
-                    },
-                    totalCost: backendSessionStats.totalCost,
-                    originalTotalCost: 0,
-                    usedTools,
-                    modalities: backendSessionStats.modalities || modalities,
-                    completedElapsedTime: backendSessionStats.totalElapsedTime || completedElapsedTime,
-                    currentTurnStart,
-                  }
+                ? (() => {
+                    // Map a backend sub-stats object to the display shape
+                    const mapSubStats = (sub) => {
+                      if (!sub) return null;
+                      return {
+                        requestCount: sub.requestCount,
+                        uniqueModels: sub.models || [],
+                        uniqueProviders: sub.providers || [],
+                        totalTokens: {
+                          input: sub.totalInputTokens,
+                          output: sub.totalOutputTokens,
+                          total: sub.totalTokens,
+                        },
+                        totalCost: sub.totalCost,
+                        originalTotalCost: 0,
+                        modalities: sub.modalities || {},
+                        completedElapsedTime: sub.totalElapsedTime || 0,
+                      };
+                    };
+                    return {
+                      // ── Backend is source of truth (all requests incl. background) ──
+                      messageCount: messages.length,
+                      deletedCount: 0,
+                      requestCount: backendSessionStats.requestCount,
+                      uniqueModels: backendSessionStats.models,
+                      uniqueProviders,
+                      totalTokens: {
+                        input: backendSessionStats.totalInputTokens,
+                        output: backendSessionStats.totalOutputTokens,
+                        total: backendSessionStats.totalTokens,
+                      },
+                      totalCost: backendSessionStats.totalCost,
+                      originalTotalCost: 0,
+                      usedTools,
+                      modalities: backendSessionStats.modalities || modalities,
+                      completedElapsedTime: backendSessionStats.totalElapsedTime || completedElapsedTime,
+                      currentTurnStart,
+                      orchestrator: mapSubStats(backendSessionStats.orchestrator),
+                      workers: mapSubStats(backendSessionStats.workers),
+                    };
+                  })()
                 : {
                     // ── Client-side fallback (live generation, no backend data yet) ──
                     messageCount: messages.length,
