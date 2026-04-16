@@ -246,64 +246,67 @@ function extractWorkerAgentId(tc) {
 
 /**
  * Mini status bar for an individual spawned worker agent.
- * Shows a RainbowCanvasComponent with the worker's live phase.
+ * Mirrors the main AgentComponent statusBarOverlay exactly.
  *
- * Three visual states:
- *  1. Tool executing: rainbow turbo + tool name
- *  2. Generating/Thinking: rainbow (normal speed) + phase label
- *  3. Idle: greyscale + tools used count
+ * Visual states:
+ *  1. Tool executing:    turbo rainbow + tool name
+ *  2. LLM phase active:  greyscale turbo (processing/loading) or color (generating) + phase label
+ *  3. Idle:              greyscale slow + tool count
  */
+const PHASE_LABELS = { starting: "Starting…", loading: "Loading…", processing: "Processing…", generating: "Generating…", thinking: "Thinking…" };
+const PHASE_ICONS  = { starting: "⚡", loading: "📦", processing: "⚙️", generating: "✨", thinking: "🧠" };
+
 function WorkerStatusBar({ activity }) {
   if (!activity) return null;
   const { currentTool, toolCount = 0, iteration = 0, maxIterations, phase } = activity;
   const isToolActive = !!currentTool;
-  const isGenerating = !isToolActive && (phase === "generating" || phase === "thinking");
-  const isActive = isToolActive || isGenerating;
+  const hasPhase = !!phase;
+  const isGenPhase = phase === "generating";
+  const isActive = isToolActive || hasPhase;
   const toolLabel = currentTool
     ? currentTool.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
     : null;
 
-  const phaseLabel = phase === "thinking" ? "Thinking…" : "Generating…";
+  const statusLabel = isToolActive ? toolLabel : (PHASE_LABELS[phase] || null);
+  const statusIcon = isToolActive ? null : (PHASE_ICONS[phase] || null);
 
+  // Turbo when tool is running, normal animate for LLM phases
+  // Greyscale for non-generating phases (processing, loading) — color for generating
   return (
     <div className={`${styles.workerStatusBar}${isActive ? ` ${styles.workerStatusBarActive}` : ""}`}>
       <RainbowCanvasComponent
-        turbo={isToolActive}
-        animate={isActive}
-        greyscale={!isActive}
+        turbo={isToolActive || hasPhase}
+        animate={!isActive}
+        greyscale={isActive ? !isGenPhase : true}
         className={styles.workerStatusBarCanvas}
       />
       <div className={styles.workerStatusBarOverlay}>
-        <Users size={10} className={styles.workerStatusBarIcon} />
-        {isToolActive ? (
-          <span className={styles.workerStatusBarMessage}>
-            {toolLabel}
-            {iteration > 0 && (
-              <span className={styles.workerStatusBarIter}>
-                iter {iteration}{maxIterations ? `/${maxIterations}` : ""}
-              </span>
-            )}
-          </span>
-        ) : isGenerating ? (
-          <span className={styles.workerStatusBarMessage}>
-            {phaseLabel}
-            {iteration > 0 && (
-              <span className={styles.workerStatusBarIter}>
-                iter {iteration}{maxIterations ? `/${maxIterations}` : ""}
-              </span>
-            )}
-          </span>
+        {isActive ? (
+          <>
+            <span className={styles.workerStatusBarEmoji}>{statusIcon || "🔧"}</span>
+            <span className={styles.workerStatusBarMessage}>
+              {statusLabel}
+              {iteration > 0 && (
+                <span className={styles.workerStatusBarIter}>
+                  iter {iteration}{maxIterations ? `/${maxIterations}` : ""}
+                </span>
+              )}
+            </span>
+            <span className={styles.workerStatusBarPulse} />
+          </>
         ) : (
-          <span className={styles.workerStatusBarMessage}>
-            {toolCount > 0 ? `${toolCount} tools used` : "Worker idle"}
-            {iteration > 0 && (
-              <span className={styles.workerStatusBarIter}>
-                iter {iteration}{maxIterations ? `/${maxIterations}` : ""}
-              </span>
-            )}
-          </span>
+          <>
+            <Users size={10} className={styles.workerStatusBarIcon} />
+            <span className={styles.workerStatusBarMessage}>
+              {toolCount > 0 ? `${toolCount} tools used` : "Worker idle"}
+              {iteration > 0 && (
+                <span className={styles.workerStatusBarIter}>
+                  iter {iteration}{maxIterations ? `/${maxIterations}` : ""}
+                </span>
+              )}
+            </span>
+          </>
         )}
-        {isActive && <span className={styles.workerStatusBarPulse} />}
       </div>
     </div>
   );

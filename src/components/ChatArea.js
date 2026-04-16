@@ -782,7 +782,7 @@ export default function ChatArea({
                 animation: "pulse 1.5s ease-in-out infinite",
               }}
             >
-              {messages[messages.length - 1]?.status || "Generating..."}
+              {messages[messages.length - 1]?.status || ({ starting: "Starting...", loading: "Loading...", processing: "Processing..." }[messages[messages.length - 1]?.statusPhase] || "Generating...")}
             </div>
           )}
         <div ref={endRef} />
@@ -828,7 +828,7 @@ export default function ChatArea({
       {/* ── Status indicator bar (always visible thin bar above input) ── */}
       {(() => {
         const lastMsg = messages[messages.length - 1];
-        const status = isGenerating ? (lastMsg?.status || "Generating...") : null;
+        const status = isGenerating ? (lastMsg?.status || ({ starting: "Starting...", loading: "Loading...", processing: "Processing..." }[lastMsg?.statusPhase] || "Generating...")) : null;
         const phase = isGenerating ? lastMsg?.statusPhase : null;
         const phaseIcon = isGenerating
           ? ({ starting: "⚡", loading: "📦", processing: "⚙️", generating: "✨" }[phase] || "✨")

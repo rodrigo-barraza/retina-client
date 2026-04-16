@@ -810,6 +810,19 @@ export default function AgentComponent() {
                   _isNotification: true,
                 },
               ]);
+              // Clear the worker's live activity so the status bar stops
+              const taskIdMatch = statusData.agentNotification.match(/<task-id>([\s\S]*?)<\/task-id>/);
+              if (taskIdMatch) {
+                const completedWorkerId = taskIdMatch[1].trim();
+                setWorkerToolActivity((prev) => ({
+                  ...prev,
+                  [completedWorkerId]: {
+                    ...(prev[completedWorkerId] || {}),
+                    currentTool: null,
+                    phase: null,
+                  },
+                }));
+              }
             } else if (statusData?.phase) {
               // LM Studio lifecycle status (loading, processing, generating)
               setMessages((prev) => {
@@ -1450,10 +1463,11 @@ export default function AgentComponent() {
       {/* ── Status indicator bar (rainbow canvas above input) ── */}
       {(() => {
         const lastMsg = messages[messages.length - 1];
-        const phase = isGenerating ? (lastMsg?.statusPhase || "generating") : null;
+        const phase = isGenerating ? (lastMsg?.statusPhase || "starting") : null;
         // generating = color + turbo, processing/loading = greyscale + turbo, idle = greyscale + slow animate
         const isGenPhase = phase === "generating";
-        const status = isGenerating ? (lastMsg?.status || "Generating...") : null;
+        const phaseLabel = { starting: "Starting...", loading: "Loading...", processing: "Processing...", generating: "Generating..." };
+        const status = isGenerating ? (lastMsg?.status || phaseLabel[phase] || "Starting...") : null;
         const phaseIcon = isGenerating
           ? ({ starting: "⚡", loading: "📦", processing: "⚙️", generating: "✨" }[phase] || "✨")
           : null;
