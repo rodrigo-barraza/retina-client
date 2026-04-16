@@ -124,6 +124,12 @@ export default function HomePage({ initialConversationId = null }) {
   const [originalMessageCount, setOriginalMessageCount] = useState(0);
   const [originalTotalCost, setOriginalTotalCost] = useState(0);
 
+  // ── Pixelation transition state ────────────────────────────
+  const [pixelTransition, setPixelTransition] = useState(null); // 'out' | 'in' | null
+  const [pixelOutDone, setPixelOutDone] = useState(false); // true when 'out' animation ends
+  const pendingConvRef = useRef(null); // holds fetched conversation during 'out' phase
+  const [pendingConvReady, setPendingConvReady] = useState(false); // true when fetch completes
+
   // ── LM Studio Model Load Config ────────────────────────────
   const [lmConfigModel, setLmConfigModel] = useState(null);
   const [lmConfigLoading, setLmConfigLoading] = useState(false);
@@ -513,15 +519,18 @@ export default function HomePage({ initialConversationId = null }) {
 
   const handleSelectConversation = async (conv) => {
     if (conv.id === activeId) return;
+
+    // Phase 1: pixelate OUT the current messages
+    setPixelTransition("out");
+
     try {
       const full = await PrismService.getConversation(conv.id);
-      liveConvIdRef.current = full.id;
-      liveConvCreatedRef.current = true; // Doc exists in DB
-      livePersistChainRef.current = Promise.resolve();
-      updateUrl(full.id);
-      restoreConversation(full);
+      // Store the fetched conversation — the 'out' completion handler will apply it
+      pendingConvRef.current = full;
     } catch (err) {
       console.error(err);
+      setPixelTransition(null);
+      pendingConvRef.current = null;
     }
   };
 
@@ -2293,6 +2302,25 @@ export default function HomePage({ initialConversationId = null }) {
             setHoveredLink(hovering ? "fc-card" : null)
           }
           streamingOutputs={streamingOutputs}
+          pixelTransition={pixelTransition}
+          onPixelTransitionComplete={() => {
+            if (pixelTransition === "out") {
+              // Phase 2: swap in the new conversation data, then pixelate IN
+              const full = pendingConvRef.current;
+              if (full) {
+                liveConvIdRef.current = full.id;
+                liveConvCreatedRef.current = true;
+                livePersistChainRef.current = Promise.resolve();
+                updateUrl(full.id);
+                restoreConversation(full);
+                pendingConvRef.current = null;
+              }
+              setPixelTransition("in");
+            } else if (pixelTransition === "in") {
+              // All done — clear the transition
+              setPixelTransition(null);
+            }
+          }}
 
           onLiveUserChunk={(fullText, { isTyped } = {}) => {
             setMessages((prev) => {

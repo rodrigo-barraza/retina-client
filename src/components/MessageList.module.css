@@ -866,29 +866,48 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 10px 14px;
-  background: var(--bg-secondary);
+  background: color-mix(in srgb, var(--accent-color) 8%, var(--bg-secondary));
   backdrop-filter: blur(12px) saturate(1.2);
   -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-color) 25%, var(--border-color));
   border-top: none;
-  border-left: 3px solid var(--text-secondary);
+  border-left: 3px solid var(--accent-color);
   border-radius: 0 0 6px 0;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.15),
-    0 1px 3px rgba(0, 0, 0, 0.1);
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    inset 0 0 12px -6px color-mix(in srgb, var(--accent-color) 15%, transparent);
 
   &:hover {
-    background: color-mix(in srgb, var(--bg-secondary) 95%, transparent);
-    border-color: var(--border-color);
+    background: var(--accent-color);
+    border-color: var(--accent-color);
     box-shadow:
-      0 6px 16px rgba(0, 0, 0, 0.2),
-      0 2px 4px rgba(0, 0, 0, 0.12);
+      0 6px 20px color-mix(in srgb, var(--accent-color) 40%, transparent),
+      0 2px 6px rgba(0, 0, 0, 0.15);
     transform: translateY(1px);
+
+    & .stickyUserMsgText {
+      color: #fff;
+      opacity: 1;
+    }
+
+    & .stickyUserMsgAvatar {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+
+    & .stickyUserMsgBadge {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.25);
+    }
 
     & .stickyUserMsgChevron {
       opacity: 1;
+      color: #fff;
       transform: translateY(2px);
     }
   }
@@ -917,12 +936,13 @@
 
 .stickyUserMsgText {
   font-size: 12px;
+  font-weight: 600;
   line-height: 1.4;
-  color: var(--text-primary);
+  color: var(--accent-color);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  opacity: 0.85;
+  transition: color 0.2s ease, opacity 0.2s ease;
 }
 
 .stickyUserMsgBadge {

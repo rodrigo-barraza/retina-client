@@ -39,6 +39,7 @@ import BadgeComponent from "./BadgeComponent";
 import WorkerNotificationComponent from "./WorkerNotificationComponent";
 import styles from "./MessageList.module.css";
 import PrismService from "../services/PrismService";
+import SoundService from "@/services/SoundService";
 import { getTotalInputTokens } from "../utils/utilities";
 
 
@@ -777,7 +778,8 @@ export default function MessageList({
       {/* ── Sticky pinned user message ── */}
       <div
         className={styles.stickyUserMsg}
-        onClick={stickyUserMsg ? handleStickyClick : undefined}
+        onMouseEnter={(e) => stickyUserMsg && SoundService.playHoverButton({ event: e })}
+        onClick={(e) => { if (stickyUserMsg) { SoundService.playClickButton({ event: e }); handleStickyClick(); } }}
         style={{
           visibility: stickyUserMsg ? "visible" : "hidden",
           opacity: stickyUserMsg ? 1 : 0,

@@ -16,6 +16,7 @@ import DrawingCanvas from "./DrawingCanvas";
 import DocumentViewer from "./DocumentViewer";
 import ToolCardComponent from "./ToolCardComponent";
 import MessageList from "./MessageList";
+import PixelTransitionComponent from "./PixelTransitionComponent";
 import LiveSessionService from "../services/LiveSessionService";
 
 import SoundService from "@/services/SoundService";
@@ -169,8 +170,11 @@ export default function ChatArea({
   onLiveToolExecution,
   onInitializeLiveConversation,
   streamingOutputs,
+  pixelTransition = null,
+  onPixelTransitionComplete,
 }) {
   const [showToolsBubble, setShowToolsBubble] = useState(false);
+  const messagesListRef = useRef(null);
   const toolsBubbleRef = useRef(null);
 
   // Compute selected model to know which tools it supports
@@ -636,7 +640,14 @@ export default function ChatArea({
 
   return (
     <div className={styles.container}>
-      <div className={styles.messagesList}>
+      <PixelTransitionComponent
+        phase={pixelTransition}
+        duration={1000}
+        maxBlockSize={24}
+        onComplete={onPixelTransitionComplete}
+        targetRef={messagesListRef}
+      />
+      <div className={styles.messagesList} ref={messagesListRef}>
 
         {messages.length === 0 && activeTools.length > 0 && (
           <div className={styles.toolCardsStack}>

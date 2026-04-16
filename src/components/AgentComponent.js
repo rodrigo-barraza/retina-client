@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Bot, BotMessageSquare, Paperclip, X, ClipboardList, Zap, Sparkles, Settings, Wrench, Brain, Plug, GitBranch, Scissors, Repeat, ListChecks, BookOpen, Info, Activity } from "lucide-react";
+import { Bot, BotMessageSquare, Paperclip, X, ClipboardList, Zap, Settings, Wrench, Brain, Plug, GitBranch, Repeat, ListChecks, BookOpen, Info, Activity } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ToolsApiService from "../services/ToolsApiService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
@@ -77,7 +77,7 @@ export default function AgentComponent() {
   const [customTools, setCustomTools] = useState([]);
   const [builtInTools, setBuiltInTools] = useState([]);
   const [skills, setSkills] = useState([]);
-  const [injectedSkills, setInjectedSkills] = useState([]);
+  const [_injectedSkills, setInjectedSkills] = useState([]);
   const [mcpServers, setMcpServers] = useState([]);
   const [memoriesRefreshKey, setMemoriesRefreshKey] = useState(0);
   const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
@@ -146,7 +146,7 @@ export default function AgentComponent() {
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [planProposal, setPlanProposal] = useState(null); // { plan, steps, status }
   const [agenticProgress, setAgenticProgress] = useState(null); // { iteration, maxIterations }
-  const [contextTruncated, setContextTruncated] = useState(null); // { strategy, estimatedTokens }
+  const [_contextTruncated, setContextTruncated] = useState(null); // { strategy, estimatedTokens }
   const [currentTurnStart, setCurrentTurnStart] = useState(null); // Date.now() when user sends
   const [backendSessionStats, setBackendSessionStats] = useState(null); // aggregate from /admin/sessions/:id/stats
   const [requestsRefreshKey, setRequestsRefreshKey] = useState(0);
@@ -1518,38 +1518,6 @@ export default function AgentComponent() {
         <div ref={endRef} style={{ minHeight: 24 }} />
       </div>
 
-      {/* Input area */}
-      <div className={styles.iterationBar}>
-        <span className={styles.iterationLabel}>
-          <Zap size={11} />
-          Iteration {agenticProgress ? agenticProgress.iteration : 0}/{Number.isFinite(maxIterations) ? maxIterations : "∞"}
-        </span>
-        {injectedSkills.length > 0 && (
-          <span className={styles.skillsBadge}>
-            <Sparkles size={9} />
-            {injectedSkills.length} skill{injectedSkills.length !== 1 ? "s" : ""}
-          </span>
-        )}
-        {contextTruncated && (
-          <span className={styles.contextBadge} title={`Strategy: ${contextTruncated.strategy} — ~${Math.round(contextTruncated.estimatedTokens / 1000)}k tokens`}>
-            <Scissors size={9} />
-            ctx trimmed
-          </span>
-        )}
-        <div className={styles.iterationDots}>
-          {Array.from({ length: Math.min(maxIterations, 50) }, (_, i) => {
-            const step = i + 1;
-            const isDone = agenticProgress ? step < agenticProgress.iteration : false;
-            const isActive = isGenerating && agenticProgress ? step === agenticProgress.iteration : false;
-            return (
-              <div
-                key={step}
-                className={`${styles.iterationDot}${isDone ? ` ${styles.iterationDotDone}` : ""}${isActive ? ` ${styles.iterationDotActive}` : ""}`}
-              />
-            );
-          })}
-        </div>
-      </div>
       {/* ── Status indicator bar (rainbow canvas above input) ── */}
       {(() => {
         const lastMsg = messages[messages.length - 1];
@@ -1562,6 +1530,8 @@ export default function AgentComponent() {
             active={isGenerating}
             phase={phase}
             label={label}
+            iteration={agenticProgress?.iteration || 0}
+            maxIterations={Number.isFinite(maxIterations) ? maxIterations : undefined}
           />
         );
       })()}

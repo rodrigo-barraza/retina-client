@@ -15,7 +15,6 @@
     height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
     opacity 0.4s ease,
     box-shadow 0.3s ease;
-  animation: statusBarFadeIn 0.3s ease-out;
 }
 
 .statusBarActive {
@@ -32,7 +31,10 @@
   inset: 0;
   display: block;
   width: 100%;
-  height: 100%;
+  /* Fixed canvas height so ResizeObserver always sees 28px,
+     even while the parent transitions from 4px → 28px.
+     overflow:hidden on .statusBar clips it when collapsed. */
+  height: 28px;
   image-rendering: pixelated;
   border-radius: 4px;
 }
@@ -121,18 +123,5 @@
   50% {
     opacity: 0.3;
     transform: scale(0.6);
-  }
-}
-
-@keyframes statusBarFadeIn {
-  from {
-    opacity: 0;
-    transform: scaleY(0);
-    transform-origin: top;
-  }
-  to {
-    opacity: 1;
-    transform: scaleY(1);
-    transform-origin: top;
   }
 }

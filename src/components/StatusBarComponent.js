@@ -72,8 +72,8 @@ export default function StatusBarComponent({
     ? icon
     : (PHASE_ICONS[phase] || null);
 
-  // Rainbow visuals: colour when generating/thinking, greyscale otherwise
-  const isColorPhase = phase === "generating" || phase === "thinking";
+  // Rainbow visuals: colour only when the model is actively generating tokens
+  const isColorPhase = phase === "generating";
 
   return (
     <div className={`${styles.statusBar}${active ? ` ${styles.statusBarActive}` : ""}`}>
