@@ -11,7 +11,8 @@ import styles from "./StreamingCursorComponent.module.css";
  * at ~30 fps, giving a glitchy/matrix-style feel while text streams in.
  *
  * Props:
- *   @param {boolean} active - Whether streaming is in progress
+ *   @param {boolean} active     - Whether streaming is in progress
+ *   @param {boolean} standalone - Render as block-level element (pre-text cursor)
  */
 
 const SCRAMBLE_CHARS =

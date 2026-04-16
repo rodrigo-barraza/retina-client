@@ -36,7 +36,7 @@ function rainbowAt(t) {
   );
 }
 
-export default function RainbowCanvasComponent({ turbo = false, className }) {
+export default function RainbowCanvasComponent({ turbo = false, animate = false, greyscale = false, className, style }) {
   const canvasRef = useRef(null);
   const stateRef = useRef({
     offset: 0,
@@ -45,11 +45,16 @@ export default function RainbowCanvasComponent({ turbo = false, className }) {
     lastTime: 0,
   });
   const turboRef = useRef(turbo);
+  const animateRef = useRef(animate);
   const rafRef = useRef(null);
 
   useEffect(() => {
     turboRef.current = turbo;
   }, [turbo]);
+
+  useEffect(() => {
+    animateRef.current = animate;
+  }, [animate]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -71,11 +76,12 @@ export default function RainbowCanvasComponent({ turbo = false, className }) {
     }
   }, []);
 
-  // Start/stop animation loop based on turbo prop
+  // Start/stop animation loop based on turbo or animate prop
   useEffect(() => {
-    if (!turbo && !rafRef.current) return;
+    const shouldRun = turbo || animate;
+    if (!shouldRun && !rafRef.current) return;
 
-    if (turbo && !rafRef.current) {
+    if (shouldRun && !rafRef.current) {
       stateRef.current.lastTime = 0;
       const tick = (now) => {
         const s = stateRef.current;
@@ -90,6 +96,10 @@ export default function RainbowCanvasComponent({ turbo = false, className }) {
           s.turboTime = 0;
           const smoothing = 1 - Math.pow(1 - TURBO_RELEASE, dt * 60);
           s.turboVelocity += (0 - s.turboVelocity) * smoothing;
+        } else if (animateRef.current) {
+          // Idle animation — constant slow speed, no turbo deceleration
+          s.turboVelocity = 0;
+          s.turboTime = 0;
         } else {
           s.turboVelocity = 0;
           s.turboTime = 0;
@@ -105,7 +115,7 @@ export default function RainbowCanvasComponent({ turbo = false, className }) {
       };
       rafRef.current = requestAnimationFrame(tick);
     }
-  }, [turbo, draw]);
+  }, [turbo, animate, draw]);
 
   // Resize handling + initial static draw
   useEffect(() => {
@@ -139,5 +149,12 @@ export default function RainbowCanvasComponent({ turbo = false, className }) {
     };
   }, [draw]);
 
-  return <canvas ref={canvasRef} className={className} />;
+  const canvasStyle = {
+    ...style,
+    filter: greyscale ? "grayscale(1)" : "none",
+    transition: "filter 0.6s ease",
+    willChange: "filter",
+  };
+
+  return <canvas ref={canvasRef} className={className} style={canvasStyle} />;
 }

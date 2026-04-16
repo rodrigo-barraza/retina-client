@@ -25,6 +25,7 @@ import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent.js";
 import ApprovalCardComponent from "./ApprovalCardComponent.js";
 import PlanCardComponent from "./PlanCardComponent.js";
 import ButtonComponent from "./ButtonComponent.js";
+import RainbowCanvasComponent from "./RainbowCanvasComponent.js";
 
 import {
   buildToolSchemas,
@@ -1435,20 +1436,31 @@ export default function AgentComponent() {
           })}
         </div>
       </div>
-      {/* ── Status indicator bar (always visible thin bar above input) ── */}
+      {/* ── Status indicator bar (rainbow canvas above input) ── */}
       {(() => {
         const lastMsg = messages[messages.length - 1];
+        const phase = isGenerating ? (lastMsg?.statusPhase || "generating") : null;
+        // generating = color + turbo, processing/loading = greyscale + turbo, idle = greyscale + slow animate
+        const isGenPhase = phase === "generating";
         const status = isGenerating ? (lastMsg?.status || "Generating...") : null;
-        const phase = isGenerating ? lastMsg?.statusPhase : null;
         const phaseIcon = isGenerating
           ? ({ starting: "⚡", loading: "📦", processing: "⚙️", generating: "✨" }[phase] || "✨")
-          : "✓";
-        const label = status || "Ready";
+          : null;
         return (
           <div className={`${styles.statusBar}${isGenerating ? ` ${styles.statusBarActive}` : ""}`}>
-            <span className={styles.statusBarIcon}>{phaseIcon}</span>
-            <span className={styles.statusBarMessage}>{label}</span>
-            {isGenerating && <span className={styles.statusBarPulse} />}
+            <RainbowCanvasComponent
+              turbo={isGenerating}
+              animate={!isGenerating}
+              greyscale={!isGenPhase}
+              className={styles.statusBarCanvas}
+            />
+            {isGenerating && (
+              <div className={styles.statusBarOverlay}>
+                <span className={styles.statusBarIcon}>{phaseIcon}</span>
+                <span className={styles.statusBarMessage}>{status}</span>
+                <span className={styles.statusBarPulse} />
+              </div>
+            )}
           </div>
         );
       })()}
