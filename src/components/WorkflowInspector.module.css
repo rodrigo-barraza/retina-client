@@ -446,7 +446,7 @@
   width: 24px;
   height: 24px;
   border-radius: var(--border-radius-sm);
-  background: var(--bg-glass);
+  background: var(--bg-surface);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   border: 1px solid var(--border-color);

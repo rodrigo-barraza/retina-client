@@ -235,7 +235,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--bg-glass);
+  background: var(--bg-surface);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   border: 1px solid var(--border-color);

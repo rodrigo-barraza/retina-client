@@ -88,7 +88,7 @@
   padding: 6px 16px;
   font-size: 11px;
   color: var(--text-muted);
-  background: var(--bg-glass);
+  background: var(--bg-surface);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--border-color);
@@ -177,7 +177,7 @@
   width: 32px;
   height: 32px;
   border-radius: var(--border-radius-sm);
-  background: var(--bg-glass);
+  background: var(--bg-surface);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--border-color);

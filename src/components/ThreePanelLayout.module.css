@@ -27,7 +27,7 @@
   justify-content: space-between;
   padding: 0 20px;
   border-bottom: 1px solid var(--border-color);
-  background: var(--bg-glass);
+  background: var(--bg-surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   font-weight: 500;
@@ -138,7 +138,7 @@
   border-bottom: 1px solid var(--border-color);
   font-size: 11px;
   color: var(--text-secondary);
-  background: var(--bg-glass);
+  background: var(--bg-surface);
   flex-shrink: 0;
   min-height: 28px;
   overflow-x: auto;
@@ -161,7 +161,7 @@
   min-width: 320px;
   height: 100%;
   border-right: 1px solid var(--border-color);
-  background: var(--bg-glass);
+  background: var(--bg-surface);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   display: flex;
@@ -181,7 +181,7 @@
   min-width: 320px;
   height: 100%;
   border-left: 1px solid var(--border-color);
-  background: var(--bg-glass);
+  background: var(--bg-surface);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   display: flex;
@@ -244,11 +244,10 @@
     position: fixed;
     top: 80px;
     bottom: 0;
-    width: calc(100% - 60px);
-    min-width: calc(100% - 60px);
     z-index: 200;
     border: none;
     opacity: 1;
+    background: rgb(19, 20, 28);
     will-change: transform, opacity;
     transition:
       transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
@@ -271,8 +270,6 @@
     transform: translateX(-100%);
     opacity: 0;
     pointer-events: none;
-    width: calc(100% - 60px) !important;
-    min-width: calc(100% - 60px) !important;
     border-width: 0;
   }
 
@@ -280,8 +277,6 @@
     transform: translateX(100%);
     opacity: 0;
     pointer-events: none;
-    width: calc(100% - 60px) !important;
-    min-width: calc(100% - 60px) !important;
     border-width: 0;
   }
 
@@ -290,7 +285,6 @@
     position: fixed;
     top: 80px;
     bottom: 0;
-    width: 60px;
     z-index: 199;
     background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(6px);
@@ -300,18 +294,27 @@
   }
 
   .mobileSlit[data-side="left"] {
+    left: 320px;
     right: 0;
-    left: auto;
   }
 
   .mobileSlit[data-side="right"] {
+    right: 320px;
     left: 0;
-    right: auto;
   }
 
   /* Ensure header stays above sidebar overlays */
   .pageHeader {
     position: relative;
     z-index: 201;
+  }
+
+  .headerTitle {
+    display: none;
+  }
+
+  .headerCenter {
+    left: 44px !important;
+    right: 44px !important;
   }
 }

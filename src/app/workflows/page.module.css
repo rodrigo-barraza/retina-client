@@ -166,7 +166,7 @@
   position: relative;
   padding: 20px 30px;
   border-top: 1px solid var(--border-color);
-  background: var(--bg-glass);
+  background: var(--bg-surface);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   flex-shrink: 0;

@@ -98,7 +98,7 @@
   min-width: 300px;
   height: 100%;
   border-left: 1px solid var(--border-color);
-  background: var(--bg-glass);
+  background: var(--bg-surface);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   display: flex;
