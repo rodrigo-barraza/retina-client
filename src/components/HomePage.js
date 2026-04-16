@@ -894,6 +894,8 @@ export default function HomePage({ initialConversationId = null }) {
                     totalTime: data.totalTime,
                     tokensPerSec: data.tokensPerSec,
                     estimatedCost: data.estimatedCost,
+                    status: undefined,
+                    statusPhase: undefined,
                   };
                 }
                 return updated;
@@ -1057,11 +1059,13 @@ export default function HomePage({ initialConversationId = null }) {
               setLmLoadProgress((prev) => (prev != null ? null : prev));
             }
 
+            const phase = statusData?.phase || undefined;
             setMessages((prev) => {
               const updated = [...prev];
               updated[insertIndex] = {
                 ...updated[insertIndex],
                 status: message,
+                statusPhase: phase,
               };
               return updated;
             });
@@ -1076,7 +1080,6 @@ export default function HomePage({ initialConversationId = null }) {
               updated[insertIndex] = {
                 ...updated[insertIndex],
                 content: streamedText,
-                status: undefined,
               };
               return updated;
             });
@@ -1665,6 +1668,8 @@ export default function HomePage({ initialConversationId = null }) {
                     totalTime: data.totalTime,
                     tokensPerSec: data.tokensPerSec,
                     estimatedCost: data.estimatedCost,
+                    status: undefined,
+                    statusPhase: undefined,
                   };
                 }
                 return updated;
@@ -1824,11 +1829,13 @@ export default function HomePage({ initialConversationId = null }) {
               setLmLoadProgress((prev) => (prev != null ? null : prev));
             }
 
+            const phase = statusData?.phase || undefined;
             setMessages((prev) => {
               const updated = [...prev];
               updated[updated.length - 1] = {
                 ...updated[updated.length - 1],
                 status: message,
+                statusPhase: phase,
               };
               return updated;
             });
@@ -1844,7 +1851,6 @@ export default function HomePage({ initialConversationId = null }) {
               updated[updated.length - 1] = {
                 ...updated[updated.length - 1],
                 content: streamedText,
-                status: undefined,
               };
               return updated;
             });

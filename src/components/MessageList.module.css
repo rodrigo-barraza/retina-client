@@ -1376,3 +1376,64 @@
   }
 }
 
+/* ── Status Indicator (LM Studio lifecycle phases) ─────────── */
+
+.statusIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent-color) 6%, var(--bg-tertiary));
+  border: 1px solid color-mix(in srgb, var(--accent-color) 15%, var(--border-color));
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  animation: statusFadeIn 0.25s ease-out both;
+  will-change: opacity, transform;
+}
+
+.statusIcon {
+  font-size: 14px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.statusMessage {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.statusPulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  flex-shrink: 0;
+  animation: statusPulseDot 1.4s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+@keyframes statusFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes statusPulseDot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
+}
+

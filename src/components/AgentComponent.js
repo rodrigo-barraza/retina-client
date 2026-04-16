@@ -809,6 +809,20 @@ export default function AgentComponent() {
                   _isNotification: true,
                 },
               ]);
+            } else if (statusData?.phase) {
+              // LM Studio lifecycle status (loading, processing, generating)
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last?.role === "assistant") {
+                  updated[updated.length - 1] = {
+                    ...last,
+                    status: statusData.message,
+                    statusPhase: statusData.phase,
+                  };
+                }
+                return updated;
+              });
             }
           },
           // ── Worker agent live events ─────────────────────────────
@@ -858,6 +872,8 @@ export default function AgentComponent() {
                   tokensPerSec: data.tokensPerSec,
                   estimatedCost: data.estimatedCost,
                   completedAt: new Date().toISOString(),
+                  status: undefined,
+                  statusPhase: undefined,
                 };
               }
               return updated;
@@ -941,7 +957,6 @@ export default function AgentComponent() {
         setTitle(resolvedTitle);
       }
 
-      setBackendSessionStats(null); // Clear stale backend stats — client-side fallback provides live preview during generation
       setCurrentTurnStart(Date.now());
       const userMessage = {
         role: "user",
