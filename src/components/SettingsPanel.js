@@ -26,6 +26,7 @@ import TokenCountBadgeComponent from "./TokenCountBadgeComponent";
 import RequestCountBadgeComponent from "./RequestCountBadgeComponent";
 import MessageCountBadgeComponent from "./MessageCountBadgeComponent";
 import StopwatchBadgeComponent from "./StopwatchBadgeComponent";
+import TooltipComponent from "./TooltipComponent";
 import { formatCost } from "../utils/utilities";
 import {
   TOOL_COLORS,
@@ -233,14 +234,14 @@ export default function SettingsPanel({
                     { key: "orchestrator", label: "Orchestrator", icon: <Bot size={10} /> },
                     { key: "workers", label: "Workers", icon: <Users size={10} /> },
                   ].map((tab) => (
-                    <button
-                      key={tab.key}
-                      className={`${styles.statsTabBtn}${statsTab === tab.key ? ` ${styles.statsTabBtnActive}` : ""}`}
-                      onClick={() => setStatsTab(tab.key)}
-                    >
-                      {tab.icon}
-                      {tab.label}
-                    </button>
+                    <TooltipComponent key={tab.key} label={tab.label} position="bottom" delay={200}>
+                      <button
+                        className={`${styles.statsTabBtn}${statsTab === tab.key ? ` ${styles.statsTabBtnActive}` : ""}`}
+                        onClick={() => setStatsTab(tab.key)}
+                      >
+                        {tab.icon}
+                      </button>
+                    </TooltipComponent>
                   ))}
                 </div>
               )}

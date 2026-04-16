@@ -23,11 +23,10 @@ import {
   Zap,
 } from "lucide-react";
 import MarkdownContent from "./MarkdownContent";
-import RainbowCanvasComponent from "./RainbowCanvasComponent";
+import StatusBarComponent from "./StatusBarComponent.js";
 import PrismService from "../services/PrismService";
 import { formatLatency } from "../utils/utilities";
 import styles from "./ToolResultRenderers.module.css";
-import mlStyles from "./MessageList.module.css";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -774,64 +773,37 @@ function BrowserActionRenderer({ result, args }) {
 
 // ── 13. Coordinator Tools ───────────────────────────────────────────────────
 
-const PHASE_LABELS = { starting: "Starting…", loading: "Loading…", processing: "Processing…", generating: "Generating…", thinking: "Thinking…" };
-const PHASE_ICONS  = { starting: "⚡", loading: "📦", processing: "⚙️", generating: "✨", thinking: "🧠" };
-
 /**
  * Mini status bar for an individual spawned worker agent.
- * Mirrors the main AgentComponent statusBarOverlay exactly.
+ * Uses the shared StatusBarComponent.
  */
 function WorkerStatusBar({ activity }) {
   if (!activity) return null;
   const { currentTool, toolCount = 0, iteration = 0, maxIterations, phase } = activity;
   const isToolActive = !!currentTool;
   const hasPhase = !!phase;
-  const isGenPhase = phase === "generating";
   const isActive = isToolActive || hasPhase;
   const toolLabel = currentTool
     ? currentTool.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
     : null;
 
-  const statusLabel = isToolActive ? toolLabel : (PHASE_LABELS[phase] || null);
-  const statusIcon = isToolActive ? null : (PHASE_ICONS[phase] || null);
+  // Derive the effective phase for StatusBarComponent
+  const effectivePhase = isToolActive ? "thinking" : phase;
+  const label = isToolActive ? toolLabel : undefined;
+  // Tool calls show a wrench emoji, phase uses default icons
+  const icon = isToolActive ? "🔧" : undefined;
 
   return (
-    <div className={`${mlStyles.workerStatusBar}${isActive ? ` ${mlStyles.workerStatusBarActive}` : ""}`}>
-      <RainbowCanvasComponent
-        turbo={isToolActive || hasPhase}
-        animate={!isActive}
-        greyscale={isActive ? !isGenPhase : true}
-        className={mlStyles.workerStatusBarCanvas}
-      />
-      <div className={mlStyles.workerStatusBarOverlay}>
-        {isActive ? (
-          <>
-            <span className={mlStyles.workerStatusBarEmoji}>{statusIcon || "🔧"}</span>
-            <span className={mlStyles.workerStatusBarMessage}>
-              {statusLabel}
-              {iteration > 0 && (
-                <span className={mlStyles.workerStatusBarIter}>
-                  Iteration {iteration}{maxIterations ? `/${maxIterations}` : ""}
-                </span>
-              )}
-            </span>
-            <span className={mlStyles.workerStatusBarPulse} />
-          </>
-        ) : (
-          <>
-            <Users size={10} className={mlStyles.workerStatusBarIcon} />
-            <span className={mlStyles.workerStatusBarMessage}>
-              {toolCount > 0 ? `${toolCount} tools used` : "Worker idle"}
-              {iteration > 0 && (
-                <span className={mlStyles.workerStatusBarIter}>
-                  Iteration {iteration}{maxIterations ? `/${maxIterations}` : ""}
-                </span>
-              )}
-            </span>
-          </>
-        )}
-      </div>
-    </div>
+    <StatusBarComponent
+      active={isActive}
+      phase={effectivePhase}
+      label={label}
+      icon={icon}
+      iteration={iteration}
+      maxIterations={maxIterations}
+      idleIcon={<Users size={10} />}
+      idleLabel={toolCount > 0 ? `${toolCount} tools used` : "Worker idle"}
+    />
   );
 }
 

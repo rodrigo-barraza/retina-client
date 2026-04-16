@@ -39,9 +39,9 @@ import { LS_PANEL_NAV } from "../constants";
 import RainbowCanvasComponent from "./RainbowCanvasComponent";
 import SoundService from "@/services/SoundService";
 
-function RainbowCanvas({ turbo = false }) {
+function RainbowCanvas({ turbo = false, greyscale = false }) {
   return (
-    <RainbowCanvasComponent turbo={turbo} className={styles.rainbowCanvas} />
+    <RainbowCanvasComponent turbo={turbo} greyscale={greyscale} className={styles.rainbowCanvas} />
   );
 }
 
@@ -402,7 +402,7 @@ export default function NavigationSidebarComponent({
           {/* Spinning triangle with rainbow edge */}
           <span className={styles.triangleSpin}>
             <span className={styles.triangleOuter}>
-              <RainbowCanvas turbo={isGenerating} />
+              <RainbowCanvas turbo={isGenerating} greyscale={!isGenerating} />
             </span>
             <span className={styles.triangleInner} />
           </span>
@@ -422,7 +422,7 @@ export default function NavigationSidebarComponent({
             <div className={styles.mobilePopover}>
               {/* Rainbow strip */}
               <div className={styles.rainbowStrip}>
-                <RainbowCanvas turbo={isGenerating} />
+                <RainbowCanvas turbo={isGenerating} greyscale={!isGenerating} />
                 <SpinningCatComponent animate={isGenerating} />
               </div>
 
@@ -557,7 +557,7 @@ export default function NavigationSidebarComponent({
       <aside className={styles.sidebar}>
         {/* Rainbow logo banner */}
         <div className={styles.logoBanner} ref={bannerRef}>
-          <RainbowCanvas turbo={isGenerating} />
+          <RainbowCanvas turbo={isGenerating} greyscale={!isGenerating} />
           {miniCats.map((cat) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img

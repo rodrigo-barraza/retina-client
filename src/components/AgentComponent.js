@@ -25,7 +25,7 @@ import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent.js";
 import ApprovalCardComponent from "./ApprovalCardComponent.js";
 import PlanCardComponent from "./PlanCardComponent.js";
 import ButtonComponent from "./ButtonComponent.js";
-import RainbowCanvasComponent from "./RainbowCanvasComponent.js";
+import StatusBarComponent from "./StatusBarComponent.js";
 
 import {
   buildToolSchemas,
@@ -1553,30 +1553,16 @@ export default function AgentComponent() {
       {/* ── Status indicator bar (rainbow canvas above input) ── */}
       {(() => {
         const lastMsg = messages[messages.length - 1];
-        const phase = isGenerating ? (lastMsg?.statusPhase || "starting") : null;
-        // generating = color + turbo, processing/loading = greyscale + turbo, idle = greyscale + slow animate
-        const isGenPhase = phase === "generating";
-        const phaseLabel = { starting: "Starting...", loading: "Loading...", processing: "Processing...", generating: "Generating..." };
-        const status = isGenerating ? (lastMsg?.status || phaseLabel[phase] || "Starting...") : null;
-        const phaseIcon = isGenerating
-          ? ({ starting: "⚡", loading: "📦", processing: "⚙️", generating: "✨" }[phase] || "✨")
-          : null;
+        const rawPhase = isGenerating ? (lastMsg?.statusPhase || "starting") : null;
+        const hasActiveTools = toolActivity.some((t) => t.status === "calling");
+        const phase = isGenerating ? (hasActiveTools ? "thinking" : rawPhase) : null;
+        const label = isGenerating ? (hasActiveTools ? "Thinking..." : (lastMsg?.status || undefined)) : undefined;
         return (
-          <div className={`${styles.statusBar}${isGenerating ? ` ${styles.statusBarActive}` : ""}`}>
-            <RainbowCanvasComponent
-              turbo={isGenerating}
-              animate={!isGenerating}
-              greyscale={!isGenPhase}
-              className={styles.statusBarCanvas}
-            />
-            {isGenerating && (
-              <div className={styles.statusBarOverlay}>
-                <span className={styles.statusBarIcon}>{phaseIcon}</span>
-                <span className={styles.statusBarMessage}>{status}</span>
-                <span className={styles.statusBarPulse} />
-              </div>
-            )}
-          </div>
+          <StatusBarComponent
+            active={isGenerating}
+            phase={phase}
+            label={label}
+          />
         );
       })()}
 
