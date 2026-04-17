@@ -257,8 +257,8 @@ function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
                   }
                   // Live badges during execution
                   if (activity?.toolNames) return <ToolBadgeRow tools={activity.toolNames} activeTool={activity.currentTool} />;
-                  // Static badge from completed result
-                  if (parsed?.toolUses > 0) return <ToolBadgeRow tools={[`${parsed.toolUses} tool calls`]} />;
+                  // Static badge from completed result — build a proper { name: count } object
+                  if (parsed?.toolUses > 0) return <ToolBadgeRow tools={{ "tool calls": parsed.toolUses }} />;
                   return null;
                 })()}
 

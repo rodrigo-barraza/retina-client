@@ -112,7 +112,7 @@ export default function NavigationSidebarComponent({
   };
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
-  const [showNav, setShowNav] = useState(true);
+  const [showNav, setShowNav] = useState(false);
   const [navReady, setNavReady] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -141,7 +141,14 @@ export default function NavigationSidebarComponent({
 
   useEffect(() => {
     const stored = localStorage.getItem(LS_PANEL_NAV);
-    if (stored !== null) setShowNav(stored === "true");
+    const initialNav = stored !== null ? stored === "true" : false;
+    setShowNav(initialNav);
+    if (!initialNav) {
+      document.documentElement.setAttribute("data-nav-collapsed", "true");
+    } else {
+      document.documentElement.removeAttribute("data-nav-collapsed");
+    }
+    
     // Enable transitions after first paint
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setNavReady(true));
