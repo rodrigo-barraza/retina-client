@@ -23,6 +23,7 @@ export default function TooltipComponent({
   position = "top",
   trigger = "hover",
   delay = 300,
+  disabled = false,
   children,
   className = "",
 }) {
@@ -160,7 +161,7 @@ export default function TooltipComponent({
     };
   }, []);
 
-  if (!label) return children;
+  if (!label || disabled) return children;
 
   const bubble = mounted
     ? createPortal(

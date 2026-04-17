@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import SpinningCatComponent from "./SpinningCatComponent";
+import TooltipComponent from "./TooltipComponent";
 import styles from "./NavigationSidebarComponent.module.css";
 import { LS_PANEL_NAV } from "../constants";
 
@@ -113,6 +114,7 @@ export default function NavigationSidebarComponent({
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const [showNav, setShowNav] = useState(true);
+  const [navReady, setNavReady] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isLocal, setIsLocal] = useState(false);
@@ -141,6 +143,10 @@ export default function NavigationSidebarComponent({
   useEffect(() => {
     const stored = localStorage.getItem(LS_PANEL_NAV);
     if (stored !== null) setShowNav(stored === "true");
+    // Double-rAF: ensure collapsed state is painted before enabling transitions
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setNavReady(true));
+    });
   }, []);
 
   useEffect(() => {
@@ -541,17 +547,7 @@ export default function NavigationSidebarComponent({
   /* ── Desktop: standard collapsible sidebar ── */
 
   return (
-    <div className={`${styles.wrapper} ${!showNav ? styles.collapsed : ""}`}>
-      {/* Collapsed: just a toggle strip */}
-      {!showNav && (
-        <button
-          className={styles.expandBtn}
-          onClick={toggleNav}
-          title="Show navigation"
-        >
-          <ChevronsRight size={16} />
-        </button>
-      )}
+    <div className={`${styles.wrapper} ${!showNav ? styles.collapsed : ""} ${!navReady ? styles.noTransition : ""}`}>
 
       {/* Expanded sidebar */}
       <aside className={styles.sidebar}>
@@ -573,9 +569,9 @@ export default function NavigationSidebarComponent({
           <button
             className={styles.collapseBtn}
             onClick={toggleNav}
-            title="Hide navigation"
+            title={showNav ? "Collapse sidebar" : "Expand sidebar"}
           >
-            <ChevronsLeft size={14} />
+            {showNav ? <ChevronsLeft size={14} /> : <ChevronsRight size={14} />}
           </button>
         </div>
 
@@ -591,7 +587,7 @@ export default function NavigationSidebarComponent({
                 pathname.startsWith(p)
               );
 
-            return (
+            const link = (
               <Link
                 key={item.href}
                 href={item.href}
@@ -613,6 +609,12 @@ export default function NavigationSidebarComponent({
                 )}
               </Link>
             );
+
+            return !showNav ? (
+              <TooltipComponent key={item.href} label={item.label} position="right" delay={200} className={styles.tooltipFill}>
+                {link}
+              </TooltipComponent>
+            ) : link;
           })}
 
           {/* Experiments divider (desktop) */}
@@ -624,7 +626,7 @@ export default function NavigationSidebarComponent({
               {experimentItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname.startsWith(item.href);
-                return (
+                const link = (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -636,6 +638,12 @@ export default function NavigationSidebarComponent({
                     <span className={styles.navLabel}>{item.label}</span>
                   </Link>
                 );
+
+                return !showNav ? (
+                  <TooltipComponent key={item.href} label={item.label} position="right" delay={200} className={styles.tooltipFill}>
+                    {link}
+                  </TooltipComponent>
+                ) : link;
               })}
             </>
           )}
@@ -644,29 +652,35 @@ export default function NavigationSidebarComponent({
         {/* Footer */}
         <div className={styles.footer}>
           {isAdmin ? (
-            <Link href="/" className={styles.navLink} onMouseEnter={(e) => SoundService.playHover({ event: e })} onClick={(e) => SoundService.playClick({ event: e })}>
-              <ArrowLeft className={styles.navIcon} />
-              <span className={styles.navLabel}>Back to Retina</span>
-            </Link>
+            <TooltipComponent label="Back to Retina" position="right" delay={200} disabled={showNav} className={styles.tooltipFill}>
+              <Link href="/" className={styles.navLink} onMouseEnter={(e) => SoundService.playHover({ event: e })} onClick={(e) => SoundService.playClick({ event: e })}>
+                <ArrowLeft className={styles.navIcon} />
+                <span className={styles.navLabel}>Back to Retina</span>
+              </Link>
+            </TooltipComponent>
           ) : isLocal ? (
-            <Link href="/admin" className={styles.navLink} onMouseEnter={(e) => SoundService.playHover({ event: e })} onClick={(e) => SoundService.playClick({ event: e })}>
-              <Settings className={styles.navIcon} />
-              <span className={styles.navLabel}>Admin</span>
-            </Link>
+            <TooltipComponent label="Admin" position="right" delay={200} disabled={showNav} className={styles.tooltipFill}>
+              <Link href="/admin" className={styles.navLink} onMouseEnter={(e) => SoundService.playHover({ event: e })} onClick={(e) => SoundService.playClick({ event: e })}>
+                <Settings className={styles.navIcon} />
+                <span className={styles.navLabel}>Admin</span>
+              </Link>
+            </TooltipComponent>
           ) : null}
-          <button
-            className={`${styles.navLink} ${styles.themeToggle}`}
-            onClick={toggleTheme}
-          >
-            {theme === "dark" ? (
-              <Sun className={styles.navIcon} />
-            ) : (
-              <Moon className={styles.navIcon} />
-            )}
-            <span className={styles.navLabel}>
-              {theme === "dark" ? "Light Mode" : "Dark Mode"}
-            </span>
-          </button>
+          <TooltipComponent label={theme === "dark" ? "Light Mode" : "Dark Mode"} position="right" delay={200} disabled={showNav} className={styles.tooltipFill}>
+            <button
+              className={`${styles.navLink} ${styles.themeToggle}`}
+              onClick={toggleTheme}
+            >
+              {theme === "dark" ? (
+                <Sun className={styles.navIcon} />
+              ) : (
+                <Moon className={styles.navIcon} />
+              )}
+              <span className={styles.navLabel}>
+                {theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </span>
+            </button>
+          </TooltipComponent>
           {isAdmin && (
             <div className={styles.statusRow}>
               <span

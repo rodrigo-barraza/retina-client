@@ -14,31 +14,92 @@
 
 .wrapper.collapsed {
   & .sidebar {
-    width: 0;
-    min-width: 0;
-    opacity: 0;
-    pointer-events: none;
-    border-width: 0;
+    min-width: 52px;
+    width: 52px;
+  }
+
+  & .nav {
+    padding: 4px 0;
+    gap: 0;
+  }
+
+  & .navLink {
+    justify-content: center;
+    padding: 14px 0;
+    gap: 0;
+    width: 100%;
+    border-radius: 0;
+  }
+
+  & .navLink.active {
+    &::before {
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 3px;
+      transform: none;
+      border-radius: 0 2px 2px 0;
+    }
+  }
+
+  & .navLabel,
+  & .badge,
+  & .attentionDot {
+    display: none;
+  }
+
+  & .navDivider {
+    padding: 0;
+    margin: 0;
+
+    & > span {
+      display: none;
+    }
+
+    &::after {
+      margin: 4px 10px;
+    }
+  }
+
+  & .footer {
+    padding: 4px 0;
+  }
+
+  & .footer .navLink {
+    justify-content: center;
+    padding: 14px 0;
+    gap: 0;
+    width: 100%;
+    border-radius: 0;
+  }
+
+  & .footer .navLabel {
+    display: none;
+  }
+
+  & .statusRow {
+    justify-content: center;
+    padding: 4px 0;
+
+    & > span:last-child {
+      display: none;
+    }
+  }
+
+  & .collapseBtn {
+    right: 50%;
+    transform: translate(50%, -50%);
   }
 }
 
-.expandBtn {
+.tooltipFill {
   display: flex;
-  align-items: center;
   justify-content: center;
-  width: 28px;
-  flex-shrink: 0;
-  background: var(--bg-secondary);
-  border: none;
-  border-right: 1px solid var(--border-color);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.2s;
+  width: 100%;
+}
 
-  &:hover {
-    background: var(--accent-subtle);
-    color: var(--accent-color);
-  }
+.expandBtn {
+  display: none;
 }
 
 .sidebar {
