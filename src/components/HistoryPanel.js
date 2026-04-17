@@ -82,13 +82,22 @@ export default function HistoryPanel({
         ? conv.providers
         : Array.from(providersSet);
 
+      // Merge request-log toolCounts into modalities for accurate badge counts
+      const baseModalities = conv.modalities || getModalities(conv.messages);
+      const modalities = conv.toolCounts
+        ? {
+            ...baseModalities,
+            functionCalling: Object.values(conv.toolCounts).reduce((s, c) => s + c, 0),
+          }
+        : baseModalities;
+
       return {
         id: conv.id,
         title: conv.title || "Untitled Chat",
         updatedAt: conv.updatedAt,
         createdAt: conv.createdAt,
         totalCost,
-        modalities: conv.modalities || getModalities(conv.messages),
+        modalities,
         providers: derivedProviders,
         tags,
         username: conv.username,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Bot, BotMessageSquare, Paperclip, X, ClipboardList, Zap, Settings, Wrench, Brain, Plug, GitBranch, Repeat, ListChecks, BookOpen, Info, Activity } from "lucide-react";
+import { Bot, BotMessageSquare, Paperclip, X, ClipboardList, Zap, Settings, Wrench, Brain, Plug, GitBranch, Repeat, ListChecks, BookOpen, Info, Activity, CornerDownLeft } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ToolsApiService from "../services/ToolsApiService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
@@ -62,6 +62,7 @@ const AGENT_LOCKED_TOOLS = new Set(["Function Calling"]);
 export default function AgentComponent() {
   // ── State ────────────────────────────────────────────────────
   const [messages, setMessages] = useState([]);
+  const [queuedNextTurn, setQueuedNextTurn] = useState(null);
   const [inputValue, setInputValue] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [toolActivity, setToolActivity] = useState([]);
@@ -1027,18 +1028,33 @@ export default function AgentComponent() {
 
   // ── Send handler ─────────────────────────────────────────────
   const handleSend = useCallback(
-    async (e) => {
-      if (e) e.preventDefault();
-      if (isGenerating) {
+    async (e, opts = {}) => {
+      if (e && typeof e.preventDefault === "function") e.preventDefault();
+      
+      const { isQueueing = false, overridePayload = null } = opts;
+
+      if (isGenerating && !isQueueing && !overridePayload) {
         handleStop();
         return;
       }
-      const text = inputValue.trim();
-      if (!text && pendingImages.length === 0) return;
+      
+      const text = overridePayload ? overridePayload.text : inputValue.trim();
+      const currentImages = overridePayload ? overridePayload.images : [...pendingImages];
+      
+      if (!text && currentImages.length === 0) return;
 
-      const currentImages = [...pendingImages];
-      setInputValue("");
-      setPendingImages([]);
+      if (isQueueing) {
+        setQueuedNextTurn({ text, images: currentImages });
+        setInputValue("");
+        setPendingImages([]);
+        return;
+      }
+
+      if (!overridePayload) {
+        setInputValue("");
+        setPendingImages([]);
+      }
+
       setIsGenerating(true);
       setToolActivity([]);
       setWorkerToolActivity({});
@@ -1126,11 +1142,26 @@ export default function AgentComponent() {
     (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        handleSend();
+        if (isGenerating) {
+          handleSend(null, { isQueueing: true });
+        } else {
+          handleSend();
+        }
       }
     },
-    [handleSend],
+    [handleSend, isGenerating],
   );
+
+  // Auto-send queued message when generation completes
+  useEffect(() => {
+    if (!isGenerating && queuedNextTurn) {
+      const payload = queuedNextTurn;
+      setQueuedNextTurn(null);
+      setTimeout(() => {
+        handleSend(null, { overridePayload: payload });
+      }, 50);
+    }
+  }, [isGenerating, queuedNextTurn, handleSend]);
 
   // ── Session management ──────────────────────────────────
   const resetSessionState = useCallback(() => {
@@ -1654,6 +1685,38 @@ export default function AgentComponent() {
           onDrop={handleDrop}
           onPaste={handlePaste}
         >
+          {queuedNextTurn && (
+            <div className={chatStyles.queuedMessage}>
+              <div className={chatStyles.queuedHeader}>
+                <div className={chatStyles.queuedHeaderLeft}>
+                  <CornerDownLeft size={14} />
+                  <span>Queued for next turn</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInputValue(queuedNextTurn.text);
+                    setPendingImages(queuedNextTurn.images);
+                    setQueuedNextTurn(null);
+                  }}
+                  className={chatStyles.removeAttachment}
+                  title="Edit queue"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              {queuedNextTurn.text && (
+                <div className={chatStyles.queuedText}>
+                  {queuedNextTurn.text}
+                </div>
+              )}
+              {queuedNextTurn.images?.length > 0 && (
+                <div className={chatStyles.queuedImagesCount}>
+                  <Paperclip size={12} /> {queuedNextTurn.images.length} image(s)
+                </div>
+              )}
+            </div>
+          )}
           {isDragging && (
             <div className={chatStyles.dragOverlay}>
               <Paperclip size={20} />
@@ -1708,6 +1771,15 @@ export default function AgentComponent() {
               placeholder="Ask me to read, edit, search, or explore your codebase..."
               rows={1}
             />
+            {isGenerating && (
+              <ChatInputButton
+                variant="button"
+                onClick={() => handleSend(null, { isQueueing: true })}
+                disabled={!inputValue.trim() && pendingImages.length === 0}
+                label="Queue message for next turn"
+                icon={<CornerDownLeft size={18} />}
+              />
+            )}
             <ChatInputButton
               variant="submit"
               isGenerating={isGenerating}

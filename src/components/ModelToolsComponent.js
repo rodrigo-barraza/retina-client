@@ -36,7 +36,9 @@ const TOOL_DEFS = [
  * input/output modalities exclusively.
  *
  * Props:
- *   tools       — object with boolean keys (thinking, functionCalling, webSearch, etc.)
+ *   tools       — object with boolean/numeric keys (thinking, functionCalling, webSearch, etc.)
+ *                 Boolean true or 1 = shows icon only.
+ *                 Number > 1 = shows icon + usage count.
  *   size        — icon size in px (default 11)
  *   className   — extra root class name
  */
@@ -52,19 +54,28 @@ export default function ModelToolsComponent({
 
   return (
     <div className={`${styles.toolsRow} ${className || ""}`}>
-      {activeTools.map((def) => (
-        <TooltipComponent key={def.key} label={def.label} position="top">
-          <span
-            className={styles.toolBadge}
-            style={{
-              color: def.color,
-              borderColor: `color-mix(in srgb, ${def.color} 30%, transparent)`,
-            }}
-          >
-            <def.icon size={size} />
-          </span>
-        </TooltipComponent>
-      ))}
+      {activeTools.map((def) => {
+        const raw = tools[def.key];
+        const count = typeof raw === "number" ? raw : 0;
+        const tooltipLabel = count > 1 ? `${def.label} — ×${count}` : def.label;
+
+        return (
+          <TooltipComponent key={def.key} label={tooltipLabel} position="top">
+            <span
+              className={styles.toolBadge}
+              style={{
+                color: def.color,
+                borderColor: `color-mix(in srgb, ${def.color} 30%, transparent)`,
+              }}
+            >
+              <def.icon size={size} />
+              {count > 1 && (
+                <span className={styles.toolCount}>×{count}</span>
+              )}
+            </span>
+          </TooltipComponent>
+        );
+      })}
     </div>
   );
 }

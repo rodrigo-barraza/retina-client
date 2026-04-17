@@ -91,7 +91,7 @@ export default function SessionRequestsListComponent({ agentSessionId, refreshKe
             const isError = !req.success;
             return (
               <div
-                key={req.requestId || i}
+                key={`${req.requestId || "req"}-${i}`}
                 className={`${styles.requestRow} ${isError ? styles.requestError : ""} ${req.isWorker ? styles.requestWorker : ""}`}
               >
                 <div className={styles.requestMeta}>
