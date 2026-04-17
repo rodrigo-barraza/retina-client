@@ -19,7 +19,6 @@ import {
   Workflow,
   Settings,
   ChevronsLeft,
-  ChevronsRight,
   Menu,
   X,
   FolderOpen,
@@ -143,7 +142,7 @@ export default function NavigationSidebarComponent({
   useEffect(() => {
     const stored = localStorage.getItem(LS_PANEL_NAV);
     if (stored !== null) setShowNav(stored === "true");
-    // Double-rAF: ensure collapsed state is painted before enabling transitions
+    // Enable transitions after first paint
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setNavReady(true));
     });
@@ -569,9 +568,9 @@ export default function NavigationSidebarComponent({
           <button
             className={styles.collapseBtn}
             onClick={toggleNav}
-            title={showNav ? "Collapse sidebar" : "Expand sidebar"}
+            title="Toggle sidebar"
           >
-            {showNav ? <ChevronsLeft size={14} /> : <ChevronsRight size={14} />}
+            <ChevronsLeft size={14} />
           </button>
         </div>
 
@@ -610,11 +609,11 @@ export default function NavigationSidebarComponent({
               </Link>
             );
 
-            return !showNav ? (
-              <TooltipComponent key={item.href} label={item.label} position="right" delay={200} className={styles.tooltipFill}>
+            return (
+              <TooltipComponent key={item.href} label={item.label} position="right" delay={200} disabled={showNav} className={styles.tooltipFill}>
                 {link}
               </TooltipComponent>
-            ) : link;
+            );
           })}
 
           {/* Experiments divider (desktop) */}
@@ -639,11 +638,11 @@ export default function NavigationSidebarComponent({
                   </Link>
                 );
 
-                return !showNav ? (
-                  <TooltipComponent key={item.href} label={item.label} position="right" delay={200} className={styles.tooltipFill}>
+                return (
+                  <TooltipComponent key={item.href} label={item.label} position="right" delay={200} disabled={showNav} className={styles.tooltipFill}>
                     {link}
                   </TooltipComponent>
-                ) : link;
+                );
               })}
             </>
           )}

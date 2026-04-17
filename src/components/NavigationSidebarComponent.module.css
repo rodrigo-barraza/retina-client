@@ -12,6 +12,12 @@
     min-width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.wrapper.noTransition {
+  &, & * {
+    transition-duration: 0s !important;
+  }
+}
+
 .wrapper.collapsed {
   & .sidebar {
     min-width: 52px;
@@ -89,6 +95,10 @@
   & .collapseBtn {
     right: 50%;
     transform: translate(50%, -50%);
+
+    & svg {
+      transform: scaleX(-1);
+    }
   }
 }
 
