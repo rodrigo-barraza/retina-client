@@ -1376,7 +1376,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
   });
 
   const leftPanel = (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, overflow: "hidden" }}>
       <TabBarComponent
         tabs={[
           { key: "settings", icon: <Settings size={14} />, tooltip: "Settings" },
