@@ -1440,10 +1440,15 @@ export default function MessageList({
                             if (cacheWrite) parts.push(`${cacheWrite.toLocaleString()} write`);
                             inLabel = `in (${parts.join(" · ")})`;
                           }
+                          const reasoning = msg.usage.reasoningOutputTokens || 0;
+                          let outLabel = "out";
+                          if (reasoning > 0) {
+                            outLabel = `out (${reasoning.toLocaleString()} reasoning)`;
+                          }
                           return (
                             <>
                               <TokenCountBadgeComponent value={totalIn} label={inLabel} mini />
-                              <TokenCountBadgeComponent value={msg.usage.outputTokens} label="out" mini />
+                              <TokenCountBadgeComponent value={msg.usage.outputTokens} label={outLabel} mini />
                             </>
                           );
                         }

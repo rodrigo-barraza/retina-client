@@ -115,6 +115,12 @@ export default function SessionRequestsListComponent({ agentSessionId, refreshKe
                   {req.outputTokens > 0 && (
                     <TokenCountBadgeComponent value={req.outputTokens} label="out" mini />
                   )}
+                  {req.cacheReadInputTokens > 0 && (
+                    <TokenCountBadgeComponent value={req.cacheReadInputTokens} label="cached" mini />
+                  )}
+                  {req.reasoningOutputTokens > 0 && (
+                    <TokenCountBadgeComponent value={req.reasoningOutputTokens} label="reasoning" mini />
+                  )}
                   {req.totalTime > 0 && (
                     <StopwatchBadgeComponent seconds={req.totalTime} />
                   )}

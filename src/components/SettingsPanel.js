@@ -171,6 +171,24 @@ export default function SettingsPanel({
             value={stats.totalTokens.total}
             label="tokens total"
           />
+          {stats.totalTokens.cacheRead > 0 && (
+            <TokenCountBadgeComponent
+              value={stats.totalTokens.cacheRead}
+              label="cached read"
+            />
+          )}
+          {stats.totalTokens.cacheWrite > 0 && (
+            <TokenCountBadgeComponent
+              value={stats.totalTokens.cacheWrite}
+              label="cached write"
+            />
+          )}
+          {stats.totalTokens.reasoning > 0 && (
+            <TokenCountBadgeComponent
+              value={stats.totalTokens.reasoning}
+              label="reasoning"
+            />
+          )}
         </>
       )}
       <CostBadgeComponent cost={stats.totalCost} />

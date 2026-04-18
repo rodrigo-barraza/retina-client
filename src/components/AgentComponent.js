@@ -129,6 +129,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
   const [messages, setMessages] = useState([]);
   const [queuedNextTurn, setQueuedNextTurn] = useState(null);
   const [inputValue, setInputValue] = useState("");
+  const inputValueRef = useRef("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [toolActivity, setToolActivity] = useState([]);
   const [streamingOutputs, setStreamingOutputs] = useState(new Map());
@@ -509,6 +510,19 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
     const pool = shuffleArray(agentPrompts);
     setRandomPrompts(pool.slice(0, 5));
   }, [agentSessionId, agentPrompts]);
+
+  // ── Memoize filtered messages for MessageList to prevent ref churn ──
+  const filteredMessages = useMemo(
+    () => messages.filter((m) => m.role === "user" || m.role === "assistant"),
+    [messages],
+  );
+
+  // ── Stable input change handler (syncs ref + state) ─────────
+  const handleInputChange = useCallback((e) => {
+    const val = e.target.value;
+    inputValueRef.current = val;
+    setInputValue(val);
+  }, []);
 
   // ── Image handlers ──────────────────────────────────────────
   const handleImageSelect = useCallback((e) => {
@@ -1100,6 +1114,15 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
   );
 
   // ── Send handler ─────────────────────────────────────────────
+  // Read inputValue from ref at send-time to avoid re-creating
+  // handleSend on every keystroke (the main cause of input lag).
+  const pendingImagesRef = useRef(pendingImages);
+  pendingImagesRef.current = pendingImages;
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+  const titleRef = useRef(title);
+  titleRef.current = title;
+
   const handleSend = useCallback(
     async (e, opts = {}) => {
       if (e && typeof e.preventDefault === "function") e.preventDefault();
@@ -1111,20 +1134,22 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
         return;
       }
       
-      const text = overridePayload ? overridePayload.text : inputValue.trim();
-      const currentImages = overridePayload ? overridePayload.images : [...pendingImages];
+      const text = overridePayload ? overridePayload.text : inputValueRef.current.trim();
+      const currentImages = overridePayload ? overridePayload.images : [...pendingImagesRef.current];
       
       if (!text && currentImages.length === 0) return;
 
       if (isQueueing) {
         setQueuedNextTurn({ text, images: currentImages });
         setInputValue("");
+        inputValueRef.current = "";
         setPendingImages([]);
         return;
       }
 
       if (!overridePayload) {
         setInputValue("");
+        inputValueRef.current = "";
         setPendingImages([]);
       }
 
@@ -1138,8 +1163,9 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
       setInjectedSkills([]);
       setContextTruncated(null);
 
-      let resolvedTitle = title;
-      if (messages.length === 0) {
+      const currentMessages = messagesRef.current;
+      let resolvedTitle = titleRef.current;
+      if (currentMessages.length === 0) {
         const titleText = text || "Agent session";
         resolvedTitle =
           titleText.length > 60 ? titleText.slice(0, 57) + "..." : titleText;
@@ -1153,7 +1179,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
         timestamp: new Date().toISOString(),
         ...(currentImages.length > 0 ? { images: currentImages } : {}),
       };
-      const updatedMessages = [...messages, userMessage];
+      const updatedMessages = [...currentMessages, userMessage];
       // Insert placeholder assistant message so the aiNode
       // (with blinking cursor) appears immediately — matches /conversations
       setMessages([
@@ -1201,11 +1227,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
     },
     [
       handleStop,
-      inputValue,
-      pendingImages,
       isGenerating,
-      messages,
-      title,
       runOrchestrationLoop,
       loadSessions,
     ],
@@ -1519,6 +1541,9 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                           input: sub.totalInputTokens,
                           output: sub.totalOutputTokens,
                           total: sub.totalTokens,
+                          cacheRead: sub.totalCacheReadInputTokens || 0,
+                          cacheWrite: sub.totalCacheCreationInputTokens || 0,
+                          reasoning: sub.totalReasoningOutputTokens || 0,
                         },
                         totalCost: sub.totalCost,
                         originalTotalCost: 0,
@@ -1537,6 +1562,9 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                         input: backendSessionStats.totalInputTokens,
                         output: backendSessionStats.totalOutputTokens,
                         total: backendSessionStats.totalTokens,
+                        cacheRead: backendSessionStats.totalCacheReadInputTokens || 0,
+                        cacheWrite: backendSessionStats.totalCacheCreationInputTokens || 0,
+                        reasoning: backendSessionStats.totalReasoningOutputTokens || 0,
                       },
                       totalCost: backendSessionStats.totalCost,
                       originalTotalCost: 0,
@@ -1673,9 +1701,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
         )}
 
         <MessageList
-          messages={messages.filter(
-            (m) => m.role === "user" || m.role === "assistant",
-          )}
+          messages={filteredMessages}
           isGenerating={isGenerating}
           streamingOutputs={streamingOutputs}
           workerToolActivity={workerToolActivity}
@@ -1839,7 +1865,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
             <textarea
               ref={textareaRef}
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder={emptyState.placeholder}
               rows={1}

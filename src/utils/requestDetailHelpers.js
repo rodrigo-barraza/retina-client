@@ -213,6 +213,24 @@ export function buildRequestDetailSections(req) {
             ? <TokenCountBadgeComponent value={req.outputTokens} label="out" />
             : formatNumber(req.outputTokens),
         },
+        ...(req.cacheReadInputTokens > 0
+          ? [{
+              label: "Cache Read Tokens",
+              value: <TokenCountBadgeComponent value={req.cacheReadInputTokens} label="cached read" />,
+            }]
+          : []),
+        ...(req.cacheCreationInputTokens > 0
+          ? [{
+              label: "Cache Write Tokens",
+              value: <TokenCountBadgeComponent value={req.cacheCreationInputTokens} label="cached write" />,
+            }]
+          : []),
+        ...(req.reasoningOutputTokens > 0
+          ? [{
+              label: "Reasoning Tokens",
+              value: <TokenCountBadgeComponent value={req.reasoningOutputTokens} label="reasoning" />,
+            }]
+          : []),
         {
           label: "Estimated Cost",
           value: <CostBadgeComponent cost={req.estimatedCost} />,
