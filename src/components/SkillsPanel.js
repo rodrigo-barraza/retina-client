@@ -232,7 +232,7 @@ export default function SkillsPanel({ skills, onSkillsChange, project }) {
             <ToggleSwitchComponent
               checked={skills.length > 0 && skills.every((s) => s.enabled)}
               onChange={handleToggleAll}
-              size="small"
+              size="mini"
             />
           )}
           <ButtonComponent variant="ghost" size="xs" icon={Plus} onClick={handleCreate}>

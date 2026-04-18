@@ -342,7 +342,7 @@ export default function ModelLoadConfigPanel({ model, onLoad, onClose, service, 
         <ToggleSwitch
           checked={flashAttention}
           onChange={setFlashAttention}
-          size="small"
+          size="mini"
         />
       </div>
 
@@ -355,7 +355,7 @@ export default function ModelLoadConfigPanel({ model, onLoad, onClose, service, 
         <ToggleSwitch
           checked={offloadKvCache}
           onChange={setOffloadKvCache}
-          size="small"
+          size="mini"
         />
       </div>
 

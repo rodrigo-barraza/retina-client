@@ -710,7 +710,7 @@ export default function WorkflowInspector({
                   <ToggleSwitchComponent
                     checked={!isDisabled}
                     onChange={() => toggleTool(name)}
-                    size="small"
+                    size="mini"
                   />
                 </div>
               );

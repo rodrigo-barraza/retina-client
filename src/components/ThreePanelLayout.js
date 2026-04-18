@@ -6,7 +6,6 @@ import {
   PanelLeft,
   PanelRightClose,
   PanelRight,
-  Bot,
 } from "lucide-react";
 import styles from "./ThreePanelLayout.module.css";
 import { LS_PANEL_LEFT, LS_PANEL_RIGHT } from "../constants";
@@ -157,9 +156,7 @@ export default function ThreePanelLayout({
                 right: rightPanel && showRight ? 320 : 0,
               }}
             >
-              <div className={styles.headerAvatar}>
-                <Bot size={14} />
-              </div>
+
               {headerCenter}
             </div>
           )}
@@ -201,28 +198,14 @@ export default function ThreePanelLayout({
             {leftPanel}
           </aside>
 
-          {/* Mobile slit: visible strip behind left sidebar (settings) — appears on right edge */}
-          {isMobile && showLeft && (
-            <div
-              className={styles.mobileSlit}
-              data-side="left"
-              onClick={toggleLeft}
-            />
-          )}
+
 
           {/* Main Center */}
           <section className={styles.main} data-chat-area>
             {children}
           </section>
 
-          {/* Mobile slit: visible strip behind right sidebar (history) — appears on left edge */}
-          {rightPanel && isMobile && showRight && (
-            <div
-              className={styles.mobileSlit}
-              data-side="right"
-              onClick={toggleRight}
-            />
-          )}
+
 
           {/* Right Sidebar */}
           {rightPanel && (

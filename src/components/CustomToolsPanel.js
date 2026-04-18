@@ -814,7 +814,7 @@ export default function CustomToolsPanel({
                           <ToggleSwitchComponent
                             checked={param.required}
                             onChange={(v) => updateParameter(i, "required", v)}
-                            size="small"
+                            size="mini"
                           />
                         </div>
                       </div>
@@ -978,7 +978,7 @@ export default function CustomToolsPanel({
             <ToggleSwitchComponent
               checked={allCustomEnabled}
               onChange={() => handleToggleAllCustom()}
-              size="small"
+              size="mini"
             />
           )}
           <ButtonComponent
@@ -1045,7 +1045,7 @@ export default function CustomToolsPanel({
                   <ToggleSwitchComponent
                     checked={tool.enabled}
                     onChange={() => handleToggle(tool)}
-                    size="small"
+                    size="mini"
                   />
                 </div>
               </div>
@@ -1148,7 +1148,7 @@ export default function CustomToolsPanel({
             <ToggleSwitchComponent
               checked={allBuiltInEnabled}
               onChange={() => onToggleAllBuiltIn?.(!allBuiltInEnabled)}
-              size="small"
+              size="mini"
             />
           </div>
         )}
@@ -1222,7 +1222,7 @@ export default function CustomToolsPanel({
                     <ToggleSwitchComponent
                       checked={allDomainEnabled}
                       onChange={() => toggleDomainTools(domainTools)}
-                      size="small"
+                      size="mini"
                     />
                   </div>
                 )}
@@ -1302,7 +1302,7 @@ export default function CustomToolsPanel({
                           <ToggleSwitchComponent
                             checked={!isDisabled && !lockedOffTools.has(tool.name)}
                             onChange={() => onToggleBuiltIn?.(tool.name)}
-                            size="small"
+                            size="mini"
                             disabled={isOffline || lockedOffTools.has(tool.name)}
                           />
                         </div>

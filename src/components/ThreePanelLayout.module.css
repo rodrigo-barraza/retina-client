@@ -76,21 +76,6 @@
   pointer-events: auto;
 }
 
-.headerAvatar {
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  border-radius: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent-glow);
-  color: var(--accent-color);
-  border: 1px solid var(--accent-color);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  pointer-events: none;
-}
-
 /* ── Header Toggle Buttons ─────────────────────────── */
 
 .headerToggle {
@@ -235,11 +220,7 @@
   position: relative;
 }
 
-/* ── Mobile Slit (backdrop strip) ──────────────────── */
-
-.mobileSlit {
-  display: none;
-}
+/* mobileSlit removed — sidebars slide in without a scrim */
 
 @media (max-width: 767px) {
   .leftSidebar,
@@ -249,12 +230,9 @@
     bottom: 0;
     z-index: 200;
     border: none;
-    opacity: 1;
-    background: rgb(19, 20, 28);
-    will-change: transform, opacity;
-    transition:
-      transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--bg-surface);
+    will-change: transform;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .leftSidebar {
@@ -271,40 +249,17 @@
 
   .leftSidebar.sidebarHidden {
     transform: translateX(-100%);
-    opacity: 0;
     pointer-events: none;
     border-width: 0;
   }
 
   .rightSidebar.sidebarHidden {
     transform: translateX(100%);
-    opacity: 0;
     pointer-events: none;
     border-width: 0;
   }
 
-  .mobileSlit {
-    display: block;
-    position: fixed;
-    top: 80px;
-    bottom: 0;
-    z-index: 199;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    cursor: pointer;
-    transition: opacity 0.3s ease;
-  }
 
-  .mobileSlit[data-side="left"] {
-    left: 320px;
-    right: 0;
-  }
-
-  .mobileSlit[data-side="right"] {
-    right: 320px;
-    left: 0;
-  }
 
   /* Ensure header stays above sidebar overlays */
   .pageHeader {

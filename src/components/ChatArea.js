@@ -904,7 +904,7 @@ export default function ChatArea({
                       <ToggleSwitchComponent
                         checked={toggle.checked}
                         onChange={() => {}}
-                        size="small"
+                        size="mini"
                         disabled={toggle.disabled}
                       />
                     </div>

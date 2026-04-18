@@ -83,30 +83,30 @@
   color: var(--text-primary);
 }
 
-/* Small variant — for inline use in compact rows */
-.small {
+/* Mini variant — for inline use in compact rows */
+.mini {
   padding: 0;
   width: auto;
   gap: 6px;
 }
 
-.small .track {
+.mini .track {
   width: 30px;
   height: 16px;
   border-radius: 2px;
 }
 
-.small .knob {
+.mini .knob {
   top: 2px;
   left: 2px;
   width: 10px;
   height: 10px;
 }
 
-.small .track.active .knob {
+.mini .track.active .knob {
   transform: translateX(14px);
 }
 
-.small .label {
+.mini .label {
   font-size: 10px;
 }

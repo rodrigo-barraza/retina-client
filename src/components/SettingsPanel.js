@@ -9,8 +9,6 @@ import {
   ExternalLink,
   AudioLines,
   Layers,
-  Users,
-  Bot,
 } from "lucide-react";
 import ProviderLogo, { resolveProviderLabel } from "./ProviderLogos";
 import SelectDropdown from "./SelectDropdown";
@@ -25,7 +23,7 @@ import TokenCountBadgeComponent from "./TokenCountBadgeComponent";
 import RequestCountBadgeComponent from "./RequestCountBadgeComponent";
 import MessageCountBadgeComponent from "./MessageCountBadgeComponent";
 import StopwatchBadgeComponent from "./StopwatchBadgeComponent";
-import TooltipComponent from "./TooltipComponent";
+import StatsTabBarComponent from "./StatsTabBarComponent";
 import { formatCost } from "../utils/utilities";
 import {
   TOGGLEABLE_TOOLS,
@@ -51,6 +49,7 @@ export default function SettingsPanel({
   sessionStats = null,
   lockedTools,
   sessionType = "conversation",
+  canSpawnWorkers = false,
   agentToggles,
 }) {
   const sessionLabel = sessionType === "agent" ? "Session" : "Conversation";
@@ -129,7 +128,7 @@ export default function SettingsPanel({
 
   // ── Stats tab (All / Orchestrator / Workers) ──────────────
   const [statsTab, setStatsTab] = useState("all");
-  const hasSubStats = !!(sessionStats?.orchestrator || sessionStats?.workers);
+  const showStatsTabBar = canSpawnWorkers && !!(sessionStats?.orchestrator || sessionStats?.workers);
 
   // Resolve which stats object to render based on active tab
   const activeStats = sessionStats
@@ -248,23 +247,11 @@ export default function SettingsPanel({
           <div className={styles.sessionStats}>
             <div className={styles.statsHeader}>
               <Layers size={12} style={{ marginRight: 4 }} /> {sessionLabel}
-              {hasSubStats && (
-                <div className={styles.statsTabBar}>
-                  {[
-                    { key: "all", label: "All", icon: <Layers size={10} /> },
-                    { key: "orchestrator", label: "Orchestrator", icon: <Bot size={10} /> },
-                    { key: "workers", label: "Workers", icon: <Users size={10} /> },
-                  ].map((tab) => (
-                    <TooltipComponent key={tab.key} label={tab.label} position="bottom" delay={200}>
-                      <button
-                        className={`${styles.statsTabBtn}${statsTab === tab.key ? ` ${styles.statsTabBtnActive}` : ""}`}
-                        onClick={() => setStatsTab(tab.key)}
-                      >
-                        {tab.icon}
-                      </button>
-                    </TooltipComponent>
-                  ))}
-                </div>
+              {showStatsTabBar && (
+                <StatsTabBarComponent
+                  activeTab={statsTab}
+                  onChange={setStatsTab}
+                />
               )}
             </div>
             {activeStats ? (
@@ -564,7 +551,7 @@ export default function SettingsPanel({
                   <ToggleSwitch
                     checked={toggle.checked}
                     onChange={toggle.onChange}
-                    size="small"
+                    size="mini"
                   />
                 )}
               </div>
@@ -694,7 +681,7 @@ export default function SettingsPanel({
                         checked={toggle.checked}
                         onChange={toggle.onChange}
                         disabled={toggle.disabled}
-                        size="small"
+                        size="mini"
                       />
                     ) : (
                       <span

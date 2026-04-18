@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Bot, ChevronDown, Wrench, Check, Skull, Sticker, Apple, Lightbulb, Hammer } from "lucide-react";
 import { resolveIconComponent } from "./CustomAgentsPanel";
+import ToolCountBadgeComponent from "./ToolCountBadgeComponent";
 import styles from "./AgentPickerComponent.module.css";
 
 /**
@@ -81,26 +82,32 @@ export default function AgentPickerComponent({
 
   return (
     <div style={{ position: "relative" }}>
-      <button
-        ref={triggerRef}
-        className={styles.trigger}
-        onClick={() => !disabled && setOpen((v) => !v)}
-        title={`Active agent: ${activeAgent?.name || activeAgentId}`}
-        disabled={disabled}
-        type="button"
-      >
-        <span className={styles.triggerIcon} style={agentIconStyle(activeAgent)}>
-          {renderAgentIcon(activeAgent, 13)}
-        </span>
-        <span className={styles.triggerLabel}>
-          {activeAgent?.name || activeAgentId}
-        </span>
-        <ChevronDown
-          size={13}
-          className={styles.triggerChevron}
-          data-open={open}
+      <div className={styles.triggerWrap}>
+        <button
+          ref={triggerRef}
+          className={styles.trigger}
+          onClick={() => !disabled && setOpen((v) => !v)}
+          title={`Active agent: ${activeAgent?.name || activeAgentId}`}
+          disabled={disabled}
+          type="button"
+        >
+          <span className={styles.triggerIcon} style={agentIconStyle(activeAgent)}>
+            {renderAgentIcon(activeAgent, 13)}
+          </span>
+          <span className={styles.triggerLabel}>
+            {activeAgent?.name || activeAgentId}
+          </span>
+          <ChevronDown
+            size={13}
+            className={styles.triggerChevron}
+            data-open={open}
+          />
+        </button>
+        <ToolCountBadgeComponent
+          count={activeAgent?.toolCount}
+          color={activeAgent?.color}
         />
-      </button>
+      </div>
 
       {open && (
         <>

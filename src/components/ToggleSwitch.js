@@ -10,7 +10,7 @@ import SoundService from "@/services/SoundService";
  *  onChange  : (checked: boolean) => void
  *  label?    : string  — optional label text rendered beside the track
  *  disabled? : boolean
- *  size?     : "default" | "small"
+ *  size?     : "default" | "mini"
  */
 export default function ToggleSwitch({
   checked = false,
@@ -19,11 +19,11 @@ export default function ToggleSwitch({
   disabled = false,
   size = "default",
 }) {
-  const isSmall = size === "small";
+  const isMini = size === "mini";
 
   return (
     <label
-      className={`${styles.toggle} ${disabled ? styles.disabled : ""} ${isSmall ? styles.small : ""}`}
+      className={`${styles.toggle} ${disabled ? styles.disabled : ""} ${isMini ? styles.mini : ""}`}
       onMouseEnter={(e) => SoundService.playHoverButton({ event: e })}
     >
       <input

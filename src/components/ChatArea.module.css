@@ -73,6 +73,12 @@
   -webkit-backdrop-filter: blur(10px);
 }
 
+@media (max-width: 1200px) {
+  .inputWrapper {
+    padding-left: 64px;
+  }
+}
+
 .inputBox {
   max-width: 800px;
   margin: 0 auto;

@@ -31,45 +31,8 @@
   gap: 6px;
 }
 
-.statsTabBar {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  margin-left: auto;
-  background: var(--bg-tertiary);
-  border-radius: 4px;
-  padding: 2px;
-}
 
-.statsTabBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px;
-  border: none;
-  border-radius: 3px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  line-height: 1;
-}
 
-.statsTabBtn:hover {
-  color: var(--text-primary);
-  background: color-mix(in srgb, var(--border-color) 50%, transparent);
-}
-
-.statsTabBtnActive {
-  color: var(--accent-color);
-  background: var(--accent-glow);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-color) 20%, transparent);
-}
-
-.statsTabBtnActive:hover {
-  background: var(--accent-glow);
-  color: var(--accent-color);
-}
 
 .statsBadges {
   display: flex;

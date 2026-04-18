@@ -391,15 +391,15 @@
   }
 }
 
-/* Floating triangle button — bottom-left, moved up */
+/* Mobile nav circle button — sits to the left of the chat inputBox */
 .mobileHamburger {
   display: none;
   position: fixed;
-  bottom: 132px;
-  left: 16px;
+  bottom: 49px;
+  left: 12px;
   z-index: 10000;
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   background: none;
   border: none;
   padding: 0;
@@ -407,25 +407,26 @@
   align-items: center;
   justify-content: center;
 
-  &:active .triangleSpin {
+  &:active .circleSpin {
     transform: scale(0.92);
   }
 }
 
-/* Spinning wrapper — contains both outer (rainbow) and inner (fill) triangles */
-.triangleSpin {
+/* Spinning wrapper — contains both outer (rainbow ring) and inner (fill) circles */
+.circleSpin {
   position: absolute;
   inset: 0;
   animation: spin 20s linear infinite;
   will-change: transform;
   transition: transform 0.15s ease;
+  border-radius: 50%;
 }
 
-/* Outer triangle — the rainbow canvas clipped to triangle shape */
+/* Outer circle — the rainbow canvas clipped to circle shape */
 .triangleOuter {
   position: absolute;
   inset: 0;
-  clip-path: polygon(50% 0%, 6.7% 75%, 93.3% 75%);
+  border-radius: 50%;
   overflow: hidden;
 
   & canvas {
@@ -436,11 +437,11 @@
   }
 }
 
-/* Inner triangle — solid fill, inset to create the rainbow "border" */
+/* Inner circle — solid fill, inset to create the rainbow ring border */
 .triangleInner {
   position: absolute;
   inset: 3px;
-  clip-path: polygon(50% 5.4%, 11.4% 72.3%, 88.6% 72.3%);
+  border-radius: 50%;
   background: var(--bg-secondary);
 }
 
@@ -468,11 +469,11 @@
   z-index: 10000;
 }
 
-/* Compact popover card — floats above the FAB */
+/* Compact popover card — floats above the circle FAB */
 .mobilePopover {
   position: fixed;
-  bottom: 196px;
-  left: 16px;
+  bottom: 103px;
+  left: 12px;
   z-index: 10001;
   display: flex;
   flex-direction: column;

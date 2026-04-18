@@ -416,8 +416,8 @@ export default function NavigationSidebarComponent({
           onClick={() => setMobileOpen((v) => !v)}
           title={mobileOpen ? "Close navigation" : "Open navigation"}
         >
-          {/* Spinning triangle with rainbow edge */}
-          <span className={styles.triangleSpin}>
+          {/* Spinning circle with rainbow ring */}
+          <span className={styles.circleSpin}>
             <span className={styles.triangleOuter}>
               <RainbowCanvas turbo={isGenerating} greyscale={!isGenerating} />
             </span>

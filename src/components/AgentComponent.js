@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Bot, BotMessageSquare, Paperclip, X, ClipboardList, Zap, Settings, Wrench, Brain, Plug, GitBranch, Repeat, ListChecks, BookOpen, Info, Activity, CornerDownLeft } from "lucide-react";
+import { BotMessageSquare, Paperclip, X, ClipboardList, Zap, Settings, Wrench, Brain, Plug, GitBranch, Repeat, ListChecks, BookOpen, Info, Activity, CornerDownLeft } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ToolsApiService from "../services/ToolsApiService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
@@ -1446,6 +1446,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
           lockedTools={AGENT_LOCKED_TOOLS}
           hideSystemPrompt
           sessionType="agent"
+          canSpawnWorkers={activeAgentData?.canSpawnWorkers || false}
           agentToggles={[
             {
               key: "plan",
