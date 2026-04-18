@@ -87,7 +87,7 @@ function CoinStatic({ agent, size }) {
     texRef.current = tex;
 
     // Flat plane — no cylinder, no depth, no metalness
-    const geo = new THREE.PlaneGeometry(1.6, 1.6);
+    const geo = new THREE.PlaneGeometry(1.2, 1.2);
     const mat = new THREE.MeshBasicMaterial({
       map: tex,
       transparent: true,
@@ -159,62 +159,44 @@ function CoinStatic({ agent, size }) {
  * AgentBadgeComponent — Reusable rounded-square icon badge for an agent persona.
  *
  * @param {{ id?: string, icon?: string, color?: string }} agent
- * @param {number}  [size=30]         - Outer container size in px
- * @param {number}  [iconSize=15]     - Inner icon size in px
- * @param {boolean} [mini=false]      - Compact variant (22×22, 13px icon)
+ * @param {number}  [size=22]         - Outer container size in px
+ * @param {number}  [iconSize=13]     - Inner icon size in px
  * @param {boolean} [animation=false] - 3D coin-spin via Three.js
  * @param {string}  [className]
  */
 export default function AgentBadgeComponent({
   agent,
-  size = 30,
-  iconSize = 15,
-  mini = false,
+  size = 22,
+  iconSize = 13,
   animation = false,
   className = "",
 }) {
   const agentId = agent?.id || "";
-  const resolvedSize = mini ? 22 : size;
-  const resolvedIconSize = mini ? 13 : iconSize;
 
   if (animation) {
     return (
       <span className={`${styles.coinWrap} ${className}`}>
         {/* Key by agent ID so Three.js instance fully remounts on agent switch */}
-        <CoinStatic key={agentId} agent={agent} size={resolvedSize} />
+        <CoinStatic key={agentId} agent={agent} size={size} />
       </span>
     );
   }
 
-  // Mini: outer container is transparent, inner carries the gradient
-  // Non-mini: gradient lives directly on .badge
-  const outerStyle = { width: resolvedSize, height: resolvedSize };
+  const outerStyle = { width: size, height: size };
 
   const gradientStyle = agent?.color
     ? { background: `linear-gradient(135deg, ${agent.color} 0%, color-mix(in srgb, ${agent.color} 70%, #fff) 100%)` }
     : undefined;
 
-  if (mini) {
-    return (
-      <span
-        className={`${styles.badge} ${styles.mini} ${className}`}
-        data-agent={agentId}
-        style={outerStyle}
-      >
-        <span className={styles.miniInner} data-agent={agentId} style={gradientStyle}>
-          {renderAgentIcon(agent, resolvedIconSize)}
-        </span>
-      </span>
-    );
-  }
-
   return (
     <span
       className={`${styles.badge} ${className}`}
       data-agent={agentId}
-      style={{ ...outerStyle, ...gradientStyle }}
+      style={outerStyle}
     >
-      {renderAgentIcon(agent, resolvedIconSize)}
+      <span className={styles.badgeInner} data-agent={agentId} style={gradientStyle}>
+        {renderAgentIcon(agent, iconSize)}
+      </span>
     </span>
   );
 }

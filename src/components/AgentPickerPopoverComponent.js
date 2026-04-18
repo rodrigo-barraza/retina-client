@@ -194,7 +194,7 @@ export default function AgentPickerPopoverComponent({
                     onClick={() => handleAdd(agent)}
                   >
                     <div className={styles.agentRowLeft}>
-                      <AgentBadgeComponent agent={agent} size={32} iconSize={16} />
+                      <AgentBadgeComponent agent={agent} />
                       <div className={styles.agentInfo}>
                         <span className={styles.agentName}>{agent.name}</span>
                         <span className={styles.agentDesc}>{agent.description}</span>

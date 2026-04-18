@@ -87,7 +87,7 @@ export default function AgentPickerComponent({
           disabled={disabled}
           type="button"
         >
-          <AgentBadgeComponent agent={activeAgent} mini />
+          <AgentBadgeComponent agent={activeAgent} />
           <span className={styles.triggerLabel}>
             {activeAgent?.name || activeAgentId}
           </span>
@@ -121,7 +121,7 @@ export default function AgentPickerComponent({
                   type="button"
                   style={agent.color ? { "--agent-accent": agent.color } : undefined}
                 >
-                  <AgentBadgeComponent agent={agent} size={30} iconSize={15} />
+                  <AgentBadgeComponent agent={agent} />
                   <div className={styles.agentInfo}>
                     <div className={styles.agentName}>{agent.name}</div>
                     <div className={styles.agentMeta}>

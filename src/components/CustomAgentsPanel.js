@@ -911,8 +911,6 @@ export default function CustomAgentsPanel({
               <div key={agent._id} className={styles.agentCard}>
                 <AgentBadgeComponent
                   agent={{ id: agent.agentId, icon: agent.icon, color: agent.color }}
-                  size={32}
-                  iconSize={16}
                 />
                 <div className={styles.agentInfo}>
                   <span className={styles.agentName}>{agent.name}</span>
