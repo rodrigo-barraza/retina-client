@@ -7,6 +7,7 @@ import PageHeaderComponent from "./PageHeaderComponent";
 import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent";
 import CustomAgentsPanel from "./CustomAgentsPanel";
 import ButtonComponent from "./ButtonComponent";
+import CardComponent from "./CardComponent";
 import styles from "./SettingsPageComponent.module.css";
 
 /**
@@ -190,33 +191,29 @@ export default function SettingsPageComponent() {
       </PageHeaderComponent>
 
       {/* ── Custom Agents Section ──────────────────────────────────── */}
-      <div className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <Bot size={16} className={styles.sectionIcon} />
-          <span className={styles.sectionTitle}>Custom Agents</span>
-          <span className={styles.sectionSubtitle}>
-            Create your own agent personas with custom prompts and tools
-          </span>
-        </div>
+      <CardComponent className={styles.section}>
+        <CardComponent.Header
+          icon={Bot}
+          title="Custom Agents"
+          subtitle="Create your own agent personas with custom prompts and tools"
+        />
 
         <CustomAgentsPanel
           agents={customAgents}
           onAgentsChange={loadCustomAgents}
           availableTools={availableTools}
         />
-      </div>
+      </CardComponent>
 
       {/* ── Memory Models Section ──────────────────────────────────── */}
-      <div className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <Brain size={16} className={styles.sectionIcon} />
-          <span className={styles.sectionTitle}>Memory Models</span>
-          <span className={styles.sectionSubtitle}>
-            Models used for memory extraction, consolidation, and embedding
-          </span>
-        </div>
+      <CardComponent className={styles.section}>
+        <CardComponent.Header
+          icon={Brain}
+          title="Memory Models"
+          subtitle="Models used for memory extraction, consolidation, and embedding"
+        />
 
-        <div className={styles.sectionBody}>
+        <CardComponent.Body>
           {/* Extraction Model */}
           <div className={styles.row}>
             <div className={styles.rowLabel}>
@@ -282,12 +279,12 @@ export default function SettingsPageComponent() {
               />
             </div>
           </div>
-        </div>
+        </CardComponent.Body>
 
         {/* Reset */}
-        <div className={styles.resetRow}>
+        <CardComponent.Footer>
           <ButtonComponent
-            variant="ghost"
+            variant="disabled"
             size="sm"
             icon={RotateCcw}
             onClick={handleResetMemory}
@@ -295,20 +292,18 @@ export default function SettingsPageComponent() {
           >
             Reset to Defaults
           </ButtonComponent>
-        </div>
-      </div>
+        </CardComponent.Footer>
+      </CardComponent>
 
       {/* ── Agent Defaults Section ─────────────────────────────────── */}
-      <div className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <Network size={16} className={styles.sectionIcon} />
-          <span className={styles.sectionTitle}>Agent Defaults</span>
-          <span className={styles.sectionSubtitle}>
-            Default model for subagent workers spawned by the coordinator
-          </span>
-        </div>
+      <CardComponent className={styles.section}>
+        <CardComponent.Header
+          icon={Network}
+          title="Agent Defaults"
+          subtitle="Default model for subagent workers spawned by the coordinator"
+        />
 
-        <div className={styles.sectionBody}>
+        <CardComponent.Body>
           {/* Subagent Model */}
           <div className={styles.row}>
             <div className={styles.rowLabel}>
@@ -331,12 +326,12 @@ export default function SettingsPageComponent() {
               />
             </div>
           </div>
-        </div>
+        </CardComponent.Body>
 
         {/* Reset */}
-        <div className={styles.resetRow}>
+        <CardComponent.Footer>
           <ButtonComponent
-            variant="ghost"
+            variant="disabled"
             size="sm"
             icon={RotateCcw}
             onClick={handleResetAgents}
@@ -344,8 +339,8 @@ export default function SettingsPageComponent() {
           >
             Reset to Defaults
           </ButtonComponent>
-        </div>
-      </div>
+        </CardComponent.Footer>
+      </CardComponent>
     </div>
   );
 }

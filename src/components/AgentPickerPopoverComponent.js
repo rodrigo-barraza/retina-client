@@ -19,6 +19,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import CloseButtonComponent from "./CloseButtonComponent";
+import AgentBadgeComponent from "./AgentBadgeComponent";
 import styles from "./AgentPickerPopoverComponent.module.css";
 
 /**
@@ -186,7 +187,6 @@ export default function AgentPickerPopoverComponent({
 
             <div className={styles.popoverBody}>
               {AVAILABLE_AGENTS.map((agent) => {
-                const AgentIcon = agent.icon;
                 return (
                   <button
                     key={agent.id}
@@ -194,9 +194,7 @@ export default function AgentPickerPopoverComponent({
                     onClick={() => handleAdd(agent)}
                   >
                     <div className={styles.agentRowLeft}>
-                      <span className={styles.agentIcon}>
-                        <AgentIcon size={16} />
-                      </span>
+                      <AgentBadgeComponent agent={agent} size={32} iconSize={16} />
                       <div className={styles.agentInfo}>
                         <span className={styles.agentName}>{agent.name}</span>
                         <span className={styles.agentDesc}>{agent.description}</span>

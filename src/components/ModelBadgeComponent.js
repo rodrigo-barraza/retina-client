@@ -29,10 +29,12 @@ export default function ModelBadgeComponent({ models = [], provider, providers, 
 
   if (models.length === 1) {
     return (
-      <span className={cls} title={models[0]}>
-        {providerIcon || <Cpu size={iconSize} />}
-        <span className={styles.modelName}>{models[0]}</span>
-      </span>
+      <TooltipComponent label={models[0]} position="top">
+        <span className={cls}>
+          {providerIcon || <Cpu size={iconSize} />}
+          <span className={styles.modelName}>{models[0]}</span>
+        </span>
+      </TooltipComponent>
     );
   }
 

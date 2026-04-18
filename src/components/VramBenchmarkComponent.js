@@ -979,7 +979,7 @@ export default function VramBenchmarkComponent() {
         value: shortModelName(slowest.displayName, 28),
         subtitle: `${slowest.tokensPerSecond.toFixed(0)} t/s · ${slowest.quantization} · ${slowest.modelVramGiB.toFixed(1)}G${ctag(slowest)}${stag(slowest)}`,
         icon: ThumbsDown,
-        variant: "danger",
+        variant: "destructive",
         sortName: slowest.displayName,
       },
       slowestResponse && {
@@ -988,7 +988,7 @@ export default function VramBenchmarkComponent() {
         value: shortModelName(slowestResponse.displayName, 28),
         subtitle: `${slowestResponse.ttft.ms.toFixed(0)} ms TTFT · ${slowestResponse.tokensPerSecond.toFixed(0)} t/s · ${slowestResponse.modelVramGiB.toFixed(1)}G${ctag(slowestResponse)}${stag(slowestResponse)}`,
         icon: AlertTriangle,
-        variant: "danger",
+        variant: "destructive",
         sortName: slowestResponse.displayName,
       },
       worstForChat && {
@@ -997,7 +997,7 @@ export default function VramBenchmarkComponent() {
         value: shortModelName(worstForChat.displayName, 28),
         subtitle: `${worstForChat.tokensPerSecond.toFixed(0)} t/s · ${worstForChat.modelVramGiB.toFixed(1)}G · smallest ≥30 t/s${ctag(worstForChat)}${stag(worstForChat)}`,
         icon: ThumbsDown,
-        variant: "danger",
+        variant: "destructive",
         sortName: worstForChat.displayName,
       },
       smallestRunnable && {
@@ -1015,7 +1015,7 @@ export default function VramBenchmarkComponent() {
         value: shortModelName(heaviestFootprint.displayName, 28),
         subtitle: `${heaviestFootprint.modelVramGiB.toFixed(1)}G VRAM · ${heaviestFootprint.tokensPerSecond.toFixed(0)} t/s · ${heaviestFootprint.quantization}${ctag(heaviestFootprint)}${stag(heaviestFootprint)}`,
         icon: ThumbsDown,
-        variant: "danger",
+        variant: "destructive",
         sortName: heaviestFootprint.displayName,
       },
       worstLargeModel && {
@@ -1024,7 +1024,7 @@ export default function VramBenchmarkComponent() {
         value: shortModelName(worstLargeModel.displayName, 28),
         subtitle: `${worstLargeModel.tokensPerSecond.toFixed(0)} t/s · slowest ≥8G · ${worstLargeModel.modelVramGiB.toFixed(1)}G${ctag(worstLargeModel)}${stag(worstLargeModel)}`,
         icon: AlertTriangle,
-        variant: "danger",
+        variant: "destructive",
         sortName: worstLargeModel.displayName,
       },
     ].filter(Boolean);
@@ -2928,7 +2928,7 @@ export default function VramBenchmarkComponent() {
               value={`±${stats.avgDelta} GiB`}
               subtitle="Avg prediction error"
               icon={Crosshair}
-              variant="danger"
+              variant="destructive"
             />
             {stats.oomCount > 0 && (
               <StatsCard
@@ -2936,7 +2936,7 @@ export default function VramBenchmarkComponent() {
                 value={stats.oomCount}
                 subtitle="Exceeded GPU VRAM"
                 icon={Target}
-                variant="danger"
+                variant="destructive"
               />
             )}
             <StatsCard

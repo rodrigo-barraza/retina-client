@@ -1220,7 +1220,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
       headerControls={
         <div className={styles.headerControls}>
           <ButtonComponent
-            variant="ghost"
+            variant="disabled"
             size="xs"
             icon={Download}
             onClick={() => {
@@ -1237,7 +1237,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
             className={styles.headerActionBtn}
           />
           <ButtonComponent
-            variant="ghost"
+            variant="disabled"
             size="xs"
             icon={Upload}
             onClick={() => importRef.current?.click()}
@@ -1245,7 +1245,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
             className={styles.headerActionBtn}
           />
           <ButtonComponent
-            variant="ghost"
+            variant="disabled"
             size="xs"
             icon={Undo2}
             onClick={handleUndo}
@@ -1254,7 +1254,7 @@ export default function WorkflowsPage({ initialWorkflowId }) {
             className={styles.headerActionBtn}
           />
           <ButtonComponent
-            variant="ghost"
+            variant="disabled"
             size="xs"
             icon={RotateCcw}
             onClick={handleResetWorkflow}

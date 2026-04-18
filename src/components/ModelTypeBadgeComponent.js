@@ -1,4 +1,5 @@
 import { MessageSquare, Volume2, Cpu } from "lucide-react";
+import TooltipComponent from "./TooltipComponent";
 import styles from "./ModelTypeBadgeComponent.module.css";
 
 /**
@@ -38,9 +39,11 @@ export default function ModelTypeBadgeComponent({
   const cls = `${styles.badge} ${styles[modelType] || ""} ${mini ? styles.mini : ""} ${className}`;
 
   return (
-    <span className={cls} title={`${meta.label} model`}>
-      <Icon size={mini ? 8 : 10} />
-      <span>{meta.label}</span>
-    </span>
+    <TooltipComponent label={`${meta.label} model`} position="top">
+      <span className={cls}>
+        <Icon size={mini ? 8 : 10} />
+        <span>{meta.label}</span>
+      </span>
+    </TooltipComponent>
   );
 }

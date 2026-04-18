@@ -1,44 +1,79 @@
 /* ── AgentBadgeComponent ─────────────────────────────── */
+/* Reusable rounded-square icon container for agent personas. */
 
 .badge {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.2px;
-  color: rgb(168, 85, 247);
-  background: rgba(168, 85, 247, 0.08);
-  border: 1px solid rgba(168, 85, 247, 0.2);
-  white-space: nowrap;
-  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  justify-content: center;
+  border-radius: 8px;
+  flex-shrink: 0;
+  color: #fff;
+  overflow: hidden;
 }
 
-.badge:hover {
-  border-color: rgba(168, 85, 247, 0.45);
-  background: rgba(168, 85, 247, 0.12);
+/* ── Per-agent gradient defaults ────────────────────── */
+
+.badge[data-agent="CODING"] {
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
 }
 
+.badge[data-agent="LUPOS"] {
+  background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+}
+
+.badge[data-agent="STICKERS"] {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+}
+
+.badge[data-agent="DIGEST"] {
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+}
+
+.badge[data-agent="LIGHTS"] {
+  background: linear-gradient(135deg, #eab308 0%, #f59e0b 100%);
+}
+
+.badge[data-agent="OOG"] {
+  background: linear-gradient(135deg, #78716c 0%, #a8a29e 100%);
+}
+
+/* Custom agents — fallback gradient for any agent not in the hardcoded list */
+.badge:not([data-agent="CODING"]):not([data-agent="LUPOS"]):not([data-agent="STICKERS"]):not([data-agent="DIGEST"]):not([data-agent="OOG"]):not([data-agent="LIGHTS"]) {
+  background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+}
+
+/* Ensure SVGs fill the badge space */
 .badge svg {
+  display: block;
   flex-shrink: 0;
 }
 
-.agentName {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 200px;
-}
-
-/* ── Mini ─────────────────────────────────────────── */
+/* ── Mini variant — compact trigger pill size ──────── */
 
 .mini {
-  font-size: 7px;
-  padding: 1px 4px;
-  gap: 2px;
+  border-radius: 6px;
 }
 
-.mini .agentName {
-  max-width: 120px;
+/* ── 3D Coin-spin animation ───────────────────────── */
+
+.coinWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
+
+.coinCanvas {
+  display: block;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.hiddenIcon {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  pointer-events: none;
+  opacity: 0;
+}
+

@@ -55,7 +55,7 @@ export default function WorkerNotificationComponent({
                 icon={<Trash2 size={14} />}
                 onClick={onDelete}
                 tooltip="Delete notification"
-                variant="danger"
+                variant="destructive"
                 className={styles.actionBtn}
               />
             </div>

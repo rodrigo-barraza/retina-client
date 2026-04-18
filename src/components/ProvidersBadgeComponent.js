@@ -23,10 +23,12 @@ export default function ProvidersBadgeComponent({ providers = [], className = ""
 
   if (providers.length === 1) {
     return (
-      <span className={cls} title={displayLabel(providers[0])}>
-        <ProviderLogo provider={providers[0]} size={iconSize} />
-        <span className={styles.providerName}>{displayLabel(providers[0])}</span>
-      </span>
+      <TooltipComponent label={displayLabel(providers[0])} position="top">
+        <span className={cls}>
+          <ProviderLogo provider={providers[0]} size={iconSize} />
+          <span className={styles.providerName}>{displayLabel(providers[0])}</span>
+        </span>
+      </TooltipComponent>
     );
   }
 

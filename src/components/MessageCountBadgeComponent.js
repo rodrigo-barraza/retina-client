@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { MessageSquare } from "lucide-react";
+import TooltipComponent from "./TooltipComponent";
 import styles from "./MessageCountBadgeComponent.module.css";
 
 /** Duration of the count-up tween in ms. */
@@ -66,18 +67,23 @@ export default function MessageCountBadgeComponent({
   // Derive tweening state — avoids synchronous setState in effect
   const tweening = displayCount !== count;
   const suffix = displayCount !== 1 ? "messages" : "message";
+  const tooltipLabel = deletedCount > 0
+    ? `${count.toLocaleString()} ${suffix} (${deletedCount} deleted)`
+    : `${count.toLocaleString()} ${suffix}`;
 
   return (
-    <span
-      className={`${styles.badge} ${mini ? styles.mini : ""} ${tweening ? styles.tweening : ""} ${className}`}
-    >
-      {showIcon && <MessageSquare size={mini ? 8 : 10} />}
-      {displayCount.toLocaleString()} {suffix}
-      {deletedCount > 0 && (
-        <span className={styles.deletedSub}>
-          ({deletedCount} deleted)
-        </span>
-      )}
-    </span>
+    <TooltipComponent label={tooltipLabel} position="top">
+      <span
+        className={`${styles.badge} ${mini ? styles.mini : ""} ${tweening ? styles.tweening : ""} ${className}`}
+      >
+        {showIcon && <MessageSquare size={mini ? 8 : 10} />}
+        {displayCount.toLocaleString()} {suffix}
+        {deletedCount > 0 && (
+          <span className={styles.deletedSub}>
+            ({deletedCount} deleted)
+          </span>
+        )}
+      </span>
+    </TooltipComponent>
   );
 }

@@ -149,14 +149,7 @@ export default function ThreePanelLayout({
           <span className={styles.headerTitle}>{headerTitle}</span>
           {!isMobile && headerMeta}
           {headerCenter && (
-            <div
-              className={styles.headerCenter}
-              style={{
-                left: showLeft ? 320 : 0,
-                right: rightPanel && showRight ? 320 : 0,
-              }}
-            >
-
+            <div className={styles.headerCenter}>
               {headerCenter}
             </div>
           )}

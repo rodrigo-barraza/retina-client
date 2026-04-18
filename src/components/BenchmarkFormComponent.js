@@ -141,7 +141,7 @@ export default function BenchmarkFormComponent({ form, onChange, matchModes }) {
             </button>
           )}
           <ButtonComponent
-            variant="ghost"
+            variant="disabled"
             size="xs"
             icon={Plus}
             onClick={addAssertion}
@@ -188,7 +188,7 @@ export default function BenchmarkFormComponent({ form, onChange, matchModes }) {
                     <IconButtonComponent
                       icon={<Trash2 size={14} />}
                       onClick={() => removeAssertion(i)}
-                      variant="danger"
+                      variant="destructive"
                       tooltip="Remove assertion"
                     />
                   </div>

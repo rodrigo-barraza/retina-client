@@ -9,6 +9,8 @@ import {
   Zap,
   Mic,
   MicOff,
+  Send,
+  Square,
 } from "lucide-react";
 import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import ImagePreviewComponent from "./ImagePreviewComponent";
@@ -28,6 +30,7 @@ import { shuffleArray } from "../utils/utilities";
 
 import ToggleSwitchComponent from "./ToggleSwitch";
 import ChatInputButton from "./ChatInputButton";
+import ButtonComponent from "./ButtonComponent";
 import {
   TOOL_COLORS,
   TOOL_ICON_MAP,
@@ -1051,8 +1054,9 @@ export default function ChatArea({
                 }
               />
             )}
-            <ChatInputButton
+            <ButtonComponent
               variant="submit"
+              icon={isGenerating ? Square : Send}
               isGenerating={isGenerating}
               disabled={
                 inputDisabled
@@ -1063,7 +1067,7 @@ export default function ChatArea({
                       ? pendingImages.length === 0
                       : !input.trim() && pendingImages.length === 0
               }
-              label={isGenerating ? "Stop" : "Send"}
+              aria-label={isGenerating ? "Stop" : "Send"}
             />
           </div>
         </form>

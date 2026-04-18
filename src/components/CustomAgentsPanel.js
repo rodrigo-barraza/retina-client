@@ -92,6 +92,7 @@ import PrismService from "../services/PrismService.js";
 import ButtonComponent from "./ButtonComponent.js";
 import ToggleSwitchComponent from "./ToggleSwitch.js";
 import { renderToolName } from "../utils/utilities";
+import AgentBadgeComponent from "./AgentBadgeComponent";
 import styles from "./CustomAgentsPanel.module.css";
 
 // ── Domain icon mapping (mirrors CustomToolsPanel) ──────────────
@@ -845,7 +846,7 @@ export default function CustomAgentsPanel({
         {/* Footer */}
         <div className={styles.formFooter}>
           <ButtonComponent
-            variant="ghost"
+            variant="disabled"
             size="sm"
             onClick={handleCancel}
           >
@@ -872,7 +873,7 @@ export default function CustomAgentsPanel({
       {agents.length > 0 && (
         <div className={styles.panelHeader}>
           <ButtonComponent
-            variant="ghost"
+            variant="disabled"
             size="sm"
             icon={Plus}
             onClick={handleCreate}
@@ -908,12 +909,11 @@ export default function CustomAgentsPanel({
 
             return (
               <div key={agent._id} className={styles.agentCard}>
-                <div
-                  className={styles.agentIcon}
-                  style={agent.color ? { background: `color-mix(in srgb, ${agent.color} 15%, transparent)`, color: agent.color } : undefined}
-                >
-                  {(() => { const IC = resolveIconComponent(agent.icon); return <IC size={16} />; })()}
-                </div>
+                <AgentBadgeComponent
+                  agent={{ id: agent.agentId, icon: agent.icon, color: agent.color }}
+                  size={32}
+                  iconSize={16}
+                />
                 <div className={styles.agentInfo}>
                   <span className={styles.agentName}>{agent.name}</span>
                   {agent.description && (
@@ -937,14 +937,14 @@ export default function CustomAgentsPanel({
                     <div className={styles.confirmRow}>
                       <span className={styles.confirmText}>Delete?</span>
                       <ButtonComponent
-                        variant="danger"
+                        variant="destructive"
                         size="xs"
                         onClick={() => confirmDelete(agent._id)}
                       >
                         Yes
                       </ButtonComponent>
                       <ButtonComponent
-                        variant="ghost"
+                        variant="disabled"
                         size="xs"
                         onClick={() => setConfirmingDeleteId(null)}
                       >

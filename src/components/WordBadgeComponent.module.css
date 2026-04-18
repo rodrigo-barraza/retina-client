@@ -1,0 +1,36 @@
+/* ── WordBadgeComponent ──────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.badge:hover {
+  border-color: color-mix(in srgb, var(--accent-color) 40%, transparent);
+  color: var(--text-primary);
+}
+
+.badge svg {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+/* ── Mini ─────────────────────────────────────────── */
+
+.mini {
+  font-size: 7px;
+  padding: 1px 4px;
+  gap: 2px;
+}

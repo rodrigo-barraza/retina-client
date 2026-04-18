@@ -20,8 +20,8 @@
   }
 }
 
-/* Danger variant hover */
-.danger:hover {
+/* Destructive variant hover */
+.destructive:hover {
   color: var(--danger);
   background: rgba(244, 63, 94, 0.1);
 }

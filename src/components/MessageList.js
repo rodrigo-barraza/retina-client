@@ -36,6 +36,7 @@ import CostBadgeComponent from "./CostBadgeComponent";
 import StopwatchBadgeComponent from "./StopwatchBadgeComponent";
 import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
 import BadgeComponent from "./BadgeComponent";
+import WordBadgeComponent from "./WordBadgeComponent";
 import WorkerNotificationComponent from "./WorkerNotificationComponent";
 import styles from "./MessageList.module.css";
 import PrismService from "../services/PrismService";
@@ -892,7 +893,7 @@ export default function MessageList({
                       </span>
                       {groupCount === 1 && (
                         <>
-                          <BadgeComponent variant="info" mini>
+                          <BadgeComponent variant="info" mini tooltip="Message role">
                             {msg.role === "user" ? "User" : "Model"}
                           </BadgeComponent>
                           {msg.model && (
@@ -974,7 +975,7 @@ export default function MessageList({
                         )}
                         <div className={styles.deletedGroupItem}>
                           <div className={styles.deletedGroupItemHeader}>
-                            <BadgeComponent variant="info" mini>
+                            <BadgeComponent variant="info" mini tooltip="Message role">
                               {gMsg.role === "user" ? "User" : "Model"}
                             </BadgeComponent>
                           {gMsg.model && (
@@ -1131,7 +1132,7 @@ export default function MessageList({
                         icon={<Trash2 size={14} />}
                         onClick={() => onDelete?.(i)}
                         tooltip="Delete message"
-                        variant="danger"
+                        variant="destructive"
                         className={styles.actionBtn}
                       />
                     </div>
@@ -1406,9 +1407,7 @@ export default function MessageList({
                 {/* User metadata */}
                 {msg.role === "user" && msg.content && (
                   <div className={styles.metaBadges}>
-                    <BadgeComponent variant="info" mini>
-                      {msg.content.trim().split(/\s+/).filter(Boolean).length} words
-                    </BadgeComponent>
+                    <WordBadgeComponent count={msg.content.trim().split(/\s+/).filter(Boolean).length} mini />
                   </div>
                 )}
 
@@ -1424,7 +1423,7 @@ export default function MessageList({
                         <ModelBadgeComponent models={[msg.model]} mini />
                       )}
                       {msg.voice && (
-                        <BadgeComponent variant="info" mini>🔊 {msg.voice}</BadgeComponent>
+                        <BadgeComponent variant="info" mini tooltip={`Voice: ${msg.voice}`}>🔊 {msg.voice}</BadgeComponent>
                       )}
                       {(() => {
                         if (msg.usage?.inputTokens != null && msg.usage?.outputTokens != null) {
@@ -1458,18 +1457,16 @@ export default function MessageList({
                         return null;
                       })()}
                       {msg.content && (
-                        <BadgeComponent variant="info" mini>
-                          {msg.content.trim().split(/\s+/).filter(Boolean).length} words
-                        </BadgeComponent>
+                        <WordBadgeComponent count={msg.content.trim().split(/\s+/).filter(Boolean).length} mini />
                       )}
                       {msg.totalTime != null && (
-                        <StopwatchBadgeComponent seconds={msg.totalTime} showIcon={false} className={styles.metaMini} />
+                        <StopwatchBadgeComponent seconds={msg.totalTime} className={styles.metaMini} />
                       )}
                       {msg.tokensPerSec && (
-                        <BadgeComponent variant="info" mini>{msg.tokensPerSec} tok/s</BadgeComponent>
+                        <BadgeComponent variant="info" mini tooltip={`${msg.tokensPerSec} tokens per second`}>{msg.tokensPerSec} tok/s</BadgeComponent>
                       )}
                       {(msg.provider === "lm-studio" || msg.provider === "vllm")
-                        ? <BadgeComponent variant="success" mini>$0</BadgeComponent>
+                        ? <BadgeComponent variant="success" mini tooltip="Free (local model)">$0</BadgeComponent>
                         : msg.estimatedCost
                           ? <CostBadgeComponent cost={msg.estimatedCost} mini />
                           : null

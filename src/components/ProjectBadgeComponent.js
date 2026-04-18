@@ -1,4 +1,5 @@
 import { FolderKanban } from "lucide-react";
+import TooltipComponent from "./TooltipComponent";
 import styles from "./ProjectBadgeComponent.module.css";
 
 /**
@@ -10,9 +11,11 @@ import styles from "./ProjectBadgeComponent.module.css";
 export default function ProjectBadgeComponent({ project, className = "" }) {
   if (!project) return null;
   return (
-    <span className={`${styles.badge} ${className}`}>
-      <FolderKanban size={10} />
-      {project}
-    </span>
+    <TooltipComponent label={`Project: ${project}`} position="top">
+      <span className={`${styles.badge} ${className}`}>
+        <FolderKanban size={10} />
+        {project}
+      </span>
+    </TooltipComponent>
   );
 }

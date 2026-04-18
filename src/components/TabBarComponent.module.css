@@ -34,9 +34,18 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 
+  & > svg {
+    transition: transform 0.2s ease;
+    will-change: transform;
+  }
+
   &:hover {
     color: var(--text-secondary);
     background: color-mix(in srgb, var(--accent-color) 4%, transparent);
+
+    & > svg {
+      transform: translateY(-3px);
+    }
   }
 }
 
@@ -51,6 +60,12 @@
   top: 6px;
   left: 50%;
   transform: translateX(-50%);
+  transition: transform 0.2s ease;
+  will-change: transform;
+}
+
+.tab:hover .tabBadge {
+  transform: translateX(-50%) translateY(-3px);
 }
 
 .tabDisabled {

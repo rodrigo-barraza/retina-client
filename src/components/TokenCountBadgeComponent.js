@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { Hash } from "lucide-react";
+import TooltipComponent from "./TooltipComponent";
 import styles from "./TokenCountBadgeComponent.module.css";
 
 /** Duration of the count-up tween in ms. */
@@ -65,13 +66,16 @@ export default function TokenCountBadgeComponent({
 
   // Derive tweening state — avoids synchronous setState in effect
   const tweening = displayValue !== value;
+  const tooltipLabel = `${value.toLocaleString()} tokens ${label}`;
 
   return (
-    <span
-      className={`${styles.badge} ${mini ? styles.mini : ""} ${tweening ? styles.tweening : ""} ${className}`}
-    >
-      {showIcon && <Hash size={mini ? 8 : 10} />}
-      {displayValue.toLocaleString()} {label}
-    </span>
+    <TooltipComponent label={tooltipLabel} position="top">
+      <span
+        className={`${styles.badge} ${mini ? styles.mini : ""} ${tweening ? styles.tweening : ""} ${className}`}
+      >
+        {showIcon && <Hash size={mini ? 8 : 10} />}
+        {displayValue.toLocaleString()} {label}
+      </span>
+    </TooltipComponent>
   );
 }

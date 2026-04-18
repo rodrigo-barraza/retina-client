@@ -67,26 +67,88 @@
   color: var(--accent-color);
 }
 
-.ghost {
+.disabled {
   background: transparent;
   color: var(--text-secondary);
   border-color: transparent;
 }
 
-.ghost:hover:not(:disabled) {
+.disabled:hover:not(:disabled) {
   background: var(--accent-subtle);
   color: var(--text-primary);
 }
 
-.danger {
+.destructive {
   background: var(--danger-subtle);
   color: var(--danger);
   border-color: rgba(239, 68, 68, 0.2);
 }
 
-.danger:hover:not(:disabled) {
+.destructive:hover:not(:disabled) {
   background: var(--danger);
   color: white;
+}
+
+.creative {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 0 0 0 rgba(168, 85, 247, 0);
+}
+
+.creative:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d28d9, #9333ea);
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.35);
+}
+
+.submit {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  align-self: stretch;
+  height: auto;
+  background: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+  flex-shrink: 0;
+  gap: 0;
+}
+
+.submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.submit:disabled {
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+  opacity: 1;
+}
+
+.submitGenerating {
+  position: relative;
+  overflow: hidden;
+  background: transparent !important;
+  color: white !important;
+  border-color: transparent !important;
+  z-index: 0;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.submitGenerating::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background: var(--prism-conic);
+  animation: spin 2s linear infinite;
+  z-index: -1;
+}
+
+.submitGenerating:hover {
+  transform: scale(1.08);
 }
 
 /* Modifiers */

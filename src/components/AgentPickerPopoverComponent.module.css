@@ -183,17 +183,8 @@
   flex: 1;
 }
 
-.agentIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--accent-color) 10%, transparent);
-  color: var(--accent-color);
-  flex-shrink: 0;
-}
+
+
 
 .agentInfo {
   display: flex;

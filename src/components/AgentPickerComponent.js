@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Bot, ChevronDown, Wrench, Check, Skull, Sticker, Apple, Lightbulb, Hammer } from "lucide-react";
 import { resolveIconComponent } from "./CustomAgentsPanel";
-import ToolCountBadgeComponent from "./ToolCountBadgeComponent";
+import AgentBadgeComponent from "./AgentBadgeComponent";
+import ToolBadgeComponent from "./ToolBadgeComponent";
 import styles from "./AgentPickerComponent.module.css";
 
 /**
@@ -22,7 +23,7 @@ const AGENT_ICONS = {
 /** Render the correct icon for an agent — custom icon field takes priority. */
 export function renderAgentIcon(agent, size = 15) {
   // Custom agents store an icon name string
-  if (agent?.icon) {
+  if (typeof agent?.icon === "string" && agent.icon) {
     const Resolved = resolveIconComponent(agent.icon);
     return <Resolved size={size} />;
   }
@@ -31,13 +32,7 @@ export function renderAgentIcon(agent, size = 15) {
   return <BuiltIn size={size} />;
 }
 
-/** Build an inline style for the agent icon background when a custom color is set. */
-function agentIconStyle(agent) {
-  if (!agent?.color) return undefined;
-  return {
-    background: `linear-gradient(135deg, ${agent.color} 0%, color-mix(in srgb, ${agent.color} 70%, #fff) 100%)`,
-  };
-}
+
 
 /**
  * AgentPickerComponent — Compact popover for selecting the active agent persona.
@@ -91,9 +86,7 @@ export default function AgentPickerComponent({
           disabled={disabled}
           type="button"
         >
-          <span className={styles.triggerIcon} style={agentIconStyle(activeAgent)}>
-            {renderAgentIcon(activeAgent, 13)}
-          </span>
+          <AgentBadgeComponent agent={activeAgent} mini />
           <span className={styles.triggerLabel}>
             {activeAgent?.name || activeAgentId}
           </span>
@@ -103,9 +96,11 @@ export default function AgentPickerComponent({
             data-open={open}
           />
         </button>
-        <ToolCountBadgeComponent
+        <ToolBadgeComponent
+          name="Tool Calling"
           count={activeAgent?.toolCount}
-          color={activeAgent?.color}
+          variant="condensed"
+          tooltip={`${activeAgent?.toolCount || 0} Tools available`}
         />
       </div>
 
@@ -125,13 +120,7 @@ export default function AgentPickerComponent({
                   type="button"
                   style={agent.color ? { "--agent-accent": agent.color } : undefined}
                 >
-                  <span
-                    className={styles.agentIcon}
-                    data-agent={agent.id}
-                    style={agentIconStyle(agent)}
-                  >
-                    {renderAgentIcon(agent)}
-                  </span>
+                  <AgentBadgeComponent agent={agent} size={30} iconSize={15} />
                   <div className={styles.agentInfo}>
                     <div className={styles.agentName}>{agent.name}</div>
                     <div className={styles.agentMeta}>

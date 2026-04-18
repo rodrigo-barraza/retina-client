@@ -1,5 +1,6 @@
 "use client";
 
+import TooltipComponent from "./TooltipComponent";
 import styles from "./CountBadgeComponent.module.css";
 
 /**
@@ -14,6 +15,7 @@ import styles from "./CountBadgeComponent.module.css";
  * @param {"default"|"new"}  [state="default"] — visual state
  * @param {boolean} [disabled=false] — force disabled look (count = 0)
  * @param {boolean} [rainbow=false]  — rainbow hue-rotate (overrides state color)
+ * @param {string}  [tooltip]        — optional tooltip label on hover
  * @param {string}  [className]      — additional class
  */
 export default function CountBadgeComponent({
@@ -21,6 +23,7 @@ export default function CountBadgeComponent({
   state = "default",
   disabled = false,
   rainbow = false,
+  tooltip,
   className,
 }) {
   if (count == null) return null;
@@ -35,11 +38,21 @@ export default function CountBadgeComponent({
         ? styles.stateNew
         : styles.stateDefault;
 
-  return (
+  const badge = (
     <span
       className={`${styles.badge} ${stateClass}${className ? ` ${className}` : ""}`}
     >
       {count}
     </span>
   );
+
+  if (tooltip) {
+    return (
+      <TooltipComponent label={tooltip} position="top">
+        {badge}
+      </TooltipComponent>
+    );
+  }
+
+  return badge;
 }

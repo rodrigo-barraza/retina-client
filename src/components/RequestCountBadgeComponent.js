@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { Zap } from "lucide-react";
+import TooltipComponent from "./TooltipComponent";
 import styles from "./RequestCountBadgeComponent.module.css";
 
 /** Duration of the count-up tween in ms. */
@@ -64,13 +65,16 @@ export default function RequestCountBadgeComponent({
   // Derive tweening state — avoids synchronous setState in effect
   const tweening = displayCount !== count;
   const suffix = displayCount !== 1 ? "requests" : "request";
+  const tooltipLabel = `${count.toLocaleString()} API ${suffix}`;
 
   return (
-    <span
-      className={`${styles.badge} ${mini ? styles.mini : ""} ${tweening ? styles.tweening : ""} ${className}`}
-    >
-      {showIcon && <Zap size={mini ? 8 : 10} />}
-      {displayCount.toLocaleString()} {suffix}
-    </span>
+    <TooltipComponent label={tooltipLabel} position="top">
+      <span
+        className={`${styles.badge} ${mini ? styles.mini : ""} ${tweening ? styles.tweening : ""} ${className}`}
+      >
+        {showIcon && <Zap size={mini ? 8 : 10} />}
+        {displayCount.toLocaleString()} {suffix}
+      </span>
+    </TooltipComponent>
   );
 }

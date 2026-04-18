@@ -1,0 +1,17 @@
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  /* GPU compositing — keeps the canvas on its own layer
+     to avoid triggering repaints on parent DOM elements */
+  will-change: contents;
+  contain: strict;
+}

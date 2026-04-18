@@ -8,7 +8,7 @@ import styles from "./IconButtonComponent.module.css";
  * @param {React.ReactNode} icon — The icon element (e.g. <Copy size={14} />)
  * @param {Function} onClick — Click handler
  * @param {string} [tooltip] — Native title tooltip
- * @param {"default"|"danger"} [variant="default"] — Button variant
+ * @param {"default"|"destructive"} [variant="default"] — Button variant
  * @param {boolean} [active=false] — Active/pressed state
  * @param {boolean} [hoverReveal=false] — Hidden until parent :hover
  * @param {boolean} [disabled=false] — Disabled state
@@ -27,7 +27,7 @@ export default function IconButtonComponent({
 }) {
   const classes = [
     styles.iconButton,
-    variant === "danger" ? styles.danger : "",
+    variant === "destructive" ? styles.destructive : "",
     active ? styles.active : "",
     hoverReveal ? styles.hoverReveal : "",
     className || "",

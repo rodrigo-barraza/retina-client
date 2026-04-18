@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { Coins } from "lucide-react";
 import { formatCost } from "../utils/utilities";
+import TooltipComponent from "./TooltipComponent";
 import styles from "./CostBadgeComponent.module.css";
 
 /** Duration of the count-up tween in ms. */
@@ -73,12 +74,16 @@ export default function CostBadgeComponent({
 
   if (!cost || cost <= 0) return null;
 
+  const tooltipLabel = `Estimated cost: ${formatCost(cost)}`;
+
   return (
-    <span
-      className={`${styles.badge} ${mini ? styles.mini : ""} ${tweening ? styles.tweening : ""} ${className}`}
-    >
-      {showIcon && <Coins size={mini ? 8 : 10} />}
-      {formatFn(displayCost)}
-    </span>
+    <TooltipComponent label={tooltipLabel} position="top">
+      <span
+        className={`${styles.badge} ${mini ? styles.mini : ""} ${tweening ? styles.tweening : ""} ${className}`}
+      >
+        {showIcon && <Coins size={mini ? 8 : 10} />}
+        {formatFn(displayCost)}
+      </span>
+    </TooltipComponent>
   );
 }

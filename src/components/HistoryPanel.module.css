@@ -14,8 +14,55 @@
   flex-shrink: 0;
   border-radius: var(--border-radius-md);
   box-shadow: 0 4px 12px var(--accent-glow);
+  transition: filter 0.4s ease-out;
 
   &:hover:not(:disabled) {
     transform: translateY(-1px);
   }
+}
+
+/* Transient rainbow — applied on click, removed after ~1s */
+.newBtnRainbow {
+  filter: hue-rotate(0deg);
+  animation: newBtnHue 1s linear forwards;
+  will-change: filter;
+}
+
+/* Glitch text scramble — chaotic distortion during rainbow flash */
+.newBtnGlitch {
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: hsl(300, 100%, 85%) !important;
+  background: hsl(280, 80%, 20%) !important;
+  border-color: hsl(300, 100%, 50%) !important;
+  animation:
+    glitchHueBtn 0.15s linear infinite,
+    glitchJitterBtn 0.05s steps(2) infinite;
+  will-change: filter, transform, text-shadow;
+  text-shadow:
+    1px 0 0 hsl(0, 100%, 60%),
+    -1px 0 0 hsl(180, 100%, 60%);
+  overflow: hidden;
+}
+
+@keyframes newBtnHue {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes glitchHueBtn {
+  0%   { filter: hue-rotate(0deg) brightness(1.2); }
+  25%  { filter: hue-rotate(90deg) brightness(1.6); }
+  50%  { filter: hue-rotate(180deg) brightness(0.8); }
+  75%  { filter: hue-rotate(270deg) brightness(1.4); }
+  100% { filter: hue-rotate(360deg) brightness(1.2); }
+}
+
+@keyframes glitchJitterBtn {
+  0%   { transform: translate(0, 0) scale(1); }
+  25%  { transform: translate(-1px, 1px) scale(1.03); }
+  50%  { transform: translate(1px, -1px) scale(0.97); }
+  75%  { transform: translate(1px, 0) scale(1.01); }
+  100% { transform: translate(-1px, 0) scale(0.99); }
 }

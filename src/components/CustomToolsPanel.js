@@ -1097,7 +1097,7 @@ export default function CustomToolsPanel({
                           Delete?
                         </span>
                         <ButtonComponent
-                          variant="danger"
+                          variant="destructive"
                           size="xs"
                           onClick={() => confirmDelete(id)}
                         >
@@ -1113,7 +1113,7 @@ export default function CustomToolsPanel({
                       </div>
                     ) : (
                       <ButtonComponent
-                        variant="danger"
+                        variant="destructive"
                         size="xs"
                         icon={Trash2}
                         onClick={() => handleDelete(id)}

@@ -785,7 +785,7 @@ export default function SynthesisComponent() {
             </ButtonComponent>
             {isGenerating ? (
               <ButtonComponent
-                variant="danger"
+                variant="destructive"
                 size="sm"
                 icon={Square}
                 onClick={handleStop}
@@ -934,7 +934,7 @@ export default function SynthesisComponent() {
                       icon={<Trash2 size={12} />}
                       onClick={() => removeSeedMessage(i)}
                       tooltip="Remove message"
-                      variant="danger"
+                      variant="destructive"
                       className={styles.removeSeedBtn}
                     />
                   </div>
@@ -952,7 +952,7 @@ export default function SynthesisComponent() {
               ))}
               <div className={styles.addSeedRow}>
                 <ButtonComponent
-                  variant="ghost"
+                  variant="disabled"
                   size="sm"
                   icon={Plus}
                   onClick={() => addSeedMessage("user")}
@@ -961,7 +961,7 @@ export default function SynthesisComponent() {
                   User
                 </ButtonComponent>
                 <ButtonComponent
-                  variant="ghost"
+                  variant="disabled"
                   size="sm"
                   icon={Plus}
                   onClick={() => addSeedMessage("assistant")}

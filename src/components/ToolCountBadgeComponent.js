@@ -1,6 +1,7 @@
 "use client";
 
 import { FunctionSquare } from "lucide-react";
+import TooltipComponent from "./TooltipComponent";
 import styles from "./ToolCountBadgeComponent.module.css";
 
 /**
@@ -15,15 +16,20 @@ import styles from "./ToolCountBadgeComponent.module.css";
 export default function ToolCountBadgeComponent({ count, color }) {
   if (count == null || count === 0) return null;
 
+  const suffix = count !== 1 ? "Tools" : "Tool";
+  const tooltipLabel = `${count} ${suffix} available`;
+
   return (
-    <div
-      className={styles.badge}
-      style={color ? { "--tool-badge-accent": color } : undefined}
-    >
-      <FunctionSquare size={9} className={styles.icon} />
-      <span className={styles.label}>
-        {count} {count !== 1 ? "Tools" : "Tool"}
-      </span>
-    </div>
+    <TooltipComponent label={tooltipLabel} position="top">
+      <div
+        className={styles.badge}
+        style={color ? { "--tool-badge-accent": color } : undefined}
+      >
+        <FunctionSquare size={9} className={styles.icon} />
+        <span className={styles.label}>
+          {count} {suffix}
+        </span>
+      </div>
+    </TooltipComponent>
   );
 }

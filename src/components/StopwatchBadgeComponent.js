@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Timer } from "lucide-react";
 import { formatElapsedTime } from "../utils/utilities";
+import TooltipComponent from "./TooltipComponent";
 import styles from "./StopwatchBadgeComponent.module.css";
 
 /**
@@ -16,14 +17,12 @@ import styles from "./StopwatchBadgeComponent.module.css";
  *   seconds    — elapsed time in seconds (static mode)
  *   startTime  — ISO string or epoch ms to start ticking from (live mode)
  *   live       — force the live pulsing style (e.g. external ticker)
- *   showIcon   — show Timer icon (default: true)
  *   className  — additional class
  */
 export default function StopwatchBadgeComponent({
   seconds,
   startTime,
   live: externalLive,
-  showIcon = true,
   className = "",
 }) {
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -50,13 +49,16 @@ export default function StopwatchBadgeComponent({
   if (displaySeconds <= 0 && !isLive) return null;
 
   const showPulse = isLive || externalLive;
+  const tooltipLabel = `Elapsed: ${formatElapsedTime(displaySeconds)}`;
 
   return (
-    <span
-      className={`${styles.badge} ${showPulse ? styles.live : ""} ${className}`}
-    >
-      {showIcon && <Timer size={11} />}
-      {formatElapsedTime(displaySeconds)}
-    </span>
+    <TooltipComponent label={tooltipLabel} position="top">
+      <span
+        className={`${styles.badge} ${showPulse ? styles.live : ""} ${className}`}
+      >
+        <Timer size={11} />
+        {formatElapsedTime(displaySeconds)}
+      </span>
+    </TooltipComponent>
   );
 }

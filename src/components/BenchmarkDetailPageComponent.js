@@ -1015,7 +1015,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
       <div className={styles.contentMain}>
         <div className={styles.contentMainHeader}>
           <ButtonComponent
-            variant="ghost"
+            variant="disabled"
             size="sm"
             icon={Trash2}
             onClick={() => setShowDeleteModal(true)}
@@ -1023,7 +1023,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
             Delete
           </ButtonComponent>
           <ButtonComponent
-            variant="ghost"
+            variant="disabled"
             size="sm"
             icon={Copy}
             onClick={openClone}
@@ -1109,7 +1109,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
                   )}
                 </div>
                 <ButtonComponent
-                  variant="danger"
+                  variant="destructive"
                   size="xs"
                   icon={Square}
                   onClick={handleStop}
@@ -1289,7 +1289,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
                 Cancel
               </ButtonComponent>
               <ButtonComponent
-                variant="danger"
+                variant="destructive"
                 size="sm"
                 icon={Trash2}
                 onClick={handleDelete}

@@ -151,7 +151,7 @@ export default function HistoryItemComponent({
               onDelete(item.id);
             }}
             tooltip="Delete"
-            variant="danger"
+            variant="destructive"
             hoverReveal
           />
         )}

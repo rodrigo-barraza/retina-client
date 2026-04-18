@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { BotMessageSquare, Paperclip, X, ClipboardList, Zap, Settings, Wrench, Brain, Plug, GitBranch, Repeat, ListChecks, BookOpen, Info, Activity, CornerDownLeft } from "lucide-react";
+import { BotMessageSquare, Paperclip, X, ClipboardList, Zap, Settings, Wrench, Brain, Plug, GitBranch, Repeat, ListChecks, BookOpen, Info, Activity, CornerDownLeft, Send, Square } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ToolsApiService from "../services/ToolsApiService.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
@@ -36,9 +36,11 @@ import useSessionStats from "../hooks/useSessionStats.js";
 import { PROJECT_AGENT, SETTINGS_DEFAULTS, SK_MODEL_MEMORY_AGENT, SK_MODEL_MEMORY_AGENT_PREFIX, SK_TOOL_MEMORY_AGENT, SK_TOOL_MEMORY_AGENT_PREFIX, MAX_TOOL_ITERATIONS } from "../constants.js";
 import chatStyles from "./ChatArea.module.css";
 import ChatInputButton from "./ChatInputButton.js";
+import ButtonComponent from "./ButtonComponent.js";
 import useToolToggles from "../hooks/useToolToggles.js";
 import useModelMemory from "../hooks/useModelMemory.js";
-import AgentPickerComponent, { renderAgentIcon } from "./AgentPickerComponent.js";
+import AgentPickerComponent from "./AgentPickerComponent.js";
+import AgentBadgeComponent from "./AgentBadgeComponent.js";
 
 
 // ── Per-agent empty state config ─────────────────────────────────
@@ -1652,7 +1654,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
       >
         {messages.length === 0 && (
           <EmptyStateComponent
-            icon={renderAgentIcon(activeAgentData, 40)}
+            icon={<AgentBadgeComponent agent={activeAgentData} size={80} iconSize={40} animation />}
             title={emptyState.title}
             subtitle={emptyState.subtitle}
           />
@@ -1837,15 +1839,16 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                 icon={<CornerDownLeft size={18} />}
               />
             )}
-            <ChatInputButton
+            <ButtonComponent
               variant="submit"
+              icon={isGenerating ? Square : Send}
               isGenerating={isGenerating}
               disabled={
                 isGenerating
                   ? false
                   : !hasInput && pendingImages.length === 0
               }
-              label={isGenerating ? "Stop" : "Send"}
+              aria-label={isGenerating ? "Stop" : "Send"}
             />
           </div>
         </form>
