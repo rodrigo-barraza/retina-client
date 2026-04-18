@@ -20,12 +20,11 @@
 /* ── Full-width header ─────────────────────────────── */
 
 .pageHeader {
-  height: auto;
+  height: 80px;
   min-height: 80px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
   padding: 0;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-surface);
@@ -53,14 +52,14 @@
 }
 
 .headerCenter {
-  flex: 1 1 auto;
-  min-width: min-content;
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   pointer-events: none;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .headerCenter > * {
@@ -266,6 +265,9 @@
   .pageHeader {
     position: relative;
     z-index: 201;
+    height: auto;
+    min-height: 80px;
+    flex-wrap: wrap;
     padding: 8px 0;
   }
 
@@ -274,8 +276,7 @@
   }
 
   .headerCenter {
-    flex-basis: 100%;
-    order: 10;
+    overflow: visible;
     padding: 4px 8px 0;
   }
 
