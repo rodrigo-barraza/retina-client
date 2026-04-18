@@ -12,12 +12,16 @@ export default function AgentsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [agents, setAgents] = useState([]);
-  const [localAgentId, setLocalAgentId] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(LS_ACTIVE_AGENT) || "CODING";
+  // Always initialize to "CODING" for SSR/client parity — hydrate from
+  // localStorage after mount to avoid hydration mismatch.
+  const [localAgentId, setLocalAgentId] = useState("CODING");
+
+  useEffect(() => {
+    const stored = localStorage.getItem(LS_ACTIVE_AGENT);
+    if (stored && stored !== "CODING") {
+      setLocalAgentId(stored);
     }
-    return "CODING";
-  });
+  }, []);
 
   // Derive active agent: URL param takes priority over localStorage
   const activeAgentId = useMemo(() => {

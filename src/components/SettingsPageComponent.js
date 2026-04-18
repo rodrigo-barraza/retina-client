@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Brain, Network, RotateCcw, Loader2, Check } from "lucide-react";
+import { Brain, Network, Bot, RotateCcw, Loader2, Check } from "lucide-react";
 import PrismService from "../services/PrismService";
 import PageHeaderComponent from "./PageHeaderComponent";
 import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent";
+import CustomAgentsPanel from "./CustomAgentsPanel";
 import ButtonComponent from "./ButtonComponent";
 import styles from "./SettingsPageComponent.module.css";
 
@@ -22,6 +23,8 @@ export default function SettingsPageComponent() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const savedTimerRef = useRef(null);
+  const [customAgents, setCustomAgents] = useState([]);
+  const [availableTools, setAvailableTools] = useState([]);
 
   // ── Load config + settings on mount ────────────────────────────────
   useEffect(() => {
@@ -36,6 +39,16 @@ export default function SettingsPageComponent() {
 
     PrismService.getSettingsDefaults()
       .then(setDefaults)
+      .catch(console.error);
+
+    // Fetch custom agents
+    PrismService.getCustomAgents()
+      .then(setCustomAgents)
+      .catch(console.error);
+
+    // Fetch all available tools (unfiltered) for the tool picker
+    PrismService.getBuiltInToolSchemas()
+      .then(setAvailableTools)
       .catch(console.error);
   }, []);
 
@@ -135,6 +148,16 @@ export default function SettingsPageComponent() {
     await persistSettings(updated);
   }, [defaults, persistSettings]);
 
+  // ── Custom agents refresh ──────────────────────────────────────────
+  const loadCustomAgents = useCallback(async () => {
+    try {
+      const list = await PrismService.getCustomAgents();
+      setCustomAgents(list);
+    } catch (err) {
+      console.error("Failed to load custom agents:", err);
+    }
+  }, []);
+
   // ── Loading state ──────────────────────────────────────────────────
   if (!config || !settings) {
     return (
@@ -152,7 +175,7 @@ export default function SettingsPageComponent() {
   }
 
   const mem = settings.memory || {};
-  const agents = settings.agents || {};
+  const agentDefaults = settings.agents || {};
 
   return (
     <div className={styles.container}>
@@ -282,8 +305,8 @@ export default function SettingsPageComponent() {
               <ModelPickerPopoverComponent
                 config={config}
                 settings={{
-                  provider: agents.subagentProvider || "",
-                  model: agents.subagentModel || "",
+                  provider: agentDefaults.subagentProvider || "",
+                  model: agentDefaults.subagentModel || "",
                 }}
                 onSelectModel={handleSubagentModelSelect}
                 modelTypeFilter="conversation"
@@ -305,6 +328,23 @@ export default function SettingsPageComponent() {
             Reset to Defaults
           </ButtonComponent>
         </div>
+      </div>
+
+      {/* ── Custom Agents Section ──────────────────────────────────── */}
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <Bot size={16} className={styles.sectionIcon} />
+          <span className={styles.sectionTitle}>Custom Agents</span>
+          <span className={styles.sectionSubtitle}>
+            Create your own agent personas with custom prompts and tools
+          </span>
+        </div>
+
+        <CustomAgentsPanel
+          agents={customAgents}
+          onAgentsChange={loadCustomAgents}
+          availableTools={availableTools}
+        />
       </div>
     </div>
   );

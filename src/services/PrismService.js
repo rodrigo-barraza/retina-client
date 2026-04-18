@@ -418,6 +418,52 @@ export default class PrismService {
   }
 
   // ---------------------------------------------------------------------------
+  // Custom Agents
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List all custom agent personas.
+   * @returns {Promise<Array>}
+   */
+  static async getCustomAgents() {
+    return PrismService._request("/custom-agents", { method: "GET" });
+  }
+
+  /**
+   * Create a new custom agent persona.
+   * @param {object} agent - { name, description, project, identity, guidelines, toolPolicy, enabledTools, usesDirectoryTree, usesCodingGuidelines }
+   * @returns {Promise<object>}
+   */
+  static async createCustomAgent(agent) {
+    return PrismService._request("/custom-agents", {
+      method: "POST",
+      body: agent,
+    });
+  }
+
+  /**
+   * Update an existing custom agent persona.
+   * @param {string} id
+   * @param {object} updates
+   * @returns {Promise<object>}
+   */
+  static async updateCustomAgent(id, updates) {
+    return PrismService._request(`/custom-agents/${id}`, {
+      method: "PUT",
+      body: updates,
+    });
+  }
+
+  /**
+   * Delete a custom agent persona.
+   * @param {string} id
+   * @returns {Promise<object>}
+   */
+  static async deleteCustomAgent(id) {
+    return PrismService._request(`/custom-agents/${id}`, { method: "DELETE" });
+  }
+
+  // ---------------------------------------------------------------------------
   // Skills
   // ---------------------------------------------------------------------------
 
