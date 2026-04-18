@@ -69,7 +69,7 @@ function CoinStatic({ agent, size }) {
   // ── Three.js scene setup — single flat plane ──
   const handleSetup = useCallback(({ scene, camera, THREE }) => {
     // Orthographic-style: push camera back, use tight FOV so plane fills view
-    camera.position.set(0, 0, 2);
+    camera.position.set(0, 0, 20);
     camera.lookAt(0, 0, 0);
 
     // No lights needed — MeshBasicMaterial is unlit
@@ -141,8 +141,8 @@ function CoinStatic({ agent, size }) {
       <ThreeCanvasComponent
         onSetup={handleSetup}
         onTick={handleTick}
-        cameraFov={45}
-        cameraPosition={[0, 0, 2]}
+        cameraFov={5}
+        cameraPosition={[0, 0, 20]}
         alpha
         antialias
         toneMapping="None"

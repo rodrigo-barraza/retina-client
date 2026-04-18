@@ -20,11 +20,12 @@
 /* ── Full-width header ─────────────────────────────── */
 
 .pageHeader {
-  height: 80px;
+  height: auto;
   min-height: 80px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   padding: 0;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-surface);
@@ -52,14 +53,14 @@
 }
 
 .headerCenter {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: min-content;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   pointer-events: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .headerCenter > * {
@@ -68,7 +69,9 @@
 
 .headerCenterGroup {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
@@ -263,9 +266,6 @@
   .pageHeader {
     position: relative;
     z-index: 201;
-    height: auto;
-    min-height: 80px;
-    flex-wrap: wrap;
     padding: 8px 0;
   }
 
@@ -274,16 +274,13 @@
   }
 
   .headerCenter {
-    overflow: visible;
     flex-basis: 100%;
     order: 10;
     padding: 4px 8px 0;
   }
 
   .headerCenterGroup {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px;
     width: 100%;
+    gap: 6px;
   }
 }
