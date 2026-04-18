@@ -215,8 +215,8 @@
 @media (max-width: 767px) {
   .leftSidebar,
   .rightSidebar {
-    position: fixed;
-    top: 80px;
+    position: absolute;
+    top: 0;
     bottom: 0;
     z-index: 200;
     border: none;
@@ -257,6 +257,10 @@
   .pageHeader {
     position: relative;
     z-index: 201;
+    height: auto;
+    min-height: 80px;
+    flex-wrap: wrap;
+    padding: 8px 0;
   }
 
   .headerTitle {
@@ -264,6 +268,13 @@
   }
 
   .headerCenter {
-    overflow: hidden;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    overflow: visible;
+    /* Let center section take full width so children stack */
+    flex-basis: 100%;
+    order: 10;
+    padding: 4px 8px 0;
   }
 }

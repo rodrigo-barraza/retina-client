@@ -48,129 +48,85 @@ function loadSvgImage(svgMarkup) {
   });
 }
 
-// ── Coin Spin Sub-component ────────────────────────────────────────
+// ── Static Coin Sub-component (flat, matches SVG badge) ────────────
 
 const TEX_SIZE = 256;
 
-function CoinSpin({ agent, size }) {
-  const pivotRef = useRef(null);
-  const frontTexRef = useRef(null);
-  const frontCanvasRef = useRef(null);
-  const backTexRef = useRef(null);
-  const backCanvasRef = useRef(null);
+/**
+ * CoinStatic — renders the agent badge as a flat, unlit plane in Three.js
+ * so it looks identical to the SVG badge but lives in a WebGL canvas.
+ * Uses MeshBasicMaterial (no lighting needed) and pauses after the first
+ * painted frame to avoid burning GPU on a static element.
+ */
+function CoinStatic({ agent, size }) {
+  const meshRef = useRef(null);
+  const texRef = useRef(null);
+  const canvasRef = useRef(null);
   const iconRef = useRef(null);
+  const hasPaintedRef = useRef(false);
   const gradient = useMemo(() => resolveGradient(agent), [agent]);
 
-  // ── Three.js scene setup ──
+  // ── Three.js scene setup — single flat plane ──
   const handleSetup = useCallback(({ scene, camera, THREE }) => {
-    camera.position.set(0, 0, 3.2);
+    // Orthographic-style: push camera back, use tight FOV so plane fills view
+    camera.position.set(0, 0, 2);
     camera.lookAt(0, 0, 0);
 
-    scene.add(new THREE.AmbientLight("#ffffff", 0.8));
-    const key = new THREE.DirectionalLight("#ffffff", 1.2);
-    key.position.set(2, 3, 4);
-    scene.add(key);
-    const rim = new THREE.PointLight("#ffffff", 0.5, 10);
-    rim.position.set(-2, 1, -3);
-    scene.add(rim);
+    // No lights needed — MeshBasicMaterial is unlit
 
-    const geo = new THREE.CylinderGeometry(1.1, 1.1, 0.12, 48, 1);
+    // Build the texture canvas with gradient + rounded corners
+    const texCanvas = document.createElement("canvas");
+    texCanvas.width = TEX_SIZE;
+    texCanvas.height = TEX_SIZE;
+    const ctx = texCanvas.getContext("2d");
+    drawGradientBase(ctx, TEX_SIZE, gradient);
+    canvasRef.current = texCanvas;
 
-    // Front face canvas (icon painted in useEffect)
-    const fCanvas = document.createElement("canvas");
-    fCanvas.width = TEX_SIZE;
-    fCanvas.height = TEX_SIZE;
-    drawGradientBase(fCanvas.getContext("2d"), TEX_SIZE, gradient);
-    frontCanvasRef.current = fCanvas;
+    const tex = new THREE.CanvasTexture(texCanvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    texRef.current = tex;
 
-    const frontTex = new THREE.CanvasTexture(fCanvas);
-    frontTex.colorSpace = THREE.SRGBColorSpace;
-    frontTexRef.current = frontTex;
-    const frontMat = new THREE.MeshStandardMaterial({
-      map: frontTex, metalness: 0.3, roughness: 0.4,
+    // Flat plane — no cylinder, no depth, no metalness
+    const geo = new THREE.PlaneGeometry(1.6, 1.6);
+    const mat = new THREE.MeshBasicMaterial({
+      map: tex,
+      transparent: true,
     });
 
-    // Back face: same canvas, mirrored via Three.js texture repeat
-    const bCanvas = document.createElement("canvas");
-    bCanvas.width = TEX_SIZE;
-    bCanvas.height = TEX_SIZE;
-    drawGradientBase(bCanvas.getContext("2d"), TEX_SIZE, gradient);
-    backCanvasRef.current = bCanvas;
+    const mesh = new THREE.Mesh(geo, mat);
+    meshRef.current = mesh;
+    scene.add(mesh);
 
-    const backTex = new THREE.CanvasTexture(bCanvas);
-    backTex.colorSpace = THREE.SRGBColorSpace;
-    backTexRef.current = backTex;
-    const backMat = new THREE.MeshStandardMaterial({
-      map: backTex, metalness: 0.3, roughness: 0.4,
-    });
-
-    // Rim
-    const rimMat = new THREE.MeshStandardMaterial({
-      color: gradient[0], metalness: 0.6, roughness: 0.3,
-    });
-
-    // [side, top-cap (front), bottom-cap (back)]
-    const coin = new THREE.Mesh(geo, [rimMat, frontMat, backMat]);
-    const pivot = new THREE.Group();
-    pivot.add(coin);
-    coin.rotation.x = Math.PI / 2;
-
-    pivotRef.current = pivot;
-    scene.add(pivot);
+    hasPaintedRef.current = false;
   }, [gradient]);
 
   // ── Capture SVG icon from the hidden rendered element ──
   useEffect(() => {
     if (!iconRef.current) return;
 
-    // Wait a frame for the SVG to be painted in the DOM
     const raf = requestAnimationFrame(() => {
       const svg = iconRef.current?.querySelector("svg");
-      if (!svg || !frontCanvasRef.current) return;
+      if (!svg || !canvasRef.current) return;
 
       svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
       const markup = svg.outerHTML.replace(/currentColor/g, "#ffffff");
 
       loadSvgImage(markup).then((img) => {
-        if (!img) return;
+        if (!img || !canvasRef.current) return;
         const iconSz = TEX_SIZE * 0.55;
         const off = (TEX_SIZE - iconSz) / 2;
 
-        // Front face: icon drawn normally
-        if (frontCanvasRef.current) {
-          const fCtx = frontCanvasRef.current.getContext("2d");
-          fCtx.drawImage(img, off, off, iconSz, iconSz);
-          if (frontTexRef.current) frontTexRef.current.needsUpdate = true;
-        }
-
-        // Back face: icon drawn mirrored via temp canvas
-        if (backCanvasRef.current) {
-          const tmp = document.createElement("canvas");
-          tmp.width = TEX_SIZE;
-          tmp.height = TEX_SIZE;
-          const tCtx = tmp.getContext("2d");
-          tCtx.drawImage(img, off, off, iconSz, iconSz);
-
-          const bCtx = backCanvasRef.current.getContext("2d");
-          bCtx.save();
-          bCtx.translate(TEX_SIZE, 0);
-          bCtx.scale(-1, 1);
-          bCtx.drawImage(tmp, 0, 0);
-          bCtx.restore();
-          if (backTexRef.current) backTexRef.current.needsUpdate = true;
-        }
+        const ctx = canvasRef.current.getContext("2d");
+        ctx.drawImage(img, off, off, iconSz, iconSz);
+        if (texRef.current) texRef.current.needsUpdate = true;
       });
     });
 
     return () => cancelAnimationFrame(raf);
   }, [agent]);
 
-  const handleTick = useCallback(({ elapsed }) => {
-    if (!pivotRef.current) return;
-    // Static back face for testing
-    pivotRef.current.rotation.y = Math.PI; 
-    pivotRef.current.position.y = 0;
-  }, []);
+  // Static — no animation, just let Three.js render the current state
+  const handleTick = useCallback(() => {}, []);
 
   return (
     <>
@@ -181,10 +137,11 @@ function CoinSpin({ agent, size }) {
       <ThreeCanvasComponent
         onSetup={handleSetup}
         onTick={handleTick}
-        cameraFov={30}
-        cameraPosition={[0, 0, 3.2]}
+        cameraFov={45}
+        cameraPosition={[0, 0, 2]}
         alpha
         antialias
+        toneMapping="None"
         className={styles.coinCanvas}
         style={{ width: size, height: size }}
       />
@@ -219,7 +176,8 @@ export default function AgentBadgeComponent({
   if (animation) {
     return (
       <span className={`${styles.coinWrap} ${className}`}>
-        <CoinSpin agent={agent} size={resolvedSize} />
+        {/* Key by agent ID so Three.js instance fully remounts on agent switch */}
+        <CoinStatic key={agentId} agent={agent} size={resolvedSize} />
       </span>
     );
   }
