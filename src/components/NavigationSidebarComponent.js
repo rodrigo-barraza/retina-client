@@ -34,7 +34,7 @@ import { useTheme } from "./ThemeProvider";
 import SpinningCatComponent from "./SpinningCatComponent";
 import TooltipComponent from "./TooltipComponent";
 import styles from "./NavigationSidebarComponent.module.css";
-import { LS_PANEL_NAV } from "../constants";
+import { LS_PANEL_NAV, LS_PANEL_LEFT, LS_PANEL_RIGHT } from "../constants";
 
 import RainbowCanvasComponent from "./RainbowCanvasComponent";
 import SoundService from "@/services/SoundService";
@@ -465,6 +465,9 @@ export default function NavigationSidebarComponent({
                         SoundService.playClick({ event: e });
                         onNavClick?.(item.href);
                         setMobileOpen(false);
+                        // Pre-close ThreePanelLayout sidebars so the next page mounts clean
+                        localStorage.setItem(LS_PANEL_LEFT, "false");
+                        localStorage.setItem(LS_PANEL_RIGHT, "false");
                       }}
                     >
                       <Icon className={styles.navIcon} />
@@ -502,6 +505,8 @@ export default function NavigationSidebarComponent({
                             SoundService.playClick({ event: e });
                             onNavClick?.(item.href);
                             setMobileOpen(false);
+                            localStorage.setItem(LS_PANEL_LEFT, "false");
+                            localStorage.setItem(LS_PANEL_RIGHT, "false");
                           }}
                         >
                           <Icon className={styles.navIcon} />

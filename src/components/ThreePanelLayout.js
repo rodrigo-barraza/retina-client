@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   PanelLeftClose,
   PanelLeft,
@@ -47,9 +47,9 @@ export default function ThreePanelLayout({
   const [isNarrow, setIsNarrow] = useState(false);
 
   useEffect(() => {
-    const mobile = window.innerWidth < 768;
+    const mobile = window.innerWidth <= 1200;
     if (mobile) {
-      // On mobile, always start with panels closed
+      // On mobile / narrow viewports, always start with panels closed
       setShowLeft(false);
       setShowRight(false);
     } else {
@@ -73,8 +73,14 @@ export default function ThreePanelLayout({
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  /* Narrow ↔ wide transitions: enforce exclusivity or restore both */
+  /* Narrow ↔ wide transitions: enforce exclusivity or restore both.
+     Skip on initial mount — the mount effect handles initial panel state. */
+  const isNarrowMountRef = useRef(true);
   useEffect(() => {
+    if (isNarrowMountRef.current) {
+      isNarrowMountRef.current = false;
+      return;
+    }
     if (isNarrow) {
       // Entering narrow: if both are open, close the right
       if (showLeft && showRight) {
