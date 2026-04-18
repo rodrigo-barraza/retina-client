@@ -218,6 +218,23 @@
   position: relative;
 }
 
+/* Scrim overlay — darkens main content when a mobile drawer is open */
+.main::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scrimActive::after {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* mobileSlit removed — sidebars slide in without a scrim */
 
 @media (max-width: 767px) {

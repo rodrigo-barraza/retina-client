@@ -217,7 +217,11 @@ export default function ThreePanelLayout({
 
 
           {/* Main Center */}
-          <section className={styles.main} data-chat-area onClick={handleMainClick}>
+          <section
+            className={`${styles.main} ${isMobile && (showLeft || showRight) ? styles.scrimActive : ""}`}
+            data-chat-area
+            onClick={handleMainClick}
+          >
             {children}
           </section>
 

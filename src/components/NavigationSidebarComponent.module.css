@@ -462,11 +462,18 @@
   }
 }
 
-/* Overlay container */
+/* Overlay container — darkens the page behind the nav popover */
 .mobileBackdrop {
   position: fixed;
   inset: 0;
   z-index: 10000;
+  background: rgba(0, 0, 0, 0.7);
+  animation: scrimFadeIn 0.25s ease;
+}
+
+@keyframes scrimFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Compact popover card — floats above the circle FAB */
