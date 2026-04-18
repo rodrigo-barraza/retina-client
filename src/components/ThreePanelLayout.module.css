@@ -59,7 +59,7 @@
   justify-content: center;
   gap: 8px;
   pointer-events: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .headerCenter > * {
