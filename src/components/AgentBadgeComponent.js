@@ -91,6 +91,7 @@ function CoinStatic({ agent, size }) {
     const mat = new THREE.MeshBasicMaterial({
       map: tex,
       transparent: true,
+      side: THREE.DoubleSide,
     });
 
     const mesh = new THREE.Mesh(geo, mat);
@@ -125,8 +126,11 @@ function CoinStatic({ agent, size }) {
     return () => cancelAnimationFrame(raf);
   }, [agent]);
 
-  // Static — no animation, just let Three.js render the current state
-  const handleTick = useCallback(() => {}, []);
+  // Continuous Y-axis rotation — smooth coin-flip loop
+  const handleTick = useCallback(({ elapsed }) => {
+    if (!meshRef.current) return;
+    meshRef.current.rotation.y = elapsed * 1.2;
+  }, []);
 
   return (
     <>
