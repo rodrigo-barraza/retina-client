@@ -301,5 +301,6 @@
   .headerCenterGroup {
     width: 100%;
     gap: 6px;
+    padding: 6px 0;
   }
 }
