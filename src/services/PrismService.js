@@ -726,6 +726,18 @@ export default class PrismService {
   }
 
   /**
+   * Submit an answer to a pending ask_user_question tool call.
+   * @param {string} agentSessionId - The agent session awaiting a user answer
+   * @param {string} answer - The user's answer text
+   * @returns {Promise<{ ok: boolean }>}
+   */
+  static async sendUserQuestionAnswer(agentSessionId, answer) {
+    return PrismService._request("/agent/answer", {
+      body: { agentSessionId, answer },
+    });
+  }
+
+  /**
    * Stream text generation via SSE (Server-Sent Events).
    * @param {object} payload - { provider, model, messages, temperature?, maxTokens?, tools?, conversationId?, conversationMeta? }
    * @param {object} callbacks - { onChunk, onThinking, onImage(data, mimeType, minioRef), onExecutableCode, onCodeExecutionResult, onWebSearchResult, onStatus, onDone, onError }
@@ -817,6 +829,7 @@ export default class PrismService {
       onToolCall, onToolExecution, onToolOutput,
       onWorkerToolExecution, onWorkerToolOutput, onWorkerStatus,
       onApprovalRequired, onPlanProposal,
+      onUserQuestion, onTodoUpdate, onBriefUpdate,
       onRunInfo, onModelStart, onModelComplete, onRunComplete,
       onStatus, onDone, onError,
     } = callbacks;
@@ -875,6 +888,16 @@ export default class PrismService {
         break;
       case "worker_status":
         onWorkerStatus?.(data);
+        break;
+      // Prism-local agentic events
+      case "user_question":
+        onUserQuestion?.(data);
+        break;
+      case "todo_update":
+        onTodoUpdate?.(data);
+        break;
+      case "brief_update":
+        onBriefUpdate?.(data);
         break;
       // Benchmark-specific events
       case "run_info":
