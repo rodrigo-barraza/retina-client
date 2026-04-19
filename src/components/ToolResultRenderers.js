@@ -813,102 +813,152 @@ function WorkerStatusBar({ activity }) {
   );
 }
 
-function SpawnAgentRenderer({ result, args, workerToolActivity }) {
-  const [resultExpanded, setResultExpanded] = useState(false);
+function TeamCreateRenderer({ result, args, workerToolActivity }) {
+  const [expandedMembers, setExpandedMembers] = useState(new Set());
   const parsed = tryParse(result);
-  const description = args?.description || parsed?.description || "";
 
-  // Resolve live worker activity — by agentId if result available,
-  // otherwise by description match (for the "calling" state before
-  // the blocking tool returns a result with the agent_id).
-  let workerActivity = null;
-  if (workerToolActivity) {
-    const agentId = parsed?.agent_id;
-    if (agentId) {
-      workerActivity = workerToolActivity[agentId] || null;
-    } else if (description) {
-      // Match by description during the calling state
-      const match = Object.values(workerToolActivity).find((v) => v.description === description);
-      if (match) workerActivity = match;
+  // Extract members from args (calling state) or result (done state)
+  const argMembers = args?.members || [];
+  const resultMembers = parsed?.members || [];
+  const teamName = args?.name || parsed?.team || "";
+
+  // Resolve live worker activity for a member — by agentId or description match
+  const getActivity = (member) => {
+    if (!workerToolActivity) return null;
+    if (member.agent_id) return workerToolActivity[member.agent_id] || null;
+    // createTeam() prefixes descriptions: "[teamName] description"
+    // Match by inclusion since the SSE-stored description has the prefix
+    if (member.description) {
+      return Object.values(workerToolActivity).find(
+        (v) => v.description && v.description.includes(member.description),
+      ) || null;
     }
-  }
+    return null;
+  };
 
-  // ── Calling state: no result yet, worker is running ──
+  const toggleMember = (idx) => {
+    setExpandedMembers((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  // ── Calling state: no result yet, workers are running ──
   if (!parsed) {
     return (
       <div className={styles.rendererBlock}>
         <div className={styles.rendererHeader}>
           <Users size={13} />
           <span className={styles.rendererTitle}>
-            Spawned worker: <strong>{description}</strong>
+            Team <strong>{teamName}</strong> — {argMembers.length} worker{argMembers.length !== 1 ? "s" : ""}
           </span>
           <StatusBadge success={true} label="running" />
         </div>
-        {workerActivity && (
-          <WorkerStatusBar activity={workerActivity} />
-        )}
+        {argMembers.map((member, i) => {
+          const activity = getActivity(member);
+          return (
+            <div key={i} className={styles.rendererBlock} style={{ marginTop: 4 }}>
+              <div className={styles.rendererHeader}>
+                <span className={styles.rendererTitle}>
+                  Worker {i + 1}: <strong>{member.description}</strong>
+                </span>
+                {activity?.phase && (
+                  <StatusBadge success={true} label={activity.phase} />
+                )}
+              </div>
+              {activity && <WorkerStatusBar activity={activity} />}
+            </div>
+          );
+        })}
       </div>
     );
   }
 
   // ── Done state: result available ──
   const hasError = !!parsed.error;
-  const displayStatus = parsed.status || "unknown";
-  const isTerminal = displayStatus === "completed" || displayStatus === "failed" || displayStatus === "stopped";
-  const isCompleted = displayStatus === "completed";
-  const isFailed = displayStatus === "failed";
-  const statusSuccess = isTerminal ? isCompleted : !hasError;
-
-  const durationLabel = parsed.durationMs
-    ? formatLatency(Number(parsed.durationMs) / 1000)
-    : null;
+  const succeeded = parsed.succeeded ?? resultMembers.filter((m) => m.status === "completed").length;
+  const failed = parsed.failed ?? resultMembers.filter((m) => m.status === "failed").length;
+  const allDone = resultMembers.every((m) =>
+    m.status === "completed" || m.status === "failed" || m.status === "stopped",
+  );
+  const teamSuccess = failed === 0 && !hasError;
 
   return (
     <div className={styles.rendererBlock}>
       <div className={styles.rendererHeader}>
         <Users size={13} />
         <span className={styles.rendererTitle}>
-          Spawned worker: <strong>{description}</strong>
+          Team <strong>{teamName}</strong> — {resultMembers.length} worker{resultMembers.length !== 1 ? "s" : ""}
         </span>
-        <StatusBadge success={statusSuccess} label={displayStatus} />
+        <StatusBadge
+          success={teamSuccess}
+          label={allDone ? `${succeeded} done${failed ? `, ${failed} failed` : ""}` : "running"}
+        />
       </div>
 
       {hasError && <div className={styles.errorText}>{parsed.error}</div>}
 
-      {/* Live status bar — shown while the worker is running */}
-      {workerActivity && !isTerminal && (
-        <WorkerStatusBar activity={workerActivity} />
-      )}
+      {resultMembers.map((member, i) => {
+        const activity = getActivity(member);
+        const isTerminal = member.status === "completed" || member.status === "failed" || member.status === "stopped";
+        const isCompleted = member.status === "completed";
+        const isFailed = member.status === "failed";
+        const memberExpanded = expandedMembers.has(i);
+        const durationLabel = member.durationMs
+          ? formatLatency(Number(member.durationMs) / 1000)
+          : null;
 
-      {/* Inline completion card — shown when the worker has finished */}
-      {isTerminal && (
-        <div className={styles.workerResultCard}>
-          <button
-            className={styles.workerResultToggle}
-            onClick={() => setResultExpanded((v) => !v)}
-          >
-            <Zap size={12} />
-            <span className={styles.workerResultSummary}>
-              {parsed.summary || (isCompleted ? "Worker completed" : isFailed ? "Worker failed" : "Worker finished")}
-            </span>
-            {durationLabel && (
-              <span className={styles.workerResultMeta}>{durationLabel}</span>
-            )}
-            {parsed.toolUses > 0 && (
-              <span className={styles.workerResultMeta}>{parsed.toolUses} tools</span>
-            )}
-            {parsed.iterations > 0 && (
-              <span className={styles.workerResultMeta}>{parsed.iterations} iteration{parsed.iterations !== 1 ? 's' : ''}</span>
-            )}
-            {resultExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-          </button>
-          {resultExpanded && parsed.result && (
-            <div className={styles.workerResultBody}>
-              <MarkdownContent content={parsed.result} />
+        return (
+          <div key={i} className={styles.rendererBlock} style={{ marginTop: 4 }}>
+            <div className={styles.rendererHeader}>
+              <span className={styles.rendererTitle}>
+                Worker {i + 1}: <strong>{member.description}</strong>
+              </span>
+              <StatusBadge
+                success={isCompleted}
+                label={member.status || "unknown"}
+              />
             </div>
-          )}
-        </div>
-      )}
+
+            {member.error && <div className={styles.errorText}>{member.error}</div>}
+
+            {/* Live status bar — shown while the worker is still running */}
+            {activity && !isTerminal && <WorkerStatusBar activity={activity} />}
+
+            {/* Inline completion card */}
+            {isTerminal && (
+              <div className={styles.workerResultCard}>
+                <button
+                  className={styles.workerResultToggle}
+                  onClick={() => toggleMember(i)}
+                >
+                  <Zap size={12} />
+                  <span className={styles.workerResultSummary}>
+                    {member.summary || (isCompleted ? "Worker completed" : isFailed ? "Worker failed" : "Worker finished")}
+                  </span>
+                  {durationLabel && (
+                    <span className={styles.workerResultMeta}>{durationLabel}</span>
+                  )}
+                  {member.toolUses > 0 && (
+                    <span className={styles.workerResultMeta}>{member.toolUses} tools</span>
+                  )}
+                  {member.iterations > 0 && (
+                    <span className={styles.workerResultMeta}>{member.iterations} iteration{member.iterations !== 1 ? "s" : ""}</span>
+                  )}
+                  {memberExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                </button>
+                {memberExpanded && member.result && (
+                  <div className={styles.workerResultBody}>
+                    <MarkdownContent content={member.result} />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1005,7 +1055,7 @@ const TOOL_RESULT_REGISTRY = {
   browser_action:   { Renderer: BrowserActionRenderer },
 
   // Coordinator
-  spawn_agent:      { Renderer: SpawnAgentRenderer },
+  team_create:      { Renderer: TeamCreateRenderer },
   send_message:     { Renderer: SendMessageRenderer },
   stop_agent:       { Renderer: StopAgentRenderer },
 };
@@ -1026,7 +1076,7 @@ export function resolveToolResultRenderer(toolName) {
  * @param {object} props
  * @param {object} props.toolCall - The tool call object { name, args, result, id }
  * @param {string} [props.streamingOutput] - Live streaming output for compute tools
- * @param {object} [props.workerToolActivity] - Live worker activity map for spawn_agent
+ * @param {object} [props.workerToolActivity] - Live worker activity map for team_create
  */
 export function ToolResultView({ toolCall, streamingOutput, workerToolActivity }) {
   const { Renderer, language } = resolveToolResultRenderer(toolCall.name);

@@ -111,13 +111,17 @@ export default function SettingsPanel({
   // ── Live elapsed time ticker ──────────────────────────────────
   // Store current time in state so render stays pure (no Date.now() calls)
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [perfNow, setPerfNow] = useState(() => performance.now());
+  const isStreaming = !!(sessionStats?.liveStreamingStartTime);
+  const needsTicker = !!(sessionStats?.currentTurnStart) || isStreaming;
   useEffect(() => {
-    if (!sessionStats?.currentTurnStart) return;
+    if (!needsTicker) return;
     // Immediate tick via microtask to avoid synchronous setState in effect body
-    const immediate = setTimeout(() => setNowMs(Date.now()), 0);
-    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    const immediate = setTimeout(() => { setNowMs(Date.now()); setPerfNow(performance.now()); }, 0);
+    // 500ms interval for smoother tok/s updates during streaming
+    const id = setInterval(() => { setNowMs(Date.now()); setPerfNow(performance.now()); }, 500);
     return () => { clearTimeout(immediate); clearInterval(id); };
-  }, [sessionStats?.currentTurnStart]);
+  }, [needsTicker]);
 
   // Compute displayed elapsed: completed turns + live current turn
   const completedTime = sessionStats?.completedElapsedTime || 0;
@@ -125,6 +129,47 @@ export default function SettingsPanel({
     ? Math.max(0, (nowMs - sessionStats.currentTurnStart) / 1000)
     : 0;
   const totalElapsedTime = completedTime + liveExtra;
+
+  // ── Live tok/s computation ────────────────────────────────────
+  // Use generation-only elapsed (lastChunk − firstChunk) so the rate
+  // doesn't decline during tool execution pauses. Hide the badge
+  // when no chunks have arrived recently (generation paused).
+  const CHUNK_STALE_MS = 2000;
+
+  // Coordinator's own generation rate
+  const coordActive = isStreaming
+    && sessionStats.liveStreamingLastChunkTime
+    && (perfNow - sessionStats.liveStreamingLastChunkTime) < CHUNK_STALE_MS;
+  const coordElapsed = coordActive
+    ? (sessionStats.liveStreamingLastChunkTime - sessionStats.liveStreamingStartTime) / 1000
+    : 0;
+  const coordTokPerSec = coordActive && sessionStats.liveStreamingTokens > 2 && coordElapsed > 0.1
+    ? sessionStats.liveStreamingTokens / coordElapsed
+    : 0;
+
+  // Aggregate worker generation rates (each worker contributes independently)
+  // Worker timestamps use Date.now() (wall-clock) since they come from the server
+  let workerTokPerSec = 0;
+  let anyWorkerActive = false;
+  const workerProgress = sessionStats?.workerGenerationProgress;
+  if (workerProgress) {
+    for (const wp of Object.values(workerProgress)) {
+      if (!wp.lastChunkTime || !wp.firstChunkTime) continue;
+      // Only count workers actively generating (recent chunk)
+      const timeSinceLastChunk = nowMs - wp.lastChunkTime;
+      if (timeSinceLastChunk < CHUNK_STALE_MS) {
+        const elapsed = (wp.lastChunkTime - wp.firstChunkTime) / 1000;
+        if (elapsed > 0.1 && wp.outputTokens > 2) {
+          workerTokPerSec += wp.outputTokens / elapsed;
+          anyWorkerActive = true;
+        }
+      }
+    }
+  }
+
+  const liveTokensPerSec = (coordTokPerSec > 0 || anyWorkerActive)
+    ? coordTokPerSec + workerTokPerSec
+    : null;
 
   // ── Stats tab (All / Orchestrator / Workers) ──────────────
   const [statsTab, setStatsTab] = useState("all");
@@ -187,6 +232,11 @@ export default function SettingsPanel({
               value={stats.totalTokens.reasoning}
               label="reasoning"
             />
+          )}
+          {liveTokensPerSec !== null && (
+            <span className={`${styles.statBadge} ${styles.speedBadge}`}>
+              ⚡ {liveTokensPerSec.toFixed(1)} tok/s
+            </span>
           )}
         </>
       )}

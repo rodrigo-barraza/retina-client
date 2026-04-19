@@ -243,15 +243,45 @@ export function getSessionTokenStats(messages) {
   let input = 0;
   let output = 0;
   let requests = 0;
+  let liveStreamingTokens = 0;
+  let liveStreamingStartTime = null;
+  let liveStreamingLastChunkTime = null;
+  let workerGenerationProgress = null;
   for (const m of messages) {
-    if (m.role !== "assistant" || !m.usage) continue;
-    requests += m.usage.requests || 1;
-    input += getTotalInputTokens(m.usage);
-    output += m.usage.outputTokens || 0;
+    if (m.role !== "assistant") continue;
+    // Finalized messages have usage from the provider
+    if (m.usage) {
+      requests += m.usage.requests || 1;
+      input += getTotalInputTokens(m.usage);
+      output += m.usage.outputTokens || 0;
+    }
+    // In-flight streaming messages: use client-side chunk counter
+    // as an approximate output token count until the final usage arrives
+    else if (m._streamingOutputTokens > 0) {
+      output += m._streamingOutputTokens;
+      liveStreamingTokens = m._streamingOutputTokens;
+      liveStreamingStartTime = m._streamingStartTime || null;
+      liveStreamingLastChunkTime = m._streamingLastChunkTime || null;
+    }
+    // Worker live generation progress (keyed by workerId)
+    if (m._workerGenerationProgress) {
+      workerGenerationProgress = m._workerGenerationProgress;
+    }
+    // Accumulated worker tokens (from worker_status complete events)
+    // These arrive independently of the coordinator's own usage
+    if (m._workerTokens) {
+      input += m._workerTokens.input || 0;
+      output += m._workerTokens.output || 0;
+    }
   }
   return {
     totalTokens: { input, output, total: input + output },
     requestCount: requests,
+    // Live streaming metadata for real-time tok/s computation
+    liveStreamingTokens,
+    liveStreamingStartTime,
+    liveStreamingLastChunkTime,
+    workerGenerationProgress,
   };
 }
 

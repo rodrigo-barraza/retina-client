@@ -30,8 +30,9 @@ const TOOL_CALL_DISPLAY_NAMES = {
   browser_action: "Browser",
   project_summary: "Summary",
   generate_image: "Image Gen",
-  spawn_agent: "Spawn Agent",
-  // New tools
+  // Coordinator tools
+  team_create: "Team",
+  team_delete: "Team Stop",
   sleep: "Sleep",
   enter_plan_mode: "Plan",
   exit_plan_mode: "Execute",
@@ -44,9 +45,6 @@ const TOOL_CALL_DISPLAY_NAMES = {
   skill_execute: "Skill Run",
   skill_list: "Skills",
   skill_delete: "Skill Delete",
-  // Team tools
-  team_create: "Team",
-  team_delete: "Team Stop",
   // Structured output
   synthetic_output: "Output",
   // Worktree isolation

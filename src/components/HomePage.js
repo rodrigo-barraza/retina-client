@@ -259,7 +259,7 @@ export default function HomePage({ initialConversationId = null }) {
 
   const {
     uniqueModels, uniqueProviders, totalCost, totalTokens, requestCount,
-    usedTools, modalities,
+    usedTools, modalities, liveStreamingTokens, liveStreamingStartTime, liveStreamingLastChunkTime,
   } = useSessionStats(messages);
 
   // Auto-save system prompt on edit (debounced)
@@ -1855,6 +1855,8 @@ export default function HomePage({ initialConversationId = null }) {
         let streamedThinking = "";
         let streamedImages = [];
         const codeBlocks = [];
+        let outputTokenEstimate = 0;
+        let firstChunkTime = null;
 
         // Reset audio player for new generation
         if (audioPlayerRef.current) {
@@ -1904,11 +1906,18 @@ export default function HomePage({ initialConversationId = null }) {
             setLmLoadProgress((prev) => (prev != null ? null : prev));
 
             streamedText += content;
+            // Client-side token metering: each SSE chunk ≈ 1 output token
+            outputTokenEstimate++;
+            if (!firstChunkTime) firstChunkTime = performance.now();
+            const lastChunkTime = performance.now();
             setMessages((prev) => {
               const updated = [...prev];
               updated[updated.length - 1] = {
                 ...updated[updated.length - 1],
                 content: streamedText,
+                _streamingOutputTokens: outputTokenEstimate,
+                _streamingStartTime: firstChunkTime,
+                _streamingLastChunkTime: lastChunkTime,
               };
               return updated;
             });
@@ -2145,6 +2154,9 @@ export default function HomePage({ initialConversationId = null }) {
                         originalTotalCost,
                         usedTools,
                         modalities,
+                        liveStreamingTokens,
+                        liveStreamingStartTime,
+                        liveStreamingLastChunkTime,
                       }
                     : null
                 }

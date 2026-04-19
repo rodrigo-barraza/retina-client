@@ -248,18 +248,40 @@ function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
 
 
                 {/* Worker tool badges — show which tools a spawned agent used */}
-                {tc.name === "spawn_agent" && (() => {
+                {tc.name === "team_create" && (() => {
                   const parsed = tc.result ? (typeof tc.result === "string" ? (() => { try { return JSON.parse(tc.result); } catch { return null; } })() : tc.result) : null;
-                  const agentId = parsed?.agent_id;
-                  let activity = agentId && workerToolActivity ? workerToolActivity[agentId] : null;
-                  // Fallback: match by description during calling state
-                  if (!activity && workerToolActivity && tc.args?.description) {
-                    activity = Object.values(workerToolActivity).find((v) => v.description === tc.args.description) || null;
+                  const members = parsed?.members || [];
+                  // Aggregate tool activity from all team members
+                  const allToolNames = {};
+                  let activeTool = null;
+                  for (const member of members) {
+                    const activity = member.agent_id && workerToolActivity ? workerToolActivity[member.agent_id] : null;
+                    if (activity?.toolNames) {
+                      for (const [name, count] of Object.entries(activity.toolNames)) {
+                        allToolNames[name] = (allToolNames[name] || 0) + count;
+                      }
+                      if (activity.currentTool) activeTool = activity.currentTool;
+                    }
                   }
-                  // Live badges during execution
-                  if (activity?.toolNames) return <ToolBadgeRow tools={activity.toolNames} activeTool={activity.currentTool} />;
-                  // Static badge from completed result — build a proper { name: count } object
-                  if (parsed?.toolUses > 0) return <ToolBadgeRow tools={{ "Tool Calling": parsed.toolUses }} />;
+                  // Fallback: match by description during calling state (before result arrives)
+                  // createTeam prefixes descriptions as "[teamName] description"
+                  if (Object.keys(allToolNames).length === 0 && workerToolActivity && tc.args?.members) {
+                    for (const argMember of tc.args.members) {
+                      const match = Object.values(workerToolActivity).find((v) =>
+                        v.description && v.description.includes(argMember.description),
+                      );
+                      if (match?.toolNames) {
+                        for (const [name, count] of Object.entries(match.toolNames)) {
+                          allToolNames[name] = (allToolNames[name] || 0) + count;
+                        }
+                        if (match.currentTool) activeTool = match.currentTool;
+                      }
+                    }
+                  }
+                  if (Object.keys(allToolNames).length > 0) return <ToolBadgeRow tools={allToolNames} activeTool={activeTool} />;
+                  // Static badge from completed result
+                  const totalToolUses = members.reduce((sum, m) => sum + (m.toolUses || 0), 0);
+                  if (totalToolUses > 0) return <ToolBadgeRow tools={{ "Tool Calling": totalToolUses }} />;
                   return null;
                 })()}
 
@@ -1048,7 +1070,7 @@ export default function MessageList({
             {!msg.deleted && (() => {
               // ── Task notification card (replaces user bubble for worker results) ──
               // Only renders for non-absorbed notifications (i.e. edge cases where
-              // the matching spawn_agent tool call isn't in the visible window).
+              // the matching team_create tool call isn't in the visible window).
               const taskNotif = msg.role === "user" ? parseTaskNotification(msg.content) : null;
               if (taskNotif) {
                 return (

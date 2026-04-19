@@ -59,7 +59,7 @@ function getAgentNumber(agentId) {
  * WorkersPanel — displays coordinator workers spawned during this agent session.
  *
  * Polls the coordinator /workers endpoint filtered by the current agentSessionId.
- * Workers represent parallel sub-agents spawned via the `spawn_agent` tool
+ * Workers represent parallel sub-agents spawned via the `team_create` tool
  * during agentic coding sessions.
  *
  * @param {object} props
@@ -170,7 +170,7 @@ export default function WorkersPanel({ agentSessionId, refreshKey, onCountChange
           <div className={styles.emptySubtitle}>
             Workers are spawned by the coordinator when it
             decomposes tasks into parallel sub-agents. Use the
-            <strong> spawn_agent</strong> tool to create workers.
+            <strong> team_create</strong> tool to create workers.
           </div>
         </div>
       )}

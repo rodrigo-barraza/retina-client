@@ -309,8 +309,8 @@ export default function SettingsPageComponent() {
             <div className={styles.rowLabel}>
               <span className={styles.rowTitle}>Subagent Model</span>
               <span className={styles.rowDescription}>
-                Cloud model used when local GPU slots are full or unavailable.
-                Workers queue on the local provider if not configured.
+                Pick a default subagent model for Retina to use when it spawns subagents.
+                If not set, it will use the current active model.
               </span>
             </div>
             <div className={styles.rowControl}>

@@ -434,6 +434,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
   const {
     uniqueModels, uniqueProviders, totalCost, totalTokens, requestCount,
     usedTools, modalities, elapsedTime: completedElapsedTime,
+    liveStreamingTokens, liveStreamingStartTime, liveStreamingLastChunkTime, workerGenerationProgress,
   } = useSessionStats(messages);
 
   // ── Fetch backend-aggregate session stats ────────────────
@@ -624,6 +625,8 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
 
         let streamedText = "";
         let streamedThinking = "";
+        let outputTokenEstimate = 0;
+        let firstChunkTime = null;
         // ── Interleaved content tracking ──
         // contentSegments: ordered list of { type: "thinking", fragmentIndex } | { type: "text", fragmentIndex } | { type: "tools", toolIds: [...] }
         // textFragments: array of strings, one per text segment — the text delta between tool groups
@@ -645,6 +648,10 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
         abortRef.current = PrismService.streamAgentText(payload, {
           onChunk: (content) => {
             streamedText += content;
+            // Client-side token metering: each SSE chunk ≈ 1 output token
+            outputTokenEstimate++;
+            if (!firstChunkTime) firstChunkTime = performance.now();
+            const lastChunkTime = performance.now();
 
             // Track segment ordering: start a new text fragment when text resumes after tools
             if (lastSegmentType !== "text") {
@@ -681,6 +688,9 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                 lastMsg.contentSegments = snapshotSegments();
                 lastMsg.textFragments = [...textFragments];
                 lastMsg.thinkingFragments = [...thinkingFragments];
+                lastMsg._streamingOutputTokens = outputTokenEstimate;
+                lastMsg._streamingStartTime = firstChunkTime;
+                lastMsg._streamingLastChunkTime = lastChunkTime;
               } else {
                 updated.push({
                   role: "assistant",
@@ -688,6 +698,9 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                   contentSegments: snapshotSegments(),
                   textFragments: [...textFragments],
                   thinkingFragments: [...thinkingFragments],
+                  _streamingOutputTokens: outputTokenEstimate,
+                  _streamingStartTime: firstChunkTime,
+                  _streamingLastChunkTime: lastChunkTime,
                 });
               }
               return updated;
@@ -988,6 +1001,27 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                   phase: data.phase,
                 },
               }));
+            } else if (data.message === "generation_progress") {
+              // Worker live generation progress — store on message for tok/s
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last?.role === "assistant") {
+                  const wp = last._workerGenerationProgress || {};
+                  updated[updated.length - 1] = {
+                    ...last,
+                    _workerGenerationProgress: {
+                      ...wp,
+                      [data.workerId]: {
+                        outputTokens: data.outputTokens,
+                        firstChunkTime: data.firstChunkTime,
+                        lastChunkTime: data.lastChunkTime,
+                      },
+                    },
+                  };
+                }
+                return updated;
+              });
             } else if (data.message === "complete") {
               // Worker finished — clear phase so StatusBar stops showing "Generating..."
               setWorkerToolActivity((prev) => ({
@@ -1000,6 +1034,29 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                   toolCount: data.toolCount ?? prev[data.workerId]?.toolCount,
                 },
               }));
+              // Accumulate worker usage into the streaming assistant message
+              // so stats badges update in real-time per worker completion
+              if (data.usage) {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const last = updated[updated.length - 1];
+                  if (last?.role === "assistant") {
+                    const wt = last._workerTokens || { input: 0, output: 0 };
+                    // Remove completed worker from live progress so stale tok/s doesn't linger
+                    const wp = { ...(last._workerGenerationProgress || {}) };
+                    delete wp[data.workerId];
+                    updated[updated.length - 1] = {
+                      ...last,
+                      _workerTokens: {
+                        input: wt.input + (data.usage.inputTokens || 0),
+                        output: wt.output + (data.usage.outputTokens || 0),
+                      },
+                      _workerGenerationProgress: Object.keys(wp).length > 0 ? wp : undefined,
+                    };
+                  }
+                  return updated;
+                });
+              }
             } else if (data.message === "failed") {
               // Worker errored — mark as failed
               setWorkerToolActivity((prev) => ({
@@ -1522,6 +1579,16 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                         completedElapsedTime: sub.totalElapsedTime || 0,
                       };
                     };
+                    // Merge live streaming deltas from the current in-progress
+                    // assistant message on top of the backend totals so stats
+                    // badges update during the current turn
+                    const lastMsg = messages[messages.length - 1];
+                    const liveOutput = (lastMsg?.role === "assistant" && !lastMsg.usage)
+                      ? (lastMsg._streamingOutputTokens || 0) + (lastMsg._workerTokens?.output || 0)
+                      : 0;
+                    const liveInput = (lastMsg?.role === "assistant" && !lastMsg.usage)
+                      ? (lastMsg._workerTokens?.input || 0)
+                      : 0;
                     return {
                       // ── Backend is source of truth (all requests incl. background) ──
                       messageCount: messages.length,
@@ -1530,9 +1597,9 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                       uniqueModels: backendSessionStats.models,
                       uniqueProviders,
                       totalTokens: {
-                        input: backendSessionStats.totalInputTokens,
-                        output: backendSessionStats.totalOutputTokens,
-                        total: backendSessionStats.totalTokens,
+                        input: backendSessionStats.totalInputTokens + liveInput,
+                        output: backendSessionStats.totalOutputTokens + liveOutput,
+                        total: backendSessionStats.totalTokens + liveInput + liveOutput,
                         cacheRead: backendSessionStats.totalCacheReadInputTokens || 0,
                         cacheWrite: backendSessionStats.totalCacheCreationInputTokens || 0,
                         reasoning: backendSessionStats.totalReasoningOutputTokens || 0,
@@ -1543,6 +1610,10 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                       modalities: backendSessionStats.modalities || modalities,
                       completedElapsedTime: backendSessionStats.totalElapsedTime || completedElapsedTime,
                       currentTurnStart,
+                      liveStreamingTokens,
+                      liveStreamingStartTime,
+                      liveStreamingLastChunkTime,
+                      workerGenerationProgress,
                       orchestrator: mapSubStats(backendSessionStats.orchestrator),
                       workers: mapSubStats(backendSessionStats.workers),
                     };
@@ -1561,6 +1632,10 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                     modalities,
                     completedElapsedTime,
                     currentTurnStart,
+                    liveStreamingTokens,
+                    liveStreamingStartTime,
+                    liveStreamingLastChunkTime,
+                    workerGenerationProgress,
                   }
               : null
           }

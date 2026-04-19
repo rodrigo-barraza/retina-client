@@ -23,7 +23,7 @@ export default function useSessionStats(messages) {
   const uniqueModels = useMemo(() => getUniqueModels(messages), [messages]);
   const uniqueProviders = useMemo(() => getUniqueProviders(messages), [messages]);
   const totalCost = useMemo(() => getSessionCost(messages), [messages]);
-  const { totalTokens, requestCount } = useMemo(
+  const { totalTokens, requestCount, liveStreamingTokens, liveStreamingStartTime, liveStreamingLastChunkTime, workerGenerationProgress } = useMemo(
     () => getSessionTokenStats(messages),
     [messages],
   );
@@ -43,5 +43,9 @@ export default function useSessionStats(messages) {
     usedTools,
     modalities,
     elapsedTime,
+    liveStreamingTokens,
+    liveStreamingStartTime,
+    liveStreamingLastChunkTime,
+    workerGenerationProgress,
   };
 }
