@@ -39,6 +39,19 @@ const TOOL_CALL_DISPLAY_NAMES = {
   cron_create: "Schedule",
   remote_trigger: "Trigger",
   notebook_edit: "Notebook",
+  // Skill tools
+  skill_create: "Skill Create",
+  skill_execute: "Skill Run",
+  skill_list: "Skills",
+  skill_delete: "Skill Delete",
+  // Team tools
+  team_create: "Team",
+  team_delete: "Team Stop",
+  // Structured output
+  synthetic_output: "Output",
+  // Worktree isolation
+  enter_worktree: "Isolate",
+  exit_worktree: "Restore",
 };
 
 /**
