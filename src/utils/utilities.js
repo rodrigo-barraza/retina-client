@@ -272,6 +272,7 @@ export function getSessionTokenStats(messages) {
     if (m._workerTokens) {
       input += m._workerTokens.input || 0;
       output += m._workerTokens.output || 0;
+      requests += m._workerTokens.requests || 0;
     }
   }
   return {

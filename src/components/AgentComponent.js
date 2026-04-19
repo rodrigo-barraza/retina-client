@@ -1041,7 +1041,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                   const updated = [...prev];
                   const last = updated[updated.length - 1];
                   if (last?.role === "assistant") {
-                    const wt = last._workerTokens || { input: 0, output: 0 };
+                    const wt = last._workerTokens || { input: 0, output: 0, requests: 0 };
                     // Remove completed worker from live progress so stale tok/s doesn't linger
                     const wp = { ...(last._workerGenerationProgress || {}) };
                     delete wp[data.workerId];
@@ -1050,6 +1050,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                       _workerTokens: {
                         input: wt.input + (data.usage.inputTokens || 0),
                         output: wt.output + (data.usage.outputTokens || 0),
+                        requests: wt.requests + (data.usage.requests || 1),
                       },
                       _workerGenerationProgress: Object.keys(wp).length > 0 ? wp : undefined,
                     };
