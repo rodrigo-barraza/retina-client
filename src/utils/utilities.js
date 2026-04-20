@@ -246,6 +246,8 @@ export function getSessionTokenStats(messages) {
   let liveStreamingTokens = 0;
   let liveStreamingStartTime = null;
   let liveStreamingLastChunkTime = null;
+  let liveStreamingBurstTokens = 0;
+  let liveStreamingBurstElapsed = 0;
   let workerGenerationProgress = null;
   for (const m of messages) {
     if (m.role !== "assistant") continue;
@@ -262,6 +264,8 @@ export function getSessionTokenStats(messages) {
       liveStreamingTokens = m._streamingOutputTokens;
       liveStreamingStartTime = m._streamingStartTime || null;
       liveStreamingLastChunkTime = m._streamingLastChunkTime || null;
+      liveStreamingBurstTokens = m._streamingBurstTokens || 0;
+      liveStreamingBurstElapsed = m._streamingBurstElapsed || 0;
     }
     // Worker live generation progress (keyed by workerId)
     if (m._workerGenerationProgress) {
@@ -291,6 +295,8 @@ export function getSessionTokenStats(messages) {
     liveStreamingTokens,
     liveStreamingStartTime,
     liveStreamingLastChunkTime,
+    liveStreamingBurstTokens,
+    liveStreamingBurstElapsed,
     workerGenerationProgress,
   };
 }

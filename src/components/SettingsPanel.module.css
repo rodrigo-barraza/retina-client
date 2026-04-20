@@ -86,6 +86,15 @@
   opacity: 0.7;
 }
 
+/* ── Stale/frozen tok/s badge (latched value, no model generating) ── */
+.staleSpeedBadge {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.5;
+}
+
 .statBadge:hover {
   border-color: color-mix(in srgb, var(--accent-color) 40%, transparent);
   color: var(--text-primary);

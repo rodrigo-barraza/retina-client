@@ -434,7 +434,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
   const {
     uniqueModels, uniqueProviders, totalCost, totalTokens, requestCount,
     usedTools, modalities, elapsedTime: completedElapsedTime,
-    liveStreamingTokens, liveStreamingStartTime, liveStreamingLastChunkTime, workerGenerationProgress,
+    liveStreamingTokens, liveStreamingStartTime, liveStreamingLastChunkTime, liveStreamingBurstTokens, liveStreamingBurstElapsed, workerGenerationProgress,
   } = useSessionStats(messages);
 
   // ── Fetch backend-aggregate session stats ────────────────
@@ -627,6 +627,10 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
         let streamedThinking = "";
         let outputTokenEstimate = 0;
         let firstChunkTime = null;
+        let prevChunkTime = null;    // previous chunk's timestamp for delta accumulation
+        let burstTokens = 0;         // tokens in current generation burst (resets on gap)
+        let burstElapsed = 0;        // elapsed in current generation burst (resets on gap)
+        const CHUNK_GAP_THRESHOLD = 500; // ms — gaps larger than this are processing/tool pauses
         // ── Interleaved content tracking ──
         // contentSegments: ordered list of { type: "thinking", fragmentIndex } | { type: "text", fragmentIndex } | { type: "tools", toolIds: [...] }
         // textFragments: array of strings, one per text segment — the text delta between tool groups
@@ -650,8 +654,21 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
             streamedText += content;
             // Client-side token metering: each SSE chunk ≈ 1 output token
             outputTokenEstimate++;
-            if (!firstChunkTime) firstChunkTime = performance.now();
-            const lastChunkTime = performance.now();
+            burstTokens++;
+            const now = performance.now();
+            if (!firstChunkTime) firstChunkTime = now;
+            // Accumulate generation-only elapsed: skip gaps from processing/tool phases
+            if (prevChunkTime !== null) {
+              const delta = now - prevChunkTime;
+              if (delta < CHUNK_GAP_THRESHOLD) {
+                burstElapsed += delta;
+              } else {
+                // New generation burst — reset burst counters for fresh tok/s
+                burstTokens = 1;
+                burstElapsed = 0;
+              }
+            }
+            prevChunkTime = now;
 
             // Track segment ordering: start a new text fragment when text resumes after tools
             if (lastSegmentType !== "text") {
@@ -690,7 +707,9 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                 lastMsg.thinkingFragments = [...thinkingFragments];
                 lastMsg._streamingOutputTokens = outputTokenEstimate;
                 lastMsg._streamingStartTime = firstChunkTime;
-                lastMsg._streamingLastChunkTime = lastChunkTime;
+                lastMsg._streamingLastChunkTime = now;
+                lastMsg._streamingBurstTokens = burstTokens;
+                lastMsg._streamingBurstElapsed = burstElapsed;
               } else {
                 updated.push({
                   role: "assistant",
@@ -700,7 +719,9 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                   thinkingFragments: [...thinkingFragments],
                   _streamingOutputTokens: outputTokenEstimate,
                   _streamingStartTime: firstChunkTime,
-                  _streamingLastChunkTime: lastChunkTime,
+                  _streamingLastChunkTime: now,
+                  _streamingBurstTokens: burstTokens,
+                  _streamingBurstElapsed: burstElapsed,
                 });
               }
               return updated;
@@ -1632,6 +1653,8 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                       liveStreamingTokens,
                       liveStreamingStartTime,
                       liveStreamingLastChunkTime,
+                      liveStreamingBurstTokens,
+                      liveStreamingBurstElapsed,
                       workerGenerationProgress,
                       orchestrator: mapSubStats(backendSessionStats.orchestrator),
                       workers: mapSubStats(backendSessionStats.workers),
@@ -1654,6 +1677,8 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                     liveStreamingTokens,
                     liveStreamingStartTime,
                     liveStreamingLastChunkTime,
+                    liveStreamingBurstTokens,
+                    liveStreamingBurstElapsed,
                     workerGenerationProgress,
                   }
               : null

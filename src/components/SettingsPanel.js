@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useReducer, useMemo } from "react";
 import {
   Cpu,
   Edit3,
@@ -131,45 +131,65 @@ export default function SettingsPanel({
   const totalElapsedTime = completedTime + liveExtra;
 
   // ── Live tok/s computation ────────────────────────────────────
-  // Use generation-only elapsed (lastChunk − firstChunk) so the rate
-  // doesn't decline during tool execution pauses. Hide the badge
-  // when no chunks have arrived recently (generation paused).
+  // Average per-agent throughput: sum individual tok/s rates across
+  // all agents (coordinator + workers) that are actively generating,
+  // then divide by the count. Only the "generating" state counts —
+  // thinking, processing, loading phases are excluded.
   const CHUNK_STALE_MS = 2000;
 
-  // Coordinator's own generation rate
+  let totalTokPerSec = 0;
+  let generatingAgentCount = 0;
+
+  // Coordinator's own generation rate (current burst only, resets on processing gaps)
   const coordActive = isStreaming
     && sessionStats.liveStreamingLastChunkTime
     && (perfNow - sessionStats.liveStreamingLastChunkTime) < CHUNK_STALE_MS;
-  const coordElapsed = coordActive
-    ? (sessionStats.liveStreamingLastChunkTime - sessionStats.liveStreamingStartTime) / 1000
-    : 0;
-  const coordTokPerSec = coordActive && sessionStats.liveStreamingTokens > 2 && coordElapsed > 0.1
-    ? sessionStats.liveStreamingTokens / coordElapsed
-    : 0;
+  if (coordActive) {
+    const burstElapsed = (sessionStats.liveStreamingBurstElapsed || 0) / 1000;
+    const burstTokens = sessionStats.liveStreamingBurstTokens || 0;
+    if (burstElapsed > 0.1 && burstTokens > 2) {
+      totalTokPerSec += burstTokens / burstElapsed;
+      generatingAgentCount++;
+    }
+  }
 
-  // Aggregate worker generation rates (each worker contributes independently)
-  // Worker timestamps use Date.now() (wall-clock) since they come from the server
-  let workerTokPerSec = 0;
-  let anyWorkerActive = false;
+  // Worker generation rates — only workers with recent chunks (= generating state)
   const workerProgress = sessionStats?.workerGenerationProgress;
   if (workerProgress) {
     for (const wp of Object.values(workerProgress)) {
       if (!wp.lastChunkTime || !wp.firstChunkTime) continue;
-      // Only count workers actively generating (recent chunk)
       const timeSinceLastChunk = nowMs - wp.lastChunkTime;
       if (timeSinceLastChunk < CHUNK_STALE_MS) {
         const elapsed = (wp.lastChunkTime - wp.firstChunkTime) / 1000;
         if (elapsed > 0.1 && wp.outputTokens > 2) {
-          workerTokPerSec += wp.outputTokens / elapsed;
-          anyWorkerActive = true;
+          totalTokPerSec += wp.outputTokens / elapsed;
+          generatingAgentCount++;
         }
       }
     }
   }
 
-  const liveTokensPerSec = (coordTokPerSec > 0 || anyWorkerActive)
-    ? coordTokPerSec + workerTokPerSec
+  const computedTokPerSec = generatingAgentCount > 0
+    ? totalTokPerSec / generatingAgentCount
     : null;
+
+  // Latch the last non-null value so the badge freezes when generation
+  // pauses (processing/tool execution) rather than disappearing.
+  // Clears when the turn fully ends (needsTicker becomes false).
+  // We use a reducer to derive the latched value from the computed value
+  // in a single render pass — no effect cascading needed.
+  const [liveTokensPerSec, dispatchTokPerSec] = useReducer(
+    (_prev, { computed, active }) => {
+      if (computed !== null) return computed;  // actively generating → update
+      if (!active) return null;                // turn ended → clear
+      return _prev;                            // paused mid-turn → freeze
+    },
+    null,
+  );
+  // Dispatch every tick to keep the reducer in sync
+  useMemo(() => {
+    dispatchTokPerSec({ computed: computedTokPerSec, active: needsTicker });
+  }, [computedTokPerSec, needsTicker]);
 
   // ── Stats tab (All / Orchestrator / Workers) ──────────────
   const [statsTab, setStatsTab] = useState("all");
@@ -234,7 +254,7 @@ export default function SettingsPanel({
             />
           )}
           {liveTokensPerSec !== null ? (
-            <span className={`${styles.statBadge} ${styles.speedBadge}`}>
+            <span className={`${styles.statBadge} ${computedTokPerSec !== null ? styles.speedBadge : styles.staleSpeedBadge}`}>
               ⚡ {liveTokensPerSec.toFixed(1)} tok/s
             </span>
           ) : stats.totalTokens.output > 0 && activeElapsedTime > 1 && (
