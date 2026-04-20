@@ -435,6 +435,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
     uniqueModels, uniqueProviders, totalCost, totalTokens, requestCount,
     usedTools, modalities, elapsedTime: completedElapsedTime,
     liveStreamingTokens, liveStreamingStartTime, liveStreamingLastChunkTime, liveStreamingBurstTokens, liveStreamingBurstElapsed, workerGenerationProgress,
+    lastTimeToGeneration, liveProcessingStartTime, liveProcessingPhase,
   } = useSessionStats(messages);
 
   // ── Fetch backend-aggregate session stats ────────────────
@@ -960,6 +961,10 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                     ...last,
                     status: statusData.message,
                     statusPhase: statusData.phase,
+                    // Track when processing phase started for live TTFT estimation
+                    _processingStartTime: statusData.phase === "processing" && !last._processingStartTime
+                      ? performance.now()
+                      : last._processingStartTime,
                   };
                 }
                 return updated;
@@ -1014,12 +1019,13 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                 },
               }));
             } else if (data.message === "phase") {
-              // Worker LLM phase updates (generating, thinking)
+              // Worker LLM phase updates (generating, thinking, processing, loading)
               setWorkerToolActivity((prev) => ({
                 ...prev,
                 [data.workerId]: {
                   ...(prev[data.workerId] || { toolCount: 0, currentTool: null, iteration: 0 }),
                   phase: data.phase,
+                  phaseLabel: data.label || undefined,
                 },
               }));
             } else if (data.message === "generation_progress") {
@@ -1116,6 +1122,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                   totalTime: data.totalTime,
                   tokensPerSec: data.tokensPerSec,
                   estimatedCost: data.estimatedCost,
+                  timeToGeneration: data.timeToGeneration,
                   completedAt: new Date().toISOString(),
                   status: undefined,
                   statusPhase: undefined,
@@ -1592,6 +1599,13 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
               ? backendSessionStats
                 ? (() => {
                     // Map a backend sub-stats object to the display shape
+                    // Convert backend toolCounts map to the usedTools array format
+                    const toolCountsToUsedTools = (toolCounts) => {
+                      if (!toolCounts || Object.keys(toolCounts).length === 0) return [];
+                      return Object.entries(toolCounts)
+                        .map(([name, count]) => ({ name, count }))
+                        .sort((a, b) => b.count - a.count);
+                    };
                     const mapSubStats = (sub) => {
                       if (!sub) return null;
                       return {
@@ -1608,8 +1622,11 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                         },
                         totalCost: sub.totalCost,
                         originalTotalCost: 0,
+                        usedTools: toolCountsToUsedTools(sub.toolCounts),
                         modalities: sub.modalities || {},
                         completedElapsedTime: sub.totalElapsedTime || 0,
+                        avgTokensPerSec: sub.avgTokensPerSec || null,
+                        avgTimeToGeneration: sub.avgTimeToGeneration || null,
                       };
                     };
                     // Merge live streaming deltas from the current in-progress
@@ -1646,7 +1663,16 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                       },
                       totalCost: backendSessionStats.totalCost,
                       originalTotalCost: 0,
-                      usedTools,
+                      // Merge backend toolCounts (function-level: read_file, grep_search, etc.)
+                      // with client-side usedTools (capability-level: Thinking, Tool Calling)
+                      usedTools: (() => {
+                        const CAPABILITY_NAMES = new Set(["Thinking", "Tool Calling", "Web Search", "Google Search", "Code Execution", "Computer Use", "File Search", "URL Context", "Image Generation"]);
+                        const capabilities = usedTools.filter((t) => CAPABILITY_NAMES.has(t.name));
+                        const backendTools = toolCountsToUsedTools(backendSessionStats.toolCounts);
+                        // Backend tools are authoritative for function-level counts;
+                        // client capabilities fill in the capability badges.
+                        return [...capabilities, ...backendTools];
+                      })(),
                       modalities: backendSessionStats.modalities || modalities,
                       completedElapsedTime: backendSessionStats.totalElapsedTime || completedElapsedTime,
                       currentTurnStart,
@@ -1656,6 +1682,11 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                       liveStreamingBurstTokens,
                       liveStreamingBurstElapsed,
                       workerGenerationProgress,
+                      lastTimeToGeneration,
+                      liveProcessingStartTime,
+                      liveProcessingPhase,
+                      avgTokensPerSec: backendSessionStats.avgTokensPerSec || null,
+                      avgTimeToGeneration: backendSessionStats.avgTimeToGeneration || null,
                       orchestrator: mapSubStats(backendSessionStats.orchestrator),
                       workers: mapSubStats(backendSessionStats.workers),
                     };
@@ -1680,6 +1711,9 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                     liveStreamingBurstTokens,
                     liveStreamingBurstElapsed,
                     workerGenerationProgress,
+                    lastTimeToGeneration,
+                    liveProcessingStartTime,
+                    liveProcessingPhase,
                   }
               : null
           }

@@ -23,6 +23,7 @@ import {
   Zap,
 } from "lucide-react";
 import MarkdownContent from "./MarkdownContent";
+import { ToolBadgeRow } from "./ToolBadgeComponent";
 import StatusBarComponent from "./StatusBarComponent.js";
 import PrismService from "../services/PrismService";
 import { formatLatency } from "../utils/utilities";
@@ -790,7 +791,8 @@ function WorkerStatusBar({ activity }) {
 
   // Derive the effective phase for StatusBarComponent
   const effectivePhase = isToolActive ? "thinking" : (isTerminal ? null : phase);
-  const label = isToolActive ? toolLabel : undefined;
+  // Show tool name when executing tools, phase progress label for processing/loading
+  const label = isToolActive ? toolLabel : (activity.phaseLabel || undefined);
   // Tool calls show a wrench emoji, phase uses default icons
   const icon = isToolActive ? "🔧" : undefined;
 
@@ -903,6 +905,9 @@ function TeamCreateRenderer({ result, args, workerToolActivity }) {
                   <StatusBadge success={true} label={activity.phase} />
                 )}
               </div>
+              {activity?.toolNames && (
+                <ToolBadgeRow tools={activity.toolNames} activeTool={activity.currentTool} variant="compact" />
+              )}
               {activity && <WorkerStatusBar activity={activity} />}
             </div>
           );
@@ -962,6 +967,13 @@ function TeamCreateRenderer({ result, args, workerToolActivity }) {
                 label={member.status || "unknown"}
               />
             </div>
+
+            {/* Per-worker tool badges — live from activity, static from result */}
+            {(() => {
+              const toolNames = activity?.toolNames || member.toolNames;
+              if (!toolNames || Object.keys(toolNames).length === 0) return null;
+              return <ToolBadgeRow tools={toolNames} activeTool={!isTerminal ? activity?.currentTool : null} variant="compact" />;
+            })()}
 
             {member.error && <div className={styles.errorText}>{member.error}</div>}
 

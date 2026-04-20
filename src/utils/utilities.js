@@ -249,6 +249,9 @@ export function getSessionTokenStats(messages) {
   let liveStreamingBurstTokens = 0;
   let liveStreamingBurstElapsed = 0;
   let workerGenerationProgress = null;
+  let lastTimeToGeneration = null;     // retroactive TTFT from completed messages (seconds)
+  let liveProcessingStartTime = null;  // performance.now() when processing phase started
+  let liveProcessingPhase = null;      // current phase of in-flight message (processing/loading/generating)
   for (const m of messages) {
     if (m.role !== "assistant") continue;
     // Finalized messages have usage from the provider
@@ -256,6 +259,10 @@ export function getSessionTokenStats(messages) {
       requests += m.usage.requests || 1;
       input += getTotalInputTokens(m.usage);
       output += m.usage.outputTokens || 0;
+    }
+    // Retroactive TTFT from completed messages
+    if (m.timeToGeneration != null) {
+      lastTimeToGeneration = m.timeToGeneration;
     }
     // In-flight streaming messages: use client-side chunk counter
     // as an approximate output token count until the final usage arrives
@@ -266,6 +273,13 @@ export function getSessionTokenStats(messages) {
       liveStreamingLastChunkTime = m._streamingLastChunkTime || null;
       liveStreamingBurstTokens = m._streamingBurstTokens || 0;
       liveStreamingBurstElapsed = m._streamingBurstElapsed || 0;
+    }
+    // Track live processing phase and start time for TTFT estimation
+    if (m._processingStartTime) {
+      liveProcessingStartTime = m._processingStartTime;
+    }
+    if (m.statusPhase) {
+      liveProcessingPhase = m.statusPhase;
     }
     // Worker live generation progress (keyed by workerId)
     if (m._workerGenerationProgress) {
@@ -298,6 +312,10 @@ export function getSessionTokenStats(messages) {
     liveStreamingBurstTokens,
     liveStreamingBurstElapsed,
     workerGenerationProgress,
+    // TTFT tracking
+    lastTimeToGeneration,
+    liveProcessingStartTime,
+    liveProcessingPhase,
   };
 }
 

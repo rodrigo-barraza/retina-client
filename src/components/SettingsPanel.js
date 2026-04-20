@@ -257,9 +257,19 @@ export default function SettingsPanel({
             <span className={`${styles.statBadge} ${computedTokPerSec !== null ? styles.speedBadge : styles.staleSpeedBadge}`}>
               ⚡ {liveTokensPerSec.toFixed(1)} tok/s
             </span>
-          ) : stats.totalTokens.output > 0 && activeElapsedTime > 1 && (
+          ) : stats.avgTokensPerSec != null && (
             <span className={`${styles.statBadge} ${styles.avgSpeedBadge}`}>
-              ⚡ {(stats.totalTokens.output / activeElapsedTime).toFixed(1)} tok/s
+              ⚡ {stats.avgTokensPerSec.toFixed(1)} tok/s
+            </span>
+          )}
+          {/* TTFT badge — live during processing, retroactive after completion */}
+          {sessionStats?.liveProcessingPhase === "processing" && sessionStats?.liveProcessingStartTime ? (
+            <span className={`${styles.statBadge} ${styles.ttftBadgeLive}`}>
+              ⏱ {((perfNow - sessionStats.liveProcessingStartTime) / 1000).toFixed(1)}s TTFT
+            </span>
+          ) : (stats.avgTimeToGeneration ?? sessionStats?.lastTimeToGeneration) != null && (
+            <span className={`${styles.statBadge} ${styles.ttftBadge}`}>
+              ⏱ {(stats.avgTimeToGeneration ?? sessionStats?.lastTimeToGeneration).toFixed(2)}s TTFT
             </span>
           )}
         </>
