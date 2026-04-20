@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import RainbowCanvasComponent from "./RainbowCanvasComponent.js";
 import styles from "./StatusBarComponent.module.css";
 
@@ -20,6 +20,14 @@ const PHASE_ICONS = {
   generating: "✨",
   thinking:   "🧠",
 };
+
+// ── Synthetic asymptotic progress ────────────────────────────────────
+// When the backend doesn't emit real progress events (e.g. OpenAI-compat
+// path used by agentic mode), we generate a client-side asymptotic curve
+// that approaches 95% over ~20s. This gives the user visual feedback
+// that something is happening during prompt prefill.
+const SYNTHETIC_EXPECTED_MS = 20_000;
+const SYNTHETIC_TICK_MS = 200;
 
 /**
  * Unified rainbow status bar shared by the main orchestrator and worker agents.
@@ -70,9 +78,47 @@ export default function StatusBarComponent({
   idleIcon,
   idleLabel,
 }) {
+  // ── Synthetic progress when backend reports 0 ──────────────
+  // The OpenAI-compat path (agentic mode) doesn't receive
+  // prompt_processing.progress events from LM Studio, so progress
+  // stays at 0. We fill in an asymptotic estimate client-side.
+  const [syntheticProgress, setSyntheticProgress] = useState(0);
+  const syntheticStartRef = useRef(null);
+
+  const isProgressPhase = phase === "processing" || phase === "loading";
+  const backendStuck = isProgressPhase && progress != null && progress === 0;
+
+  useEffect(() => {
+    if (!active || !backendStuck) {
+      setSyntheticProgress(0);
+      syntheticStartRef.current = null;
+      return;
+    }
+
+    // Start synthetic timer
+    if (!syntheticStartRef.current) {
+      syntheticStartRef.current = performance.now();
+    }
+
+    const id = setInterval(() => {
+      const elapsed = performance.now() - syntheticStartRef.current;
+      // Asymptotic: approaches 0.95 over SYNTHETIC_EXPECTED_MS
+      const pct = Math.min(0.95, elapsed / (elapsed + SYNTHETIC_EXPECTED_MS));
+      setSyntheticProgress(pct);
+    }, SYNTHETIC_TICK_MS);
+
+    return () => clearInterval(id);
+  }, [active, backendStuck]);
+
+  // Use real backend progress when available, synthetic when stuck at 0
+  const effectiveProgress = (isProgressPhase && progress != null)
+    ? (progress > 0 ? progress : syntheticProgress)
+    : null;
+
   // Strip trailing " 45%" / " done" from label when structured progress is shown via chip
   const rawLabel = label || PHASE_LABELS[phase] || "Starting...";
-  const resolvedLabel = (progress != null && progress >= 0)
+  const hasEffectiveProgress = effectiveProgress != null && effectiveProgress >= 0;
+  const resolvedLabel = hasEffectiveProgress
     ? rawLabel.replace(/[\u2026.]+\s*\d+%$/, "\u2026").replace(/[\u2026.]+\s*done$/i, "\u2026")
     : rawLabel;
   const resolvedIcon = icon !== undefined
@@ -82,9 +128,8 @@ export default function StatusBarComponent({
   // Rainbow visuals: colour only when the model is actively generating tokens
   const isColorPhase = phase === "generating";
 
-  // Progress percentage (only show when we have a real value)
-  const hasProgress = progress != null && progress >= 0;
-  const progressPct = hasProgress ? Math.round(progress * 100) : null;
+  // Progress percentage
+  const progressPct = hasEffectiveProgress ? Math.round(effectiveProgress * 100) : null;
 
   return (
     <div className={`${styles.statusBar}${active ? ` ${styles.statusBarActive}` : ""}`}>
@@ -95,7 +140,7 @@ export default function StatusBarComponent({
         className={styles.statusBarCanvas}
       />
       {/* Progress fill bar — slides right as prompt processing advances */}
-      {active && hasProgress && (
+      {active && hasEffectiveProgress && (
         <div
           className={styles.statusBarProgressFill}
           style={{ width: `${progressPct}%` }}
@@ -109,7 +154,7 @@ export default function StatusBarComponent({
             )}
             <span className={styles.statusBarMessage}>
               {resolvedLabel}
-              {hasProgress && (
+              {hasEffectiveProgress && (
                 <span className={styles.statusBarProgress}>
                   {progressPct}%
                 </span>
