@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import PrismService from "../services/PrismService";
+import StorageService from "../services/StorageService";
 import {
   Wrench,
   Search,
@@ -9,6 +11,7 @@ import {
   List,
   RefreshCw,
   X,
+  Play,
   AlertCircle,
   Braces,
   Cloud,
@@ -34,6 +37,14 @@ import {
   Cog,
   Clock,
   Package,
+  BarChart3,
+  Activity,
+  DollarSign,
+  TrendingUp,
+  Calendar,
+  Hash,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import styles from "./ToolsPageComponent.module.css";
 
@@ -183,14 +194,57 @@ function getInputParams(tool) {
   return Object.entries(props).filter(([name]) => name !== "fields");
 }
 
+// ── Helpers for stat formatting ───────────────────────────────────
+
+function formatCost(cost) {
+  if (!cost || cost === 0) return "$0.00";
+  if (cost < 0.01) return `$${cost.toFixed(4)}`;
+  return `$${cost.toFixed(2)}`;
+}
+
+function formatNumber(n) {
+  if (n == null) return "0";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toLocaleString();
+}
+
+function formatLatency(ms) {
+  if (!ms) return "—";
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return "—";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
 // ── Tool Detail Modal ────────────────────────────────────────────
 
-function ToolDetailModal({ tool, onClose, agents }) {
+function ToolDetailModal({ tool, onClose, agents, stats, allTools }) {
+  const router = useRouter();
   const required = new Set(tool.parameters?.required || []);
   const inputParams = getInputParams(tool);
   const outputFields = extractOutputFields(tool);
   const cleanName = humanizeToolName(tool.name);
   const [showRaw, setShowRaw] = useState(false);
+
+  const handleTryTool = () => {
+    if (!allTools) return;
+    const allToolNames = allTools.map((t) => t.name);
+    const disabledBuiltIns = allToolNames.filter((n) => n !== tool.name);
+    StorageService.set("toolMemory:agent:NONE", { disabledBuiltIns });
+    router.push("/agents?agent=NONE&fc=true&thinking=true");
+  };
 
   // Close on Escape
   useEffect(() => {
@@ -200,6 +254,10 @@ function ToolDetailModal({ tool, onClose, agents }) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
+
+  const successRate = stats
+    ? ((stats.successCount / (stats.successCount + stats.failureCount)) * 100) || 0
+    : 0;
 
   return (
     <div className={styles.detailOverlay} onClick={onClose}>
@@ -250,8 +308,109 @@ function ToolDetailModal({ tool, onClose, agents }) {
 
         {/* Body */}
         <div className={styles.detailBody}>
+          <button className={styles.tryToolBtn} onClick={handleTryTool}>
+            <Play size={14} /> Try Tool in Direct Chat
+          </button>
+
           {/* Description */}
           <div className={styles.detailDescription}>{tool.description}</div>
+
+          {/* Lifetime Stats */}
+          <div className={styles.detailSection}>
+            <div className={styles.detailSectionTitle}>
+              <BarChart3 size={12} /> Lifetime Usage Stats
+            </div>
+            {stats ? (
+              <>
+                <div className={styles.statsGrid}>
+                  <div className={styles.statCell}>
+                    <Hash size={14} className={styles.statCellIcon} />
+                    <div className={styles.statCellValue}>{formatNumber(stats.totalCalls)}</div>
+                    <div className={styles.statCellLabel}>Total Calls</div>
+                  </div>
+                  <div className={styles.statCell}>
+                    <Activity size={14} className={styles.statCellIcon} />
+                    <div className={styles.statCellValue}>{formatNumber(stats.totalRequests)}</div>
+                    <div className={styles.statCellLabel}>Requests</div>
+                  </div>
+                  <div className={styles.statCell}>
+                    <DollarSign size={14} className={styles.statCellIcon} />
+                    <div className={styles.statCellValue}>{formatCost(stats.totalCost)}</div>
+                    <div className={styles.statCellLabel}>Total Cost</div>
+                  </div>
+                  <div className={styles.statCell}>
+                    <TrendingUp size={14} className={styles.statCellIcon} />
+                    <div className={styles.statCellValue}>{formatLatency(stats.avgLatency)}</div>
+                    <div className={styles.statCellLabel}>Avg Latency</div>
+                  </div>
+                  <div className={styles.statCell}>
+                    <Zap size={14} className={styles.statCellIcon} />
+                    <div className={styles.statCellValue}>{formatNumber(stats.totalInputTokens + stats.totalOutputTokens)}</div>
+                    <div className={styles.statCellLabel}>Total Tokens</div>
+                  </div>
+                  <div className={styles.statCell}>
+                    <CheckCircle2 size={14} className={styles.statCellIcon} />
+                    <div className={styles.statCellValue}>{successRate.toFixed(0)}%</div>
+                    <div className={styles.statCellLabel}>Success Rate</div>
+                  </div>
+                </div>
+
+                {/* Time Range */}
+                <div className={styles.statsTimeRange}>
+                  <div className={styles.statsTimeItem}>
+                    <Calendar size={12} />
+                    <span className={styles.statsTimeLabel}>First used</span>
+                    <span className={styles.statsTimeValue}>{timeAgo(stats.firstUsed)}</span>
+                  </div>
+                  <div className={styles.statsTimeItem}>
+                    <Clock size={12} />
+                    <span className={styles.statsTimeLabel}>Last used</span>
+                    <span className={styles.statsTimeValue}>{timeAgo(stats.lastUsed)}</span>
+                  </div>
+                  {stats.failureCount > 0 && (
+                    <div className={styles.statsTimeItem}>
+                      <XCircle size={12} />
+                      <span className={styles.statsTimeLabel}>Failures</span>
+                      <span className={styles.statsTimeValueDanger}>{stats.failureCount}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Top Models / Agents */}
+                {(stats.topModels?.length > 0 || stats.topAgents?.length > 0) && (
+                  <div className={styles.statsBreakdown}>
+                    {stats.topModels?.length > 0 && (
+                      <div className={styles.statsBreakdownCol}>
+                        <div className={styles.statsBreakdownTitle}>Top Models</div>
+                        {stats.topModels.map((m) => (
+                          <div key={m.model} className={styles.statsBreakdownRow}>
+                            <span className={styles.statsBreakdownName}>{m.model}</span>
+                            <span className={styles.statsBreakdownCount}>{m.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {stats.topAgents?.length > 0 && (
+                      <div className={styles.statsBreakdownCol}>
+                        <div className={styles.statsBreakdownTitle}>Top Agents</div>
+                        {stats.topAgents.map((a) => (
+                          <div key={a.agent} className={styles.statsBreakdownRow}>
+                            <span className={styles.statsBreakdownName}>{a.agent}</span>
+                            <span className={styles.statsBreakdownCount}>{a.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className={styles.statsEmpty}>
+                <Activity size={16} />
+                No usage data recorded yet
+              </div>
+            )}
+          </div>
 
           {/* Payload (Input Parameters) */}
           {inputParams.length > 0 && (
@@ -411,6 +570,7 @@ function ToolRow({ tool, onClick, agents }) {
 export default function ToolsPageComponent() {
   const [tools, setTools] = useState([]);
   const [agents, setAgents] = useState([]);
+  const [toolStats, setToolStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -443,9 +603,24 @@ export default function ToolsPageComponent() {
     }
   }, []);
 
+  // ── Fetch tool usage stats (non-blocking) ────────────────────
+  const fetchToolStats = useCallback(async () => {
+    try {
+      const stats = await PrismService.getToolStats();
+      const map = {};
+      for (const s of stats || []) {
+        map[s.tool] = s;
+      }
+      setToolStats(map);
+    } catch {
+      // Non-critical — silently ignore
+    }
+  }, []);
+
   useEffect(() => {
     fetchTools();
-  }, [fetchTools]);
+    fetchToolStats();
+  }, [fetchTools, fetchToolStats]);
 
   // ── Refresh (re-fetch from tools-api) ────────────────────────
   const handleRefresh = useCallback(async () => {
@@ -660,6 +835,8 @@ export default function ToolsPageComponent() {
         <ToolDetailModal
           tool={selectedTool}
           agents={toolAgentMap[selectedTool.name]}
+          stats={toolStats[selectedTool.name]}
+          allTools={tools}
           onClose={() => setSelectedTool(null)}
         />
       )}

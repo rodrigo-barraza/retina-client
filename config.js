@@ -10,6 +10,7 @@ import {
   PRISM_URL as DEFAULT_PRISM_URL,
   PRISM_WS_URL as DEFAULT_PRISM_WS_URL,
   TOOLS_API_URL as DEFAULT_TOOLS_API_URL,
+  MINIO_URL as DEFAULT_MINIO_URL,
 } from "./secrets.js";
 
 export const PORT = SECRETS_PORT || 3333;
@@ -35,3 +36,8 @@ export const PRISM_WS_URL = IS_PRODUCTION
 export const TOOLS_API_URL = IS_PRODUCTION
   ? "https://tools.clankerbox.com"
   : DEFAULT_TOOLS_API_URL;
+
+// MinIO file storage (direct bucket URL)
+export const MINIO_URL = IS_PRODUCTION
+  ? "https://minio.clankerbox.com/prism"
+  : DEFAULT_MINIO_URL;

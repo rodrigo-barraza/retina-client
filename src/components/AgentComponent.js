@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { BotMessageSquare, Paperclip, X, ClipboardList, Zap, Settings, Wrench, Brain, Plug, GitBranch, Repeat, ListChecks, BookOpen, Info, Activity, CornerDownLeft, Send, Square } from "lucide-react";
+import { BotMessageSquare, Paperclip, X, ClipboardList, Zap, Settings, Wrench, Brain, Plug, GitBranch, Repeat, ListChecks, BookOpen, Info, Activity, CornerDownLeft, Send, Square, SlidersHorizontal } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ToolsApiService from "../services/ToolsApiService.js";
 import ThreePanelLayout, { layoutStyles } from "./ThreePanelLayout.js";
@@ -16,6 +16,7 @@ import TasksPanel from "./TasksPanel.js";
 import MCPServersPanel from "./MCPServersPanel.js";
 import CoordinatorPanel from "./CoordinatorPanel.js";
 import WorkersPanel from "./WorkersPanel.js";
+import ParametersPanelComponent from "./ParametersPanelComponent.js";
 import SessionRequestsListComponent from "./SessionRequestsListComponent.js";
 import MessageList, { prepareDisplayMessages } from "./MessageList.js";
 import ImagePreviewComponent from "./ImagePreviewComponent.js";
@@ -76,19 +77,27 @@ const DEFAULT_EMPTY_STATE = {
 // Tools that are always on and non-toggleable in the agent view
 const AGENT_LOCKED_TOOLS = new Set(["Tool Calling"]);
 
-/** No-agent empty state — direct model chat, all tools. */
+/** No-agent empty state — raw chat via /chat endpoint, no agentic loop. */
 const NONE_EMPTY_STATE = {
   title: "Direct Chat",
-  subtitle: "Talk to the model directly with all tools available.",
+  subtitle: "Raw model interaction — no agentic loop, no persona.",
   placeholder: "Send a message...",
 };
 
 
-export default function AgentComponent({ agentId: propAgentId = "CODING", agents = [] }) {
+export default function AgentComponent({ 
+  agentId: propAgentId = "CODING", 
+  agents = [],
+  initialFcEnabled = false,
+  initialThinkingEnabled = false,
+}) {
   const agentId = propAgentId;
   const isNoAgent = agentId === "NONE";
   const activeAgentData = agents.find((a) => a.id === agentId);
-  const agentProject = activeAgentData?.project || PROJECT_AGENT;
+  // Direct Chat omits project so it uses the default x-project header — this
+  // routes persistence to the conversations collection (same as /conversations page).
+  // Agent modes use the persona's project so persistence goes to agent_sessions.
+  const agentProject = isNoAgent ? undefined : (activeAgentData?.project || PROJECT_AGENT);
   const agentBackgroundImage = activeAgentData?.backgroundImage || "";
   const rawEmptyState = isNoAgent
     ? NONE_EMPTY_STATE
@@ -115,7 +124,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
   const [sessions, setSessions] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [config, setConfig] = useState(null);
-  const [title, setTitle] = useState("Agent");
+  const [title, setTitle] = useState(isNoAgent ? "Direct Chat" : "Agent");
   const [leftTab, setLeftTab] = useState("settings"); // "settings" | "tools"
   const [customTools, setCustomTools] = useState([]);
   const [builtInTools, setBuiltInTools] = useState([]);
@@ -165,7 +174,10 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
   const [settings, setSettings] = useState({
     ...SETTINGS_DEFAULTS,
     maxTokens: 64000,
-    functionCallingEnabled: true,
+    // Agents always need FC for tool orchestration; Direct Chat defaults off
+    // to avoid injecting large tool schemas into local model contexts.
+    functionCallingEnabled: initialFcEnabled ? true : !isNoAgent,
+    thinkingEnabled: initialThinkingEnabled ? true : (SETTINGS_DEFAULTS.thinkingEnabled || false),
   });
 
   const [favoriteKeys, setFavoriteKeys] = useState([]);
@@ -228,12 +240,26 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
 
     // Explicitly abort any running workers for this session — belt-and-suspenders
     // alongside the backend SSE disconnect handler
-    PrismService.stopCoordinatorWorkers(agentSessionIdRef.current).catch(() => {});
-  }, []);
+    // Direct Chat (NONE) has no workers — skip.
+    if (!isNoAgent) {
+      PrismService.stopCoordinatorWorkers(agentSessionIdRef.current).catch(() => {});
+    }
+  }, [isNoAgent]);
 
-  // ── Filtered config: only tool-calling models ────────────
+  // ── Filtered config: only tool-calling models for agents; all text models for Direct Chat ────────────
   const filteredConfig = useMemo(() => {
     if (!config) return null;
+
+    // Direct Chat: show ALL text models — no FC restriction
+    if (isNoAgent) {
+      return {
+        ...config,
+        textToImage: { models: {} },
+        textToSpeech: { models: {}, voices: {}, defaultVoices: {} },
+        audioToText: { models: {} },
+      };
+    }
+
     const textModelsMap = config.textToText?.models || {};
     const filteredTextModels = {};
 
@@ -259,7 +285,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
       textToSpeech: { models: {}, voices: {}, defaultVoices: {} },
       audioToText: { models: {} },
     };
-  }, [config]);
+  }, [config, isNoAgent]);
 
   // ── Model capability detection ──────────────────────────────
   const supportsImageInput = useMemo(() => {
@@ -296,15 +322,16 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
       const textModels = cfg.textToText?.models || {};
       for (const provider of cfg.providerList || []) {
         const models = textModels[provider] || [];
-        const fcModel = models.find((m) =>
-          m.tools?.includes("Tool Calling"),
-        );
-        if (fcModel) {
+        // Direct Chat: pick first model; agents: pick first FC-capable model
+        const fallbackModel = isNoAgent
+          ? models[0]
+          : models.find((m) => m.tools?.includes("Tool Calling"));
+        if (fallbackModel) {
           setSettings((s) => ({
             ...s,
             provider,
-            model: fcModel.name,
-            temperature: fcModel.defaultTemperature ?? 1.0,
+            model: fallbackModel.name,
+            temperature: fallbackModel.defaultTemperature ?? 1.0,
           }));
           break;
         }
@@ -314,25 +341,26 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
     PrismService.getConfigWithLocalModels({
       onConfig: (cfg) => {
         setConfig(cfg);
-        restoreModel(cfg, setSettings, { fcOnly: true, fallback: fcFallback });
+        restoreModel(cfg, setSettings, { fcOnly: !isNoAgent, fallback: fcFallback });
       },
       onLocalMerge: (merged) => {
         setConfig(merged);
-        restoreModel(merged, setSettings, { fcOnly: true, fallback: fcFallback });
+        restoreModel(merged, setSettings, { fcOnly: !isNoAgent, fallback: fcFallback });
       },
     }).catch(console.error);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load agent session history
+  // Load session history — Direct Chat reads from conversations collection
   const loadSessions = useCallback(async () => {
     try {
-      const list =
-        await PrismService.getAgentSessions(agentProject);
+      const list = isNoAgent
+        ? await PrismService.getConversations()
+        : await PrismService.getAgentSessions(agentProject);
       setSessions(list);
     } catch (err) {
-      console.error("Failed to load agent sessions:", err);
+      console.error("Failed to load sessions:", err);
     }
-  }, [agentProject]);
+  }, [agentProject, isNoAgent]);
 
   useEffect(() => {
     loadSessions();
@@ -452,6 +480,9 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
   // ── Fetch backend-aggregate session stats ────────────────
   const fetchSessionStats = useCallback((sessionId) => {
     if (!sessionId) return;
+    // Direct Chat sessions live in the conversations collection which
+    // doesn't have the stats aggregation endpoint — skip.
+    if (isNoAgent) return;
     // Two-phase fetch: first at 2s catches iteration requests,
     // second at 8s catches background requests (memory extraction,
     // embedding) that take longer to flush to the DB.
@@ -467,7 +498,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
     const t1 = setTimeout(refetch, 2000);
     const t2 = setTimeout(refetch, 8000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [agentProject]);
+  }, [agentProject, isNoAgent]);
 
   // Build final tool schemas
   const allToolSchemas = useMemo(
@@ -602,39 +633,73 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
 
 
       await new Promise((resolve, reject) => {
-        // System prompt placeholder — replaced server-side by SystemPromptAssembler
-        const payload = {
-          provider: settings.provider,
-          model: settings.model,
-          messages: [
-            { role: "system", content: "" },
-            ...currentMessages,
-          ],
-          functionCallingEnabled: true,
-          enabledTools: allToolSchemas.map(t => t.name),
-          maxTokens: settings.maxTokens,
-          temperature: settings.temperature,
-          thinkingEnabled: settings.thinkingEnabled ?? false,
-          ...(settings.reasoningEffort && { reasoningEffort: settings.reasoningEffort }),
-          ...(settings.thinkingBudget && { thinkingBudget: settings.thinkingBudget }),
-          // Local models need enough context for MCP tool schemas + session
-          minContextLength: 150000,
-          // Agentic project — null agent for NONE mode (no persona system prompt)
-          project: agentProject,
-          agentSessionId,
-          conversationMeta: {
-            title: resolvedTitle,
-          },
-          // Trace tracking — generated client-side
-          traceId,
-          // Agent persona — null for "No Agent" mode, dynamic per-agent otherwise
-          agent: isNoAgent ? null : agentId,
-          // Phase 1: Agentic controls
-          autoApprove,
-          planFirst,
-          maxIterations: Number.isFinite(maxIterations) ? maxIterations : 0,
-          maxWorkerIterations: Number.isFinite(maxWorkerIterations) ? maxWorkerIterations : 0,
-        };
+        // ── Build payload: Direct Chat (/chat) vs Agent (/agent) ──
+        const payload = isNoAgent
+          ? {
+              // Direct Chat: raw /chat endpoint — no agentic loop
+              provider: settings.provider,
+              model: settings.model,
+              messages: [
+                ...(settings.systemPrompt
+                  ? [{ role: "system", content: settings.systemPrompt }]
+                  : []),
+                ...currentMessages,
+              ],
+              maxTokens: settings.maxTokens,
+              temperature: settings.temperature,
+              thinkingEnabled: settings.thinkingEnabled ?? false,
+              ...(settings.reasoningEffort && { reasoningEffort: settings.reasoningEffort }),
+              ...(settings.thinkingBudget && { thinkingBudget: settings.thinkingBudget }),
+              // Native provider FC (Google code exec, LM Studio MCP, etc.)
+              functionCallingEnabled: settings.functionCallingEnabled ?? false,
+              ...(settings.functionCallingEnabled && allToolSchemas.length > 0 && {
+                enabledTools: allToolSchemas.map((t) => t.name),
+              }),
+              // Provider-native capabilities
+              ...(settings.webSearchEnabled ? { webSearch: true } : {}),
+              ...(settings.codeExecutionEnabled ? { codeExecution: true } : {}),
+              ...(settings.urlContextEnabled ? { urlContext: true } : {}),
+              // Persistence — use agentSessionId as conversationId for /chat
+              conversationId: agentSessionId,
+              // Also pass agentSessionId so request logs are queryable by session
+              agentSessionId,
+              conversationMeta: {
+                title: resolvedTitle,
+                ...(settings.systemPrompt ? { systemPrompt: settings.systemPrompt } : {}),
+              },
+              // Omit project — falls back to x-project header ("retina"),
+              // routing to the conversations collection (parity with /conversations page)
+              traceId,
+            }
+          : {
+              // Agent mode: full /agent endpoint with AgenticLoopService
+              provider: settings.provider,
+              model: settings.model,
+              messages: [
+                // System prompt placeholder — replaced server-side by SystemPromptAssembler
+                { role: "system", content: "" },
+                ...currentMessages,
+              ],
+              functionCallingEnabled: true,
+              enabledTools: allToolSchemas.map((t) => t.name),
+              maxTokens: settings.maxTokens,
+              temperature: settings.temperature,
+              thinkingEnabled: settings.thinkingEnabled ?? false,
+              ...(settings.reasoningEffort && { reasoningEffort: settings.reasoningEffort }),
+              ...(settings.thinkingBudget && { thinkingBudget: settings.thinkingBudget }),
+              // Local models need enough context for MCP tool schemas + session
+              minContextLength: 150000,
+              project: agentProject,
+              agentSessionId,
+              conversationMeta: { title: resolvedTitle },
+              traceId,
+              agent: agentId,
+              // Phase 1: Agentic controls
+              autoApprove,
+              planFirst,
+              maxIterations: Number.isFinite(maxIterations) ? maxIterations : 0,
+              maxWorkerIterations: Number.isFinite(maxWorkerIterations) ? maxWorkerIterations : 0,
+            };
 
         let streamedText = "";
         let streamedThinking = "";
@@ -662,7 +727,9 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
             ...(s.toolIds ? { toolIds: [...s.toolIds] } : {}),
           }));
 
-        abortRef.current = PrismService.streamAgentText(payload, {
+        // Direct Chat → streamText (/chat); Agents → streamAgentText (/agent)
+        const streamFn = isNoAgent ? PrismService.streamText : PrismService.streamAgentText;
+        abortRef.current = streamFn(payload, {
           onChunk: (content) => {
             streamedText += content;
             // Client-side token metering: each SSE chunk ≈ 1 output token
@@ -1182,6 +1249,11 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
       settings.thinkingEnabled,
       settings.reasoningEffort,
       settings.thinkingBudget,
+      settings.systemPrompt,
+      settings.functionCallingEnabled,
+      settings.webSearchEnabled,
+      settings.codeExecutionEnabled,
+      settings.urlContextEnabled,
       agentSessionId,
       traceId,
       allToolSchemas,
@@ -1248,7 +1320,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
       const currentMessages = messagesRef.current;
       let resolvedTitle = titleRef.current;
       if (currentMessages.length === 0) {
-        const titleText = text || "Agent session";
+        const titleText = text || (isNoAgent ? "New conversation" : "Agent session");
         resolvedTitle =
           titleText.length > 60 ? titleText.slice(0, 57) + "..." : titleText;
         setTitle(resolvedTitle);
@@ -1310,6 +1382,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
     [
       handleStop,
       isGenerating,
+      isNoAgent,
       setTextareaValue,
       runOrchestrationLoop,
       loadSessions,
@@ -1350,10 +1423,10 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
     setAgentSessionId(crypto.randomUUID());
     setTraceId(null);
     setActiveId(null);
-    setTitle("Agent");
+    setTitle(isNoAgent ? "Direct Chat" : "Agent");
     setBackendSessionStats(null);
     textareaRef.current?.focus();
-  }, []);
+  }, [isNoAgent]);
 
   const handleNewChat = useCallback(() => {
     if (isGenerating) return;
@@ -1386,10 +1459,10 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
       setPixelTransition("out");
 
       try {
-        const full = await PrismService.getAgentSession(
-          conv.id,
-          agentProject,
-        );
+        // Direct Chat sessions live in the conversations collection
+        const full = isNoAgent
+          ? await PrismService.getConversation(conv.id)
+          : await PrismService.getAgentSession(conv.id, agentProject);
         pendingSessionRef.current = full;
         setPendingSessionReady(true);
       } catch (err) {
@@ -1400,7 +1473,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
         pendingSessionRef.current = null;
       }
     },
-    [isGenerating, activeId, agentProject],
+    [isGenerating, activeId, agentProject, isNoAgent],
   );
 
   // When 'out' animation completes: handle new-session reset or session-load swap
@@ -1446,6 +1519,8 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
           ...(gs.thinkingEnabled !== undefined && { thinkingEnabled: gs.thinkingEnabled }),
           ...(gs.reasoningEffort && { reasoningEffort: gs.reasoningEffort }),
           ...(gs.thinkingBudget && { thinkingBudget: gs.thinkingBudget }),
+          // Conversations store systemPrompt at root — restore for Direct Chat
+          ...(full.systemPrompt != null && { systemPrompt: full.systemPrompt }),
         }));
       }
       setBackendSessionStats(full.stats || null);
@@ -1460,7 +1535,12 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
   const handleDeleteSession = useCallback(
     async (convId) => {
       try {
-        await PrismService.deleteAgentSession(convId, agentProject);
+        // Direct Chat sessions live in the conversations collection
+        if (isNoAgent) {
+          await PrismService.deleteConversation(convId);
+        } else {
+          await PrismService.deleteAgentSession(convId, agentProject);
+        }
         setSessions((prev) => prev.filter((c) => c.id !== convId));
         if (activeId === convId) {
           handleNewChat();
@@ -1469,7 +1549,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
         console.error("Failed to delete session:", err);
       }
     },
-    [activeId, handleNewChat, agentProject],
+    [activeId, handleNewChat, agentProject, isNoAgent],
   );
 
   // ── Left sidebar: tab bar + content ──────────────────────────
@@ -1496,48 +1576,59 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
             ...badgeProps(allToolSchemas.length, "tools"),
             tooltip: "Tools",
           },
-          {
-            key: "skills",
-            icon: <BookOpen size={14} />,
-            ...badgeProps(skills.filter((s) => s.enabled).length, "skills"),
-            tooltip: "Skills",
-          },
-          {
-            key: "memories",
-            icon: <Brain size={14} />,
-            ...badgeProps(totalMemoriesCount, "memories"),
-            tooltip: "Memories",
-          },
-          {
-            key: "tasks",
-            icon: <ListChecks size={14} />,
-            ...badgeProps(tasksCount, "tasks"),
-            tooltip: "Tasks",
-          },
-          {
-            key: "mcp",
-            icon: <Plug size={14} />,
-            ...badgeProps(mcpServers.filter((s) => s.connected).length, "mcp"),
-            tooltip: "MCP Servers",
-          },
-          {
-            key: "workers",
-            icon: <BotMessageSquare size={14} />,
-            ...badgeProps(workersCount, "workers"),
-            badgeRainbow: Object.values(workerToolActivity).some((w) => w.currentTool || w.phase === "generating" || w.phase === "thinking"),
-            tooltip: "Workers",
-          },
+          ...(isNoAgent ? [
+            {
+              key: "params",
+              icon: <SlidersHorizontal size={14} />,
+              tooltip: "Parameters",
+            },
+          ] : []),
+          ...(!isNoAgent ? [
+            {
+              key: "skills",
+              icon: <BookOpen size={14} />,
+              ...badgeProps(skills.filter((s) => s.enabled).length, "skills"),
+              tooltip: "Skills",
+            },
+            {
+              key: "memories",
+              icon: <Brain size={14} />,
+              ...badgeProps(totalMemoriesCount, "memories"),
+              tooltip: "Memories",
+            },
+            {
+              key: "tasks",
+              icon: <ListChecks size={14} />,
+              ...badgeProps(tasksCount, "tasks"),
+              tooltip: "Tasks",
+            },
+            {
+              key: "mcp",
+              icon: <Plug size={14} />,
+              ...badgeProps(mcpServers.filter((s) => s.connected).length, "mcp"),
+              tooltip: "MCP Servers",
+            },
+            {
+              key: "workers",
+              icon: <BotMessageSquare size={14} />,
+              ...badgeProps(workersCount, "workers"),
+              badgeRainbow: Object.values(workerToolActivity).some((w) => w.currentTool || w.phase === "generating" || w.phase === "thinking"),
+              tooltip: "Workers",
+            },
+          ] : []),
           {
             key: "requests",
             icon: <Activity size={14} />,
             ...badgeProps(backendSessionStats?.requestCount || 0, "requests"),
             tooltip: "Requests",
           },
-          {
-            key: "coordinator",
-            icon: <GitBranch size={14} />,
-            tooltip: "Coordinator",
-          },
+          ...(!isNoAgent ? [
+            {
+              key: "coordinator",
+              icon: <GitBranch size={14} />,
+              tooltip: "Coordinator",
+            },
+          ] : []),
         ]}
         activeTab={leftTab}
         onChange={(tab) => {
@@ -1556,13 +1647,15 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
         <SettingsPanel
           config={filteredConfig}
           settings={settings}
-          onChange={(updates) => setSettings((s) => ({ ...s, ...updates, functionCallingEnabled: true }))}
+          onChange={isNoAgent
+            ? (updates) => setSettings((s) => ({ ...s, ...updates }))
+            : (updates) => setSettings((s) => ({ ...s, ...updates, functionCallingEnabled: true }))}
           hasAssistantImages={false}
-          lockedTools={AGENT_LOCKED_TOOLS}
-          hideSystemPrompt
-          sessionType="agent"
-          canSpawnWorkers={activeAgentData?.canSpawnWorkers || false}
-          agentToggles={[
+          lockedTools={isNoAgent ? new Set() : AGENT_LOCKED_TOOLS}
+          hideSystemPrompt={!isNoAgent}
+          sessionType={isNoAgent ? "chat" : "agent"}
+          canSpawnWorkers={!isNoAgent && (activeAgentData?.canSpawnWorkers || false)}
+          agentToggles={isNoAgent ? [] : [
             {
               key: "plan",
               icon: <ClipboardList size={12} />,
@@ -1740,8 +1833,10 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
         <ModelInfoPanel
           config={filteredConfig}
           settings={settings}
-          onChange={(updates) => setSettings((s) => ({ ...s, ...updates, functionCallingEnabled: true }))}
-          lockedTools={AGENT_LOCKED_TOOLS}
+          onChange={isNoAgent
+            ? (updates) => setSettings((s) => ({ ...s, ...updates }))
+            : (updates) => setSettings((s) => ({ ...s, ...updates, functionCallingEnabled: true }))}
+          lockedTools={isNoAgent ? new Set() : AGENT_LOCKED_TOOLS}
         />
       )}
 
@@ -1755,6 +1850,15 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
           onToggleBuiltIn={handleToggleBuiltIn}
           onToggleAllBuiltIn={handleToggleAllBuiltIn}
           lockedOffTools={lockedOffTools}
+          agent={!isNoAgent}
+        />
+      )}
+
+      {leftTab === "params" && (
+        <ParametersPanelComponent
+          settings={settings}
+          onChange={(updates) => setSettings((s) => ({ ...s, ...updates }))}
+          config={filteredConfig}
         />
       )}
 

@@ -610,7 +610,7 @@ export default function SettingsPanel({
           )}
 
         {/* ── Agent Toggles (Plan, Auto, Iterations) ──────────────── */}
-        {agentToggles && (
+        {agentToggles?.length > 0 && (
           <div className={styles.section}>
             <div className={styles.sectionHeader}>Agent</div>
             {agentToggles.map((toggle) => (

@@ -41,6 +41,9 @@ export default function AgentsPage() {
     return fromUrl || localAgentId;
   }, [searchParams, localAgentId]);
 
+  const forceFc = searchParams.get("fc") === "true";
+  const forceThinking = searchParams.get("thinking") === "true";
+
   // Fetch agent personas on mount — prepend "No Agent" synthetic entry
   useEffect(() => {
     PrismService.getAgentPersonas()
@@ -77,6 +80,8 @@ export default function AgentsPage() {
         key={activeAgentId}
         agentId={activeAgentId}
         agents={agents}
+        initialFcEnabled={forceFc}
+        initialThinkingEnabled={forceThinking}
       />
     </main>
   );

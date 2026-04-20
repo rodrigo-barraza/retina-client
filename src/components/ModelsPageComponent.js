@@ -80,12 +80,33 @@ export default function ModelsPageComponent({ mode = "user", onCountChange }) {
         existing.totalInputTokens += s.totalInputTokens || 0;
         existing.totalOutputTokens += s.totalOutputTokens || 0;
         existing.totalTokens += s.totalTokens || 0;
+        existing.totalCost += s.totalCost || 0;
+        existing.successCount += s.successCount || 0;
+        existing.errorCount += s.errorCount || 0;
+        // Keep the extremes for first/last used
+        if (s.firstUsed && (!existing.firstUsed || s.firstUsed < existing.firstUsed)) {
+          existing.firstUsed = s.firstUsed;
+        }
+        if (s.lastUsed && (!existing.lastUsed || s.lastUsed > existing.lastUsed)) {
+          existing.lastUsed = s.lastUsed;
+        }
+        // Re-average latency and tokens/sec
+        const totalReq = existing.totalRequests;
+        existing.avgLatency = ((existing.avgLatency * (totalReq - s.totalRequests)) + (s.avgLatency || 0) * s.totalRequests) / totalReq;
+        existing.avgTokensPerSec = ((existing.avgTokensPerSec * (totalReq - s.totalRequests)) + (s.avgTokensPerSec || 0) * s.totalRequests) / totalReq;
       } else {
         usageMap.set(key, {
           totalRequests: s.totalRequests,
           totalInputTokens: s.totalInputTokens || 0,
           totalOutputTokens: s.totalOutputTokens || 0,
           totalTokens: s.totalTokens || 0,
+          totalCost: s.totalCost || 0,
+          avgLatency: s.avgLatency || 0,
+          avgTokensPerSec: s.avgTokensPerSec || 0,
+          firstUsed: s.firstUsed || null,
+          lastUsed: s.lastUsed || null,
+          successCount: s.successCount || 0,
+          errorCount: s.errorCount || 0,
         });
       }
       grandTotal += s.totalRequests;
@@ -93,7 +114,11 @@ export default function ModelsPageComponent({ mode = "user", onCountChange }) {
 
     return flat.map((m) => {
       const usageKey = `${m.provider}:${m.name}`;
-      const stats = usageMap.get(usageKey) || { totalRequests: 0, totalInputTokens: 0, totalOutputTokens: 0, totalTokens: 0 };
+      const stats = usageMap.get(usageKey) || {
+        totalRequests: 0, totalInputTokens: 0, totalOutputTokens: 0, totalTokens: 0,
+        totalCost: 0, avgLatency: 0, avgTokensPerSec: 0,
+        firstUsed: null, lastUsed: null, successCount: 0, errorCount: 0,
+      };
       const usageCount = stats.totalRequests;
       let result = {
         ...m,
@@ -102,6 +127,13 @@ export default function ModelsPageComponent({ mode = "user", onCountChange }) {
         totalInputTokens: stats.totalInputTokens,
         totalOutputTokens: stats.totalOutputTokens,
         totalTokens: stats.totalTokens,
+        totalCost: stats.totalCost,
+        avgLatency: stats.avgLatency,
+        avgTokensPerSec: stats.avgTokensPerSec,
+        firstUsed: stats.firstUsed,
+        lastUsed: stats.lastUsed,
+        successCount: stats.successCount,
+        errorCount: stats.errorCount,
       };
 
       if (m.provider === "lm-studio") {

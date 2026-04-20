@@ -98,12 +98,14 @@ export default function AgentPickerComponent({
             data-open={open}
           />
         </button>
-        <ToolBadgeComponent
-          name="Tool Calling"
-          count={activeAgent?.toolCount}
-          variant="condensed"
-          tooltip={`${activeAgent?.toolCount || 0} Tools available`}
-        />
+        {activeAgent?.id !== "NONE" && (
+          <ToolBadgeComponent
+            name="Tool Calling"
+            count={activeAgent?.toolCount}
+            variant="condensed"
+            tooltip={`${activeAgent?.toolCount || 0} Tools available`}
+          />
+        )}
       </div>
 
       {open && (
@@ -126,10 +128,12 @@ export default function AgentPickerComponent({
                   <div className={styles.agentInfo}>
                     <div className={styles.agentName}>{agent.name}</div>
                     <div className={styles.agentMeta}>
-                      <span className={styles.toolBadge}>
-                        <Wrench size={9} />
-                        {agent.toolCount === -1 ? "All tools" : `${agent.toolCount} tools`}
-                      </span>
+                      {agent.id !== "NONE" && (
+                        <span className={styles.toolBadge}>
+                          <Wrench size={9} />
+                          {agent.toolCount === -1 ? "All tools" : `${agent.toolCount} tools`}
+                        </span>
+                      )}
                       <span>{agent.project}</span>
                     </div>
                   </div>

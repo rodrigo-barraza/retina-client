@@ -47,7 +47,7 @@ function RainbowCanvas({ turbo = false, greyscale = false }) {
 
 const USER_NAV_SECTIONS = [
   {
-    label: "Work",
+    label: "Workspace",
     items: [
       { href: "/agents", label: "Agents", icon: Bot, alsoMatches: ["/coding-agent"] },
       {
@@ -473,8 +473,8 @@ export default function NavigationSidebarComponent({
               <nav className={styles.mobilePopoverNav}>
                 {navSections.map((section, sectionIdx) => (
                   <React.Fragment key={section.label || sectionIdx}>
-                    {/* Section divider — skip for the very first section */}
-                    {sectionIdx > 0 && section.label && (
+                    {/* Section divider */}
+                    {section.label && (
                       <div className={styles.navDivider}>
                         <span>{section.label}</span>
                       </div>
@@ -600,8 +600,8 @@ export default function NavigationSidebarComponent({
         <nav className={styles.nav}>
           {navSections.map((section, sectionIdx) => (
             <React.Fragment key={section.label || sectionIdx}>
-              {/* Section divider — skip for the very first section */}
-              {sectionIdx > 0 && section.label && (
+              {/* Section divider */}
+              {section.label && (
                 <div className={styles.navDivider}>
                   <span>{section.label}</span>
                 </div>

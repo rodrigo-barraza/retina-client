@@ -14,3 +14,6 @@ export const PRISM_WS_URL = "ws://localhost:7777";
 
 // Sun Tools API (unified)
 export const TOOLS_API_URL = "http://localhost:5590";
+
+// MinIO file storage (direct URL to bucket)
+export const MINIO_URL = "";

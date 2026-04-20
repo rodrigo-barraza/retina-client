@@ -1,6 +1,4 @@
-// API Service for communicating with Prism AI Gateway
-
-import { PRISM_URL } from "../../config.js";
+import { PRISM_URL, MINIO_URL } from "../../config.js";
 import { getBaseHeaders } from "./serviceHeaders.js";
 import { buildLmStudioLoadBody } from "../utils/utilities.js";
 import { setLocalProviderMeta } from "../components/ProviderLogos.js";
@@ -13,13 +11,14 @@ function getHeaders() {
 
 /**
  * Resolve a file reference to a usable URL.
- * - `minio://files/abc.png` → `http://prism.clankerbox.com/files/files/abc.png?secret=...`
- * - data URLs and http URLs pass through unchanged.
+ * Points directly at the MinIO bucket URL for minio:// refs.
  */
 function resolveFileRef(ref) {
   if (typeof ref === "string" && ref.startsWith("minio://")) {
-    const key = ref.replace("minio://", "");
-    return `${API_BASE}/files/${key}`;
+    let key = ref.replace("minio://", "");
+    key = key.replace(/::ffff:/g, "");
+    const base = MINIO_URL || `${API_BASE}/files`;
+    return `${base}/${key}`;
   }
   return ref;
 }
@@ -181,6 +180,16 @@ export default class PrismService {
   static async getModelStats() {
     return PrismService._request("/stats/models", { method: "GET" });
   }
+
+  /**
+   * Fetch lifetime usage stats for all tools (aggregated from requests).
+   * Returns an array of { tool, totalCalls, totalRequests, totalCost, ... }.
+   * @returns {Promise<Array>}
+   */
+  static async getToolStats() {
+    return PrismService._request("/admin/stats/tools", { method: "GET" });
+  }
+
 
   // ---------------------------------------------------------------------------
   // Conversations

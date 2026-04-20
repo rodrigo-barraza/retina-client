@@ -4,6 +4,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .toolsSectionHeader {
@@ -69,7 +72,8 @@
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   background: var(--bg-primary);
-  max-height: 340px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
 }

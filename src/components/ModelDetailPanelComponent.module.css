@@ -113,6 +113,20 @@
   padding: 0 0 32px;
 }
 
+/* ── Use Model Action Buttons ───────────────────────── */
+
+.useModelActions {
+  display: flex;
+  gap: 8px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-surface) 60%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+
+
 /* ── Section ────────────────────────────────────────── */
 
 .section {
@@ -404,6 +418,104 @@
   font-weight: 600;
   font-family: var(--font-mono);
   color: var(--text-primary);
+}
+
+/* ── Lifetime Stats Cards ───────────────────────────── */
+
+.statsCardsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.statsCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 8px 10px;
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  transition: border-color 0.2s ease, background 0.2s ease;
+
+  &:hover {
+    border-color: var(--text-tertiary);
+    background: color-mix(in srgb, var(--bg-tertiary) 80%, var(--bg-surface));
+  }
+}
+
+.statsCardCost {
+  background: color-mix(in srgb, var(--accent-color) 6%, var(--bg-tertiary));
+  border-color: color-mix(in srgb, var(--accent-color) 20%, var(--border-color));
+}
+
+.statsCardIcon {
+  color: var(--text-tertiary);
+  opacity: 0.5;
+  margin-bottom: 2px;
+}
+
+.statsCardValue {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.statsCardLabel {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+
+/* ── Success / Error Rate ──────────────────────────── */
+
+.successRateRow {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.successRateBar {
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--danger, #ef4444) 20%, var(--bg-tertiary));
+  overflow: hidden;
+}
+
+.successRateFill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--success, #10b981);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.successRateLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.successLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--success, #10b981);
+}
+
+.errorLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--danger, #ef4444);
 }
 
 /* ── Responsive ─────────────────────────────────────── */

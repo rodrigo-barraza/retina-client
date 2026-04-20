@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   Plus,
   Trash2,
@@ -14,155 +14,14 @@ import {
   ChevronDown,
   ChevronRight,
   Globe,
-  Globe2,
-  LayoutGrid,
-  Cpu,
   Shield,
-  Database,
-  Zap,
-  HardDrive,
-  Clock,
-  ExternalLink,
-  CloudSun,
-  CalendarDays,
-  TrendingUp,
-  ShoppingCart,
-  BarChart3,
-  BookOpen,
-  Film,
-  Heart,
-  Bus,
-  Wrench,
-  Layers,
-  Terminal,
-  TerminalSquare,
-  Radio,
-  Ship,
-  Fuel,
-  FolderOpen,
-  Search,
-  GitBranch,
-  MonitorSmartphone,
-  Code2,
-  Sparkles,
-  Lock,
 } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ButtonComponent from "./ButtonComponent.js";
 import ToggleSwitchComponent from "./ToggleSwitch.js";
-import SearchInputComponent from "./SearchInputComponent.js";
-import FilterDropdownComponent from "./FilterDropdownComponent.js";
 import TextAreaComponent from "./TextAreaComponent.js";
-import { renderToolName } from "../utils/utilities";
 import ToolSelectionComponent from "./ToolSelectionComponent";
 import styles from "./CustomToolsPanel.module.css";
-
-
-
-/** Format seconds into a human-readable polling interval */
-function formatInterval(seconds) {
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) return `${seconds / 60}m`;
-  if (seconds < 86400) {
-    const h = seconds / 3600;
-    return Number.isInteger(h) ? `${h}h` : `${h.toFixed(1)}h`;
-  }
-  return `${(seconds / 86400).toFixed(0)}d`;
-}
-
-const DATA_SOURCE_ICONS = {
-  cached: Database,
-  onDemand: Zap,
-  static: HardDrive,
-  compute: Terminal,
-  realtime: Radio,
-};
-
-const DATA_SOURCE_LABELS = {
-  cached: "Cached",
-  onDemand: "On-Demand",
-  static: "Static",
-  compute: "Compute",
-  realtime: "Realtime",
-};
-
-const DATA_SOURCE_COLORS = {
-  cached: "#0ea5e9",
-  onDemand: "#f59e0b",
-  static: "#a855f7",
-  compute: "#10b981",
-  realtime: "#f43f5e",
-};
-
-const DOMAIN_ICONS = {
-  "Weather & Environment": CloudSun,
-  Events: CalendarDays,
-  "Markets & Commodities": BarChart3,
-  Trends: TrendingUp,
-  Products: ShoppingCart,
-  Finance: BarChart3,
-  Knowledge: BookOpen,
-  "Movies & TV": Film,
-  Health: Heart,
-  Transit: Bus,
-  Utilities: Wrench,
-  Maritime: Ship,
-  Energy: Fuel,
-  Compute: Cpu,
-  Communication: Radio,
-  // Agentic domains
-  "Agentic: File Operations": FolderOpen,
-  "Agentic: Search & Discovery": Search,
-  "Agentic: Web": Globe2,
-  "Agentic: Command Execution": TerminalSquare,
-  "Agentic: Git": GitBranch,
-  "Agentic: Browser": MonitorSmartphone,
-  "Agentic: Code Intelligence": Code2,
-  Creative: Sparkles,
-  Other: Layers,
-};
-
-/** Clean display labels for domains (strips 'Agentic: ' prefix) */
-const DOMAIN_LABELS = {
-  "Agentic: File Operations": "File Operations",
-  "Agentic: Search & Discovery": "Search & Discovery",
-  "Agentic: Web": "Web",
-  "Agentic: Command Execution": "Command Execution",
-  "Agentic: Git": "Git",
-  "Agentic: Browser": "Browser",
-  "Agentic: Code Intelligence": "Code Intelligence",
-};
-
-const DOMAIN_ORDER = [
-  // Agentic domains first (most relevant in /agent)
-  "Agentic: File Operations",
-  "Agentic: Search & Discovery",
-  "Agentic: Web",
-  "Agentic: Command Execution",
-  "Agentic: Git",
-  "Agentic: Browser",
-  "Agentic: Code Intelligence",
-  // Data domains
-  "Weather & Environment",
-  "Events",
-  "Markets & Commodities",
-  "Trends",
-  "Products",
-  "Finance",
-  "Knowledge",
-  "Movies & TV",
-  "Health",
-  "Compute",
-  "Communication",
-  "Transit",
-  "Utilities",
-  "Maritime",
-  "Energy",
-  "Creative",
-  "Other",
-];
-
-const TYPE_ORDER = ["cached", "onDemand", "static", "compute", "realtime"];
 
 const PARAM_TYPES = [
   { value: "string", label: "String" },
@@ -202,23 +61,14 @@ export default function CustomToolsPanel({
   builtInTools = [],
   disabledBuiltIns = new Set(),
   onToggleBuiltIn,
-  onToggleAllBuiltIn,
-  offlineTools = new Set(),
-  lockedOffTools = new Set(),
-  enabledTools,
-  onEnabledToolsChange,
+  agent = true,
 }) {
   const [editingTool, setEditingTool] = useState(null);
   const [isNew, setIsNew] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [builtInOpen, setBuiltInOpen] = useState(true);
   const [customOpen, setCustomOpen] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTypeFilter, setActiveTypeFilter] = useState(() => new Set());
   const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
-  const [groupMode, setGroupMode] = useState("domain"); // "domain" | "type"
-  const [collapsedDomains, setCollapsedDomains] = useState(new Set());
   const [inputMode, setInputMode] = useState("manual"); // "manual" | "json"
   const [jsonText, setJsonText] = useState("");
   const [jsonError, setJsonError] = useState(null);
@@ -470,64 +320,6 @@ export default function CustomToolsPanel({
 
   // ── Tool list ────────────────────────────────────────────────
 
-  const enabledBuiltIn = builtInTools.length - disabledBuiltIns.size;
-
-  // ── Available type filters from built-in tools ──────────────
-  const availableTypeOptions = useMemo(() => {
-    const types = new Map();
-    for (const t of builtInTools) {
-      const type = t.dataSource?.type;
-      if (type) types.set(type, (types.get(type) || 0) + 1);
-    }
-    const order = ["cached", "onDemand", "static", "compute", "realtime"];
-    return order
-      .filter((k) => types.has(k))
-      .map((k) => ({
-        key: k,
-        label: `${DATA_SOURCE_LABELS[k]} (${types.get(k)})`,
-        icon: DATA_SOURCE_ICONS[k],
-        color: DATA_SOURCE_COLORS[k],
-      }));
-  }, [builtInTools]);
-
-  // ── Search + type filtering ─────────────────────────────────
-  const query = searchQuery.toLowerCase().trim();
-
-  const filteredCustomTools = useMemo(() => {
-    // If a type filter is active, custom tools are hidden (they don't have a dataSource type)
-    if (activeTypeFilter.size > 0) return [];
-    if (!query) return tools;
-    return tools.filter(
-      (t) =>
-        t.name?.toLowerCase().includes(query) ||
-        t.description?.toLowerCase().includes(query),
-    );
-  }, [tools, query, activeTypeFilter]);
-
-  const filteredBuiltInTools = useMemo(() => {
-    let result = builtInTools;
-    if (activeTypeFilter.size > 0) {
-      result = result.filter((t) => activeTypeFilter.has(t.dataSource?.type));
-    }
-    if (query) {
-      result = result.filter(
-        (t) =>
-          t.name?.toLowerCase().includes(query) ||
-          renderToolName(t.name)?.toLowerCase().includes(query) ||
-          t.description?.toLowerCase().includes(query),
-      );
-    }
-    return result;
-  }, [builtInTools, query, activeTypeFilter]);
-
-  // ── Toggle-all states ───────────────────────────────────────
-  const onlineBuiltInTools = builtInTools.filter(
-    (t) => !offlineTools.has(t.name),
-  );
-  const allBuiltInEnabled =
-    onlineBuiltInTools.length > 0 &&
-    onlineBuiltInTools.every((t) => !disabledBuiltIns.has(t.name));
-
   const enabledCustomCount = tools.filter((t) => t.enabled).length;
   const allCustomEnabled =
     tools.length > 0 && enabledCustomCount === tools.length;
@@ -547,91 +339,6 @@ export default function CustomToolsPanel({
       console.error("Failed to toggle all custom tools:", err);
     }
   }, [allCustomEnabled, tools, onToolsChange]);
-
-  // ── Group built-in tools by domain ──────────────────────────
-  const groupedByDomain = useMemo(() => {
-    const groups = new Map();
-    for (const tool of filteredBuiltInTools) {
-      const domain = tool.domain || "Other";
-      if (!groups.has(domain)) groups.set(domain, []);
-      groups.get(domain).push(tool);
-    }
-    // Sort by DOMAIN_ORDER
-    const sorted = [];
-    for (const domain of DOMAIN_ORDER) {
-      if (groups.has(domain)) sorted.push([domain, groups.get(domain)]);
-    }
-    // Any remaining domains not in the order
-    for (const [domain, tools] of groups) {
-      if (!DOMAIN_ORDER.includes(domain)) sorted.push([domain, tools]);
-    }
-    return sorted;
-  }, [filteredBuiltInTools]);
-
-  // ── Group built-in tools by data-source type ────────────────
-  const groupedByType = useMemo(() => {
-    const groups = new Map();
-    for (const tool of filteredBuiltInTools) {
-      const type = tool.dataSource?.type || "other";
-      if (!groups.has(type)) groups.set(type, []);
-      groups.get(type).push(tool);
-    }
-    const sorted = [];
-    for (const type of TYPE_ORDER) {
-      if (groups.has(type)) sorted.push([type, groups.get(type)]);
-    }
-    for (const [type, tools] of groups) {
-      if (!TYPE_ORDER.includes(type)) sorted.push([type, tools]);
-    }
-    return sorted;
-  }, [filteredBuiltInTools]);
-
-  // ── Active grouping based on mode ───────────────────────────
-  const groupedBuiltInTools = groupMode === "domain" ? groupedByDomain : groupedByType;
-
-  /** Resolve icon + label for a group key based on current groupMode */
-  const resolveGroupMeta = useCallback((key) => {
-    if (groupMode === "domain") {
-      return {
-        Icon: DOMAIN_ICONS[key] || Layers,
-        label: DOMAIN_LABELS[key] || key,
-      };
-    }
-    return {
-      Icon: DATA_SOURCE_ICONS[key] || Layers,
-      label: DATA_SOURCE_LABELS[key] || key,
-      color: DATA_SOURCE_COLORS[key],
-    };
-  }, [groupMode]);
-
-  const toggleDomain = useCallback((domain) => {
-    setCollapsedDomains((prev) => {
-      const next = new Set(prev);
-      if (next.has(domain)) next.delete(domain);
-      else next.add(domain);
-      return next;
-    });
-  }, []);
-
-  const toggleDomainTools = useCallback(
-    (domainTools) => {
-      const onlineTools = domainTools.filter((t) => !offlineTools.has(t.name));
-      if (onlineTools.length === 0) return;
-      const allEnabled = onlineTools.every(
-        (t) => !disabledBuiltIns.has(t.name),
-      );
-      // If all enabled → disable all; if any disabled → enable all
-      for (const tool of onlineTools) {
-        const isCurrentlyDisabled = disabledBuiltIns.has(tool.name);
-        if (allEnabled && !isCurrentlyDisabled) {
-          onToggleBuiltIn?.(tool.name); // disable it
-        } else if (!allEnabled && isCurrentlyDisabled) {
-          onToggleBuiltIn?.(tool.name); // enable it
-        }
-      }
-    },
-    [disabledBuiltIns, offlineTools, onToggleBuiltIn],
-  );
 
   // ── Edit form ────────────────────────────────────────────────
 
@@ -932,47 +639,54 @@ export default function CustomToolsPanel({
     );
   }
 
+  // ── Non-agent view: lightweight ToolSelectionComponent only ──
+  if (!agent) {
+    const derivedEnabled = builtInTools
+      .filter((t) => !disabledBuiltIns.has(t.name))
+      .map((t) => t.name);
+
+    return (
+      <ToolSelectionComponent
+        availableTools={builtInTools}
+        enabledTools={derivedEnabled}
+        onEnabledToolsChange={(newEnabled) => {
+          const enabledSet = new Set(newEnabled);
+          for (const tool of builtInTools) {
+            const isDisabled = disabledBuiltIns.has(tool.name);
+            const shouldBeEnabled = enabledSet.has(tool.name);
+            if (isDisabled && shouldBeEnabled) onToggleBuiltIn?.(tool.name);
+            else if (!isDisabled && !shouldBeEnabled) onToggleBuiltIn?.(tool.name);
+          }
+        }}
+      />
+    );
+  }
+
+  // ── Derive enabled tools from disabledBuiltIns for ToolSelectionComponent ──
+  const derivedEnabled = builtInTools
+    .filter((t) => !disabledBuiltIns.has(t.name))
+    .map((t) => t.name);
+
+  const handleSelectionChange = (newEnabled) => {
+    const enabledSet = new Set(newEnabled);
+    for (const tool of builtInTools) {
+      const isDisabled = disabledBuiltIns.has(tool.name);
+      const shouldBeEnabled = enabledSet.has(tool.name);
+      if (isDisabled && shouldBeEnabled) onToggleBuiltIn?.(tool.name);
+      else if (!isDisabled && !shouldBeEnabled) onToggleBuiltIn?.(tool.name);
+    }
+  };
+
   return (
     <div className={styles.container}>
-      {/* ── Agent Tool Selection (checkbox picker) ── */}
-      {enabledTools && onEnabledToolsChange && (
-        <ToolSelectionComponent
-          availableTools={builtInTools}
-          enabledTools={enabledTools}
-          onEnabledToolsChange={onEnabledToolsChange}
-        />
-      )}
-
-      {/* ── Search ── */}
-      <SearchInputComponent
-        value={searchQuery}
-        onChange={setSearchQuery}
-        placeholder="Search tools…"
-        className={styles.searchBar}
+      {/* ── Built-in tools via ToolSelectionComponent ── */}
+      <ToolSelectionComponent
+        availableTools={builtInTools}
+        enabledTools={derivedEnabled}
+        onEnabledToolsChange={handleSelectionChange}
       />
 
-      {/* ── Type Filter (dropdown + badges) ── */}
-      {availableTypeOptions.length > 0 && (
-        <FilterDropdownComponent
-          fullWidth
-          triggerLabel="Types"
-          groups={[{
-            label: "Data Source",
-            items: availableTypeOptions.map((o) => ({ key: o.key, icon: o.icon, title: o.label, color: o.color })),
-            activeKeys: activeTypeFilter,
-            onToggle: (key) => {
-              setActiveTypeFilter((prev) => {
-                const next = new Set(prev);
-                next.has(key) ? next.delete(key) : next.add(key);
-                return next;
-              });
-            },
-          }]}
-        />
-      )}
-
-      {/* ── Custom tools (hidden when type-filtering built-ins) ── */}
-      {activeTypeFilter.size === 0 && (<>
+      {/* ── Custom tools ── */}
       <div
         className={styles.sectionHeader}
         onClick={() => setCustomOpen((v) => !v)}
@@ -1004,23 +718,14 @@ export default function CustomToolsPanel({
         </div>
       </div>
 
-      {customOpen && filteredCustomTools.length === 0 && tools.length === 0 && (
+      {customOpen && tools.length === 0 && (
         <div className={styles.emptyCustom}>
           Create a tool to connect any API.
         </div>
       )}
 
       {customOpen &&
-        filteredCustomTools.length === 0 &&
-        tools.length > 0 &&
-        query && (
-          <div className={styles.emptyCustom}>
-            No custom tools match &ldquo;{searchQuery}&rdquo;
-          </div>
-        )}
-
-      {customOpen &&
-        filteredCustomTools.map((tool) => {
+        tools.map((tool) => {
           const id = tool.id || tool._id;
           const isExpanded = expandedId === id;
           return (
@@ -1139,285 +844,7 @@ export default function CustomToolsPanel({
             </div>
           );
         })}
-      </>)}
-
-      {/* ── Built-in tools ── */}
-      <div
-        className={styles.sectionHeader}
-        style={{ marginTop: 12 }}
-        onClick={() => setBuiltInOpen((v) => !v)}
-      >
-        {builtInOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-        <Cpu size={12} />
-        <span>
-          Built-in ({enabledBuiltIn}/{builtInTools.length})
-        </span>
-        {onlineBuiltInTools.length > 0 && (
-          <div
-            className={styles.sectionActions}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ToggleSwitchComponent
-              checked={allBuiltInEnabled}
-              onChange={() => onToggleAllBuiltIn?.(!allBuiltInEnabled)}
-              size="mini"
-            />
-          </div>
-        )}
-      </div>
-
-      {/* ── Group-by segmented toggle ── */}
-      {builtInOpen && (
-        <div className={styles.groupByBar}>
-          <LayoutGrid size={10} className={styles.groupByIcon} />
-          <span className={styles.groupByLabel}>Group</span>
-          <div className={styles.groupByToggle}>
-            <button
-              type="button"
-              className={`${styles.groupByBtn} ${groupMode === "domain" ? styles.groupByBtnActive : ""}`}
-              onClick={() => { setGroupMode("domain"); setCollapsedDomains(new Set()); }}
-            >
-              Domain
-            </button>
-            <button
-              type="button"
-              className={`${styles.groupByBtn} ${groupMode === "type" ? styles.groupByBtnActive : ""}`}
-              onClick={() => { setGroupMode("type"); setCollapsedDomains(new Set()); }}
-            >
-              Type
-            </button>
-          </div>
-        </div>
-      )}
-
-      {builtInOpen && filteredBuiltInTools.length === 0 && query && (
-        <div className={styles.emptyCustom}>
-          No built-in tools match &ldquo;{searchQuery}&rdquo;
-        </div>
-      )}
-
-      {builtInOpen &&
-        groupedBuiltInTools.map(([groupKey, domainTools]) => {
-          const { Icon: GroupIcon, label: groupLabel, color: groupColor } = resolveGroupMeta(groupKey);
-          const isDomainCollapsed = collapsedDomains.has(groupKey);
-          const onlineDomainTools = domainTools.filter(
-            (t) => !offlineTools.has(t.name),
-          );
-          const enabledCount = onlineDomainTools.filter(
-            (t) => !disabledBuiltIns.has(t.name),
-          ).length;
-          const allDomainEnabled =
-            onlineDomainTools.length > 0 &&
-            enabledCount === onlineDomainTools.length;
-
-          return (
-            <div key={groupKey} className={styles.domainGroup}>
-              <div
-                className={styles.domainHeader}
-                onClick={() => toggleDomain(groupKey)}
-              >
-                {isDomainCollapsed ? (
-                  <ChevronRight size={10} />
-                ) : (
-                  <ChevronDown size={10} />
-                )}
-                <GroupIcon size={11} className={styles.domainIcon} style={groupColor ? { color: groupColor } : undefined} />
-                <span className={styles.domainLabel}>{groupLabel}</span>
-                <span className={styles.domainCount}>
-                  {enabledCount}/{domainTools.length}
-                </span>
-                {onlineDomainTools.length > 0 && (
-                  <div
-                    className={styles.domainActions}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <ToggleSwitchComponent
-                      checked={allDomainEnabled}
-                      onChange={() => toggleDomainTools(domainTools)}
-                      size="mini"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {!isDomainCollapsed &&
-                domainTools.map((tool) => {
-                  const isDisabled = disabledBuiltIns.has(tool.name);
-                  const isOffline = offlineTools.has(tool.name);
-                  const isExpanded = expandedId === `builtin-${tool.name}`;
-                  const paramCount = Object.keys(
-                    tool.parameters?.properties || {},
-                  ).length;
-
-                  return (
-                    <div
-                      key={`builtin-${tool.name}`}
-                      className={`${styles.toolCard} ${styles.builtInCard} ${isOffline ? styles.offlineCard : ""} ${isDisabled ? styles.toolDisabled : ""}`}
-                    >
-                      <div
-                        className={styles.toolCardHeader}
-                        onClick={() =>
-                          setExpandedId(
-                            isExpanded ? null : `builtin-${tool.name}`,
-                          )
-                        }
-                      >
-                        <button className={styles.expandBtn}>
-                          {isExpanded ? (
-                            <ChevronDown size={14} />
-                          ) : (
-                            <ChevronRight size={14} />
-                          )}
-                        </button>
-                        <div className={styles.toolCardInfo}>
-                          <span className={styles.toolCardName}>
-                            {renderToolName(tool.name)}
-                          </span>
-                          <span className={styles.toolCardSlug}>
-                            {tool.name}
-                          </span>
-                          <span className={styles.toolCardMeta}>
-                            {isOffline ? (
-                              <span className={styles.offlineBadge}>
-                                Offline
-                              </span>
-                            ) : tool.dataSource ? (
-                              <span
-                                className={styles.dataSourceBadge}
-                                data-type={tool.dataSource.type}
-                              >
-                                {(() => {
-                                  const Icon =
-                                    DATA_SOURCE_ICONS[tool.dataSource.type];
-                                  return Icon ? <Icon size={8} /> : null;
-                                })()}
-                                {DATA_SOURCE_LABELS[tool.dataSource.type] ||
-                                  tool.dataSource.type}
-                                {tool.dataSource.intervalSeconds && (
-                                  <span className={styles.intervalInline}>
-                                    {formatInterval(
-                                      tool.dataSource.intervalSeconds,
-                                    )}
-                                  </span>
-                                )}
-                              </span>
-                            ) : null}
-                            {paramCount > 0 && <span>{paramCount} params</span>}
-                          </span>
-                        </div>
-                        <div className={styles.toolCardActions}>
-                          {lockedOffTools.has(tool.name) && (
-                            <div className={styles.lockedIcon} title="Requires memory model configuration in Settings">
-                              <Lock size={10} />
-                            </div>
-                          )}
-                          <ToggleSwitchComponent
-                            checked={!isDisabled && !lockedOffTools.has(tool.name)}
-                            onChange={() => onToggleBuiltIn?.(tool.name)}
-                            size="mini"
-                            disabled={isOffline || lockedOffTools.has(tool.name)}
-                          />
-                        </div>
-                      </div>
-
-                      {isExpanded && (
-                        <div className={styles.toolCardBody}>
-                          <p className={styles.toolCardDesc}>
-                            {tool.description}
-                          </p>
-                          {tool.dataSource && (
-                            <div className={styles.dataSourceInfo}>
-                              <div className={styles.dataSourceRow}>
-                                {(() => {
-                                  const Icon =
-                                    DATA_SOURCE_ICONS[tool.dataSource.type];
-                                  return Icon ? <Icon size={11} /> : null;
-                                })()}
-                                <span className={styles.dataSourceLabel}>
-                                  {tool.dataSource.type === "cached"
-                                    ? "Background Polled"
-                                    : tool.dataSource.type === "onDemand"
-                                      ? "Fetched On Request"
-                                      : tool.dataSource.type === "compute"
-                                        ? "Local Compute"
-                                        : tool.dataSource.type === "realtime"
-                                          ? "Live Stream"
-                                          : "In-Memory Dataset"}
-                                </span>
-                              </div>
-                              {tool.dataSource.provider &&
-                                tool.dataSource.provider !== "internal" && (
-                                  <div className={styles.dataSourceRow}>
-                                    <ExternalLink size={11} />
-                                    <span>{tool.dataSource.provider}</span>
-                                  </div>
-                                )}
-                              {tool.dataSource.provider === "internal" &&
-                                tool.dataSource.type === "cached" && (
-                                  <div className={styles.dataSourceRow}>
-                                    <Database size={11} />
-                                    <span>Internal aggregated data</span>
-                                  </div>
-                                )}
-                              {tool.dataSource.dataset && (
-                                <div className={styles.dataSourceRow}>
-                                  <HardDrive size={11} />
-                                  <span>{tool.dataSource.dataset}</span>
-                                </div>
-                              )}
-                              {tool.dataSource.runtime && (
-                                <div className={styles.dataSourceRow}>
-                                  <Terminal size={11} />
-                                  <span>{tool.dataSource.runtime}</span>
-                                </div>
-                              )}
-                              {tool.dataSource.intervalSeconds && (
-                                <div className={styles.dataSourceRow}>
-                                  <Clock size={11} />
-                                  <span>
-                                    Polls every{" "}
-                                    <strong>
-                                      {formatInterval(
-                                        tool.dataSource.intervalSeconds,
-                                      )}
-                                    </strong>
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          {paramCount > 0 && (
-                            <div className={styles.toolCardParams}>
-                              {Object.entries(tool.parameters.properties).map(
-                                ([name, schema]) => (
-                                  <div
-                                    key={name}
-                                    className={styles.toolCardParam}
-                                  >
-                                    <code>{name}</code>
-                                    <span className={styles.paramType}>
-                                      {schema.type}
-                                    </span>
-                                    {tool.parameters.required?.includes(
-                                      name,
-                                    ) && (
-                                      <span className={styles.paramRequired}>
-                                        required
-                                      </span>
-                                    )}
-                                  </div>
-                                ),
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-            </div>
-          );
-        })}
     </div>
   );
 }
+

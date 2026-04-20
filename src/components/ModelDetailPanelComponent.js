@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import ButtonComponent from "./ButtonComponent";
 import {
   X,
   Brain,
@@ -21,8 +23,22 @@ import {
   Shield,
   Box,
   Hash,
+  Bot,
+  MessageSquare,
+  Activity,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Calendar,
+  TrendingUp,
 } from "lucide-react";
 import ProviderLogo, { resolveProviderLabel } from "./ProviderLogos";
+import StorageService from "../services/StorageService.js";
+import {
+  SK_MODEL_MEMORY_AGENT,
+  SK_MODEL_MEMORY_CONVERSATIONS,
+  LOCAL_PROVIDERS,
+} from "../constants.js";
 import ProvidersBadgeComponent from "./ProvidersBadgeComponent";
 import ModelTypeBadgeComponent from "./ModelTypeBadgeComponent";
 import {
@@ -88,6 +104,8 @@ const PRICING_LABELS = {
  * @param {Function} props.onClose  — Called when the panel should close
  */
 export default function ModelDetailPanelComponent({ model, onClose }) {
+  const router = useRouter();
+
   // Close on Escape key
   const handleKeyDown = useCallback(
     (e) => {
@@ -155,6 +173,13 @@ export default function ModelDetailPanelComponent({ model, onClose }) {
       totalInputTokens: model.totalInputTokens || 0,
       totalOutputTokens: model.totalOutputTokens || 0,
       totalTokens: model.totalTokens || 0,
+      totalCost: model.totalCost || 0,
+      avgLatency: model.avgLatency || 0,
+      avgTokensPerSec: model.avgTokensPerSec || 0,
+      firstUsed: model.firstUsed || null,
+      lastUsed: model.lastUsed || null,
+      successCount: model.successCount || 0,
+      errorCount: model.errorCount || 0,
     };
   }, [model]);
 
@@ -217,6 +242,42 @@ export default function ModelDetailPanelComponent({ model, onClose }) {
 
         {/* ── Body ────────────────────────────────────────── */}
         <div className={styles.body}>
+          {/* ── Use Model Actions ─────────────────────────── */}
+          <div className={styles.useModelActions}>
+            <ButtonComponent
+              variant="primary"
+              size="sm"
+              icon={Bot}
+              fullWidth
+              onClick={() => {
+                StorageService.set(SK_MODEL_MEMORY_AGENT, {
+                  provider: m.provider,
+                  model: m.key,
+                  isLocal: LOCAL_PROVIDERS.has(m.provider),
+                });
+                router.push("/agents");
+              }}
+            >
+              Use in Agents
+            </ButtonComponent>
+            <ButtonComponent
+              variant="secondary"
+              size="sm"
+              icon={MessageSquare}
+              fullWidth
+              onClick={() => {
+                StorageService.set(SK_MODEL_MEMORY_CONVERSATIONS, {
+                  provider: m.provider,
+                  model: m.key,
+                  isLocal: LOCAL_PROVIDERS.has(m.provider),
+                });
+                router.push("/conversations");
+              }}
+            >
+              Use in Conversation
+            </ButtonComponent>
+          </div>
+
           {/* ── Identity ─────────────────────────────────── */}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>
@@ -532,28 +593,81 @@ export default function ModelDetailPanelComponent({ model, onClose }) {
             </>
           )}
 
-          {/* ── Usage Stats ──────────────────────────────── */}
+          {/* ── Lifetime Stats ────────────────────────────── */}
           {m.usageCount > 0 && (
             <div className={styles.section}>
               <div className={styles.sectionTitle}>
-                <Hash size={12} />
-                Usage Statistics
+                <Activity size={12} />
+                Lifetime Statistics
               </div>
-              <div className={styles.kvGrid}>
-                <span className={styles.kvLabel}>API Calls</span>
-                <span className={styles.kvValueMono}>
-                  {formatNumber(m.usageCount)}
-                </span>
+
+              {/* ── Stat Cards Grid ─────────────────── */}
+              <div className={styles.statsCardsGrid}>
+                <div className={styles.statsCard}>
+                  <Hash size={14} className={styles.statsCardIcon} />
+                  <span className={styles.statsCardValue}>
+                    {formatNumber(m.usageCount)}
+                  </span>
+                  <span className={styles.statsCardLabel}>Total Requests</span>
+                </div>
 
                 {m.totalTokens > 0 && (
-                  <>
-                    <span className={styles.kvLabel}>Total Tokens</span>
-                    <span className={styles.kvValueMono}>
+                  <div className={styles.statsCard}>
+                    <Layers size={14} className={styles.statsCardIcon} />
+                    <span className={styles.statsCardValue}>
                       {formatTokenCount(m.totalTokens)}
                     </span>
-                  </>
+                    <span className={styles.statsCardLabel}>Total Tokens</span>
+                  </div>
                 )}
 
+                {m.totalCost > 0 && (
+                  <div className={`${styles.statsCard} ${styles.statsCardCost}`}>
+                    <DollarSign size={14} className={styles.statsCardIcon} />
+                    <span className={styles.statsCardValue}>
+                      ${m.totalCost < 0.01 ? m.totalCost.toFixed(4) : m.totalCost.toFixed(2)}
+                    </span>
+                    <span className={styles.statsCardLabel}>Total Cost</span>
+                  </div>
+                )}
+
+                {m.avgTokensPerSec > 0 && (
+                  <div className={styles.statsCard}>
+                    <TrendingUp size={14} className={styles.statsCardIcon} />
+                    <span className={styles.statsCardValue}>
+                      {m.avgTokensPerSec.toFixed(1)}
+                    </span>
+                    <span className={styles.statsCardLabel}>Avg tok/s</span>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Success / Error Rate Bar ────────── */}
+              {(m.successCount > 0 || m.errorCount > 0) && (
+                <div className={styles.successRateRow}>
+                  <div className={styles.successRateBar}>
+                    <div
+                      className={styles.successRateFill}
+                      style={{ width: `${(m.successCount / m.usageCount) * 100}%` }}
+                    />
+                  </div>
+                  <div className={styles.successRateLabels}>
+                    <span className={styles.successLabel}>
+                      <CheckCircle size={10} />
+                      {formatNumber(m.successCount)}
+                    </span>
+                    {m.errorCount > 0 && (
+                      <span className={styles.errorLabel}>
+                        <XCircle size={10} />
+                        {formatNumber(m.errorCount)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Detail Rows ─────────────────────── */}
+              <div className={styles.kvGrid} style={{ marginTop: 12 }}>
                 {m.totalInputTokens > 0 && (
                   <>
                     <span className={styles.kvLabel}>Input Tokens</span>
@@ -568,6 +682,41 @@ export default function ModelDetailPanelComponent({ model, onClose }) {
                     <span className={styles.kvLabel}>Output Tokens</span>
                     <span className={styles.kvValueMono}>
                       {formatTokenCount(m.totalOutputTokens)}
+                    </span>
+                  </>
+                )}
+
+                {m.avgLatency > 0 && (
+                  <>
+                    <span className={styles.kvLabel}>Avg Latency</span>
+                    <span className={styles.kvValueMono}>
+                      {m.avgLatency >= 1000
+                        ? `${(m.avgLatency / 1000).toFixed(1)}s`
+                        : `${Math.round(m.avgLatency)}ms`}
+                    </span>
+                  </>
+                )}
+
+                {m.firstUsed && (
+                  <>
+                    <span className={styles.kvLabel}>
+                      <Calendar size={10} style={{ marginRight: 4, opacity: 0.5 }} />
+                      First Used
+                    </span>
+                    <span className={styles.kvValueMono}>
+                      {new Date(m.firstUsed).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                    </span>
+                  </>
+                )}
+
+                {m.lastUsed && (
+                  <>
+                    <span className={styles.kvLabel}>
+                      <Clock size={10} style={{ marginRight: 4, opacity: 0.5 }} />
+                      Last Used
+                    </span>
+                    <span className={styles.kvValueMono}>
+                      {new Date(m.lastUsed).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
                     </span>
                   </>
                 )}

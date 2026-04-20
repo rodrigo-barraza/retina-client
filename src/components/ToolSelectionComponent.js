@@ -35,6 +35,7 @@ import {
   FlaskConical,
 } from "lucide-react";
 import { renderToolName } from "../utils/utilities";
+import TooltipComponent from "./TooltipComponent";
 import styles from "./ToolSelectionComponent.module.css";
 
 // ── Domain icon mapping (mirrors CustomToolsPanel) ──────────────
@@ -429,7 +430,7 @@ export default function ToolSelectionComponent({
     <div className={styles.toolsSection}>
       <div className={styles.toolsSectionHeader}>
         <label style={{ margin: 0, fontSize: 12, fontWeight: 500, color: "var(--text-secondary)" }}>
-          Enabled Tools
+          Tools
         </label>
         <div className={styles.toolsSectionHeaderRight}>
           <div className={styles.segmentedControl}>
@@ -526,17 +527,19 @@ export default function ToolSelectionComponent({
 
                 {!collapsed &&
                   tools.map((tool) => (
-                    <label key={tool.name} className={styles.toolRow}>
-                      <input
-                        type="checkbox"
-                        className={styles.toolCheckbox}
-                        checked={resolvedEnabledSet.has(tool.name)}
-                        onChange={() => toggleTool(tool.name)}
-                      />
-                      <span className={styles.toolName}>
-                        {renderToolName(tool.name)}
-                      </span>
-                    </label>
+                    <TooltipComponent key={tool.name} label={tool.description} position="right" delay={400}>
+                      <label className={styles.toolRow}>
+                        <input
+                          type="checkbox"
+                          className={styles.toolCheckbox}
+                          checked={resolvedEnabledSet.has(tool.name)}
+                          onChange={() => toggleTool(tool.name)}
+                        />
+                        <span className={styles.toolName}>
+                          {renderToolName(tool.name)}
+                        </span>
+                      </label>
+                    </TooltipComponent>
                   ))}
               </div>
             );
