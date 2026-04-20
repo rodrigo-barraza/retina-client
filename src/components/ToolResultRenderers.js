@@ -795,6 +795,10 @@ function WorkerStatusBar({ activity }) {
   const label = isToolActive ? toolLabel : (activity.phaseLabel || undefined);
   // Tool calls show a wrench emoji, phase uses default icons
   const icon = isToolActive ? "🔧" : undefined;
+  // Progress (0-1) from LM Studio prompt processing / model loading
+  const progress = (effectivePhase === "processing" || effectivePhase === "loading")
+    ? (activity.phaseProgress ?? null)
+    : null;
 
   // Idle label reflects terminal state or tool count
   const idleLabel = isTerminal
@@ -807,6 +811,7 @@ function WorkerStatusBar({ activity }) {
       phase={effectivePhase}
       label={label}
       icon={icon}
+      progress={progress}
       iteration={iteration}
       maxIterations={maxIterations}
       idleIcon={<Users size={10} />}

@@ -961,6 +961,8 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                     ...last,
                     status: statusData.message,
                     statusPhase: statusData.phase,
+                    // Structured progress (0-1) from LM Studio prompt processing
+                    _statusProgress: statusData.progress != null ? statusData.progress : last._statusProgress,
                     // Track when processing phase started for live TTFT estimation
                     _processingStartTime: statusData.phase === "processing" && !last._processingStartTime
                       ? performance.now()
@@ -1026,6 +1028,7 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
                   ...(prev[data.workerId] || { toolCount: 0, currentTool: null, iteration: 0 }),
                   phase: data.phase,
                   phaseLabel: data.label || undefined,
+                  phaseProgress: data.progress != null ? data.progress : (prev[data.workerId]?.phaseProgress ?? null),
                 },
               }));
             } else if (data.message === "generation_progress") {
@@ -1876,11 +1879,14 @@ export default function AgentComponent({ agentId: propAgentId = "CODING", agents
         const hasActiveTools = toolActivity.some((t) => t.status === "calling");
         const phase = isGenerating ? (hasActiveTools ? "thinking" : rawPhase) : null;
         const label = isGenerating ? (hasActiveTools ? "Thinking..." : (lastMsg?.status || undefined)) : undefined;
+        // Structured progress (0-1) from LM Studio prompt processing / model loading
+        const progress = (phase === "processing" || phase === "loading") ? (lastMsg?._statusProgress ?? null) : null;
         return (
           <StatusBarComponent
             active={isGenerating}
             phase={phase}
             label={label}
+            progress={progress}
             iteration={agenticProgress?.iteration || 0}
             maxIterations={Number.isFinite(maxIterations) ? maxIterations : undefined}
           />
