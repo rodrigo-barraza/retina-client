@@ -147,7 +147,7 @@ export default function SettingsPanel({
   if (coordActive) {
     const burstElapsed = (sessionStats.liveStreamingBurstElapsed || 0) / 1000;
     const burstTokens = sessionStats.liveStreamingBurstTokens || 0;
-    if (burstElapsed > 0.1 && burstTokens > 2) {
+    if (burstElapsed > 0 && burstTokens > 0) {
       totalTokPerSec += burstTokens / burstElapsed;
       generatingAgentCount++;
     }
@@ -161,7 +161,7 @@ export default function SettingsPanel({
       const timeSinceLastChunk = nowMs - wp.lastChunkTime;
       if (timeSinceLastChunk < CHUNK_STALE_MS) {
         const elapsed = (wp.lastChunkTime - wp.firstChunkTime) / 1000;
-        if (elapsed > 0.1 && wp.outputTokens > 2) {
+        if (elapsed > 0 && wp.outputTokens > 0) {
           totalTokPerSec += wp.outputTokens / elapsed;
           generatingAgentCount++;
         }
