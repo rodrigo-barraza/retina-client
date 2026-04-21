@@ -238,6 +238,33 @@ export default function AgentComponent({
     setIsGenerating(false);
     setPlanProposal(null);
 
+    // Immediately stop the elapsed-time ticker (StopwatchBadgeComponent)
+    // so the badge freezes on abort instead of continuing until the
+    // finally block in handleSend runs.
+    setCurrentTurnStart(null);
+
+    // Clear live streaming and processing metadata from the in-flight
+    // assistant message so the TTFT badge and tok/s indicators stop
+    // calculating.  Without this, statusPhase / _processingStartTime /
+    // _streamingLastChunkTime remain on the message and the SettingsPanel
+    // ticker keeps running after the user hits stop.
+    setMessages((prev) => {
+      const last = prev[prev.length - 1];
+      if (last?.role === "assistant" && !last.completedAt) {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          ...last,
+          statusPhase: undefined,
+          _processingStartTime: undefined,
+          _streamingStartTime: undefined,
+          _streamingLastChunkTime: undefined,
+          completedAt: new Date().toISOString(),
+        };
+        return updated;
+      }
+      return prev;
+    });
+
     // Force all active workers to terminal state so their StatusBarComponent
     // bars stop animating — the SSE stream was aborted before "complete" events
     // could arrive, leaving activity entries stuck in active phases.
@@ -1815,13 +1842,30 @@ export default function AgentComponent({
                       originalTotalCost: 0,
                       // Merge backend toolCounts (function-level: read_file, grep_search, etc.)
                       // with client-side usedTools (capability-level: Thinking, Tool Calling)
+                      // and live worker tool counts from workerToolActivity (real-time during generation)
                       usedTools: (() => {
                         const CAPABILITY_NAMES = new Set(["Thinking", "Tool Calling", "Web Search", "Google Search", "Code Execution", "Computer Use", "File Search", "URL Context", "Image Generation"]);
                         const capabilities = usedTools.filter((t) => CAPABILITY_NAMES.has(t.name));
                         const backendTools = toolCountsToUsedTools(backendSessionStats.toolCounts);
-                        // Backend tools are authoritative for function-level counts;
-                        // client capabilities fill in the capability badges.
-                        return [...capabilities, ...backendTools];
+                        // Aggregate live worker tool counts so badges update in real-time
+                        const liveWorkerCounts = new Map();
+                        for (const w of Object.values(workerToolActivity)) {
+                          if (!w.toolNames) continue;
+                          for (const [name, count] of Object.entries(w.toolNames)) {
+                            liveWorkerCounts.set(name, (liveWorkerCounts.get(name) || 0) + count);
+                          }
+                        }
+                        // Merge: use the higher count between backend (authoritative post-completion)
+                        // and live worker (real-time during generation) for each tool
+                        const merged = new Map();
+                        for (const t of backendTools) merged.set(t.name, t.count);
+                        for (const [name, count] of liveWorkerCounts) {
+                          merged.set(name, Math.max(merged.get(name) || 0, count));
+                        }
+                        const mergedTools = [...merged.entries()]
+                          .map(([name, count]) => ({ name, count }))
+                          .sort((a, b) => b.count - a.count);
+                        return [...capabilities, ...mergedTools];
                       })(),
                       modalities: backendSessionStats.modalities || modalities,
                       completedElapsedTime: backendSessionStats.totalElapsedTime || completedElapsedTime,
@@ -1851,7 +1895,22 @@ export default function AgentComponent({
                     totalTokens,
                     totalCost,
                     originalTotalCost: 0,
-                    usedTools,
+                    // Merge client-side usedTools with live worker tool counts
+                    usedTools: (() => {
+                      const CAPABILITY_NAMES = new Set(["Thinking", "Tool Calling", "Web Search", "Google Search", "Code Execution", "Computer Use", "File Search", "URL Context", "Image Generation"]);
+                      const merged = new Map();
+                      for (const t of usedTools) merged.set(t.name, (merged.get(t.name) || 0) + t.count);
+                      for (const w of Object.values(workerToolActivity)) {
+                        if (!w.toolNames) continue;
+                        for (const [name, count] of Object.entries(w.toolNames)) {
+                          if (CAPABILITY_NAMES.has(name)) continue;
+                          merged.set(name, Math.max(merged.get(name) || 0, count));
+                        }
+                      }
+                      return [...merged.entries()]
+                        .map(([name, count]) => ({ name, count }))
+                        .sort((a, b) => b.count - a.count);
+                    })(),
                     modalities,
                     completedElapsedTime,
                     currentTurnStart,

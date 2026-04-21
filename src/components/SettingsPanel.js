@@ -173,19 +173,32 @@ export default function SettingsPanel({
     ? totalTokPerSec / generatingAgentCount
     : null;
 
-  // Latch the last non-null value so the badge freezes when generation
-  // pauses (processing/tool execution) rather than disappearing.
-  // Clears when the turn fully ends (needsTicker becomes false).
-  // We use a reducer to derive the latched value from the computed value
-  // in a single render pass — no effect cascading needed.
-  const [liveTokensPerSec, dispatchTokPerSec] = useReducer(
-    (_prev, { computed, active }) => {
-      if (computed !== null) return computed;  // actively generating → update
-      if (!active) return null;                // turn ended → clear
-      return _prev;                            // paused mid-turn → freeze
+  // Track live tok/s with burst averaging: while generating, show the
+  // current burst rate.  When generation pauses (tool execution, processing),
+  // record that burst's final rate and display the running average across
+  // all bursts in the turn.  Clears when the turn fully ends.
+  const [tokPerSecState, dispatchTokPerSec] = useReducer(
+    (prev, { computed, active }) => {
+      // Turn ended → clear everything
+      if (!active) {
+        return { current: null, history: [], lastComputed: null };
+      }
+      // Actively generating → show live rate, track for recording
+      if (computed !== null) {
+        return { ...prev, current: computed, lastComputed: computed };
+      }
+      // Paused mid-turn: record the burst that just ended (if any)
+      if (prev.lastComputed !== null) {
+        const newHistory = [...prev.history, prev.lastComputed];
+        const avg = newHistory.reduce((a, b) => a + b, 0) / newHistory.length;
+        return { current: avg, history: newHistory, lastComputed: null };
+      }
+      // Already paused, no new burst to record — keep showing average
+      return prev;
     },
-    null,
+    { current: null, history: [], lastComputed: null },
   );
+  const liveTokensPerSec = tokPerSecState.current;
   // Dispatch every tick to keep the reducer in sync
   useMemo(() => {
     dispatchTokPerSec({ computed: computedTokPerSec, active: needsTicker });
