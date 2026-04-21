@@ -65,6 +65,19 @@ export default function PlanCardComponent({
 
       {expanded && (
         <>
+          {status === "pending" && (
+            <div className={styles.actions}>
+              <button className={styles.approveBtn} onClick={onApprove}>
+                <Check size={14} />
+                Execute Plan
+              </button>
+              <button className={styles.rejectBtn} onClick={onReject}>
+                <X size={14} />
+                Cancel
+              </button>
+            </div>
+          )}
+
           <div className={styles.planContent}>
             <MarkdownContent content={planText} />
           </div>
@@ -85,19 +98,6 @@ export default function PlanCardComponent({
                   </div>
                 );
               })}
-            </div>
-          )}
-
-          {status === "pending" && (
-            <div className={styles.actions}>
-              <button className={styles.approveBtn} onClick={onApprove}>
-                <Check size={14} />
-                Execute Plan
-              </button>
-              <button className={styles.rejectBtn} onClick={onReject}>
-                <X size={14} />
-                Cancel
-              </button>
             </div>
           )}
         </>

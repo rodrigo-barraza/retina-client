@@ -3,7 +3,7 @@
   border: 1px solid color-mix(in srgb, var(--color-info) 25%, transparent);
   background: color-mix(in srgb, var(--color-info) 4%, var(--bg-secondary));
   margin: 10px 0;
-  overflow: hidden;
+  overflow: visible;
   animation: slideIn 0.25s ease-out;
 
   &.approved {
@@ -66,7 +66,7 @@
 .planContent {
   padding: 0 14px 12px;
   font-size: 13px;
-  max-height: 400px;
+  max-height: 240px;
   overflow-y: auto;
   border-top: 1px solid var(--border-subtle);
 }
