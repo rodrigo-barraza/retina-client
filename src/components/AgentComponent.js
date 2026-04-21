@@ -855,6 +855,22 @@ export default function AgentComponent({
           onThinking: (content) => {
             streamedThinking += content;
 
+            // Reasoning tokens are output tokens — count them for live metering
+            outputTokenEstimate++;
+            burstTokens++;
+            const now = performance.now();
+            if (!firstChunkTime) firstChunkTime = now;
+            if (prevChunkTime !== null) {
+              const delta = now - prevChunkTime;
+              if (delta < CHUNK_GAP_THRESHOLD) {
+                burstElapsed += delta;
+              } else {
+                burstTokens = 1;
+                burstElapsed = 0;
+              }
+            }
+            prevChunkTime = now;
+
             // Track segment ordering: start a new thinking fragment when thinking resumes after tools
             if (lastSegmentType !== "thinking") {
               contentSegments.push({ type: "thinking", fragmentIndex: thinkingFragments.length });
@@ -876,6 +892,11 @@ export default function AgentComponent({
                 lastMsg.thinking = streamedThinking;
                 lastMsg.contentSegments = snapshotSegments();
                 lastMsg.thinkingFragments = [...thinkingFragments];
+                lastMsg._streamingOutputTokens = outputTokenEstimate;
+                lastMsg._streamingStartTime = firstChunkTime;
+                lastMsg._streamingLastChunkTime = now;
+                lastMsg._streamingBurstTokens = burstTokens;
+                lastMsg._streamingBurstElapsed = burstElapsed;
               } else {
                 updated.push({
                   role: "assistant",
@@ -883,6 +904,11 @@ export default function AgentComponent({
                   thinking: streamedThinking,
                   contentSegments: snapshotSegments(),
                   thinkingFragments: [...thinkingFragments],
+                  _streamingOutputTokens: outputTokenEstimate,
+                  _streamingStartTime: firstChunkTime,
+                  _streamingLastChunkTime: now,
+                  _streamingBurstTokens: burstTokens,
+                  _streamingBurstElapsed: burstElapsed,
                 });
               }
               return updated;
@@ -1874,12 +1900,30 @@ export default function AgentComponent({
                         liveWorkerGenTokens += wp.outputTokens || 0;
                       }
                     }
-                    const liveOutput = (lastMsg?.role === "assistant" && !lastMsg.usage)
-                      ? (lastMsg._streamingOutputTokens || 0) + (lastMsg._workerTokens?.output || 0) + liveWorkerGenTokens
-                      : 0;
-                    const liveInput = (lastMsg?.role === "assistant" && !lastMsg.usage)
-                      ? (lastMsg._workerTokens?.input || 0)
-                      : 0;
+                    let liveOutput = 0;
+                    let liveInput = 0;
+                    if (lastMsg?.role === "assistant") {
+                      if (!lastMsg.usage) {
+                        // Still streaming — use chunk-based estimate
+                        liveOutput = (lastMsg._streamingOutputTokens || 0) + (lastMsg._workerTokens?.output || 0) + liveWorkerGenTokens;
+                        liveInput = lastMsg._workerTokens?.input || 0;
+                      } else if (lastMsg.completedAt) {
+                        // Just finalized (done event arrived) but backend stats
+                        // haven't refreshed yet — bridge the gap with the done
+                        // event's usage so the counter doesn't dip to zero.
+                        const usageOutput = (lastMsg.usage.outputTokens || 0) + (lastMsg._workerTokens?.output || 0);
+                        const usageInput = (lastMsg.usage.inputTokens || 0)
+                          + (lastMsg.usage.cacheReadInputTokens || 0)
+                          + (lastMsg.usage.cacheCreationInputTokens || 0)
+                          + (lastMsg._workerTokens?.input || 0);
+                        // Only apply if backend stats are stale (don't double-count)
+                        const backendAlreadyHasIt = backendSessionStats.totalOutputTokens >= usageOutput;
+                        if (!backendAlreadyHasIt) {
+                          liveOutput = usageOutput;
+                          liveInput = usageInput;
+                        }
+                      }
+                    }
                     return {
                       // ── Backend is source of truth (all requests incl. background) ──
                       messageCount: messages.length,

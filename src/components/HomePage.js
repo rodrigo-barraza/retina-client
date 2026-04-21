@@ -1931,11 +1931,18 @@ export default function HomePage({ initialConversationId = null }) {
           },
           onThinking: (content) => {
             streamedThinking += content;
+            // Reasoning tokens are output tokens — count them for live metering
+            outputTokenEstimate++;
+            if (!firstChunkTime) firstChunkTime = performance.now();
+            const lastChunkTime = performance.now();
             setMessages((prev) => {
               const updated = [...prev];
               updated[updated.length - 1] = {
                 ...updated[updated.length - 1],
                 thinking: streamedThinking,
+                _streamingOutputTokens: outputTokenEstimate,
+                _streamingStartTime: firstChunkTime,
+                _streamingLastChunkTime: lastChunkTime,
               };
               return updated;
             });
