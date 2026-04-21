@@ -1275,9 +1275,12 @@ export default function AgentComponent({
                     _workerGenerationProgress: {
                       ...wp,
                       [data.workerId]: {
+                        // Burst-scoped values for tok/s computation
                         outputTokens: data.outputTokens,
                         firstChunkTime: data.firstChunkTime,
                         lastChunkTime: data.lastChunkTime,
+                        // Cumulative total for token badge count
+                        totalOutputTokens: data.totalOutputTokens || data.outputTokens,
                       },
                     },
                   };
@@ -1293,6 +1296,7 @@ export default function AgentComponent({
                   outputTokens: data.outputTokens,
                   firstChunkTime: data.firstChunkTime,
                   lastChunkTime: data.lastChunkTime,
+                  totalOutputTokens: data.totalOutputTokens || data.outputTokens,
                 },
               }));
             } else if (data.message === "complete") {
@@ -1907,10 +1911,11 @@ export default function AgentComponent({
                     // badges update during the current turn
                     const lastMsg = messages[messages.length - 1];
                     // Sum live worker generation tokens (from _workerGenerationProgress)
+                    // Use cumulative totalOutputTokens so the count doesn't reset on phase changes
                     let liveWorkerGenTokens = 0;
                     if (lastMsg?._workerGenerationProgress) {
                       for (const wp of Object.values(lastMsg._workerGenerationProgress)) {
-                        liveWorkerGenTokens += wp.outputTokens || 0;
+                        liveWorkerGenTokens += wp.totalOutputTokens || wp.outputTokens || 0;
                       }
                     }
                     let liveOutput = 0;

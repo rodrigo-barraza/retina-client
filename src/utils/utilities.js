@@ -303,10 +303,13 @@ export function getSessionTokenStats(messages) {
     if (m._workerGenerationProgress) {
       workerGenerationProgress = m._workerGenerationProgress;
       // Sum live worker output tokens so the token badge increments
-      // in real-time during worker generation (before completion)
+      // in real-time during worker generation (before completion).
+      // Use cumulative totalOutputTokens (not burst-scoped outputTokens)
+      // so the count doesn't reset when workers transition between phases.
       for (const wp of Object.values(m._workerGenerationProgress)) {
-        if (wp.outputTokens > 0) {
-          output += wp.outputTokens;
+        const count = wp.totalOutputTokens || wp.outputTokens || 0;
+        if (count > 0) {
+          output += count;
         }
       }
     }
