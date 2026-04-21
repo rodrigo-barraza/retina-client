@@ -7,6 +7,14 @@ import { useState, useEffect, useReducer, useMemo } from "react";
 const CHUNK_STALE_MS = 2000;
 
 /**
+ * Worker generation_progress events are throttled to every 10 chunks
+ * on the backend. On slower models (< 10 tok/s) this means events
+ * can arrive every 1-3 seconds. Use a wider staleness window for
+ * workers to prevent the tok/s badge from flickering.
+ */
+const WORKER_STALE_MS = 5000;
+
+/**
  * Burst-averaging reducer for tok/s display.
  *
  * While generating, shows the current burst rate. When generation
@@ -109,7 +117,7 @@ export default function useTokenRate(sessionStats) {
     for (const wp of Object.values(workerProgress)) {
       if (!wp.lastChunkTime || !wp.firstChunkTime) continue;
       const timeSinceLastChunk = nowMs - wp.lastChunkTime;
-      if (timeSinceLastChunk < CHUNK_STALE_MS) {
+      if (timeSinceLastChunk < WORKER_STALE_MS) {
         const elapsed = (wp.lastChunkTime - wp.firstChunkTime) / 1000;
         if (elapsed > 0 && wp.outputTokens > 0) {
           totalTokPerSec += wp.outputTokens / elapsed;

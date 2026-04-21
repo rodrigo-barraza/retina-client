@@ -31,6 +31,7 @@ import {
 import ToolBadgeComponent from "./ToolBadgeComponent";
 import ToolCallBadgeComponent from "./ToolCallBadgeComponent";
 import useTokenRate from "../hooks/useTokenRate";
+import useTtft from "../hooks/useTtft";
 
 
 
@@ -111,9 +112,12 @@ export default function SettingsPanel({
 
   // ── Live token rate + elapsed time (reusable hook) ────────────
   const {
-    perfNow,
+    perfNow, needsTicker,
     totalElapsedTime, liveTokensPerSec, computedTokPerSec,
   } = useTokenRate(sessionStats);
+
+  // ── Live TTFT (Time To First Token) ───────────────────────────
+  const { liveTtft, isLiveTtft } = useTtft(sessionStats, perfNow, needsTicker);
 
   // ── Stats tab (All / Orchestrator / Workers) ──────────────
   const [statsTab, setStatsTab] = useState("all");
@@ -177,26 +181,26 @@ export default function SettingsPanel({
               label="reasoning"
             />
           )}
-          {liveTokensPerSec !== null ? (
-            <span className={`${styles.statBadge} ${computedTokPerSec !== null ? styles.speedBadge : styles.staleSpeedBadge}`}>
-              ⚡ {liveTokensPerSec.toFixed(1)} tok/s
-            </span>
-          ) : stats.avgTokensPerSec != null && (
-            <span className={`${styles.statBadge} ${styles.avgSpeedBadge}`}>
-              ⚡ {stats.avgTokensPerSec.toFixed(1)} tok/s
-            </span>
-          )}
-          {/* TTFT badge — live during processing, retroactive after completion */}
-          {sessionStats?.liveProcessingPhase === "processing" && sessionStats?.liveProcessingStartTime ? (
-            <span className={`${styles.statBadge} ${styles.ttftBadgeLive}`}>
-              ⏱ {((perfNow - sessionStats.liveProcessingStartTime) / 1000).toFixed(1)}s TTFT
-            </span>
-          ) : (stats.avgTimeToGeneration ?? sessionStats?.lastTimeToGeneration) != null && (
-            <span className={`${styles.statBadge} ${styles.ttftBadge}`}>
-              ⏱ {(stats.avgTimeToGeneration ?? sessionStats?.lastTimeToGeneration).toFixed(2)}s TTFT
-            </span>
-          )}
         </>
+      )}
+      {liveTokensPerSec !== null ? (
+        <span className={`${styles.statBadge} ${computedTokPerSec !== null ? styles.speedBadge : styles.staleSpeedBadge}`}>
+          ⚡ {liveTokensPerSec.toFixed(1)} tok/s
+        </span>
+      ) : stats.avgTokensPerSec != null && (
+        <span className={`${styles.statBadge} ${styles.avgSpeedBadge}`}>
+          ⚡ {stats.avgTokensPerSec.toFixed(1)} tok/s
+        </span>
+      )}
+      {/* TTFT badge — live during processing, latched after first token, static after completion */}
+      {liveTtft !== null ? (
+        <span className={`${styles.statBadge} ${isLiveTtft ? styles.ttftBadgeLive : styles.ttftBadge}`}>
+          ⏱ {liveTtft.toFixed(isLiveTtft ? 1 : 2)}s TTFT
+        </span>
+      ) : (stats.avgTimeToGeneration ?? sessionStats?.lastTimeToGeneration) != null && (
+        <span className={`${styles.statBadge} ${styles.ttftBadge}`}>
+          ⏱ {(stats.avgTimeToGeneration ?? sessionStats?.lastTimeToGeneration).toFixed(2)}s TTFT
+        </span>
       )}
       <CostBadgeComponent cost={stats.totalCost} />
       {stats.originalTotalCost > 0 && stats.originalTotalCost !== stats.totalCost && (
