@@ -6,21 +6,23 @@ import styles from "./StatusBarComponent.module.css";
 
 // ── Shared phase vocabulary ──────────────────────────────────────────
 const PHASE_LABELS = {
-  starting:   "Starting...",
-  loading:    "Loading...",
-  processing: "Processing...",
-  generating: "Generating...",
-  thinking:   "Thinking...",
-  awaiting:   "Awaiting For User Input...",
+  starting:    "Starting...",
+  loading:     "Loading...",
+  processing:  "Processing...",
+  generating:  "Generating...",
+  thinking:    "Thinking...",
+  delegating:  "Awaiting Workers...",
+  awaiting:    "Awaiting For User Input...",
 };
 
 const PHASE_ICONS = {
-  starting:   "⚡",
-  loading:    "📦",
-  processing: "⚙️",
-  generating: "✨",
-  thinking:   "🧠",
-  awaiting:   "⏸️",
+  starting:    "⚡",
+  loading:     "📦",
+  processing:  "⚙️",
+  generating:  "✨",
+  thinking:    "🧠",
+  delegating:  "👥",
+  awaiting:    "⏸️",
 };
 
 // ── Synthetic asymptotic progress ────────────────────────────────────
@@ -130,16 +132,18 @@ export default function StatusBarComponent({
     ? icon
     : (PHASE_ICONS[phase] || null);
 
-  // Rainbow visuals: colour only when the model is actively generating tokens
-  const isColorPhase = phase === "generating";
+  // Rainbow visuals: colour when the model is actively producing tokens (text or reasoning)
+  const isColorPhase = phase === "generating" || phase === "thinking" || phase === "delegating";
   // Awaiting phase: greyscale + frozen canvas (no animation)
   const isAwaitingPhase = phase === "awaiting";
+  // Delegating phase: orchestrator waiting on workers — animated color but subdued glow
+  const isDelegatingPhase = phase === "delegating";
 
   // Progress percentage
   const progressPct = hasEffectiveProgress ? Math.round(effectiveProgress * 100) : null;
 
   return (
-    <div className={`${styles.statusBar}${isWorker ? ` ${styles.statusBarWorker}` : ""}${active ? ` ${styles.statusBarActive}` : ""}${isAwaitingPhase ? ` ${styles.statusBarAwaiting}` : ""}`}>
+    <div className={`${styles.statusBar}${isWorker ? ` ${styles.statusBarWorker}` : ""}${active ? ` ${styles.statusBarActive}` : ""}${isAwaitingPhase ? ` ${styles.statusBarAwaiting}` : ""}${isDelegatingPhase ? ` ${styles.statusBarDelegating}` : ""}`}>
       <RainbowCanvasComponent
         turbo={active && !isAwaitingPhase}
         animate={!active || isAwaitingPhase ? false : true}
@@ -172,7 +176,7 @@ export default function StatusBarComponent({
                 </span>
               )}
             </span>
-            {!isAwaitingPhase && <span className={styles.statusBarPulse} />}
+            {!isAwaitingPhase && !isDelegatingPhase && <span className={styles.statusBarPulse} />}
           </>
         ) : (
           <>

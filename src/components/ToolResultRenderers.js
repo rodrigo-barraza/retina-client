@@ -789,8 +789,11 @@ function WorkerStatusBar({ activity }) {
     ? currentTool.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
     : null;
 
-  // Derive the effective phase for StatusBarComponent
-  const effectivePhase = isToolActive ? "thinking" : (isTerminal ? null : phase);
+  // Derive the effective phase for StatusBarComponent:
+  // - Tool executing → "processing" (amber — actively running a tool)
+  // - Terminal → null (idle)
+  // - Otherwise → actual model phase (generating, thinking, processing, etc.)
+  const effectivePhase = isToolActive ? "processing" : (isTerminal ? null : phase);
   // Show tool name when executing tools, phase progress label for processing/loading
   const label = isToolActive ? toolLabel : (activity.phaseLabel || undefined);
   // Tool calls show a wrench emoji, phase uses default icons

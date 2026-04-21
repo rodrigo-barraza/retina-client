@@ -70,3 +70,13 @@
     transform: translateX(0);
   }
 }
+
+/* Caret blink — step-end gives a hard on/off toggle, not a fade */
+@keyframes caretBlink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}

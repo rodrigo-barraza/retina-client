@@ -109,6 +109,7 @@
   font-family: var(--font-mono, monospace);
   font-size: 11px;
   color: var(--accent-color);
+  overflow-wrap: break-word;
 }
 
 /* ── Diff block ────────────────────────────────────────────── */

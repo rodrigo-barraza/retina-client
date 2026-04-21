@@ -3,6 +3,7 @@
   font-size: 13px;
   line-height: 1.6;
   color: var(--text-primary);
+  overflow-wrap: break-word;
 
   h1,
   h2,
@@ -89,6 +90,12 @@
     margin: 8px 0;
     display: block;
   }
+
+  pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
 }
 
 .embedWrapper {
@@ -118,6 +125,7 @@
   border-radius: 2px;
   font-size: 13px;
   font-family: var(--font-mono);
+  overflow-wrap: break-word;
 }
 
 .codeBlockWrapper {

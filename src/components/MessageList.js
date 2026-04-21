@@ -1214,6 +1214,18 @@ export default function MessageList({
                         }
                         return null;
                       }
+                      if (seg.type === "plan" && planProposal) {
+                        return (
+                          <PlanCardComponent
+                            key={`seg-p-${si}`}
+                            planText={planProposal.plan}
+                            steps={planProposal.steps}
+                            status={planProposal.status}
+                            onApprove={onPlanApprove}
+                            onReject={onPlanReject}
+                          />
+                        );
+                      }
                       return null;
                     };
 
@@ -1502,6 +1514,18 @@ export default function MessageList({
                       )}
                     </div>
                   )}
+
+                {/* Plan proposal card — fallback for non-segmented messages (legacy path) */}
+                {planProposal && msg.role === "assistant" && i === messages.length - 1 &&
+                  !(msg.contentSegments?.some(s => s.type === "plan")) && (
+                  <PlanCardComponent
+                    planText={planProposal.plan}
+                    steps={planProposal.steps}
+                    status={planProposal.status}
+                    onApprove={onPlanApprove}
+                    onReject={onPlanReject}
+                  />
+                )}
               </div>
             </div>
             );
@@ -1510,16 +1534,7 @@ export default function MessageList({
         );
       })}
 
-      {/* Plan proposal card — rendered inline at the end of the message flow */}
-      {planProposal && (
-        <PlanCardComponent
-          planText={planProposal.plan}
-          steps={planProposal.steps}
-          status={planProposal.status}
-          onApprove={onPlanApprove}
-          onReject={onPlanReject}
-        />
-      )}
+
     </div>
   );
 }

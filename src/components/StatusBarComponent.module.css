@@ -37,6 +37,12 @@
   box-shadow: none;
 }
 
+.statusBarDelegating {
+  box-shadow:
+    0 0 8px -2px color-mix(in srgb, rgb(34, 211, 238) 20%, transparent),
+    0 0 16px -4px color-mix(in srgb, rgb(6, 182, 212) 10%, transparent);
+}
+
 .statusBarCanvas {
   position: absolute;
   inset: 0;
@@ -183,4 +189,34 @@
   background: rgba(245, 158, 11, 0.2);
   --phase-text: rgb(253, 230, 138);
   --phase-pulse: rgb(251, 191, 36);
+}
+
+.phase_thinking {
+  background: rgba(168, 85, 247, 0.2);
+  --phase-text: rgb(216, 180, 254);
+  --phase-pulse: rgb(192, 132, 252);
+}
+
+.phase_generating {
+  background: rgba(34, 197, 94, 0.2);
+  --phase-text: rgb(187, 247, 208);
+  --phase-pulse: rgb(74, 222, 128);
+}
+
+.phase_starting {
+  background: rgba(100, 116, 139, 0.2);
+  --phase-text: rgb(203, 213, 225);
+  --phase-pulse: rgb(148, 163, 184);
+}
+
+.phase_delegating {
+  background: rgba(6, 182, 212, 0.2);
+  --phase-text: rgb(165, 243, 252);
+  --phase-pulse: rgb(34, 211, 238);
+}
+
+.phase_awaiting {
+  background: rgba(100, 116, 139, 0.15);
+  --phase-text: rgb(203, 213, 225);
+  --phase-pulse: rgb(148, 163, 184);
 }

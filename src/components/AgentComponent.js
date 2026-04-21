@@ -1010,6 +1010,27 @@ export default function AgentComponent({
           },
           onPlanProposal: (data) => {
             console.log("[AgentComponent] plan_proposal received:", data.plan?.length, "chars, autoApproved:", data.autoApproved);
+
+            // Inject plan as a content segment so it renders in-flow —
+            // subsequent tool/text segments will appear after the plan card
+            contentSegments.push({ type: "plan" });
+            lastSegmentType = "plan";
+
+            // Snapshot segments into the current assistant message
+            setMessages((prev) => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last?.role === "assistant") {
+                updated[updated.length - 1] = {
+                  ...last,
+                  contentSegments: snapshotSegments(),
+                  textFragments: [...textFragments],
+                  thinkingFragments: [...thinkingFragments],
+                };
+              }
+              return updated;
+            });
+
             setPlanProposal({
               plan: data.plan,
               steps: data.steps || [],
@@ -2010,11 +2031,40 @@ export default function AgentComponent({
         // Detect awaiting-approval state (plan proposal or tool approval pending)
         const isAwaitingApproval = (planProposal?.status === "pending") ||
           pendingApprovals.some((a) => a.status === "pending");
+
+        // ── Derive phase from live worker activity ──────────────
+        // When coordinator tools (team_create) are executing, the
+        // orchestrator bar should reflect the aggregate worker state
+        // rather than a static "Thinking...". Scan workerToolActivity
+        // for the dominant phase among active workers.
+        let workerDerivedPhase = null;
+        let workerDerivedLabel = null;
+        if (hasActiveTools && Object.keys(workerToolActivity).length > 0) {
+          const workers = Object.values(workerToolActivity);
+          const activeWorkers = workers.filter((w) =>
+            w.phase && w.phase !== "complete" && w.phase !== "failed" && w.phase !== "spawned"
+          );
+          if (activeWorkers.length > 0) {
+            // Priority: generating > thinking > processing > loading > starting
+            const phasePriority = ["generating", "thinking", "processing", "loading", "starting"];
+            for (const p of phasePriority) {
+              const count = activeWorkers.filter((w) => w.phase === p).length;
+              if (count > 0) {
+                workerDerivedPhase = p;
+                const total = activeWorkers.length;
+                // Multiple workers — show aggregate count; single worker uses default phase label (null)
+                workerDerivedLabel = total > 1 ? `${count}/${total} worker${total !== 1 ? "s" : ""} ${p}…` : null;
+                break;
+              }
+            }
+          }
+        }
+
         const phase = isGenerating
-          ? (isAwaitingApproval ? "awaiting" : (hasActiveTools ? "thinking" : rawPhase))
+          ? (isAwaitingApproval ? "awaiting" : (workerDerivedPhase || (hasActiveTools ? "thinking" : rawPhase)))
           : null;
         const label = isGenerating
-          ? (isAwaitingApproval ? "Awaiting For User Input..." : (hasActiveTools ? "Thinking..." : (lastMsg?.status || undefined)))
+          ? (isAwaitingApproval ? "Awaiting For User Input..." : (workerDerivedPhase ? workerDerivedLabel : (hasActiveTools ? "Thinking..." : (lastMsg?.status || undefined))))
           : undefined;
         // Structured progress (0-1) from LM Studio prompt processing / model loading
         const progress = (phase === "processing" || phase === "loading") ? (lastMsg?._statusProgress ?? null) : null;
