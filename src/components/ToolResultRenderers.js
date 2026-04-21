@@ -808,6 +808,7 @@ function WorkerStatusBar({ activity }) {
   return (
     <StatusBarComponent
       active={isActive}
+      variant="worker"
       phase={effectivePhase}
       label={label}
       icon={icon}

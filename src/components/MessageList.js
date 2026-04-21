@@ -38,6 +38,7 @@ import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
 import BadgeComponent from "./BadgeComponent";
 import WordBadgeComponent from "./WordBadgeComponent";
 import WorkerNotificationComponent from "./WorkerNotificationComponent";
+import PlanCardComponent from "./PlanCardComponent.js";
 import styles from "./MessageList.module.css";
 import PrismService from "../services/PrismService";
 import SoundService from "@/services/SoundService";
@@ -595,6 +596,9 @@ export default function MessageList({
   headerContent,
   systemPrompt,
   onSystemPromptEdit,
+  planProposal,
+  onPlanApprove,
+  onPlanReject,
 
   onDelete,
   onRestore,
@@ -1279,7 +1283,7 @@ export default function MessageList({
                             );
                           })}
                           {/* Streaming cursor when no visible content yet */}
-                          {isStreaming && visibleSegs.length === 0 && !msg.status && (
+                          {isStreaming && visibleSegs.length === 0 && (
                             <StreamingCursorComponent active standalone />
                           )}
                         </>
@@ -1337,7 +1341,7 @@ export default function MessageList({
                       >
                         <StreamingCursorComponent active={isStreaming} />
                       </MarkdownContent>
-                    ) : isStreaming && !msg.status ? (
+                    ) : isStreaming ? (
                       <StreamingCursorComponent active standalone />
                     ) : null}
                   </>
@@ -1505,6 +1509,17 @@ export default function MessageList({
           </React.Fragment>
         );
       })}
+
+      {/* Plan proposal card — rendered inline at the end of the message flow */}
+      {planProposal && (
+        <PlanCardComponent
+          planText={planProposal.plan}
+          steps={planProposal.steps}
+          status={planProposal.status}
+          onApprove={onPlanApprove}
+          onReject={onPlanReject}
+        />
+      )}
     </div>
   );
 }

@@ -11,6 +11,7 @@ const PHASE_LABELS = {
   processing: "Processing...",
   generating: "Generating...",
   thinking:   "Thinking...",
+  awaiting:   "Awaiting For User Input...",
 };
 
 const PHASE_ICONS = {
@@ -19,6 +20,7 @@ const PHASE_ICONS = {
   processing: "⚙️",
   generating: "✨",
   thinking:   "🧠",
+  awaiting:   "⏸️",
 };
 
 // ── Synthetic asymptotic progress ────────────────────────────────────
@@ -58,6 +60,7 @@ const SYNTHETIC_TICK_MS = 200;
  *
  * @param {object}  props
  * @param {boolean} props.active          – Whether the bar is expanded (28px) or collapsed (4px).
+ * @param {"orchestrator"|"worker"} [props.variant="orchestrator"] – Bar variant. "orchestrator" collapses to 4px when inactive; "worker" maintains 28px height.
  * @param {string}  [props.phase]         – Current lifecycle phase key.
  * @param {string}  [props.label]         – Text label override. Falls back to `PHASE_LABELS[phase]`.
  * @param {string|null} [props.icon]      – Emoji override. `null` = no icon. Undefined = auto from phase.
@@ -69,6 +72,7 @@ const SYNTHETIC_TICK_MS = 200;
  */
 export default function StatusBarComponent({
   active = false,
+  variant = "orchestrator",
   phase,
   label,
   icon,
@@ -78,6 +82,7 @@ export default function StatusBarComponent({
   idleIcon,
   idleLabel,
 }) {
+  const isWorker = variant === "worker";
   // ── Synthetic progress when backend reports 0 ──────────────
   // The OpenAI-compat path (agentic mode) doesn't receive
   // prompt_processing.progress events from LM Studio, so progress
@@ -127,16 +132,18 @@ export default function StatusBarComponent({
 
   // Rainbow visuals: colour only when the model is actively generating tokens
   const isColorPhase = phase === "generating";
+  // Awaiting phase: greyscale + frozen canvas (no animation)
+  const isAwaitingPhase = phase === "awaiting";
 
   // Progress percentage
   const progressPct = hasEffectiveProgress ? Math.round(effectiveProgress * 100) : null;
 
   return (
-    <div className={`${styles.statusBar}${active ? ` ${styles.statusBarActive}` : ""}`}>
+    <div className={`${styles.statusBar}${isWorker ? ` ${styles.statusBarWorker}` : ""}${active ? ` ${styles.statusBarActive}` : ""}${isAwaitingPhase ? ` ${styles.statusBarAwaiting}` : ""}`}>
       <RainbowCanvasComponent
-        turbo={active}
-        animate={!active}
-        greyscale={active ? !isColorPhase : true}
+        turbo={active && !isAwaitingPhase}
+        animate={!active || isAwaitingPhase ? false : true}
+        greyscale={active ? (!isColorPhase || isAwaitingPhase) : true}
         className={styles.statusBarCanvas}
       />
       {/* Progress fill bar — slides right as prompt processing advances */}
@@ -165,7 +172,7 @@ export default function StatusBarComponent({
                 </span>
               )}
             </span>
-            <span className={styles.statusBarPulse} />
+            {!isAwaitingPhase && <span className={styles.statusBarPulse} />}
           </>
         ) : (
           <>

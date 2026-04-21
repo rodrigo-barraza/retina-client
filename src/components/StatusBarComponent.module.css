@@ -17,6 +17,13 @@
     box-shadow 0.3s ease;
 }
 
+/* Worker variant: never collapse — maintain full height + visible overlay when idle */
+.statusBarWorker {
+  height: 28px;
+  min-height: 28px;
+  opacity: 0.6;
+}
+
 .statusBarActive {
   height: 28px;
   min-height: 28px;
@@ -24,6 +31,10 @@
   box-shadow:
     0 0 8px -2px color-mix(in srgb, var(--phase-pulse, rgb(249, 115, 22)) 30%, transparent),
     0 0 16px -4px color-mix(in srgb, var(--phase-pulse, rgb(245, 158, 11)) 15%, transparent);
+}
+
+.statusBarAwaiting {
+  box-shadow: none;
 }
 
 .statusBarCanvas {

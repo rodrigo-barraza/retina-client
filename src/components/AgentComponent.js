@@ -24,7 +24,6 @@ import TabBarComponent from "./TabBarComponent.js";
 import EmptyStateComponent from "./EmptyStateComponent.js";
 import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent.js";
 import ApprovalCardComponent from "./ApprovalCardComponent.js";
-import PlanCardComponent from "./PlanCardComponent.js";
 
 import StatusBarComponent from "./StatusBarComponent.js";
 import PixelTransitionComponent from "./PixelTransitionComponent.js";
@@ -1959,24 +1958,17 @@ export default function AgentComponent({
           isGenerating={isGenerating}
           streamingOutputs={streamingOutputs}
           workerToolActivity={workerToolActivity}
+          planProposal={planProposal}
+          onPlanApprove={() => {
+            setPlanProposal((p) => p ? { ...p, status: "approved" } : null);
+            PrismService.sendApprovalResponse(agentSessionId, true).catch(console.error);
+          }}
+          onPlanReject={() => {
+            setPlanProposal((p) => p ? { ...p, status: "rejected" } : null);
+            PrismService.sendApprovalResponse(agentSessionId, false).catch(console.error);
+          }}
         />
 
-        {/* Plan proposal card */}
-        {planProposal && (
-          <PlanCardComponent
-            planText={planProposal.plan}
-            steps={planProposal.steps}
-            status={planProposal.status}
-            onApprove={() => {
-              setPlanProposal((p) => p ? { ...p, status: "approved" } : null);
-              PrismService.sendApprovalResponse(agentSessionId, true).catch(console.error);
-            }}
-            onReject={() => {
-              setPlanProposal((p) => p ? { ...p, status: "rejected" } : null);
-              PrismService.sendApprovalResponse(agentSessionId, false).catch(console.error);
-            }}
-          />
-        )}
 
         {/* Pending approval cards */}
         {pendingApprovals.filter((a) => a.status === "pending").map((approval) => (
@@ -2015,8 +2007,15 @@ export default function AgentComponent({
         const lastMsg = messages[messages.length - 1];
         const rawPhase = isGenerating ? (lastMsg?.statusPhase || "starting") : null;
         const hasActiveTools = toolActivity.some((t) => t.status === "calling");
-        const phase = isGenerating ? (hasActiveTools ? "thinking" : rawPhase) : null;
-        const label = isGenerating ? (hasActiveTools ? "Thinking..." : (lastMsg?.status || undefined)) : undefined;
+        // Detect awaiting-approval state (plan proposal or tool approval pending)
+        const isAwaitingApproval = (planProposal?.status === "pending") ||
+          pendingApprovals.some((a) => a.status === "pending");
+        const phase = isGenerating
+          ? (isAwaitingApproval ? "awaiting" : (hasActiveTools ? "thinking" : rawPhase))
+          : null;
+        const label = isGenerating
+          ? (isAwaitingApproval ? "Awaiting For User Input..." : (hasActiveTools ? "Thinking..." : (lastMsg?.status || undefined)))
+          : undefined;
         // Structured progress (0-1) from LM Studio prompt processing / model loading
         const progress = (phase === "processing" || phase === "loading") ? (lastMsg?._statusProgress ?? null) : null;
         return (
