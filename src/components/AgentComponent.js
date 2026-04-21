@@ -519,7 +519,7 @@ export default function AgentComponent({
     uniqueModels, uniqueProviders, totalCost, totalTokens, requestCount,
     usedTools, modalities, elapsedTime: completedElapsedTime,
     liveStreamingTokens, liveStreamingStartTime, liveStreamingLastChunkTime, liveStreamingBurstTokens, liveStreamingBurstElapsed, workerGenerationProgress,
-    lastTimeToGeneration, liveProcessingStartTime, liveProcessingPhase, liveServerTtft,
+    lastTimeToGeneration, liveProcessingStartTime, liveProcessingPhase, liveTtftSamples,
   } = useSessionStats(messages);
 
   // ── Fetch backend-aggregate session stats ────────────────
@@ -1121,14 +1121,14 @@ export default function AgentComponent({
                 .then((r) => setTotalMemoriesCount(r.total || 0))
                 .catch(() => {});
             } else if (statusData?.message === "generation_started") {
-              // Server-computed TTFT — authoritative, works for all providers
+              // Server-computed TTFT — accumulate per-iteration samples for averaging
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
                 if (last?.role === "assistant") {
                   updated[updated.length - 1] = {
                     ...last,
-                    _serverTtft: statusData.timeToFirstToken,
+                    _ttftSamples: [...(last._ttftSamples || []), statusData.timeToFirstToken],
                   };
                 }
                 return updated;
@@ -1227,6 +1227,19 @@ export default function AgentComponent({
                   phaseProgress: data.progress != null ? data.progress : (prev[data.workerId]?.phaseProgress ?? null),
                 },
               }));
+            } else if (data.message === "generation_started") {
+              // Worker server-computed TTFT — push into the shared samples array
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last?.role === "assistant") {
+                  updated[updated.length - 1] = {
+                    ...last,
+                    _ttftSamples: [...(last._ttftSamples || []), data.timeToFirstToken],
+                  };
+                }
+                return updated;
+              });
             } else if (data.message === "generation_progress") {
               // Worker live generation progress — store on message for SettingsPanel tok/s
               setMessages((prev) => {
@@ -1903,7 +1916,7 @@ export default function AgentComponent({
                       lastTimeToGeneration,
                       liveProcessingStartTime,
                       liveProcessingPhase,
-                      liveServerTtft,
+                      liveTtftSamples,
                       avgTokensPerSec: backendSessionStats.avgTokensPerSec || null,
                       avgTimeToGeneration: backendSessionStats.avgTimeToGeneration || null,
                       orchestrator: mapSubStats(backendSessionStats.orchestrator),
@@ -1938,7 +1951,7 @@ export default function AgentComponent({
                     lastTimeToGeneration,
                     liveProcessingStartTime,
                     liveProcessingPhase,
-                    liveServerTtft,
+                    liveTtftSamples,
                   }
               : null
           }

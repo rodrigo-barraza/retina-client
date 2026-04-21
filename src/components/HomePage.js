@@ -260,7 +260,7 @@ export default function HomePage({ initialConversationId = null }) {
   const {
     uniqueModels, uniqueProviders, totalCost, totalTokens, requestCount,
     usedTools, modalities, liveStreamingTokens, liveStreamingStartTime, liveStreamingLastChunkTime,
-    lastTimeToGeneration, liveProcessingStartTime, liveProcessingPhase, liveServerTtft,
+    lastTimeToGeneration, liveProcessingStartTime, liveProcessingPhase, liveTtftSamples,
   } = useSessionStats(messages);
 
   // Auto-save system prompt on edit (debounced)
@@ -1125,9 +1125,8 @@ export default function HomePage({ initialConversationId = null }) {
                 ...updated[insertIndex],
                 status: message,
                 statusPhase: phase,
-                // Server-computed TTFT from generation_started event
                 ...(statusData?.message === "generation_started" && statusData.timeToFirstToken != null
-                  ? { _serverTtft: statusData.timeToFirstToken }
+                  ? { _ttftSamples: [...(updated[insertIndex]._ttftSamples || []), statusData.timeToFirstToken] }
                   : {}),
               };
               return updated;
@@ -1901,9 +1900,8 @@ export default function HomePage({ initialConversationId = null }) {
                 ...updated[updated.length - 1],
                 status: message,
                 statusPhase: phase,
-                // Server-computed TTFT from generation_started event
                 ...(statusData?.message === "generation_started" && statusData.timeToFirstToken != null
-                  ? { _serverTtft: statusData.timeToFirstToken }
+                  ? { _ttftSamples: [...(updated[updated.length - 1]._ttftSamples || []), statusData.timeToFirstToken] }
                   : {}),
               };
               return updated;
@@ -2169,7 +2167,7 @@ export default function HomePage({ initialConversationId = null }) {
                         lastTimeToGeneration,
                         liveProcessingStartTime,
                         liveProcessingPhase,
-                        liveServerTtft,
+                        liveTtftSamples,
                       }
                     : null
                 }

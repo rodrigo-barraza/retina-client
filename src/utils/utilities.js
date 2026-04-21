@@ -252,7 +252,7 @@ export function getSessionTokenStats(messages) {
   let lastTimeToGeneration = null;     // retroactive TTFT from completed messages (seconds)
   let liveProcessingStartTime = null;  // performance.now() when processing phase started
   let liveProcessingPhase = null;      // current phase of in-flight message (processing/loading/generating)
-  let liveServerTtft = null;           // server-computed TTFT (seconds) from generation_started event
+  let liveTtftSamples = null;          // server-computed TTFT samples (seconds[]) from generation_started events
   for (const m of messages) {
     if (m.role !== "assistant") continue;
     // Finalized messages have usage from the provider
@@ -282,9 +282,9 @@ export function getSessionTokenStats(messages) {
     if (m.statusPhase) {
       liveProcessingPhase = m.statusPhase;
     }
-    // Server-computed TTFT from backend generation_started event
-    if (m._serverTtft != null) {
-      liveServerTtft = m._serverTtft;
+    // Server-computed TTFT samples from generation_started events (per-iteration, per-worker)
+    if (m._ttftSamples?.length) {
+      liveTtftSamples = m._ttftSamples;
     }
     // Worker live generation progress (keyed by workerId)
     if (m._workerGenerationProgress) {
@@ -321,7 +321,7 @@ export function getSessionTokenStats(messages) {
     lastTimeToGeneration,
     liveProcessingStartTime,
     liveProcessingPhase,
-    liveServerTtft,
+    liveTtftSamples,
   };
 }
 
