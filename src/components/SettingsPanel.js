@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useReducer, useMemo } from "react";
+import { useState } from "react";
 import {
   Cpu,
   Edit3,
@@ -30,6 +30,7 @@ import {
 } from "./WorkflowNodeConstants";
 import ToolBadgeComponent from "./ToolBadgeComponent";
 import ToolCallBadgeComponent from "./ToolCallBadgeComponent";
+import useTokenRate from "../hooks/useTokenRate";
 
 
 
@@ -108,101 +109,11 @@ export default function SettingsPanel({
   const isTTS = selectedModelDef?._isTTS === true;
   const isSpecialModel = isTranscription || isTTS;
 
-  // ── Live elapsed time ticker ──────────────────────────────────
-  // Store current time in state so render stays pure (no Date.now() calls)
-  const [nowMs, setNowMs] = useState(() => Date.now());
-  const [perfNow, setPerfNow] = useState(() => performance.now());
-  const isStreaming = !!(sessionStats?.liveStreamingStartTime);
-  const needsTicker = !!(sessionStats?.currentTurnStart) || isStreaming;
-  useEffect(() => {
-    if (!needsTicker) return;
-    // Immediate tick via microtask to avoid synchronous setState in effect body
-    const immediate = setTimeout(() => { setNowMs(Date.now()); setPerfNow(performance.now()); }, 0);
-    // 500ms interval for smoother tok/s updates during streaming
-    const id = setInterval(() => { setNowMs(Date.now()); setPerfNow(performance.now()); }, 500);
-    return () => { clearTimeout(immediate); clearInterval(id); };
-  }, [needsTicker]);
-
-  // Compute displayed elapsed: completed turns + live current turn
-  const completedTime = sessionStats?.completedElapsedTime || 0;
-  const liveExtra = sessionStats?.currentTurnStart
-    ? Math.max(0, (nowMs - sessionStats.currentTurnStart) / 1000)
-    : 0;
-  const totalElapsedTime = completedTime + liveExtra;
-
-  // ── Live tok/s computation ────────────────────────────────────
-  // Average per-agent throughput: sum individual tok/s rates across
-  // all agents (coordinator + workers) that are actively generating,
-  // then divide by the count. Only the "generating" state counts —
-  // thinking, processing, loading phases are excluded.
-  const CHUNK_STALE_MS = 2000;
-
-  let totalTokPerSec = 0;
-  let generatingAgentCount = 0;
-
-  // Coordinator's own generation rate (current burst only, resets on processing gaps)
-  const coordActive = isStreaming
-    && sessionStats.liveStreamingLastChunkTime
-    && (perfNow - sessionStats.liveStreamingLastChunkTime) < CHUNK_STALE_MS;
-  if (coordActive) {
-    const burstElapsed = (sessionStats.liveStreamingBurstElapsed || 0) / 1000;
-    const burstTokens = sessionStats.liveStreamingBurstTokens || 0;
-    if (burstElapsed > 0 && burstTokens > 0) {
-      totalTokPerSec += burstTokens / burstElapsed;
-      generatingAgentCount++;
-    }
-  }
-
-  // Worker generation rates — only workers with recent chunks (= generating state)
-  const workerProgress = sessionStats?.workerGenerationProgress;
-  if (workerProgress) {
-    for (const wp of Object.values(workerProgress)) {
-      if (!wp.lastChunkTime || !wp.firstChunkTime) continue;
-      const timeSinceLastChunk = nowMs - wp.lastChunkTime;
-      if (timeSinceLastChunk < CHUNK_STALE_MS) {
-        const elapsed = (wp.lastChunkTime - wp.firstChunkTime) / 1000;
-        if (elapsed > 0 && wp.outputTokens > 0) {
-          totalTokPerSec += wp.outputTokens / elapsed;
-          generatingAgentCount++;
-        }
-      }
-    }
-  }
-
-  const computedTokPerSec = generatingAgentCount > 0
-    ? totalTokPerSec / generatingAgentCount
-    : null;
-
-  // Track live tok/s with burst averaging: while generating, show the
-  // current burst rate.  When generation pauses (tool execution, processing),
-  // record that burst's final rate and display the running average across
-  // all bursts in the turn.  Clears when the turn fully ends.
-  const [tokPerSecState, dispatchTokPerSec] = useReducer(
-    (prev, { computed, active }) => {
-      // Turn ended → clear everything
-      if (!active) {
-        return { current: null, history: [], lastComputed: null };
-      }
-      // Actively generating → show live rate, track for recording
-      if (computed !== null) {
-        return { ...prev, current: computed, lastComputed: computed };
-      }
-      // Paused mid-turn: record the burst that just ended (if any)
-      if (prev.lastComputed !== null) {
-        const newHistory = [...prev.history, prev.lastComputed];
-        const avg = newHistory.reduce((a, b) => a + b, 0) / newHistory.length;
-        return { current: avg, history: newHistory, lastComputed: null };
-      }
-      // Already paused, no new burst to record — keep showing average
-      return prev;
-    },
-    { current: null, history: [], lastComputed: null },
-  );
-  const liveTokensPerSec = tokPerSecState.current;
-  // Dispatch every tick to keep the reducer in sync
-  useMemo(() => {
-    dispatchTokPerSec({ computed: computedTokPerSec, active: needsTicker });
-  }, [computedTokPerSec, needsTicker]);
+  // ── Live token rate + elapsed time (reusable hook) ────────────
+  const {
+    perfNow,
+    totalElapsedTime, liveTokensPerSec, computedTokPerSec,
+  } = useTokenRate(sessionStats);
 
   // ── Stats tab (All / Orchestrator / Workers) ──────────────
   const [statsTab, setStatsTab] = useState("all");
