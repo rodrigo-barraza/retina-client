@@ -1044,7 +1044,11 @@ export default function AgentComponent({
             contentSegments.push({ type: "plan" });
             lastSegmentType = "plan";
 
-            // Snapshot segments into the current assistant message
+            // Snapshot segments into the current assistant message.
+            // When the plan requires user approval (not auto-approved),
+            // clear processing metadata so the live TTFT badge stops
+            // counting — user deliberation time is not part of TTFT.
+            const isPending = !data.autoApproved;
             setMessages((prev) => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -1054,6 +1058,10 @@ export default function AgentComponent({
                   contentSegments: snapshotSegments(),
                   textFragments: [...textFragments],
                   thinkingFragments: [...thinkingFragments],
+                  ...(isPending ? {
+                    statusPhase: undefined,
+                    _processingStartTime: undefined,
+                  } : {}),
                 };
               }
               return updated;
@@ -1062,7 +1070,7 @@ export default function AgentComponent({
             setPlanProposal({
               plan: data.plan,
               steps: data.steps || [],
-              status: data.autoApproved ? "approved" : "pending",
+              status: isPending ? "pending" : "approved",
             });
           },
           onStatus: (statusData) => {
