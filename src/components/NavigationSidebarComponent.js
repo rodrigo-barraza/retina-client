@@ -29,7 +29,6 @@ import {
   Wrench,
   BarChart3,
   AlertCircle,
-  Plus,
   ChevronDown,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
@@ -142,9 +141,8 @@ export default function NavigationSidebarComponent({
   };
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
-  const { workspaces, currentWorkspaceId, setCurrentWorkspaceId, createWorkspace } = useWorkspace();
+  const { workspaces, currentWorkspace, setCurrentWorkspace } = useWorkspace();
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
-  const currentWorkspace = workspaces.find((w) => w.id === currentWorkspaceId);
   const [showNav, setShowNav] = useState(false);
   const [navReady, setNavReady] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -608,45 +606,26 @@ export default function NavigationSidebarComponent({
             <button
               className={styles.workspaceCurrent}
               onClick={() => setShowWorkspaceMenu((p) => !p)}
-              title="Switch workspace"
+              title={currentWorkspace?.path ?? "Switch workspace"}
             >
               <Layers className={styles.navIcon} />
               <span className={styles.workspaceName}>
-                {currentWorkspace?.name ?? "Default"}
+                {currentWorkspace?.name ?? "Workspace"}
               </span>
-              <ChevronDown className={styles.chevron} />
+              {workspaces.length > 1 && <ChevronDown className={styles.chevron} />}
             </button>
-            {showWorkspaceMenu && (
+            {showWorkspaceMenu && workspaces.length > 1 && (
               <div className={styles.workspaceMenu}>
-                <button
-                  className={`${styles.workspaceItem} ${!currentWorkspaceId ? styles.workspaceItemActive : ""}`}
-                  onClick={() => { setCurrentWorkspaceId(null); setShowWorkspaceMenu(false); }}
-                >
-                  Default
-                </button>
                 {workspaces.map((w) => (
                   <button
                     key={w.id}
-                    className={`${styles.workspaceItem} ${currentWorkspaceId === w.id ? styles.workspaceItemActive : ""}`}
-                    onClick={() => { setCurrentWorkspaceId(w.id); setShowWorkspaceMenu(false); }}
+                    className={`${styles.workspaceItem} ${currentWorkspace?.path === w.path ? styles.workspaceItemActive : ""}`}
+                    onClick={() => { setCurrentWorkspace(w); setShowWorkspaceMenu(false); }}
+                    title={w.path}
                   >
                     {w.name}
                   </button>
                 ))}
-                <div className={styles.workspaceMenuDivider} />
-                <button
-                  className={styles.workspaceNewBtn}
-                  onClick={async () => {
-                    const name = prompt("New workspace name:");
-                    if (name?.trim()) {
-                      await createWorkspace(name.trim());
-                      setShowWorkspaceMenu(false);
-                    }
-                  }}
-                >
-                  <Plus size={13} />
-                  New workspace
-                </button>
               </div>
             )}
           </div>

@@ -3,6 +3,12 @@ import { getBaseHeaders } from "./serviceHeaders.js";
 
 const API_BASE = PRISM_URL;
 
+/**
+ * WorkspaceService — fetches the list of configured workspace roots from Prism.
+ *
+ * Workspaces are config-defined filesystem paths (from tools-api WORKSPACE_ROOTS),
+ * not user-created database records. The only operation is list().
+ */
 export default class WorkspaceService {
   static async list() {
     const res = await fetch(`${API_BASE}/workspaces`, {
@@ -11,35 +17,6 @@ export default class WorkspaceService {
       cache: "no-store",
     });
     if (!res.ok) throw new Error(`WorkspaceService.list failed: ${res.status}`);
-    return res.json();
-  }
-
-  static async create(name) {
-    const res = await fetch(`${API_BASE}/workspaces`, {
-      method: "POST",
-      headers: getBaseHeaders(),
-      body: JSON.stringify({ name }),
-    });
-    if (!res.ok) throw new Error(`WorkspaceService.create failed: ${res.status}`);
-    return res.json();
-  }
-
-  static async update(id, data) {
-    const res = await fetch(`${API_BASE}/workspaces/${id}`, {
-      method: "PUT",
-      headers: getBaseHeaders(),
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error(`WorkspaceService.update failed: ${res.status}`);
-    return res.json();
-  }
-
-  static async remove(id) {
-    const res = await fetch(`${API_BASE}/workspaces/${id}`, {
-      method: "DELETE",
-      headers: getBaseHeaders(),
-    });
-    if (!res.ok) throw new Error(`WorkspaceService.remove failed: ${res.status}`);
     return res.json();
   }
 }

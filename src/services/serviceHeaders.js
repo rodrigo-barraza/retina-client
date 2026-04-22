@@ -1,6 +1,6 @@
 /**
  * Shared base headers for all Prism-backed service requests.
- * Centralises Content-Type, x-project, and x-workspace-id injection
+ * Centralises Content-Type, x-project, and x-workspace-root injection
  * so PrismService, IrisService, and any future services stay in sync.
  */
 
@@ -12,11 +12,11 @@ export function getBaseHeaders() {
     "x-project": PROJECT_NAME,
   };
 
-  // Include the active workspace ID if one is selected (client-side only)
+  // Include the active workspace root path if one is selected (client-side only)
   if (typeof window !== "undefined") {
-    const workspaceId = localStorage.getItem("retina:workspace");
-    if (workspaceId) {
-      headers["x-workspace-id"] = workspaceId;
+    const workspaceRoot = localStorage.getItem("retina:workspace");
+    if (workspaceRoot) {
+      headers["x-workspace-root"] = workspaceRoot;
     }
   }
 

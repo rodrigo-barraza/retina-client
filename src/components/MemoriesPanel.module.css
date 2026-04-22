@@ -8,6 +8,28 @@
   --panel-accent: #f59e0b;
 }
 
+/* ── Filter Bar ────────────────────────────────────────────── */
+
+.filterBar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.searchField {
+  /* Override the SearchInputComponent's default input height for compact panel */
+  & input {
+    height: 30px;
+    font-size: 11px;
+  }
+
+  & svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
 /* ── Header ─────────────────────────────────────────────────── */
 
 .header {

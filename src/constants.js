@@ -56,7 +56,7 @@ export const LS_WORKFLOW_EXPANDED_NODES = "workflow-expanded-nodes";
 export const LS_WORKFLOW_VIEWS = "workflow-views";
 export const LS_ADMIN_PROJECT_FILTER = "admin:projectFilter";
 export const LS_DATE_RANGE = "retina-date-range";
-export const LS_WORKSPACE_ID = "retina:workspace";
+export const LS_WORKSPACE_ROOT = "retina:workspace";
 
 // ── Settings defaults (shared by HomePage, Agent, admin) ──────
 export const SETTINGS_DEFAULTS = {

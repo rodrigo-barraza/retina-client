@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Brain, RefreshCw, User, MessageSquare, FolderKanban, ExternalLink, Trash2, Sparkles, History, GitMerge, Settings } from "lucide-react";
 import Link from "next/link";
 import PrismService from "../services/PrismService.js";
 import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
+import SearchInputComponent from "./SearchInputComponent";
+import DatePickerComponent from "./DatePickerComponent";
+import { parseDateValue } from "../utils/datePresets";
 import { formatTimeAgo, formatLatency } from "../utils/utilities";
 import styles from "./MemoriesPanel.module.css";
 
@@ -62,6 +65,11 @@ export default function MemoriesPanel({ project, agent, refreshKey, consolidatio
   const [consolidating, setConsolidating] = useState(false);
   const [toast, setToast] = useState(null);
   const knownIdsRef = useRef(new Set());
+
+  // ── Search & filter state ──────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   // History state
   const [history, setHistory] = useState([]);
@@ -183,6 +191,43 @@ export default function MemoriesPanel({ project, agent, refreshKey, consolidatio
     }
   }, [project, agent, loadMemories, loadHistory, historyOpen]);
 
+  // ── Filtered memories (client-side) ────────────────────────
+  const filteredMemories = useMemo(() => {
+    let result = memories;
+
+    // Text search — match against title or content (case-insensitive)
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter((m) => {
+        const title = (m.title || "").toLowerCase();
+        const content = (m.content || "").toLowerCase();
+        return title.includes(q) || content.includes(q);
+      });
+    }
+
+    // Date range filter
+    if (dateFrom || dateTo) {
+      const from = parseDateValue(dateFrom);
+      const to = parseDateValue(dateTo);
+      // If "to" is a date-only (no time), extend to end of day
+      const toEnd = to && !dateTo.includes("T")
+        ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999)
+        : to;
+
+      result = result.filter((m) => {
+        if (!m.createdAt) return false;
+        const d = new Date(m.createdAt);
+        if (from && d < from) return false;
+        if (toEnd && d > toEnd) return false;
+        return true;
+      });
+    }
+
+    return result;
+  }, [memories, searchQuery, dateFrom, dateTo]);
+
+  const isFiltered = searchQuery.trim() || dateFrom || dateTo;
+
   // ── Not configured ──────────────────────────────────────────
   if (!memoryConfigured) {
     return (
@@ -253,7 +298,7 @@ export default function MemoriesPanel({ project, agent, refreshKey, consolidatio
     <div className={styles.container}>
       <div className={styles.header}>
         <span className={styles.headerTitle}>
-          Memories ({total})
+          Memories ({isFiltered ? `${filteredMemories.length} / ${total}` : total})
         </span>
         <button
           className={styles.refreshBtn}
@@ -286,6 +331,23 @@ export default function MemoriesPanel({ project, agent, refreshKey, consolidatio
         </div>
       )}
 
+      {/* ── Search & Time Filter ──────────────────────────────── */}
+      <div className={styles.filterBar}>
+        <SearchInputComponent
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search memories…"
+          className={styles.searchField}
+        />
+        <DatePickerComponent
+          from={dateFrom}
+          to={dateTo}
+          onChange={({ from, to }) => { setDateFrom(from); setDateTo(to); }}
+          placeholder="All time"
+          storageKey="memories-panel-date-range"
+        />
+      </div>
+
       {/* ── Consolidation History ─────────────────────────────── */}
       {historyOpen && (
         <div className={styles.historySection}>
@@ -315,7 +377,17 @@ export default function MemoriesPanel({ project, agent, refreshKey, consolidatio
         </div>
       )}
 
-      {memories.map((memory) => {
+      {/* ── No results after filtering ────────────────────────── */}
+      {isFiltered && filteredMemories.length === 0 && (
+        <div className={styles.emptyState}>
+          <div className={styles.emptyTitle}>No matching memories</div>
+          <div className={styles.emptySubtitle}>
+            Try adjusting your search query or time range.
+          </div>
+        </div>
+      )}
+
+      {filteredMemories.map((memory) => {
         const memoryId = memory.id || memory._id;
         const type = memory.type || "project";
         const IconComponent = TYPE_ICONS[type] || FolderKanban;

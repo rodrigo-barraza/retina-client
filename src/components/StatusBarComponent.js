@@ -25,6 +25,39 @@ const PHASE_ICONS = {
   awaiting:    "⏸️",
 };
 
+// ── Per-phase canvas palettes ────────────────────────────────────────
+// Custom gradient stops fed to RainbowCanvasComponent.
+// Phases without an entry use the default full-spectrum rainbow.
+const PHASE_PALETTES = {
+  generating: [
+    [59, 130, 246],   // blue-500
+    [99, 102, 241],   // indigo-500
+    [139, 92, 246],   // violet-500
+    [168, 85, 247],   // purple-500
+    [192, 132, 252],  // purple-400
+    [139, 92, 246],   // violet-500
+    [99, 102, 241],   // indigo-500
+  ],
+  thinking: [
+    [34, 197, 94],    // green-500
+    [74, 222, 128],   // green-400
+    [163, 230, 53],   // lime-400
+    [250, 204, 21],   // yellow-400
+    [234, 179, 8],    // yellow-500
+    [163, 230, 53],   // lime-400
+    [74, 222, 128],   // green-400
+  ],
+  delegating: [
+    [59, 130, 246],   // blue-500
+    [96, 165, 250],   // blue-400
+    [147, 197, 253],  // blue-300
+    [250, 204, 21],   // yellow-400
+    [234, 179, 8],    // yellow-500
+    [147, 197, 253],  // blue-300
+    [96, 165, 250],   // blue-400
+  ],
+};
+
 // ── Synthetic asymptotic progress ────────────────────────────────────
 // When the backend doesn't emit real progress events (e.g. OpenAI-compat
 // path used by agentic mode), we generate a client-side asymptotic curve
@@ -141,6 +174,9 @@ export default function StatusBarComponent({
   // Delegating phase: orchestrator waiting on workers — animated color but subdued glow
   const isDelegatingPhase = phase === "delegating";
 
+  // Resolve per-phase canvas palette (null = default rainbow)
+  const activePalette = (active && isColorPhase) ? (PHASE_PALETTES[phase] || null) : null;
+
   // Progress percentage
   const progressPct = hasEffectiveProgress ? Math.round(effectiveProgress * 100) : null;
 
@@ -150,6 +186,7 @@ export default function StatusBarComponent({
         turbo={active && !isAwaitingPhase}
         animate={!active || isAwaitingPhase ? false : true}
         greyscale={active ? (!isColorPhase || isAwaitingPhase) : true}
+        palette={activePalette}
         className={styles.statusBarCanvas}
       />
       {/* Progress fill bar — slides right as prompt processing advances */}

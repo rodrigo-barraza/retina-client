@@ -25,18 +25,18 @@ function lerpColor(a, b, t) {
   ];
 }
 
-function rainbowAt(t) {
-  const scaled = (((t % 1) + 1) % 1) * RAINBOW.length;
+function paletteAt(colors, t) {
+  const scaled = (((t % 1) + 1) % 1) * colors.length;
   const i = Math.floor(scaled);
   const f = scaled - i;
   return lerpColor(
-    RAINBOW[i % RAINBOW.length],
-    RAINBOW[(i + 1) % RAINBOW.length],
+    colors[i % colors.length],
+    colors[(i + 1) % colors.length],
     f,
   );
 }
 
-export default function RainbowCanvasComponent({ turbo = false, animate = false, greyscale = false, className, style }) {
+export default function RainbowCanvasComponent({ turbo = false, animate = false, greyscale = false, palette, className, style }) {
   const canvasRef = useRef(null);
   const stateRef = useRef({
     offset: 0,
@@ -46,6 +46,7 @@ export default function RainbowCanvasComponent({ turbo = false, animate = false,
   });
   const turboRef = useRef(turbo);
   const animateRef = useRef(animate);
+  const paletteRef = useRef(palette || null);
   const rafRef = useRef(null);
 
   useEffect(() => {
@@ -64,17 +65,24 @@ export default function RainbowCanvasComponent({ turbo = false, animate = false,
     const cols = Math.ceil(width / PIXEL_SIZE);
     const rows = Math.ceil(height / PIXEL_SIZE);
     const s = stateRef.current;
+    const colors = paletteRef.current || RAINBOW;
 
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
         const t = (x / cols + y / rows) * 0.5 + s.offset / 360;
         const dither = ((x * 7 + y * 13) % 5) / 40;
-        const [r, g, b] = rainbowAt(t + dither);
+        const [r, g, b] = paletteAt(colors, t + dither);
         ctx.fillStyle = `rgb(${r | 0},${g | 0},${b | 0})`;
         ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
       }
     }
   }, []);
+
+  // Sync palette ref and redraw static canvases on palette change
+  useEffect(() => {
+    paletteRef.current = palette || null;
+    if (!rafRef.current) draw();
+  }, [palette, draw]);
 
   // Start/stop animation loop based on turbo or animate prop
   useEffect(() => {
