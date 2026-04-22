@@ -62,6 +62,7 @@ const TOK_PER_SEC_INITIAL = { current: null, history: [], lastComputed: null };
  *   totalElapsedTime: number,
  *   liveTokensPerSec: number|null,
  *   computedTokPerSec: number|null,
+ *   hasActiveWorkers: boolean,
  * }}
  */
 export default function useTokenRate(sessionStats) {
@@ -111,15 +112,27 @@ export default function useTokenRate(sessionStats) {
     }
   }
 
-  // Worker generation rates — only workers with recent chunks (= generating state)
+  // Worker generation rates — workers with recent chunks (= generating state)
+  // contribute their live rate; workers that are present but stale (= thinking/
+  // processing) still contribute their last known burst rate so the badge
+  // doesn't flicker to "stale" during non-generating phases.
   const workerProgress = sessionStats?.workerGenerationProgress;
+  let hasActiveWorkers = false;
   if (workerProgress) {
-    for (const wp of Object.values(workerProgress)) {
+    const workerEntries = Object.values(workerProgress);
+    if (workerEntries.length > 0) hasActiveWorkers = true;
+    for (const wp of workerEntries) {
       if (!wp.lastChunkTime || !wp.firstChunkTime) continue;
       const timeSinceLastChunk = nowMs - wp.lastChunkTime;
-      if (timeSinceLastChunk < WORKER_STALE_MS) {
-        const elapsed = (wp.lastChunkTime - wp.firstChunkTime) / 1000;
-        if (elapsed > 0 && wp.outputTokens > 0) {
+      const elapsed = (wp.lastChunkTime - wp.firstChunkTime) / 1000;
+      if (elapsed > 0 && wp.outputTokens > 0) {
+        if (timeSinceLastChunk < WORKER_STALE_MS) {
+          // Actively generating — use live burst rate
+          totalTokPerSec += wp.outputTokens / elapsed;
+          generatingAgentCount++;
+        } else {
+          // Worker is still running (thinking/processing) — carry its
+          // last burst rate so the badge stays active during pauses
           totalTokPerSec += wp.outputTokens / elapsed;
           generatingAgentCount++;
         }
@@ -151,5 +164,6 @@ export default function useTokenRate(sessionStats) {
     totalElapsedTime,
     liveTokensPerSec,
     computedTokPerSec,
+    hasActiveWorkers,
   };
 }

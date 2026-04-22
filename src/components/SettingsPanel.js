@@ -113,6 +113,7 @@ export default function SettingsPanel({
     totalElapsedTime,
     liveTokensPerSec,
     computedTokPerSec,
+    hasActiveWorkers,
   } = useTokenRate(sessionStats);
 
   // ── Live TTFT (Time To First Token) ───────────────────────────
@@ -189,7 +190,7 @@ export default function SettingsPanel({
       )}
       {liveTokensPerSec !== null ? (
         <span
-          className={`${styles.statBadge} ${computedTokPerSec !== null ? styles.speedBadge : styles.staleSpeedBadge}`}
+          className={`${styles.statBadge} ${(computedTokPerSec !== null || hasActiveWorkers) ? styles.speedBadge : styles.staleSpeedBadge}`}
         >
           ⚡ {liveTokensPerSec.toFixed(1)} tok/s
         </span>
