@@ -1,5 +1,6 @@
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "../components/ThemeProvider";
+import { WorkspaceProvider } from "../components/WorkspaceContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -50,7 +51,9 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className={inter.variable}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <WorkspaceProvider>{children}</WorkspaceProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
