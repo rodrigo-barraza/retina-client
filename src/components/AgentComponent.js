@@ -529,7 +529,7 @@ export default function AgentComponent({
     uniqueModels, uniqueProviders, totalCost, totalTokens, requestCount,
     usedTools, modalities, elapsedTime: completedElapsedTime,
     liveStreamingTokens, liveStreamingStartTime, liveStreamingLastChunkTime, liveStreamingBurstTokens, liveStreamingBurstElapsed, workerGenerationProgress,
-    lastTimeToGeneration, liveProcessingStartTime, liveProcessingPhase, liveTtftSamples,
+    lastTimeToGeneration, liveProcessingStartTime, liveProcessingPhase, liveTtftSamples, liveGenProgress,
   } = useSessionStats(messages);
 
   // ── Fetch backend-aggregate session stats ────────────────
@@ -1202,6 +1202,26 @@ export default function AgentComponent({
                 }
                 return updated;
               });
+            } else if (statusData?.message === "generation_progress") {
+              // Backend-computed tok/s from SessionGenerationTracker —
+              // authoritative aggregate across orchestrator, workers,
+              // and tool sub-requests.
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last?.role === "assistant") {
+                  updated[updated.length - 1] = {
+                    ...last,
+                    _liveGenProgress: {
+                      tokPerSec: statusData.tokPerSec,
+                      activeRequests: statusData.activeRequests,
+                      outputTokens: statusData.outputTokens,
+                      timestamp: performance.now(),
+                    },
+                  };
+                }
+                return updated;
+              });
             } else if (statusData?.phase) {
               // LM Studio lifecycle status (loading, processing, generating)
               setMessages((prev) => {
@@ -1312,7 +1332,6 @@ export default function AgentComponent({
                 return updated;
               });
             } else if (data.message === "generation_progress") {
-              // Worker live generation progress — store on message for SettingsPanel tok/s
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
@@ -1329,6 +1348,8 @@ export default function AgentComponent({
                         lastChunkTime: data.lastChunkTime,
                         // Cumulative total for token badge count
                         totalOutputTokens: data.totalOutputTokens || data.outputTokens,
+                        // Backend-computed tok/s from SessionGenerationTracker
+                        tokPerSec: data.tokPerSec ?? wp[data.workerId]?.tokPerSec,
                       },
                     },
                   };
@@ -1345,6 +1366,8 @@ export default function AgentComponent({
                   firstChunkTime: data.firstChunkTime,
                   lastChunkTime: data.lastChunkTime,
                   totalOutputTokens: data.totalOutputTokens || data.outputTokens,
+                  // Backend-computed tok/s from SessionGenerationTracker
+                  tokPerSec: data.tokPerSec ?? prev[data.workerId]?.tokPerSec,
                 },
               }));
             } else if (data.message === "complete") {
@@ -2124,6 +2147,7 @@ export default function AgentComponent({
                       liveProcessingStartTime,
                       liveProcessingPhase,
                       liveTtftSamples,
+                      liveGenProgress,
                       avgTokensPerSec: backendSessionStats.avgTokensPerSec || null,
                       avgTimeToGeneration: backendSessionStats.avgTimeToGeneration || null,
                       orchestrator: mapSubStats(backendSessionStats.orchestrator),
@@ -2159,6 +2183,7 @@ export default function AgentComponent({
                     liveProcessingStartTime,
                     liveProcessingPhase,
                     liveTtftSamples,
+                    liveGenProgress,
                   }
               : null
           }

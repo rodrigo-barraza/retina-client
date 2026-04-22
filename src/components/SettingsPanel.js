@@ -110,6 +110,7 @@ export default function SettingsPanel({
   const {
     perfNow,
     needsTicker,
+    turnActive,
     totalElapsedTime,
     liveTokensPerSec,
     computedTokPerSec,
@@ -188,7 +189,7 @@ export default function SettingsPanel({
       )}
       {liveTokensPerSec !== null ? (
         <span
-          className={`${styles.statBadge} ${(computedTokPerSec !== null || hasActiveWorkers) ? styles.speedBadge : styles.staleSpeedBadge}`}
+          className={`${styles.statBadge} ${(computedTokPerSec !== null || hasActiveWorkers || turnActive) ? styles.speedBadge : styles.staleSpeedBadge}`}
         >
           ⚡ {liveTokensPerSec.toFixed(1)} tok/s
         </span>

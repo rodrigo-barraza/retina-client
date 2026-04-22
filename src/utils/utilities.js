@@ -287,6 +287,7 @@ export function getSessionTokenStats(messages) {
   let liveProcessingStartTime = null;  // performance.now() when processing phase started
   let liveProcessingPhase = null;      // current phase of in-flight message (processing/loading/generating)
   let liveTtftSamples = null;          // server-computed TTFT samples (seconds[]) from generation_started events
+  let liveGenProgress = null;          // backend-computed tok/s from SessionGenerationTracker
   for (const m of messages) {
     if (m.role !== "assistant") continue;
     // Finalized messages have usage from the provider
@@ -356,6 +357,10 @@ export function getSessionTokenStats(messages) {
         }
       }
     }
+    // Backend-computed tok/s from SessionGenerationTracker
+    if (m._liveGenProgress) {
+      liveGenProgress = m._liveGenProgress;
+    }
     // Accumulated worker tokens (from worker_status complete events)
     // These arrive independently of the coordinator's own usage.
     // Only add completed worker tokens that aren't already counted
@@ -381,6 +386,7 @@ export function getSessionTokenStats(messages) {
     liveProcessingStartTime,
     liveProcessingPhase,
     liveTtftSamples,
+    liveGenProgress,
   };
 }
 

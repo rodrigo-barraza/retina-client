@@ -1,8 +1,15 @@
 import { useState, useEffect, useReducer, useMemo } from "react";
 
 /**
- * Staleness threshold: if the most recent chunk arrived more than
- * this many milliseconds ago, the agent is no longer "generating".
+ * Staleness threshold: if the most recent backend-emitted
+ * generation_progress event arrived more than this many
+ * milliseconds ago, the request has likely completed.
+ */
+const PROGRESS_STALE_MS = 3000;
+
+/**
+ * Staleness threshold for frontend chunk-counting fallback
+ * (used by non-agentic sessions that lack backend progress events).
  */
 const CHUNK_STALE_MS = 2000;
 
@@ -47,11 +54,17 @@ const TOK_PER_SEC_INITIAL = { current: null, history: [], lastComputed: null };
  * useTokenRate — live token throughput and elapsed-time computation
  * derived from a sessionStats object.
  *
- * Encapsulates:
- * - A 500ms ticker (nowMs / perfNow) that drives all live calculations
- * - Per-agent tok/s aggregation (coordinator + worker burst rates)
- * - Burst-averaging reducer that smooths across generation pauses
- * - Elapsed time accumulation (completed + live current turn)
+ * Two data sources (in priority order):
+ *
+ *   1. **Backend-sourced** (`liveGenProgress`): Authoritative tok/s
+ *      computed by Prism's SessionGenerationTracker at the provider
+ *      level. Aggregates coordinator, worker, and tool sub-request
+ *      throughput. Available for agentic sessions.
+ *
+ *   2. **Frontend chunk-counting** (fallback): For non-agentic
+ *      sessions (regular conversations) that don't emit
+ *      generation_progress events. Computes rates from SSE chunk
+ *      inter-arrival timing.
  *
  * @param {object|null} sessionStats — the stats object from SettingsPanel props
  * @returns {{
@@ -59,6 +72,7 @@ const TOK_PER_SEC_INITIAL = { current: null, history: [], lastComputed: null };
  *   perfNow: number,
  *   isStreaming: boolean,
  *   needsTicker: boolean,
+ *   turnActive: boolean,
  *   totalElapsedTime: number,
  *   liveTokensPerSec: number|null,
  *   computedTokPerSec: number|null,
@@ -73,7 +87,8 @@ export default function useTokenRate(sessionStats) {
   const [perfNow, setPerfNow] = useState(() => performance.now());
 
   const isStreaming = !!(sessionStats?.liveStreamingStartTime);
-  const needsTicker = !!(sessionStats?.currentTurnStart) || isStreaming;
+  const turnActive = !!(sessionStats?.currentTurnStart);
+  const needsTicker = turnActive || isStreaming;
 
   useEffect(() => {
     if (!needsTicker) return;
@@ -92,57 +107,69 @@ export default function useTokenRate(sessionStats) {
   const totalElapsedTime = completedTime + liveExtra;
 
   // ── Live tok/s computation ────────────────────────────────────
-  // Average per-agent throughput: sum individual tok/s rates across
-  // all agents (coordinator + workers) that are actively generating,
-  // then divide by the count. Only the "generating" state counts —
-  // thinking, processing, loading phases are excluded.
-  let totalTokPerSec = 0;
-  let generatingAgentCount = 0;
-
-  // Coordinator's own generation rate (current burst only, resets on processing gaps)
-  const coordActive = isStreaming
-    && sessionStats.liveStreamingLastChunkTime
-    && (perfNow - sessionStats.liveStreamingLastChunkTime) < CHUNK_STALE_MS;
-  if (coordActive) {
-    const burstElapsed = (sessionStats.liveStreamingBurstElapsed || 0) / 1000;
-    const burstTokens = sessionStats.liveStreamingBurstTokens || 0;
-    if (burstElapsed > 0 && burstTokens > 0) {
-      totalTokPerSec += burstTokens / burstElapsed;
-      generatingAgentCount++;
-    }
-  }
-
-  // Worker generation rates — workers with recent chunks (= generating state)
-  // contribute their live rate; workers that are present but stale (= thinking/
-  // processing) still contribute their last known burst rate so the badge
-  // doesn't flicker to "stale" during non-generating phases.
-  const workerProgress = sessionStats?.workerGenerationProgress;
+  // Priority 1: Backend-sourced generation_progress from
+  // SessionGenerationTracker (authoritative, includes all agents
+  // and sub-requests).
+  //
+  // Priority 2: Frontend chunk-counting fallback for non-agentic
+  // sessions that don't emit generation_progress events.
+  let computedTokPerSec = null;
   let hasActiveWorkers = false;
-  if (workerProgress) {
-    const workerEntries = Object.values(workerProgress);
-    if (workerEntries.length > 0) hasActiveWorkers = true;
-    for (const wp of workerEntries) {
-      if (!wp.lastChunkTime || !wp.firstChunkTime) continue;
-      const timeSinceLastChunk = nowMs - wp.lastChunkTime;
-      const elapsed = (wp.lastChunkTime - wp.firstChunkTime) / 1000;
-      if (elapsed > 0 && wp.outputTokens > 0) {
-        if (timeSinceLastChunk < WORKER_STALE_MS) {
-          // Actively generating — use live burst rate
-          totalTokPerSec += wp.outputTokens / elapsed;
-          generatingAgentCount++;
-        } else {
-          // Worker is still running (thinking/processing) — carry its
-          // last burst rate so the badge stays active during pauses
-          totalTokPerSec += wp.outputTokens / elapsed;
-          generatingAgentCount++;
+
+  const genProgress = sessionStats?.liveGenProgress;
+  const genProgressFresh = genProgress
+    && genProgress.timestamp
+    && (perfNow - genProgress.timestamp) < PROGRESS_STALE_MS;
+
+  if (genProgressFresh && genProgress.tokPerSec != null) {
+    // ── Backend-sourced (authoritative) ──────────────────────
+    computedTokPerSec = genProgress.tokPerSec;
+    hasActiveWorkers = (genProgress.activeRequests || 0) > 1;
+  } else {
+    // ── Frontend chunk-counting fallback ─────────────────────
+    // Used by regular conversation sessions (HomePage) that
+    // don't go through the agentic loop.
+    let totalTokPerSec = 0;
+    let generatingAgentCount = 0;
+
+    // Coordinator's own generation rate
+    const coordActive = isStreaming
+      && sessionStats.liveStreamingLastChunkTime
+      && (perfNow - sessionStats.liveStreamingLastChunkTime) < CHUNK_STALE_MS;
+    if (coordActive) {
+      const burstElapsed = (sessionStats.liveStreamingBurstElapsed || 0) / 1000;
+      const burstTokens = sessionStats.liveStreamingBurstTokens || 0;
+      if (burstElapsed > 0 && burstTokens > 0) {
+        totalTokPerSec += burstTokens / burstElapsed;
+        generatingAgentCount++;
+      }
+    }
+
+    // Worker generation rates (legacy frontend-counted path)
+    const workerProgress = sessionStats?.workerGenerationProgress;
+    if (workerProgress) {
+      const workerEntries = Object.values(workerProgress);
+      if (workerEntries.length > 0) hasActiveWorkers = true;
+      for (const wp of workerEntries) {
+        if (!wp.lastChunkTime || !wp.firstChunkTime) continue;
+        const timeSinceLastChunk = nowMs - wp.lastChunkTime;
+        const elapsed = (wp.lastChunkTime - wp.firstChunkTime) / 1000;
+        if (elapsed > 0 && wp.outputTokens > 0) {
+          if (timeSinceLastChunk < WORKER_STALE_MS) {
+            totalTokPerSec += wp.outputTokens / elapsed;
+            generatingAgentCount++;
+          } else {
+            totalTokPerSec += wp.outputTokens / elapsed;
+            generatingAgentCount++;
+          }
         }
       }
     }
-  }
 
-  const computedTokPerSec = generatingAgentCount > 0
-    ? totalTokPerSec / generatingAgentCount
-    : null;
+    computedTokPerSec = generatingAgentCount > 0
+      ? totalTokPerSec / generatingAgentCount
+      : null;
+  }
 
   // ── Burst-averaging reducer ───────────────────────────────────
   const [tokPerSecState, dispatchTokPerSec] = useReducer(
@@ -161,6 +188,7 @@ export default function useTokenRate(sessionStats) {
     perfNow,
     isStreaming,
     needsTicker,
+    turnActive,
     totalElapsedTime,
     liveTokensPerSec,
     computedTokPerSec,
