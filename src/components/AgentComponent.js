@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { BotMessageSquare, Paperclip, X, ClipboardList, Zap, Settings, Wrench, Brain, Plug, GitBranch, Repeat, ListChecks, BookOpen, Info, Activity, CornerDownLeft, Send, Square, SlidersHorizontal } from "lucide-react";
+import { BotMessageSquare, Paperclip, X, ClipboardList, Zap, Settings, Wrench, Brain, Plug, GitBranch, Repeat, ListChecks, BookOpen, Info, Activity, CornerDownLeft, Send, Square, SlidersHorizontal, ChevronDown, Monitor, Lock } from "lucide-react";
 import PrismService from "../services/PrismService.js";
 import ToolsApiService from "../services/ToolsApiService.js";
 import ThreePanelLayout, { layoutStyles } from "./ThreePanelLayout.js";
@@ -42,6 +42,7 @@ import useToolToggles from "../hooks/useToolToggles.js";
 import useModelMemory from "../hooks/useModelMemory.js";
 import AgentPickerComponent from "./AgentPickerComponent.js";
 import AgentBadgeComponent from "./AgentBadgeComponent.js";
+import { useWorkspace } from "./WorkspaceContext";
 
 
 // ── Per-agent empty state config ─────────────────────────────────
@@ -185,7 +186,11 @@ export default function AgentComponent({
   const [pendingImages, setPendingImages] = useState([]);
   const [lightboxSrc, setLightboxSrc] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
   const dragCounter = useRef(0);
+  const workspaceMenuRef = useRef(null);
+
+  const { workspaces, currentWorkspace, setCurrentWorkspace } = useWorkspace();
 
   // Phase 1: Agentic controls
   const [autoApprove, setAutoApprove] = useState(false);
@@ -232,6 +237,9 @@ export default function AgentComponent({
   agentSessionIdRef.current = agentSessionId;
   // Track which sessions have active background generation (for history indicator)
   const [generatingSessionIds, setGeneratingSessionIds] = useState(() => new Set());
+  // Snapshot cache: stores UI state for sessions that are generating in the background
+  // so the user can switch back without waiting for backend persistence.
+  const backgroundSessionsRef = useRef(new Map());
 
   const handleStop = useCallback(() => {
     if (abortRef.current) {
@@ -602,6 +610,18 @@ export default function AgentComponent({
   const removeImage = useCallback((index) => {
     setPendingImages((prev) => prev.filter((_, i) => i !== index));
   }, []);
+
+  // Close workspace dropdown on outside click
+  useEffect(() => {
+    if (!showWorkspaceMenu) return;
+    const handleClickOutside = (e) => {
+      if (workspaceMenuRef.current && !workspaceMenuRef.current.contains(e.target)) {
+        setShowWorkspaceMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showWorkspaceMenu]);
 
   const handleDragEnter = useCallback(
     (e) => {
@@ -1584,6 +1604,8 @@ export default function AgentComponent({
           next.delete(genId);
           return next;
         });
+        // Clean up the background snapshot — session is now persisted to backend
+        backgroundSessionsRef.current.delete(genId);
         // Only update local UI state if this session is still displayed
         if (agentSessionIdRef.current === genId) {
           setIsGenerating(false);
@@ -1657,8 +1679,16 @@ export default function AgentComponent({
   }, [isNoAgent]);
 
   const handleNewChat = useCallback(() => {
-    // If generating, let the stream continue in the background — just detach the UI
-    if (isGenerating) setIsGenerating(false);
+    // If generating, snapshot the current session so user can switch back to it
+    if (isGenerating) {
+      const currentId = agentSessionIdRef.current;
+      backgroundSessionsRef.current.set(currentId, {
+        messages, title, toolActivity, workerToolActivity,
+        streamingOutputs, pendingApprovals, planProposal, agenticProgress,
+        settings: { ...settings }, backendSessionStats,
+      });
+      setIsGenerating(false);
+    }
     // If already on a blank session, just reset directly (no pixelation needed)
     if (messages.length === 0 && !activeId) {
       resetSessionState();
@@ -1670,12 +1700,20 @@ export default function AgentComponent({
     setPendingSessionReady(false);
     pendingSessionRef.current = null;
     setPixelTransition("out");
-  }, [isGenerating, messages.length, activeId, resetSessionState]);
+  }, [isGenerating, messages, title, toolActivity, workerToolActivity, streamingOutputs, pendingApprovals, planProposal, agenticProgress, settings, backendSessionStats, activeId, resetSessionState]);
 
   const handleSelectSession = useCallback(
     async (conv) => {
-      // If generating, let the stream continue in the background — just detach the UI
-      if (isGenerating) setIsGenerating(false);
+      // If generating, snapshot the current session so user can switch back to it
+      if (isGenerating) {
+        const currentId = agentSessionIdRef.current;
+        backgroundSessionsRef.current.set(currentId, {
+          messages, title, toolActivity, workerToolActivity,
+          streamingOutputs, pendingApprovals, planProposal, agenticProgress,
+          settings: { ...settings }, backendSessionStats,
+        });
+        setIsGenerating(false);
+      }
       // Already viewing this session — just scroll to bottom instantly
       if (conv.id === activeId) {
         endRef.current?.scrollIntoView({ behavior: "instant" });
@@ -1687,6 +1725,23 @@ export default function AgentComponent({
       setPendingSessionReady(false);
       pendingSessionRef.current = null;
       setPixelTransition("out");
+
+      // If the target session is still generating in the background,
+      // restore from the in-memory snapshot instead of hitting the backend
+      // (which would 404 because the session hasn't been persisted yet).
+      const snapshot = backgroundSessionsRef.current.get(conv.id);
+      if (snapshot && generatingSessionIds.has(conv.id)) {
+        pendingSessionRef.current = {
+          id: conv.id,
+          title: snapshot.title,
+          messages: snapshot.messages,
+          stats: snapshot.backendSessionStats,
+          _fromSnapshot: true,
+          _snapshot: snapshot,
+        };
+        setPendingSessionReady(true);
+        return;
+      }
 
       try {
         // Direct Chat sessions live in the conversations collection
@@ -1711,7 +1766,7 @@ export default function AgentComponent({
         pendingSessionRef.current = null;
       }
     },
-    [isGenerating, activeId, agentProject, isNoAgent],
+    [isGenerating, activeId, agentProject, isNoAgent, messages, title, toolActivity, workerToolActivity, streamingOutputs, pendingApprovals, planProposal, agenticProgress, settings, backendSessionStats, generatingSessionIds],
   );
 
   // When 'out' animation completes: handle new-session reset or session-load swap
@@ -1733,35 +1788,59 @@ export default function AgentComponent({
 
     const full = pendingSessionRef.current;
     if (full) {
-      const displayMessages = prepareDisplayMessages(full.messages || []);
-      scrollBehaviorRef.current = "instant";
-      setMessages(displayMessages);
-      setAgentSessionId(full.id || crypto.randomUUID());
-      setTraceId(full.traceId || null);
-      setActiveId(full.id);
-      setTitle(full.title || "Agent");
-      setToolActivity([]);
-      setWorkerToolActivity({});
+      // Restoring a background generating session from snapshot
+      if (full._fromSnapshot && full._snapshot) {
+        const snap = full._snapshot;
+        scrollBehaviorRef.current = "instant";
+        setMessages(snap.messages);
+        setAgentSessionId(full.id);
+        setActiveId(full.id);
+        setTitle(snap.title);
+        setToolActivity(snap.toolActivity || []);
+        setWorkerToolActivity(snap.workerToolActivity || {});
+        setStreamingOutputs(snap.streamingOutputs || new Map());
+        setPendingApprovals(snap.pendingApprovals || []);
+        setPlanProposal(snap.planProposal || null);
+        setAgenticProgress(snap.agenticProgress || null);
+        setSettings((prev) => ({ ...prev, ...snap.settings }));
+        setBackendSessionStats(snap.backendSessionStats || null);
+        // Re-attach: mark as generating so the UI shows the active state
+        setIsGenerating(true);
+        // Remove the snapshot — the SSE callbacks will resume updating React state
+        // now that agentSessionIdRef matches again (isStale() → false)
+        backgroundSessionsRef.current.delete(full.id);
+      } else {
+        // Normal backend-loaded session
+        const displayMessages = prepareDisplayMessages(full.messages || []);
+        scrollBehaviorRef.current = "instant";
+        setMessages(displayMessages);
+        setAgentSessionId(full.id || crypto.randomUUID());
+        setTraceId(full.traceId || null);
+        setActiveId(full.id);
+        setTitle(full.title || "Agent");
+        setToolActivity([]);
+        setWorkerToolActivity({});
 
-      const lastAssistant = [...(full.messages || [])]
-        .reverse()
-        .find((m) => m.role === "assistant" && m.provider);
-      if (lastAssistant) {
-        const gs = lastAssistant.generationSettings || {};
-        setSettings((prev) => ({
-          ...prev,
-          ...(lastAssistant.provider && { provider: lastAssistant.provider }),
-          ...(lastAssistant.model && { model: lastAssistant.model }),
-          ...(gs.temperature !== undefined && { temperature: gs.temperature }),
-          ...(gs.maxTokens !== undefined && { maxTokens: gs.maxTokens }),
-          ...(gs.thinkingEnabled !== undefined && { thinkingEnabled: gs.thinkingEnabled }),
-          ...(gs.reasoningEffort && { reasoningEffort: gs.reasoningEffort }),
-          ...(gs.thinkingBudget && { thinkingBudget: gs.thinkingBudget }),
-          // Conversations store systemPrompt at root — restore for Direct Chat
-          ...(full.systemPrompt != null && { systemPrompt: full.systemPrompt }),
-        }));
+        const lastAssistant = [...(full.messages || [])]
+          .reverse()
+          .find((m) => m.role === "assistant" && m.provider);
+        if (lastAssistant) {
+          const gs = lastAssistant.generationSettings || {};
+          setSettings((prev) => ({
+            ...prev,
+            ...(lastAssistant.provider && { provider: lastAssistant.provider }),
+            ...(lastAssistant.model && { model: lastAssistant.model }),
+            ...(gs.temperature !== undefined && { temperature: gs.temperature }),
+            ...(gs.maxTokens !== undefined && { maxTokens: gs.maxTokens }),
+            ...(gs.thinkingEnabled !== undefined && { thinkingEnabled: gs.thinkingEnabled }),
+            ...(gs.reasoningEffort && { reasoningEffort: gs.reasoningEffort }),
+            ...(gs.thinkingBudget && { thinkingBudget: gs.thinkingBudget }),
+            // Conversations store systemPrompt at root — restore for Direct Chat
+            ...(full.systemPrompt != null && { systemPrompt: full.systemPrompt }),
+          }));
+        }
+        setBackendSessionStats(full.stats || null);
       }
-      setBackendSessionStats(full.stats || null);
       pendingSessionRef.current = null;
     }
 
@@ -2308,6 +2387,47 @@ export default function AgentComponent({
       })()}
 
       <div className={chatStyles.inputWrapper}>
+        {messages.length === 0 ? (
+          <div className={chatStyles.workspaceRow}>
+            <span className={chatStyles.workspaceLabel}>New conversation in</span>
+            <div className={chatStyles.workspaceDropdown} ref={workspaceMenuRef}>
+              <button
+                type="button"
+                className={chatStyles.workspaceButton}
+                onClick={() => setShowWorkspaceMenu((v) => !v)}
+                title={currentWorkspace?.path ?? "Switch workspace"}
+              >
+                <Monitor className={chatStyles.workspaceButtonIcon} />
+                <span>{currentWorkspace?.name ?? "Workspace"}</span>
+                {workspaces.length > 1 && <ChevronDown size={12} />}
+              </button>
+              {showWorkspaceMenu && workspaces.length > 1 && (
+                <div className={chatStyles.workspaceMenu}>
+                  {workspaces.map((w) => (
+                    <button
+                      key={w.id}
+                      className={`${chatStyles.workspaceMenuItem} ${currentWorkspace?.path === w.path ? chatStyles.workspaceMenuItemActive : ""}`}
+                      onClick={() => { setCurrentWorkspace(w); setShowWorkspaceMenu(false); }}
+                      title={w.path}
+                    >
+                      {w.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className={chatStyles.workspaceRowLocked}>
+            <div className={chatStyles.workspaceDropdown}>
+              <div className={chatStyles.workspaceButton}>
+                <Monitor className={chatStyles.workspaceButtonIcon} />
+                <span>{currentWorkspace?.name ?? "Workspace"}</span>
+                <Lock className={chatStyles.lockIcon} />
+              </div>
+            </div>
+          </div>
+        )}
         <form
           onSubmit={handleSend}
           className={`${chatStyles.inputBox} ${isDragging ? chatStyles.inputBoxDragActive : ""} ${isGenerating ? chatStyles.inputBoxGenerating : ""}`}

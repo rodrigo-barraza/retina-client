@@ -29,10 +29,8 @@ import {
   Wrench,
   BarChart3,
   AlertCircle,
-  ChevronDown,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
-import { useWorkspace } from "./WorkspaceContext";
 import SpinningCatComponent from "./SpinningCatComponent";
 import TooltipComponent from "./TooltipComponent";
 import styles from "./NavigationSidebarComponent.module.css";
@@ -141,8 +139,6 @@ export default function NavigationSidebarComponent({
   };
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
-  const { workspaces, currentWorkspace, setCurrentWorkspace } = useWorkspace();
-  const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
   const [showNav, setShowNav] = useState(false);
   const [navReady, setNavReady] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -599,37 +595,6 @@ export default function NavigationSidebarComponent({
             <ChevronsLeft size={14} />
           </button>
         </div>
-
-        {/* Workspace selector */}
-        {showNav && (
-          <div className={styles.workspaceSelector}>
-            <button
-              className={styles.workspaceCurrent}
-              onClick={() => setShowWorkspaceMenu((p) => !p)}
-              title={currentWorkspace?.path ?? "Switch workspace"}
-            >
-              <Layers className={styles.navIcon} />
-              <span className={styles.workspaceName}>
-                {currentWorkspace?.name ?? "Workspace"}
-              </span>
-              {workspaces.length > 1 && <ChevronDown className={styles.chevron} />}
-            </button>
-            {showWorkspaceMenu && workspaces.length > 1 && (
-              <div className={styles.workspaceMenu}>
-                {workspaces.map((w) => (
-                  <button
-                    key={w.id}
-                    className={`${styles.workspaceItem} ${currentWorkspace?.path === w.path ? styles.workspaceItemActive : ""}`}
-                    onClick={() => { setCurrentWorkspace(w); setShowWorkspaceMenu(false); }}
-                    title={w.path}
-                  >
-                    {w.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Navigation */}
         <nav className={styles.nav}>
