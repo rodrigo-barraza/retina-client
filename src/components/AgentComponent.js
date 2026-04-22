@@ -1696,7 +1696,15 @@ export default function AgentComponent({
         pendingSessionRef.current = full;
         setPendingSessionReady(true);
       } catch (err) {
-        console.error("Failed to load session:", err);
+        // If the session is currently generating, the backend may not have
+        // persisted the stub yet — swallow 404s and cancel the transition
+        // so the user can retry once the session exists.
+        const is404 = err.message?.includes("404") || err.message?.includes("not found");
+        if (is404) {
+          console.warn(`Session ${conv.id} not yet persisted (still generating?) — skipping switch`);
+        } else {
+          console.error("Failed to load session:", err);
+        }
         setPixelTransition(null);
         setPixelOutDone(false);
         setPendingSessionReady(false);
