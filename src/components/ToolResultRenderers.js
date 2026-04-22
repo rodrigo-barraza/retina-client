@@ -772,7 +772,31 @@ function BrowserActionRenderer({ result, args }) {
   );
 }
 
-// ── 13. Coordinator Tools ───────────────────────────────────────────────────
+// ── 13. Turtle Graphics ─────────────────────────────────────────────────────
+
+function TurtleDrawRenderer({ result, args }) {
+  const parsed = tryParse(result);
+  if (!parsed) return <RawResultToggle result={result} />;
+
+  const hasError = !!parsed.error;
+  const commandCount = parsed.commandCount || args?.commands?.length || 0;
+  const canvasSize = parsed.canvasSize || "800x600";
+
+  return (
+    <div className={styles.rendererBlock}>
+      <div className={styles.rendererHeader}>
+        <span style={{ fontSize: 13 }}>🐢</span>
+        <span className={styles.rendererTitle}>
+          Turtle Drawing — {commandCount} command{commandCount !== 1 ? "s" : ""}
+        </span>
+        <StatusBadge success={!hasError} label={hasError ? "Error" : canvasSize} />
+      </div>
+      {hasError && <div className={styles.errorText}>{parsed.error}</div>}
+    </div>
+  );
+}
+
+// ── 14. Coordinator Tools ───────────────────────────────────────────────────
 
 /**
  * Mini status bar for an individual spawned worker agent.
@@ -1129,6 +1153,9 @@ const TOOL_RESULT_REGISTRY = {
 
   // Browser
   browser_action:   { Renderer: BrowserActionRenderer },
+
+  // Turtle Graphics
+  turtle_draw:      { Renderer: TurtleDrawRenderer },
 
   // Coordinator
   team_create:      { Renderer: TeamCreateRenderer },

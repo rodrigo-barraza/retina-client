@@ -131,6 +131,16 @@ function ImageOrEmbed({ src, alt, ...rest }) {
       />
     );
   }
+  if (src && src.includes("/compute/turtle/embed")) {
+    return (
+      <AutoResizeEmbed
+        src={src}
+        title={alt || "Turtle Drawing"}
+        fallbackHeight={660}
+        className={styles.embedFrame}
+      />
+    );
+  }
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt={alt} {...rest} />;
 }
