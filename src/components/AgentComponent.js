@@ -1435,13 +1435,28 @@ export default function AgentComponent({
           },
           onUsageUpdate: (data) => {
             if (isStale()) return;
-            // Authoritative per-iteration usage from the backend —
-            // stored on the message so getSessionTokenStats can use it
-            // as a middle priority between streaming estimate and final done.
             setMessages((prev) => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
-              if (last?.role === "assistant" && !last.usage) {
+              if (last?.role !== "assistant") return prev;
+
+              // Background operations (memory extraction, consolidation) emit
+              // incremental usage_update events. Accumulate them separately so
+              // the token badge grows smoothly instead of jumping when
+              // fetchSessionStats discovers them all at once.
+              if (data.operation?.startsWith("memory:")) {
+                const bg = last._backgroundUsage || { inputTokens: 0, outputTokens: 0 };
+                updated[updated.length - 1] = {
+                  ...last,
+                  _backgroundUsage: {
+                    inputTokens: bg.inputTokens + (data.usage?.inputTokens || 0),
+                    outputTokens: bg.outputTokens + (data.usage?.outputTokens || 0),
+                  },
+                };
+              } else if (!last.usage) {
+                // Authoritative per-iteration usage from the backend —
+                // stored on the message so getSessionTokenStats can use it
+                // as a middle priority between streaming estimate and final done.
                 updated[updated.length - 1] = {
                   ...last,
                   _intermediateUsage: data.usage,
@@ -2093,13 +2108,17 @@ export default function AgentComponent({
                     // ── Token counts come exclusively from the backend ──
                     // _liveGenProgress (from generation_progress SSE) carries
                     // authoritative, monotonic token counts from SessionGenerationTracker.
-                    // When streaming is active, use those. When done, use backendSessionStats.
-                    // No frontend token math, estimation, or accumulation.
+                    // _backgroundUsage accumulates tokens from fire-and-forget LLM calls
+                    // (memory extraction, consolidation) as they complete.
+                    // When done, use backendSessionStats which includes everything.
                     const lastMsg = messages[messages.length - 1];
                     const liveGP = lastMsg?.role === "assistant" ? lastMsg._liveGenProgress : null;
-                    const liveOutput = liveGP?.outputTokens || 0;
-                    const liveInput = liveGP?.inputTokens || 0;
-                    const liveTotal = liveGP?.totalTokens || 0;
+                    const bgUsage = lastMsg?.role === "assistant" ? lastMsg._backgroundUsage : null;
+                    const bgInput = bgUsage?.inputTokens || 0;
+                    const bgOutput = bgUsage?.outputTokens || 0;
+                    const liveOutput = (liveGP?.outputTokens || 0) + bgOutput;
+                    const liveInput = (liveGP?.inputTokens || 0) + bgInput;
+                    const liveTotal = liveInput + liveOutput;
 
                     // Use the larger of backend stats or live progress to prevent
                     // dips during the gap between stream end and backend refresh.
@@ -2160,11 +2179,15 @@ export default function AgentComponent({
                     // ── Client-side fallback (live generation, no backend data yet) ──
                     // When _liveGenProgress exists, use backend-authoritative token
                     // counts instead of the client-side computeSessionStats math.
+                    // Include _backgroundUsage from fire-and-forget LLM calls.
                     const lastMsg = messages[messages.length - 1];
                     const gp = lastMsg?.role === "assistant" ? lastMsg._liveGenProgress : null;
+                    const bgUsage = lastMsg?.role === "assistant" ? lastMsg._backgroundUsage : null;
+                    const bgIn = bgUsage?.inputTokens || 0;
+                    const bgOut = bgUsage?.outputTokens || 0;
                     const fallbackTokens = gp
-                      ? { input: gp.inputTokens || 0, output: gp.outputTokens || 0, total: gp.totalTokens || 0 }
-                      : totalTokens;
+                      ? { input: (gp.inputTokens || 0) + bgIn, output: (gp.outputTokens || 0) + bgOut, total: (gp.inputTokens || 0) + (gp.outputTokens || 0) + bgIn + bgOut }
+                      : { input: (totalTokens.input || 0) + bgIn, output: (totalTokens.output || 0) + bgOut, total: (totalTokens.total || 0) + bgIn + bgOut };
                     return {
                       messageCount: messages.length,
                       deletedCount: 0,
