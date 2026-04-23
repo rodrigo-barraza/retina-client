@@ -1437,11 +1437,13 @@ export default function AgentComponent({
               const last = updated[updated.length - 1];
               if (last?.role !== "assistant") return prev;
 
-              // Background operations (memory extraction, consolidation) emit
-              // incremental usage_update events. Accumulate them separately so
+              // Background operations (memory extraction, consolidation, embeddings)
+              // emit incremental usage_update events. Accumulate them separately so
               // the token badge grows smoothly instead of jumping when
               // fetchSessionStats discovers them all at once.
-              if (data.operation?.startsWith("memory:")) {
+              const op = data.operation || "";
+              const isBackground = op.startsWith("memory:") || op.startsWith("embed:");
+              if (isBackground) {
                 const bg = last._backgroundUsage || { inputTokens: 0, outputTokens: 0 };
                 updated[updated.length - 1] = {
                   ...last,
