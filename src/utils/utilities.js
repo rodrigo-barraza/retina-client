@@ -334,6 +334,16 @@ export function getSessionTokenStats(messages) {
       liveStreamingBurstTokens = m._streamingBurstTokens || 0;
       liveStreamingBurstElapsed = m._streamingBurstElapsed || 0;
     }
+    // In-flight streaming with no token data yet (first iteration
+    // before provider-reported usage arrives). Expose streaming
+    // timing metadata so the chunk-counting fallback in useTokenRate
+    // (Priority 3) can compute live tok/s from burst counters.
+    else if (!m.usage && !m._intermediateUsage && m._streamingStartTime && m._streamingLastChunkTime) {
+      liveStreamingStartTime = m._streamingStartTime;
+      liveStreamingLastChunkTime = m._streamingLastChunkTime;
+      liveStreamingBurstTokens = m._streamingBurstTokens || 0;
+      liveStreamingBurstElapsed = m._streamingBurstElapsed || 0;
+    }
     // Track live output characters (real data, always increasing during streaming)
     if (m._streamingOutputCharacters > 0) {
       liveOutputCharacters = m._streamingOutputCharacters;

@@ -2585,7 +2585,7 @@ export default function AgentComponent({
         );
       })()}
 
-      <div className={chatStyles.inputWrapper}>
+      <div className={`${chatStyles.inputWrapper} ${!settings.provider || !settings.model ? chatStyles.inputWrapperDisabled : ""}`}>
         {messages.length === 0 ? (
           <div className={chatStyles.workspaceRow}>
             <span className={chatStyles.workspaceLabel}>New conversation in</span>

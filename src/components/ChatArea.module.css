@@ -79,6 +79,17 @@
   }
 }
 
+.inputWrapperDisabled {
+  opacity: 0.35;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.3s ease;
+}
+
+.inputWrapper:not(.inputWrapperDisabled) {
+  transition: opacity 0.3s ease;
+}
+
 /* ── Workspace context row (above input box) ─────────────── */
 
 .workspaceRow {
