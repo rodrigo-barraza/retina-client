@@ -11,6 +11,7 @@ export function buildLmStudioLoadBody(model, options = {}) {
   if (options.contextLength != null) body.context_length = options.contextLength;
   if (options.flashAttention != null) body.flash_attention = options.flashAttention;
   if (options.offloadKvCache != null) body.offload_kv_cache_to_gpu = options.offloadKvCache;
+  if (options.evalBatchSize != null) body.eval_batch_size = options.evalBatchSize;
   return body;
 }
 
