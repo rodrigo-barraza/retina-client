@@ -1203,7 +1203,7 @@ export default function AgentComponent({
                 return updated;
               });
             } else if (statusData?.message === "generation_progress") {
-              // Backend-computed tok/s from SessionGenerationTracker —
+              // Backend-computed metrics from SessionGenerationTracker —
               // authoritative aggregate across orchestrator, workers,
               // and tool sub-requests.
               setMessages((prev) => {
@@ -1216,6 +1216,9 @@ export default function AgentComponent({
                       tokPerSec: statusData.tokPerSec,
                       activeRequests: statusData.activeRequests,
                       outputTokens: statusData.outputTokens,
+                      inputTokens: statusData.inputTokens,
+                      totalTokens: statusData.totalTokens,
+                      avgTtft: statusData.avgTtft,
                       timestamp: performance.now(),
                     },
                   };
@@ -1348,8 +1351,11 @@ export default function AgentComponent({
                         lastChunkTime: data.lastChunkTime,
                         // Cumulative total for token badge count
                         totalOutputTokens: data.totalOutputTokens || data.outputTokens,
-                        // Backend-computed tok/s from SessionGenerationTracker
+                        // Backend-computed metrics from SessionGenerationTracker
                         tokPerSec: data.tokPerSec ?? wp[data.workerId]?.tokPerSec,
+                        inputTokens: data.inputTokens,
+                        totalTokens: data.totalTokens,
+                        avgTtft: data.avgTtft,
                       },
                     },
                   };
@@ -1357,7 +1363,7 @@ export default function AgentComponent({
                 return updated;
               });
               // Also store on workerToolActivity so TeamCreateRenderer can
-              // display live per-worker tok/s on each worker's header
+              // display live per-worker metrics on each worker's header
               setWorkerToolActivity((prev) => ({
                 ...prev,
                 [data.workerId]: {
@@ -1366,8 +1372,11 @@ export default function AgentComponent({
                   firstChunkTime: data.firstChunkTime,
                   lastChunkTime: data.lastChunkTime,
                   totalOutputTokens: data.totalOutputTokens || data.outputTokens,
-                  // Backend-computed tok/s from SessionGenerationTracker
+                  // Backend-computed metrics from SessionGenerationTracker
                   tokPerSec: data.tokPerSec ?? prev[data.workerId]?.tokPerSec,
+                  inputTokens: data.inputTokens,
+                  totalTokens: data.totalTokens,
+                  avgTtft: data.avgTtft,
                 },
               }));
             } else if (data.message === "complete") {

@@ -91,7 +91,7 @@ export default function HistoryItemComponent({
         {/* Row 1: time + tags (left) · cost (right) */}
         <div className={styles.topRow}>
           <div className={styles.topLeft}>
-            <DateTimeBadgeComponent date={itemDate} mini />
+            <DateTimeBadgeComponent date={itemDate} />
             {admin && item.username && item.username !== "unknown" && (
               <span className={styles.usernameTag}>{item.username}</span>
             )}
