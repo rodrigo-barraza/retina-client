@@ -5,7 +5,7 @@
   --bg-secondary: #13141c;
   --bg-tertiary: #1a1b26;
   --bg-surface: rgba(19, 20, 28, 0.65);
-  --bg-card: rgba(19, 20, 28, 0.85);
+  --bg-card: rgba(19, 20, 28, 0.95);
   --border-color: rgba(255, 255, 255, 0.06);
   --border-subtle: rgba(255, 255, 255, 0.03);
   --text-primary: #f8f8f8;
@@ -68,7 +68,7 @@
   --bg-secondary: #ffffff;
   --bg-tertiary: #edeef2;
   --bg-surface: rgba(255, 255, 255, 0.75);
-  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-card: rgba(255, 255, 255, 0.95);
   --border-color: rgba(0, 0, 0, 0.1);
   --border-subtle: rgba(0, 0, 0, 0.04);
   --text-primary: #1a1a2e;

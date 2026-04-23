@@ -276,6 +276,12 @@ export default function AgentComponent({
   const fileInputRef = useRef(null);
   const messagesListRef = useRef(null);
 
+  // ── Sticky auto-scroll ─────────────────────────────────────
+  // Only auto-scroll when the user is near the bottom of the messages container.
+  // Re-engaged on send, session load, and new chat.
+  const isUserNearBottomRef = useRef(true);
+  const SCROLL_BOTTOM_THRESHOLD = 20;
+
   const agentSessionIdRef = useRef(agentSessionId);
   agentSessionIdRef.current = agentSessionId;
   // Track which sessions have active background generation (for history indicator)
@@ -395,7 +401,24 @@ export default function AgentComponent({
 
   // ── Effects ──────────────────────────────────────────────────
 
+  // Sticky auto-scroll: track whether the user is near the bottom of the
+  // scroll container.  When they scroll up, auto-scroll disengages; when
+  // they scroll back to the bottom (within SCROLL_BOTTOM_THRESHOLD px), it
+  // re-engages.  Uses a passive scroll listener for zero main-thread cost.
   useEffect(() => {
+    const el = messagesListRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      isUserNearBottomRef.current =
+        scrollHeight - scrollTop - clientHeight <= SCROLL_BOTTOM_THRESHOLD;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!isUserNearBottomRef.current) return;
     endRef.current?.scrollIntoView({ behavior: scrollBehaviorRef.current });
     // Reset to smooth after each scroll so streaming remains animated
     scrollBehaviorRef.current = "smooth";
@@ -1684,6 +1707,8 @@ export default function AgentComponent({
       }
 
       setIsGenerating(true);
+      // Re-engage sticky scroll when the user sends a message
+      isUserNearBottomRef.current = true;
       // Track this session as generating (for history indicator even after switching away)
       const genId = agentSessionIdRef.current;
       setGeneratingSessionIds((prev) => new Set(prev).add(genId));
@@ -1828,6 +1853,7 @@ export default function AgentComponent({
     setTitle(isNoAgent ? "Direct Chat" : "Agent");
     setBackendSessionStats(null);
     tokenHwmRef.current = { input: 0, output: 0, total: 0 };
+    isUserNearBottomRef.current = true;
     textareaRef.current?.focus();
   }, [isNoAgent]);
 
@@ -1864,6 +1890,7 @@ export default function AgentComponent({
       // Restoring a background generating session from snapshot
       const snap = full._snapshot;
       scrollBehaviorRef.current = "instant";
+      isUserNearBottomRef.current = true;
       setMessages(snap.messages);
       setAgentSessionId(full.id);
       setActiveId(full.id);
@@ -1885,6 +1912,7 @@ export default function AgentComponent({
       // Normal backend-loaded session
       const displayMessages = prepareDisplayMessages(full.messages || []);
       scrollBehaviorRef.current = "instant";
+      isUserNearBottomRef.current = true;
       setMessages(displayMessages);
       setAgentSessionId(full.id || crypto.randomUUID());
       setTraceId(full.traceId || null);

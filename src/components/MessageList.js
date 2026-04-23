@@ -239,7 +239,7 @@ function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
                   }
                   // Fallback: match by description during calling state (before result arrives)
                   // createTeam prefixes descriptions as "[teamName] description"
-                  if (Object.keys(allToolNames).length === 0 && workerToolActivity && tc.args?.members) {
+                  if (Object.keys(allToolNames).length === 0 && workerToolActivity && Array.isArray(tc.args?.members)) {
                     for (const argMember of tc.args.members) {
                       const match = Object.values(workerToolActivity).find((v) =>
                         v.description && v.description.includes(argMember.description),
