@@ -214,7 +214,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
     return activeModels.values().next().value?.model || null;
   }, [activeModels, viewedModelKey]);
 
-  // For backward compat: expose a single activeModel for summary counts
+  // Convenience: expose the number of active models for the summary bar
   const activeModelCount = activeModels.size;
 
   // ── Load benchmark detail ──────────────────────────────────

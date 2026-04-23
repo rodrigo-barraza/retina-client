@@ -287,6 +287,7 @@ export function getSessionTokenStats(messages) {
   let liveProcessingStartTime = null;  // performance.now() when processing phase started
   let liveProcessingPhase = null;      // current phase of in-flight message (processing/loading/generating)
   let liveTtftSamples = null;          // server-computed TTFT samples (seconds[]) from generation_started events
+  let liveOutputCharacters = 0;         // real character count from streaming chunks
   let liveGenProgress = null;          // backend-computed tok/s from SessionGenerationTracker
   for (const m of messages) {
     if (m.role !== "assistant") continue;
@@ -301,16 +302,16 @@ export function getSessionTokenStats(messages) {
       lastTimeToGeneration = m.timeToGeneration;
     }
     // Intermediate authoritative usage from backend usage_update events.
-    // Priority: usage (done) > _intermediateUsage (per-iteration) > _streamingOutputTokens (per-chunk)
+    // Priority: usage (done) > _intermediateUsage (per-iteration) > _liveGenProgress (tracker)
     //
-    // However, _streamingOutputTokens may exceed _intermediateUsage when
-    // a new iteration is actively streaming — the intermediate value is
-    // from the end of the *previous* iteration. Use whichever is higher
-    // so the token count never stalls between iterations.
+    // _liveGenProgress.outputTokens may exceed _intermediateUsage when
+    // a new iteration completes — use whichever is higher so the token
+    // count never stalls between iterations.
     if (!m.usage && m._intermediateUsage) {
       const intermediateOutput = m._intermediateUsage.outputTokens || 0;
-      const streamingOutput = m._streamingOutputTokens || 0;
-      const effectiveOutput = Math.max(intermediateOutput, streamingOutput);
+      // Use tracker's real token count if it exceeds intermediate (new iteration completed)
+      const trackerOutput = m._liveGenProgress?.outputTokens || 0;
+      const effectiveOutput = Math.max(intermediateOutput, trackerOutput);
 
       requests += m._intermediateUsage.requests || 1;
       input += getTotalInputTokens(m._intermediateUsage);
@@ -322,15 +323,19 @@ export function getSessionTokenStats(messages) {
       liveStreamingBurstTokens = m._streamingBurstTokens || 0;
       liveStreamingBurstElapsed = m._streamingBurstElapsed || 0;
     }
-    // In-flight streaming messages: use backend-reported running count
-    // as the output token count until _intermediateUsage or final usage arrives
-    else if (!m.usage && m._streamingOutputTokens > 0) {
-      output += m._streamingOutputTokens;
-      liveStreamingTokens = m._streamingOutputTokens;
+    // In-flight streaming messages: use tracker's real token count
+    // (fed exclusively by provider-reported usage, never per-chunk estimates)
+    else if (!m.usage && m._liveGenProgress?.outputTokens > 0) {
+      output += m._liveGenProgress.outputTokens;
+      liveStreamingTokens = m._liveGenProgress.outputTokens;
       liveStreamingStartTime = m._streamingStartTime || null;
       liveStreamingLastChunkTime = m._streamingLastChunkTime || null;
       liveStreamingBurstTokens = m._streamingBurstTokens || 0;
       liveStreamingBurstElapsed = m._streamingBurstElapsed || 0;
+    }
+    // Track live output characters (real data, always increasing during streaming)
+    if (m._streamingOutputCharacters > 0) {
+      liveOutputCharacters = m._streamingOutputCharacters;
     }
     // Track live processing phase and start time for TTFT estimation
     if (m._processingStartTime) {
@@ -380,6 +385,7 @@ export function getSessionTokenStats(messages) {
     liveStreamingLastChunkTime,
     liveStreamingBurstTokens,
     liveStreamingBurstElapsed,
+    liveOutputCharacters,
     workerGenerationProgress,
     // TTFT tracking
     lastTimeToGeneration,

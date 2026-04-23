@@ -1295,7 +1295,7 @@ export default function MessageList({
                   })()
                 ) : (
                   <>
-                    {/* Thinking block (legacy / saved conversations — no segments) */}
+                    {/* Thinking block (persisted conversations without segments) */}
                     {msg.thinking && (
                       <ThinkingBlock
                         thinking={msg.thinking}
@@ -1303,7 +1303,7 @@ export default function MessageList({
                       />
                     )}
 
-                    {/* Tool calls (legacy / saved conversations — no segments) */}
+                    {/* Tool calls (persisted conversations without segments) */}
                     {msg.toolCalls && msg.toolCalls.length > 0 && (
                       <ToolCallsBlock toolCalls={msg.toolCalls} streamingOutputs={streamingOutputs} workerToolActivity={workerToolActivity} />
                     )}
@@ -1496,7 +1496,7 @@ export default function MessageList({
                     </div>
                   )}
 
-                {/* Plan proposal card — fallback for non-segmented messages (legacy path) */}
+                {/* Plan proposal card — fallback for non-segmented messages */}
                 {planProposal && msg.role === "assistant" && i === messages.length - 1 &&
                   !(msg.contentSegments?.some(s => s.type === "plan")) && (
                   <PlanCardComponent

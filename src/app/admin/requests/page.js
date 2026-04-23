@@ -275,7 +275,6 @@ export default function RequestsPage() {
               { value: "embed:api", label: "Embed: API" },
               { value: "embed:agent-memory", label: "Embed: Agent Memory" },
               { value: "embed:skill-relevance", label: "Embed: Skill" },
-              { value: "embedding", label: "Embedding (legacy)" },
             ]}
           />
         </FilterGroupComponent>

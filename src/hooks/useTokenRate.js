@@ -14,14 +14,6 @@ const PROGRESS_STALE_MS = 3000;
 const CHUNK_STALE_MS = 2000;
 
 /**
- * Worker generation_progress events are throttled to every 10 chunks
- * on the backend. On slower models (< 10 tok/s) this means events
- * can arrive every 1-3 seconds. Use a wider staleness window for
- * workers to prevent the tok/s badge from flickering.
- */
-const WORKER_STALE_MS = 5000;
-
-/**
  * Burst-averaging reducer for tok/s display.
  *
  * While generating, shows the current burst rate. When generation
@@ -142,27 +134,6 @@ export default function useTokenRate(sessionStats) {
       if (burstElapsed > 0 && burstTokens > 0) {
         totalTokPerSec += burstTokens / burstElapsed;
         generatingAgentCount++;
-      }
-    }
-
-    // Worker generation rates (legacy frontend-counted path)
-    const workerProgress = sessionStats?.workerGenerationProgress;
-    if (workerProgress) {
-      const workerEntries = Object.values(workerProgress);
-      if (workerEntries.length > 0) hasActiveWorkers = true;
-      for (const wp of workerEntries) {
-        if (!wp.lastChunkTime || !wp.firstChunkTime) continue;
-        const timeSinceLastChunk = nowMs - wp.lastChunkTime;
-        const elapsed = (wp.lastChunkTime - wp.firstChunkTime) / 1000;
-        if (elapsed > 0 && wp.outputTokens > 0) {
-          if (timeSinceLastChunk < WORKER_STALE_MS) {
-            totalTokPerSec += wp.outputTokens / elapsed;
-            generatingAgentCount++;
-          } else {
-            totalTokPerSec += wp.outputTokens / elapsed;
-            generatingAgentCount++;
-          }
-        }
       }
     }
 

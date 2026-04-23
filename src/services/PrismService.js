@@ -846,10 +846,10 @@ export default class PrismService {
 
     switch (data.type) {
       case "chunk":
-        onChunk?.(data.content, data._sourceModel, data.outputTokens);
+        onChunk?.(data.content, data._sourceModel, data.outputCharacters);
         break;
       case "thinking":
-        onThinking?.(data.content, data._sourceModel, data.outputTokens);
+        onThinking?.(data.content, data._sourceModel, data.outputCharacters);
         break;
       case "image":
         onImage?.(data.data, data.mimeType, data.minioRef);

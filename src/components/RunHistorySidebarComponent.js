@@ -71,7 +71,7 @@ export default function RunHistorySidebarComponent({
 }) {
   const [activeTab, setActiveTab] = useState("general");
 
-  // Derive assertions array (backward compat)
+  // Normalize assertions: fall back to single expectedValue/matchMode for older benchmarks
   const assertions = useMemo(() => {
     if (benchmark?.assertions?.length > 0) return benchmark.assertions;
     if (benchmark?.expectedValue) {

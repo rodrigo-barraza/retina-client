@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Brain, Network, Bot, RotateCcw, Loader2, Check } from "lucide-react";
+import { Brain, Network, Bot, RotateCcw, Loader2, Check, FolderOpen, Lock, X, Plus, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
 import PrismService from "../services/PrismService";
+import WorkspaceService from "../services/WorkspaceService";
+import { useWorkspace } from "./WorkspaceContext";
 import PageHeaderComponent from "./PageHeaderComponent";
 import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent";
 import CustomAgentsPanel from "./CustomAgentsPanel";
@@ -27,6 +29,22 @@ export default function SettingsPageComponent() {
   const [customAgents, setCustomAgents] = useState([]);
   const [availableTools, setAvailableTools] = useState([]);
 
+  // ── Workspace state ────────────────────────────────────────────────
+  const { refreshWorkspaces } = useWorkspace();
+  const [wsWorkspaces, setWsWorkspaces] = useState([]);
+  const [wsAddPath, setWsAddPath] = useState("");
+  const [wsValidation, setWsValidation] = useState(null);
+  const [wsAdding, setWsAdding] = useState(false);
+  const wsValidateTimer = useRef(null);
+
+  /** Detect Windows-style path for instant client-side preview */
+  const isWindowsPath = (p) => /^[A-Za-z]:[\\\/]/.test(p);
+  const windowsToWslPreview = (p) => {
+    const m = p.match(/^([A-Za-z]):[\\\/](.*)/);
+    if (!m) return null;
+    return `/mnt/${m[1].toLowerCase()}/${m[2].replace(/\\/g, "/")}`;
+  };
+
   // ── Load config + settings on mount ────────────────────────────────
   useEffect(() => {
     PrismService.getConfigWithLocalModels({
@@ -50,6 +68,11 @@ export default function SettingsPageComponent() {
     // Fetch all available tools (unfiltered) for the tool picker
     PrismService.getBuiltInToolSchemas()
       .then(setAvailableTools)
+      .catch(console.error);
+
+    // Fetch workspaces for the workspace management section
+    WorkspaceService.list()
+      .then(setWsWorkspaces)
       .catch(console.error);
   }, []);
 
@@ -142,6 +165,59 @@ export default function SettingsPageComponent() {
     await persistSettings(updated);
   }, [defaults, persistSettings]);
 
+  // ── Workspace handlers ─────────────────────────────────────────────
+  const handleWsPathChange = useCallback((value) => {
+    setWsAddPath(value);
+    setWsValidation(null);
+    clearTimeout(wsValidateTimer.current);
+    if (!value.trim()) return;
+    wsValidateTimer.current = setTimeout(async () => {
+      try {
+        const result = await WorkspaceService.validate(value);
+        setWsValidation(result);
+      } catch {
+        setWsValidation({ valid: false, error: "Validation failed" });
+      }
+    }, 400);
+  }, []);
+
+  const handleAddWorkspace = useCallback(async () => {
+    if (!wsAddPath.trim() || wsAdding) return;
+    setWsAdding(true);
+    try {
+      const currentUserRoots = wsWorkspaces
+        .filter((w) => !w.isPinned)
+        .map((w) => w.path);
+      // Resolve the new path — if Windows, the backend will translate
+      const newPath = wsAddPath.trim();
+      await WorkspaceService.update([...currentUserRoots, newPath]);
+      const updated = await WorkspaceService.list();
+      setWsWorkspaces(updated);
+      setWsAddPath("");
+      setWsValidation(null);
+      await refreshWorkspaces();
+    } catch (err) {
+      console.error("Failed to add workspace:", err);
+      setWsValidation({ valid: false, error: "Failed to add workspace" });
+    } finally {
+      setWsAdding(false);
+    }
+  }, [wsAddPath, wsAdding, wsWorkspaces, refreshWorkspaces]);
+
+  const handleRemoveWorkspace = useCallback(async (pathToRemove) => {
+    try {
+      const remainingUserRoots = wsWorkspaces
+        .filter((w) => !w.isPinned && w.path !== pathToRemove)
+        .map((w) => w.path);
+      await WorkspaceService.update(remainingUserRoots);
+      const updated = await WorkspaceService.list();
+      setWsWorkspaces(updated);
+      await refreshWorkspaces();
+    } catch (err) {
+      console.error("Failed to remove workspace:", err);
+    }
+  }, [wsWorkspaces, refreshWorkspaces]);
+
   const handleResetAgents = useCallback(async () => {
     if (!defaults?.agents) return;
     const updated = { agents: { ...defaults.agents } };
@@ -189,6 +265,91 @@ export default function SettingsPageComponent() {
           Saved
         </span>
       </PageHeaderComponent>
+
+      {/* ── Workspaces Section ──────────────────────────────────────── */}
+      <CardComponent className={styles.section}>
+        <CardComponent.Header
+          icon={FolderOpen}
+          title="Workspaces"
+          subtitle="Directories accessible to the agent for file operations"
+        />
+
+        <CardComponent.Body>
+          {wsWorkspaces.length === 0 && (
+            <div className={styles.emptyWorkspaces}>No workspaces configured</div>
+          )}
+
+          {wsWorkspaces.map((ws) => (
+            <div key={ws.id} className={styles.workspaceItem}>
+              <div className={styles.workspaceItemInfo}>
+                <FolderOpen size={16} className={styles.workspaceItemIcon} />
+                <div className={styles.workspaceItemDetails}>
+                  <span className={styles.workspaceItemName}>
+                    {ws.name}
+                    {ws.isPinned && (
+                      <span className={styles.pinnedBadge}>
+                        <Lock size={8} />
+                        Pinned
+                      </span>
+                    )}
+                  </span>
+                  <span className={styles.workspaceItemPath}>{ws.path}</span>
+                </div>
+              </div>
+              {!ws.isPinned && (
+                <button
+                  className={styles.removeButton}
+                  onClick={() => handleRemoveWorkspace(ws.path)}
+                  title="Remove workspace"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          ))}
+
+          {/* Add workspace input */}
+          <div className={styles.addWorkspaceRow}>
+            <input
+              type="text"
+              className={`${styles.addWorkspaceInput} ${wsValidation ? (wsValidation.valid ? styles.valid : styles.invalid) : ""}`}
+              placeholder="Add workspace path (e.g. /home/user/projects or C:\Users\...)"
+              value={wsAddPath}
+              onChange={(e) => handleWsPathChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && wsValidation?.valid) handleAddWorkspace();
+              }}
+            />
+            <button
+              className={styles.addButton}
+              disabled={!wsValidation?.valid || wsAdding}
+              onClick={handleAddWorkspace}
+            >
+              <Plus size={14} />
+              Add
+            </button>
+          </div>
+
+          {/* Validation feedback */}
+          {wsAddPath.trim() && wsValidation && (
+            <div className={`${styles.validationRow} ${wsValidation.valid ? styles.success : styles.error}`}>
+              {wsValidation.valid
+                ? <><CheckCircle2 size={12} /> Valid directory</>
+                : <><XCircle size={12} /> {wsValidation.error}</>
+              }
+            </div>
+          )}
+
+          {/* Windows → WSL translation preview */}
+          {wsAddPath.trim() && isWindowsPath(wsAddPath.trim()) && (
+            <div className={`${styles.validationRow} ${styles.info}`}>
+              <ArrowRight size={12} />
+              <span>Translates to: </span>
+              <span className={styles.wslTranslation}>{windowsToWslPreview(wsAddPath.trim())}</span>
+            </div>
+          )}
+        </CardComponent.Body>
+      </CardComponent>
 
       {/* ── Custom Agents Section ──────────────────────────────────── */}
       <CardComponent className={styles.section}>

@@ -195,22 +195,13 @@ async function executeModelNode(node, inputData, { onNodeContentUpdate, toolSche
         });
       }
     } else {
-      // Legacy: build from systemPrompt/userPrompt
-      const content = node.userPrompt
-        ? pipedText
-          ? `${node.userPrompt}\n\n${pipedText}`
-          : node.userPrompt
-        : pipedText || "";
-
-      const systemMsg = node.systemPrompt
-        ? [{ role: "system", content: node.systemPrompt }]
-        : [];
+      // No messages — build from piped input only
       const userMsg = {
         role: "user",
-        content,
+        content: pipedText || "",
         ...buildMediaFields(),
       };
-      finalMessages = [...systemMsg, userMsg];
+      finalMessages = [userMsg];
     }
 
     const generatePayload = {
@@ -321,13 +312,9 @@ async function executeModelNode(node, inputData, { onNodeContentUpdate, toolSche
         if (m.images?.length > 0) messageImages.push(...m.images);
       });
     } else {
-      // Legacy: use systemPrompt/userPrompt fields
-      systemPrompt = node.systemPrompt || undefined;
-      prompt = node.userPrompt
-        ? pipedPrompt
-          ? `${node.userPrompt}\n\n${pipedPrompt}`
-          : node.userPrompt
-        : pipedPrompt;
+      // No messages — use piped input only
+      systemPrompt = undefined;
+      prompt = pipedPrompt;
     }
 
     // Merge piped images + message images

@@ -302,41 +302,7 @@ export default function HomePage({ initialConversationId = null }) {
     PrismService.getConfigWithLocalModels({
       onConfig: (cfg) => {
         setConfig(cfg);
-
-        // Try to restore page-scoped model memory first, then fall back to legacy keys
-        restoreModel(cfg, setSettings, {
-          fallback: (config) => {
-            const savedProvider = StorageService.get(SK_LAST_PROVIDER);
-            const savedModel = StorageService.get(SK_LAST_MODEL);
-            const savedValid =
-              savedProvider &&
-              config.providerList?.includes(savedProvider) &&
-              ((config.textToText?.models?.[savedProvider] || []).some(
-                (m) => m.name === savedModel,
-              ) ||
-                (config.textToImage?.models?.[savedProvider] || []).some(
-                  (m) => m.name === savedModel,
-                ));
-
-            const prov = savedValid ? savedProvider : config.providerList?.[0] || "";
-            const mod = savedValid
-              ? savedModel
-              : config.textToText?.defaults?.[prov] ||
-                config.textToText?.models?.[prov]?.[0]?.name ||
-                "";
-
-            const modelDef =
-              (config.textToText?.models?.[prov] || []).find((m) => m.name === mod) ||
-              (config.textToImage?.models?.[prov] || []).find((m) => m.name === mod);
-            const temp = modelDef?.defaultTemperature ?? 1.0;
-            setSettings((s) => ({
-              ...s,
-              provider: prov,
-              model: mod,
-              temperature: temp,
-            }));
-          },
-        });
+        restoreModel(cfg, setSettings);
       },
       onLocalMerge: (merged) => {
         setConfig(merged);
@@ -514,7 +480,7 @@ export default function HomePage({ initialConversationId = null }) {
     setPixelTransition("out");
   };
 
-  // Persist provider/model to localStorage (legacy keys + page-scoped memory)
+  // Persist provider/model to localStorage
   useEffect(() => {
     if (settings.provider)
       StorageService.set(SK_LAST_PROVIDER, settings.provider);
@@ -1907,13 +1873,12 @@ export default function HomePage({ initialConversationId = null }) {
               return updated;
             });
           },
-          onChunk: (content, _sourceModel, outputTokens) => {
+          onChunk: (content, _sourceModel, outputCharacters) => {
             // Safety net: if we receive a chunk while lmLoadProgress is
             // stuck (model loaded via chat auto-load), clear it now.
             setLmLoadProgress((prev) => (prev != null ? null : prev));
 
             streamedText += content;
-            // Backend sends authoritative running token count on each chunk
             if (!firstChunkTime) firstChunkTime = performance.now();
             const lastChunkTime = performance.now();
             setMessages((prev) => {
@@ -1921,16 +1886,15 @@ export default function HomePage({ initialConversationId = null }) {
               updated[updated.length - 1] = {
                 ...updated[updated.length - 1],
                 content: streamedText,
-                _streamingOutputTokens: outputTokens || 0,
+                _streamingOutputCharacters: outputCharacters || 0,
                 _streamingStartTime: firstChunkTime,
                 _streamingLastChunkTime: lastChunkTime,
               };
               return updated;
             });
           },
-          onThinking: (content, _sourceModel, outputTokens) => {
+          onThinking: (content, _sourceModel, outputCharacters) => {
             streamedThinking += content;
-            // Backend sends authoritative running token count on each thinking chunk
             if (!firstChunkTime) firstChunkTime = performance.now();
             const lastChunkTime = performance.now();
             setMessages((prev) => {
@@ -1938,7 +1902,7 @@ export default function HomePage({ initialConversationId = null }) {
               updated[updated.length - 1] = {
                 ...updated[updated.length - 1],
                 thinking: streamedThinking,
-                _streamingOutputTokens: outputTokens || 0,
+                _streamingOutputCharacters: outputCharacters || 0,
                 _streamingStartTime: firstChunkTime,
                 _streamingLastChunkTime: lastChunkTime,
               };

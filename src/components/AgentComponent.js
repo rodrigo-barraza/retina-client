@@ -219,6 +219,11 @@ export default function AgentComponent({
   const [backendSessionStats, setBackendSessionStats] = useState(null); // aggregate from /admin/sessions/:id/stats
   const [requestsRefreshKey, setRequestsRefreshKey] = useState(0);
 
+  // Frontend-side high-water marks for token display.
+  // Ensures the token badges never show a lower number than previously
+  // displayed, regardless of which computation path produced the values.
+  const tokenHwmRef = useRef({ input: 0, output: 0, total: 0 });
+
   // ── Pixelation transition state ────────────────────────────
   const [pixelTransition, setPixelTransition] = useState(null); // 'out' | 'in' | null
   const [pixelOutDone, setPixelOutDone] = useState(false);
@@ -804,7 +809,7 @@ export default function AgentComponent({
         // Direct Chat → streamText (/chat); Agents → streamAgentText (/agent)
         const streamFn = isNoAgent ? PrismService.streamText : PrismService.streamAgentText;
         abortRef.current = streamFn(payload, {
-          onChunk: (content, _sourceModel, outputTokens) => {
+          onChunk: (content, _sourceModel, outputCharacters) => {
             streamedText += content;
             // Backend sends authoritative running token count on each chunk
             burstTokens++;
@@ -851,7 +856,7 @@ export default function AgentComponent({
                 lastMsg.contentSegments = snapshotSegments();
                 lastMsg.textFragments = [...textFragments];
                 lastMsg.thinkingFragments = [...thinkingFragments];
-                lastMsg._streamingOutputTokens = outputTokens || 0;
+                lastMsg._streamingOutputCharacters = outputCharacters || 0;
                 lastMsg._streamingStartTime = firstChunkTime;
                 lastMsg._streamingLastChunkTime = now;
                 lastMsg._streamingBurstTokens = burstTokens;
@@ -863,7 +868,7 @@ export default function AgentComponent({
                   contentSegments: snapshotSegments(),
                   textFragments: [...textFragments],
                   thinkingFragments: [...thinkingFragments],
-                  _streamingOutputTokens: outputTokens || 0,
+                  _streamingOutputCharacters: outputCharacters || 0,
                   _streamingStartTime: firstChunkTime,
                   _streamingLastChunkTime: now,
                   _streamingBurstTokens: burstTokens,
@@ -873,7 +878,7 @@ export default function AgentComponent({
               return updated;
             });
           },
-          onThinking: (content, _sourceModel, outputTokens) => {
+          onThinking: (content, _sourceModel, outputCharacters) => {
             streamedThinking += content;
             if (isStale()) return;
 
@@ -913,7 +918,7 @@ export default function AgentComponent({
                 lastMsg.thinking = streamedThinking;
                 lastMsg.contentSegments = snapshotSegments();
                 lastMsg.thinkingFragments = [...thinkingFragments];
-                lastMsg._streamingOutputTokens = outputTokens || 0;
+                lastMsg._streamingOutputCharacters = outputCharacters || 0;
                 lastMsg._streamingStartTime = firstChunkTime;
                 lastMsg._streamingLastChunkTime = now;
                 lastMsg._streamingBurstTokens = burstTokens;
@@ -925,7 +930,7 @@ export default function AgentComponent({
                   thinking: streamedThinking,
                   contentSegments: snapshotSegments(),
                   thinkingFragments: [...thinkingFragments],
-                  _streamingOutputTokens: outputTokens || 0,
+                  _streamingOutputCharacters: outputCharacters || 0,
                   _streamingStartTime: firstChunkTime,
                   _streamingLastChunkTime: now,
                   _streamingBurstTokens: burstTokens,
@@ -1707,6 +1712,7 @@ export default function AgentComponent({
     setActiveId(null);
     setTitle(isNoAgent ? "Direct Chat" : "Agent");
     setBackendSessionStats(null);
+    tokenHwmRef.current = { input: 0, output: 0, total: 0 };
     textareaRef.current?.focus();
   }, [isNoAgent]);
 
@@ -1872,6 +1878,7 @@ export default function AgentComponent({
           }));
         }
         setBackendSessionStats(full.stats || null);
+        tokenHwmRef.current = { input: 0, output: 0, total: 0 };
       }
       pendingSessionRef.current = null;
     }
@@ -2083,42 +2090,23 @@ export default function AgentComponent({
                         avgTimeToGeneration: sub.avgTimeToGeneration || null,
                       };
                     };
-                    // Merge live streaming deltas from the current in-progress
-                    // assistant message on top of the backend totals so stats
-                    // badges update during the current turn
+                    // ── Token counts come exclusively from the backend ──
+                    // _liveGenProgress (from generation_progress SSE) carries
+                    // authoritative, monotonic token counts from SessionGenerationTracker.
+                    // When streaming is active, use those. When done, use backendSessionStats.
+                    // No frontend token math, estimation, or accumulation.
                     const lastMsg = messages[messages.length - 1];
-                    // Sum live worker generation tokens (from _workerGenerationProgress)
-                    // Use cumulative totalOutputTokens so the count doesn't reset on phase changes
-                    let liveWorkerGenTokens = 0;
-                    if (lastMsg?._workerGenerationProgress) {
-                      for (const wp of Object.values(lastMsg._workerGenerationProgress)) {
-                        liveWorkerGenTokens += wp.totalOutputTokens || wp.outputTokens || 0;
-                      }
-                    }
-                    let liveOutput = 0;
-                    let liveInput = 0;
-                    if (lastMsg?.role === "assistant") {
-                      if (!lastMsg.usage) {
-                        // Still streaming — use chunk-based estimate
-                        liveOutput = (lastMsg._streamingOutputTokens || 0) + (lastMsg._workerTokens?.output || 0) + liveWorkerGenTokens;
-                        liveInput = lastMsg._workerTokens?.input || 0;
-                      } else if (lastMsg.completedAt) {
-                        // Just finalized (done event arrived) but backend stats
-                        // haven't refreshed yet — bridge the gap with the done
-                        // event's usage so the counter doesn't dip to zero.
-                        const usageOutput = (lastMsg.usage.outputTokens || 0) + (lastMsg._workerTokens?.output || 0);
-                        const usageInput = (lastMsg.usage.inputTokens || 0)
-                          + (lastMsg.usage.cacheReadInputTokens || 0)
-                          + (lastMsg.usage.cacheCreationInputTokens || 0)
-                          + (lastMsg._workerTokens?.input || 0);
-                        // Only apply if backend stats are stale (don't double-count)
-                        const backendAlreadyHasIt = backendSessionStats.totalOutputTokens >= usageOutput;
-                        if (!backendAlreadyHasIt) {
-                          liveOutput = usageOutput;
-                          liveInput = usageInput;
-                        }
-                      }
-                    }
+                    const liveGP = lastMsg?.role === "assistant" ? lastMsg._liveGenProgress : null;
+                    const liveOutput = liveGP?.outputTokens || 0;
+                    const liveInput = liveGP?.inputTokens || 0;
+                    const liveTotal = liveGP?.totalTokens || 0;
+
+                    // Use the larger of backend stats or live progress to prevent
+                    // dips during the gap between stream end and backend refresh.
+                    const tokenOutput = Math.max(backendSessionStats.totalOutputTokens, liveOutput);
+                    const tokenInput = Math.max(backendSessionStats.totalInputTokens, liveInput);
+                    const tokenTotal = Math.max(backendSessionStats.totalTokens, liveTotal);
+
                     return {
                       // ── Backend is source of truth (all requests incl. background) ──
                       messageCount: messages.length,
@@ -2126,14 +2114,19 @@ export default function AgentComponent({
                       requestCount: backendSessionStats.requestCount,
                       uniqueModels: backendSessionStats.models,
                       uniqueProviders,
-                      totalTokens: {
-                        input: backendSessionStats.totalInputTokens + liveInput,
-                        output: backendSessionStats.totalOutputTokens + liveOutput,
-                        total: backendSessionStats.totalTokens + liveInput + liveOutput,
-                        cacheRead: backendSessionStats.totalCacheReadInputTokens || 0,
-                        cacheWrite: backendSessionStats.totalCacheCreationInputTokens || 0,
-                        reasoning: backendSessionStats.totalReasoningOutputTokens || 0,
-                      },
+                    totalTokens: (() => {
+                        const hwm = tokenHwmRef.current;
+                        const t = {
+                          input: Math.max(hwm.input, tokenInput),
+                          output: Math.max(hwm.output, tokenOutput),
+                          total: Math.max(hwm.total, tokenTotal),
+                          cacheRead: backendSessionStats.totalCacheReadInputTokens || 0,
+                          cacheWrite: backendSessionStats.totalCacheCreationInputTokens || 0,
+                          reasoning: backendSessionStats.totalReasoningOutputTokens || 0,
+                        };
+                        tokenHwmRef.current = { input: t.input, output: t.output, total: t.total };
+                        return t;
+                      })(),
                       totalCost: backendSessionStats.totalCost,
                       originalTotalCost: 0,
                       // Merge backend toolCounts, client capabilities, and live
@@ -2163,37 +2156,55 @@ export default function AgentComponent({
                       workers: mapSubStats(backendSessionStats.workers),
                     };
                   })()
-                : {
+                : (() => {
                     // ── Client-side fallback (live generation, no backend data yet) ──
-                    messageCount: messages.length,
-                    deletedCount: 0,
-                    requestCount,
-                    uniqueModels,
-                    uniqueProviders,
-                    totalTokens,
-                    totalCost,
-                    originalTotalCost: 0,
-                    // Merge client-side usedTools with live worker tool counts
-                    usedTools: mergeUsedToolsWithWorkers(
-                      usedTools,
-                      null,
-                      workerToolActivity,
-                    ),
-                    modalities,
-                    completedElapsedTime,
-                    currentTurnStart,
-                    liveStreamingTokens,
-                    liveStreamingStartTime,
-                    liveStreamingLastChunkTime,
-                    liveStreamingBurstTokens,
-                    liveStreamingBurstElapsed,
-                    workerGenerationProgress,
-                    lastTimeToGeneration,
-                    liveProcessingStartTime,
-                    liveProcessingPhase,
-                    liveTtftSamples,
-                    liveGenProgress,
-                  }
+                    // When _liveGenProgress exists, use backend-authoritative token
+                    // counts instead of the client-side computeSessionStats math.
+                    const lastMsg = messages[messages.length - 1];
+                    const gp = lastMsg?.role === "assistant" ? lastMsg._liveGenProgress : null;
+                    const fallbackTokens = gp
+                      ? { input: gp.inputTokens || 0, output: gp.outputTokens || 0, total: gp.totalTokens || 0 }
+                      : totalTokens;
+                    return {
+                      messageCount: messages.length,
+                      deletedCount: 0,
+                      requestCount,
+                      uniqueModels,
+                      uniqueProviders,
+                      totalTokens: (() => {
+                        const hwm = tokenHwmRef.current;
+                        const t = {
+                          input: Math.max(hwm.input, fallbackTokens.input || 0),
+                          output: Math.max(hwm.output, fallbackTokens.output || 0),
+                          total: Math.max(hwm.total, fallbackTokens.total || 0),
+                        };
+                        tokenHwmRef.current = { input: t.input, output: t.output, total: t.total };
+                        return t;
+                      })(),
+                      totalCost,
+                      originalTotalCost: 0,
+                      // Merge client-side usedTools with live worker tool counts
+                      usedTools: mergeUsedToolsWithWorkers(
+                        usedTools,
+                        null,
+                        workerToolActivity,
+                      ),
+                      modalities,
+                      completedElapsedTime,
+                      currentTurnStart,
+                      liveStreamingTokens,
+                      liveStreamingStartTime,
+                      liveStreamingLastChunkTime,
+                      liveStreamingBurstTokens,
+                      liveStreamingBurstElapsed,
+                      workerGenerationProgress,
+                      lastTimeToGeneration,
+                      liveProcessingStartTime,
+                      liveProcessingPhase,
+                      liveTtftSamples,
+                      liveGenProgress,
+                    };
+                  })()
               : null
           }
         />
