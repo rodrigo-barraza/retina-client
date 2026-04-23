@@ -11,6 +11,10 @@ import styles from "./SpinningCatComponent.module.css";
  * When generation stops, the cat smoothly decelerates before swapping
  * back to the static image.
  *
+ * GIF frames are pre-decoded into ImageBitmap textures at mount time,
+ * enabling GPU-composited drawImage calls during playback instead of
+ * per-frame putImageData CPU blits.
+ *
  * Props:
  *   animate  – whether the cat is spinning (default false)
  *   className – optional extra class
@@ -26,35 +30,23 @@ const MAX_BRIGHTNESS = 3.0; // Maximum CSS brightness value
 const MAX_GLOW_RADIUS = 12; // Maximum glow drop-shadow blur radius (px)
 const MAX_GLOW_OPACITY = 0.9; // Maximum glow drop-shadow opacity
 
-function renderFrame(canvas, patchCanvas, frames, index) {
-  if (!canvas || !patchCanvas || !frames?.length) return;
+/**
+ * Render a single pre-decoded ImageBitmap frame onto the canvas.
+ * GPU-composited — no pixel data manipulation at draw time.
+ */
+function renderFrame(canvas, frames, bitmaps, index) {
+  if (!canvas || !bitmaps?.length) return;
 
   const ctx = canvas.getContext("2d");
   const frame = frames[index];
-  if (!frame) return;
-
-  const { dims, patch: pixels } = frame;
-
-  const patchCtx = patchCanvas.getContext("2d");
-  const imageData = patchCtx.createImageData(dims.width, dims.height);
-  imageData.data.set(pixels);
-  patchCtx.putImageData(imageData, 0, 0);
+  const bitmap = bitmaps[index];
+  if (!frame || !bitmap) return;
 
   if (frame.disposalType === 2) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  ctx.drawImage(
-    patchCanvas,
-    0,
-    0,
-    dims.width,
-    dims.height,
-    dims.left,
-    dims.top,
-    dims.width,
-    dims.height,
-  );
+  ctx.drawImage(bitmap, frame.dims.left, frame.dims.top);
 }
 
 export default function SpinningCatComponent({
@@ -62,8 +54,8 @@ export default function SpinningCatComponent({
   className = "",
 }) {
   const canvasRef = useRef(null);
-  const framesRef = useRef(null);
-  const patchRef = useRef(null);
+  const framesRef = useRef(null); // Raw frame metadata (dims, delay, disposalType)
+  const bitmapsRef = useRef(null); // Pre-decoded ImageBitmap textures
   const rafRef = useRef(null);
   // visuallyActive stays true during the wind-down deceleration
   const [visuallyActive, setVisuallyActive] = useState(false);
@@ -91,7 +83,7 @@ export default function SpinningCatComponent({
     }
   }, [animate]);
 
-  // ── Decode the spinning GIF on mount ─────────────────────────
+  // ── Decode the spinning GIF into ImageBitmap textures on mount ──
   useEffect(() => {
     let cancelled = false;
 
@@ -102,19 +94,31 @@ export default function SpinningCatComponent({
         const gif = parseGIF(buffer);
         const frames = decompressFrames(gif, true);
         if (cancelled) return;
+
+        // Pre-decode every frame into a GPU-ready ImageBitmap
+        const bitmaps = await Promise.all(
+          frames.map((frame) => {
+            const imageData = new ImageData(
+              new Uint8ClampedArray(frame.patch),
+              frame.dims.width,
+              frame.dims.height,
+            );
+            return createImageBitmap(imageData);
+          }),
+        );
+        if (cancelled) {
+          bitmaps.forEach((b) => b.close());
+          return;
+        }
+
         framesRef.current = frames;
+        bitmapsRef.current = bitmaps;
 
         const canvas = canvasRef.current;
         if (canvas && frames.length > 0) {
           canvas.width = frames[0].dims.width;
           canvas.height = frames[0].dims.height;
-
-          const patch = document.createElement("canvas");
-          patch.width = canvas.width;
-          patch.height = canvas.height;
-          patchRef.current = patch;
-
-          renderFrame(canvas, patch, frames, 0);
+          renderFrame(canvas, frames, bitmaps, 0);
         }
       } catch (err) {
         console.error("SpinningCatComponent: failed to decode GIF", err);
@@ -123,6 +127,9 @@ export default function SpinningCatComponent({
 
     return () => {
       cancelled = true;
+      // Release ImageBitmap GPU resources on unmount
+      bitmapsRef.current?.forEach((b) => b.close());
+      bitmapsRef.current = null;
     };
   }, []);
 
@@ -132,7 +139,8 @@ export default function SpinningCatComponent({
   useEffect(() => {
     const loop = (now) => {
       const frames = framesRef.current;
-      if (!frames?.length) {
+      const bitmaps = bitmapsRef.current;
+      if (!frames?.length || !bitmaps?.length) {
         rafRef.current = requestAnimationFrame(loop);
         return;
       }
@@ -181,7 +189,7 @@ export default function SpinningCatComponent({
           }
         }
 
-        renderFrame(canvasRef.current, patchRef.current, frames, s.frameIndex);
+        renderFrame(canvasRef.current, frames, bitmaps, s.frameIndex);
       }
 
       // ── Compute visual FX intensity (0 → 1) ──
