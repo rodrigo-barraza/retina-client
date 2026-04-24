@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Download, MessageSquare, GitBranch, FolderOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import HistoryItemComponent from "../../../components/HistoryItemComponent";
@@ -68,6 +68,57 @@ export default function RequestsPage() {
   const [hoveredConversationId, setHoveredConversationId] = useState(null);
   const initialLoadDone = useRef(false);
   const fetchGenRef = useRef(0);
+
+  // "Just now" row highlighting — track fresh rows and fade-outs
+  const prevJustNowIds = useRef(new Set());
+  const [fadingIds, setFadingIds] = useState(new Set());
+  const fadingTimers = useRef(new Map());
+  const [justNowTick, setJustNowTick] = useState(0);
+
+  // Compute which rows are "just now" (< 5s old) on every render/tick
+  const justNowIds = useMemo(() => {
+    const now = Date.now();
+    const ids = new Set();
+    for (const r of requests) {
+      if (!r.timestamp) continue;
+      const age = now - new Date(r.timestamp).getTime();
+      // Treat timestamps up to 10s in the future (clock skew) or < 5s old
+      if (age < 5000 && age > -10000) ids.add(r.requestId || r._id);
+    }
+    return ids;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requests, justNowTick]);
+
+  // Tick every 1s while there are "just now" rows so they age out naturally
+  useEffect(() => {
+    if (justNowIds.size === 0) return;
+    const timer = setInterval(() => setJustNowTick((t) => t + 1), 1000);
+    return () => clearInterval(timer);
+  }, [justNowIds.size]);
+
+  // Detect transitions: was "just now" → no longer → trigger fade
+  useEffect(() => {
+    const prev = prevJustNowIds.current;
+    for (const id of prev) {
+      if (!justNowIds.has(id) && !fadingTimers.current.has(id)) {
+        setFadingIds((s) => { const n = new Set(s); n.add(id); return n; });
+        const timer = setTimeout(() => {
+          setFadingIds((s) => { const n = new Set(s); n.delete(id); return n; });
+          fadingTimers.current.delete(id);
+        }, 1000);
+        fadingTimers.current.set(id, timer);
+      }
+    }
+    prevJustNowIds.current = justNowIds;
+  }, [justNowIds]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    const timers = fadingTimers.current;
+    return () => {
+      for (const timer of timers.values()) clearTimeout(timer);
+    };
+  }, []);
 
   const LIMIT = 50;
 
@@ -350,11 +401,16 @@ export default function RequestsPage() {
             if (row.conversationId) setHoveredConversationId(row.conversationId);
           }}
           onRowMouseLeave={() => setHoveredConversationId(null)}
-          getRowClassName={(row) =>
-            hoveredConversationId && row.conversationId === hoveredConversationId
-              ? styles.sharedConversationRow
-              : ""
-          }
+          getRowClassName={(row) => {
+            const id = row.requestId || row._id;
+            const classes = [];
+            if (hoveredConversationId && row.conversationId === hoveredConversationId) {
+              classes.push(styles.sharedConversationRow);
+            }
+            if (justNowIds.has(id)) classes.push(styles.newRow);
+            else if (fadingIds.has(id)) classes.push(styles.newRowFadeOut);
+            return classes.join(" ");
+          }}
           onRowClick={async (req) => {
             setSelectedRequest(req);
             try {

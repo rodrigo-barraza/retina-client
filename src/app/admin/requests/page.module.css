@@ -75,3 +75,41 @@
   gap: 12px;
   margin-top: 8px;
 }
+
+/* ── "Just now" row highlight ──────────────────────── */
+
+.newRow td {
+  background: color-mix(in srgb, var(--accent-color) 8%, transparent) !important;
+}
+
+.newRow td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent-color) !important;
+}
+
+/* Fade-out when row ages past "just now" */
+.newRowFadeOut td {
+  animation: newRowFade 1s ease-out forwards;
+}
+
+.newRowFadeOut td:first-child {
+  animation: newRowFade 1s ease-out forwards, newRowBorderFade 1s ease-out forwards;
+}
+
+@keyframes newRowFade {
+  0% {
+    background: color-mix(in srgb, var(--accent-color) 8%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+@keyframes newRowBorderFade {
+  0% {
+    box-shadow: inset 3px 0 0 var(--accent-color);
+  }
+  100% {
+    box-shadow: inset 3px 0 0 transparent;
+  }
+}
+

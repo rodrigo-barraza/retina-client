@@ -451,13 +451,13 @@ export const durationShareColumn = (totalDuration, { mini = false } = {}) => ({
 
 /* ·· Timestamps ·· */
 
-export const createdAtColumn = (key = "createdAt") => ({
+export const createdAtColumn = (key = "createdAt", { highlightNew = false } = {}) => ({
   key,
   label: "Created",
   description: "When this record was first created",
   sortable: true,
   align: "right",
-  render: (row) => row[key] ? <DateTimeBadgeComponent date={row[key]} /> : emptyDash(),
+  render: (row) => row[key] ? <DateTimeBadgeComponent date={row[key]} highlightNew={highlightNew} /> : emptyDash(),
 });
 
 /* ·· Trace ID ·· */

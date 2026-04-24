@@ -39,3 +39,41 @@
   width: 8px;
   height: 8px;
 }
+
+/* ── "Just now" highlight ────────────────────────── */
+
+.justNow {
+  color: var(--accent-color);
+  border-color: color-mix(in srgb, var(--accent-color) 50%, transparent);
+  background: color-mix(in srgb, var(--accent-color) 12%, var(--bg-tertiary));
+  animation: justNowPulse 2s ease-in-out infinite;
+}
+
+@keyframes justNowPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-color) 30%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 6px 2px color-mix(in srgb, var(--accent-color) 20%, transparent);
+  }
+}
+
+/* Fade-out when transitioning away from "just now" */
+.justNowFadeOut {
+  animation: justNowFade 1s ease-out forwards;
+}
+
+@keyframes justNowFade {
+  0% {
+    color: var(--accent-color);
+    border-color: color-mix(in srgb, var(--accent-color) 50%, transparent);
+    background: color-mix(in srgb, var(--accent-color) 12%, var(--bg-tertiary));
+    box-shadow: 0 0 4px 1px color-mix(in srgb, var(--accent-color) 20%, transparent);
+  }
+  100% {
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+    background: var(--bg-tertiary);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}

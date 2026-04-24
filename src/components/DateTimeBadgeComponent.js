@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Calendar } from "lucide-react";
 import { DateTime } from "luxon";
 import TooltipComponent from "./TooltipComponent";
@@ -13,39 +13,41 @@ import styles from "./DateTimeBadgeComponent.module.css";
  * Returns { label: string, intervalMs: number }
  */
 function computeLabel(dt, relative) {
-  if (!dt || !dt.isValid) return { label: "", intervalMs: 0 };
+  if (!dt || !dt.isValid) return { label: "", intervalMs: 0, isJustNow: false };
 
   const now = DateTime.now();
   const diff = now.diff(dt, ["days", "hours", "minutes", "seconds"]);
   const totalSeconds = diff.as("seconds");
 
   // Relative for recent timestamps (< 24h)
-  if (relative && totalSeconds >= 0 && totalSeconds < 86400) {
-    if (totalSeconds < 5) return { label: "just now", intervalMs: 1_000 };
+  // Also treat small negative values (clock skew — server slightly ahead) as "just now"
+  if (relative && totalSeconds > -10 && totalSeconds < 86400) {
+    if (totalSeconds < 5) return { label: "just now", intervalMs: 1_000, isJustNow: true };
     if (totalSeconds < 60)
       return {
         label: `${Math.floor(totalSeconds)}s ago`,
         intervalMs: 1_000,
+        isJustNow: false,
       };
     const mins = Math.floor(totalSeconds / 60);
     if (mins < 60)
-      return { label: `${mins}m ago`, intervalMs: 60_000 };
+      return { label: `${mins}m ago`, intervalMs: 60_000, isJustNow: false };
     const hrs = Math.floor(mins / 60);
-    return { label: `${hrs}h ago`, intervalMs: 3_600_000 };
+    return { label: `${hrs}h ago`, intervalMs: 3_600_000, isJustNow: false };
   }
 
   // Relative for slightly older (days)
   if (relative && totalSeconds >= 0) {
     const days = Math.floor(totalSeconds / 86400);
-    if (days === 1) return { label: "yesterday", intervalMs: 3_600_000 };
-    if (days < 7) return { label: `${days}d ago`, intervalMs: 3_600_000 };
+    if (days === 1) return { label: "yesterday", intervalMs: 3_600_000, isJustNow: false };
+    if (days < 7) return { label: `${days}d ago`, intervalMs: 3_600_000, isJustNow: false };
   }
 
   // Absolute short form — no live refresh needed
   if (dt.year === now.year) {
-    return { label: dt.toFormat("MMM d, h:mm a"), intervalMs: 0 };
+    return { label: dt.toFormat("MMM d, h:mm a"), intervalMs: 0, isJustNow: false };
   }
-  return { label: dt.toFormat("MMM d, yyyy"), intervalMs: 0 };
+  return { label: dt.toFormat("MMM d, yyyy"), intervalMs: 0, isJustNow: false };
 }
 
 /**
@@ -60,6 +62,7 @@ function computeLabel(dt, relative) {
  *   mini       — smaller variant
  *   showIcon   — show Calendar icon (default: true)
  *   relative   — show relative time (default: true for recent, absolute otherwise)
+ *   highlightNew — pulse glow when "just now", fade out on transition
  *   className  — additional class
  */
 export default function DateTimeBadgeComponent({
@@ -67,6 +70,7 @@ export default function DateTimeBadgeComponent({
   mini = false,
   showIcon = true,
   relative = true,
+  highlightNew = false,
   className = "",
 }) {
   const dt = useMemo(() => {
@@ -86,11 +90,30 @@ export default function DateTimeBadgeComponent({
   // The effect only bumps this counter — no synchronous setState in the body.
   const [tick, setTick] = useState(0);
 
-  const { label: shortLabel, intervalMs } = useMemo(
+  const { label: shortLabel, intervalMs, isJustNow } = useMemo(
     () => computeLabel(dt, relative),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [dt, relative, tick],
   );
+
+  // Track "just now" → stale transition for fade-out
+  const prevJustNowRef = useRef(isJustNow);
+  const [fading, setFading] = useState(false);
+
+  useEffect(() => {
+    // Was "just now", now it's not → trigger fade-out
+    if (prevJustNowRef.current && !isJustNow && highlightNew) {
+      setFading(true);
+      const timer = setTimeout(() => setFading(false), 1000);
+      return () => clearTimeout(timer);
+    }
+    prevJustNowRef.current = isJustNow;
+  }, [isJustNow, highlightNew]);
+
+  // Keep ref in sync for non-transition renders
+  useEffect(() => {
+    prevJustNowRef.current = isJustNow;
+  }, [isJustNow]);
 
   useEffect(() => {
     if (!dt || !dt.isValid || !intervalMs) return;
@@ -113,10 +136,16 @@ export default function DateTimeBadgeComponent({
 
   if (!dt || !dt.isValid) return null;
 
+  const highlightClass = highlightNew && isJustNow
+    ? styles.justNow
+    : fading
+      ? styles.justNowFadeOut
+      : "";
+
   return (
     <TooltipComponent label={fullDateTime} position="top">
       <span
-        className={`${styles.badge} ${mini ? styles.mini : ""} ${className}`}
+        className={`${styles.badge} ${mini ? styles.mini : ""} ${highlightClass} ${className}`}
       >
         {showIcon && <Calendar size={mini ? 8 : 10} />}
         {shortLabel}
