@@ -36,11 +36,11 @@ export const AGENT_ASSERTION_TYPES = [
     icon: Wrench,
     hasOperand: true,
     operators: [
-      { value: "gte", label: "≥" },
-      { value: "lte", label: "≤" },
-      { value: "eq", label: "=" },
-      { value: "gt", label: ">" },
-      { value: "lt", label: "<" },
+      { value: "gte", label: "At least (≥)" },
+      { value: "lte", label: "At most (≤)" },
+      { value: "eq", label: "Exactly (=)" },
+      { value: "gt", label: "More than (>)" },
+      { value: "lt", label: "Less than (<)" },
     ],
     placeholder: "e.g. 3",
     description: "Number of tool calls the agent made",
@@ -58,9 +58,11 @@ export const AGENT_ASSERTION_TYPES = [
     icon: RotateCcw,
     hasOperand: true,
     operators: [
-      { value: "lte", label: "≤" },
-      { value: "lt", label: "<" },
-      { value: "eq", label: "=" },
+      { value: "gte", label: "At least (≥)" },
+      { value: "lte", label: "At most (≤)" },
+      { value: "eq", label: "Exactly (=)" },
+      { value: "gt", label: "More than (>)" },
+      { value: "lt", label: "Less than (<)" },
     ],
     placeholder: "e.g. 5",
     description: "Maximum number of agentic loop turns",
@@ -204,7 +206,7 @@ export default function AgentAssertionsComponent({
                         >
                           {typeDef.operators.map((op) => (
                             <option key={op.value} value={op.value}>
-                              {op.label} ({op.value})
+                              {op.label}
                             </option>
                           ))}
                         </select>

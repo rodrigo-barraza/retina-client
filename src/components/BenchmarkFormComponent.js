@@ -119,16 +119,18 @@ export default function BenchmarkFormComponent({ form, onChange, matchModes }) {
         onChange={handleModeChange}
       />
 
-      <FormGroupComponent label="Load Preset (Optional)">
-        <select onChange={handlePresetChange} defaultValue="">
-          <option value="" disabled>-- Select an industry standard benchmark --</option>
-          {benchmarkPresets.map((p, idx) => (
-            <option key={idx} value={idx}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </FormGroupComponent>
+      {mode !== "agent" && (
+        <FormGroupComponent label="Load Preset (Optional)">
+          <select onChange={handlePresetChange} defaultValue="">
+            <option value="" disabled>-- Select an industry standard benchmark --</option>
+            {benchmarkPresets.map((p, idx) => (
+              <option key={idx} value={idx}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </FormGroupComponent>
+      )}
 
       <FormGroupComponent label="Name">
         <input
@@ -139,15 +141,17 @@ export default function BenchmarkFormComponent({ form, onChange, matchModes }) {
         />
       </FormGroupComponent>
 
-      <FormGroupComponent label="System Prompt (optional)">
-        <TextAreaComponent
-          value={form.systemPrompt}
-          onChange={updateTextArea("systemPrompt")}
-          placeholder="You are a geography expert. Answer concisely."
-          minRows={5}
-          maxRows={12}
-        />
-      </FormGroupComponent>
+      {mode !== "agent" && (
+        <FormGroupComponent label="System Prompt (optional)">
+          <TextAreaComponent
+            value={form.systemPrompt}
+            onChange={updateTextArea("systemPrompt")}
+            placeholder="You are a geography expert. Answer concisely."
+            minRows={5}
+            maxRows={12}
+          />
+        </FormGroupComponent>
+      )}
 
       <FormGroupComponent label="User Prompt">
         <TextAreaComponent

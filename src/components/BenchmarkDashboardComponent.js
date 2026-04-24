@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { BarChart3, CheckCircle2, Coins, Loader2, XCircle } from "lucide-react";
+import { BarChart3, Bot, CheckCircle2, Coins, Cpu, Loader2, XCircle } from "lucide-react";
 import PrismService from "../services/PrismService";
 import ThreePanelLayout from "./ThreePanelLayout";
 import SummaryBarComponent from "./SummaryBarComponent";
@@ -60,6 +60,12 @@ function humanizeModelPath(raw) {
   return name.trim();
 }
 
+const TABS = [
+  { key: "all",    label: "All",    icon: null },
+  { key: "models", label: "Models", icon: Cpu },
+  { key: "agents", label: "Agents", icon: Bot },
+];
+
 export default function BenchmarkDashboardComponent({ navSidebar, rightSidebar }) {
   const router = useRouter();
   const [stats, setStats] = useState(null);
@@ -67,6 +73,7 @@ export default function BenchmarkDashboardComponent({ navSidebar, rightSidebar }
   const [selectedModel, setSelectedModel] = useState(null);
   const [configLookup, setConfigLookup] = useState(new Map());
   const [favoriteKeys, setFavoriteKeys] = useState([]);
+  const [activeTab, setActiveTab] = useState("all");
   const hasLoadedRef = useRef(false);
 
   // ── Load stats + config + favorites ───────────────────────
@@ -137,7 +144,7 @@ export default function BenchmarkDashboardComponent({ navSidebar, rightSidebar }
   // ── Transform stat rows → ModelsTableComponent-compatible shape ──
   // Enriches each stat row with config data (display_name, modalities,
   // model type, etc.) so normalizeModel() produces clean names.
-  const modelRows = useMemo(() => {
+  const allModelRows = useMemo(() => {
     if (!stats?.models) return [];
     return stats.models.map((s) => {
       const configKey = `${s.provider}:${s.model}`;
@@ -168,6 +175,20 @@ export default function BenchmarkDashboardComponent({ navSidebar, rightSidebar }
       };
     });
   }, [stats, configLookup]);
+
+  // ── Tab filtering ──────────────────────────────────
+  const modelRows = useMemo(() => {
+    if (activeTab === "models") return allModelRows.filter((r) => !r._benchAgent);
+    if (activeTab === "agents") return allModelRows.filter((r) => !!r._benchAgent);
+    return allModelRows;
+  }, [allModelRows, activeTab]);
+
+  // ── Tab counts ─────────────────────────────────────
+  const tabCounts = useMemo(() => ({
+    all: allModelRows.length,
+    models: allModelRows.filter((r) => !r._benchAgent).length,
+    agents: allModelRows.filter((r) => !!r._benchAgent).length,
+  }), [allModelRows]);
 
   // ── Composite stat identity (model + config flags) ─────────
   const statId = (s) =>
@@ -298,32 +319,54 @@ export default function BenchmarkDashboardComponent({ navSidebar, rightSidebar }
           </EmptyStateComponent>
         ) : (
           <>
-            {/* ── Summary Bar ──────────────────────── */}
-            <SummaryBarComponent
-              items={[
-                { value: stats.totalModels, label: "Configs Tested" },
-                { value: stats.totalBenchmarks, label: "Benchmarks" },
-                { value: totals.total, label: "Total Tests" },
-                { value: totals.passed, label: "Passed", color: "var(--success)" },
-                { value: totals.failed + totals.errored, label: "Failed", color: "var(--danger)" },
-                {
-                  bar: totals.total > 0 ? (totals.passed / totals.total) * 100 : 0,
-                  barPassed: totals.passed,
-                  barTotal: totals.total,
-                  label: totals.total > 0 ? `${Math.round((totals.passed / totals.total) * 100)}%` : "—",
-                },
-                ...(totals.cost > 0
-                  ? [{
-                      value: formatCost(totals.cost),
-                      label: "Total Cost",
-                      color: "var(--success)",
-                      icon: <Coins size={14} />,
-                    }]
-                  : []),
-              ]}
-            />
+            {/* ── Summary Bar (sticky) ───────────── */}
+            <div className={styles.stickyBar}>
+              <SummaryBarComponent
+                items={[
+                  { value: stats.totalModels, label: "Configs Tested" },
+                  { value: stats.totalBenchmarks, label: "Benchmarks" },
+                  { value: totals.total, label: "Total Tests" },
+                  { value: totals.passed, label: "Passed", color: "var(--success)" },
+                  { value: totals.failed + totals.errored, label: "Failed", color: "var(--danger)" },
+                  {
+                    bar: totals.total > 0 ? (totals.passed / totals.total) * 100 : 0,
+                    barPassed: totals.passed,
+                    barTotal: totals.total,
+                    label: totals.total > 0 ? `${Math.round((totals.passed / totals.total) * 100)}%` : "—",
+                  },
+                  ...(totals.cost > 0
+                    ? [{
+                        value: formatCost(totals.cost),
+                        label: "Total Cost",
+                        color: "var(--success)",
+                        icon: <Coins size={14} />,
+                      }]
+                    : []),
+                ]}
+              />
+            </div>
 
-            {/* ── Model Performance Table ──────────── */}
+            {/* ── Segmented Control (Models / Agents) ── */}
+            <div className={styles.segmented}>
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.key;
+                const count = tabCounts[tab.key];
+                return (
+                  <button
+                    key={tab.key}
+                    className={`${styles.segmentedBtn} ${isActive ? styles.segmentedBtnActive : ""}`}
+                    onClick={() => setActiveTab(tab.key)}
+                  >
+                    {Icon && <Icon size={13} />}
+                    {tab.label}
+                    <span className={styles.segmentedCount}>{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* ── Performance Table ──────────── */}
             <ModelsTableComponent
               models={modelRows}
               mode="benchmark"
@@ -333,7 +376,13 @@ export default function BenchmarkDashboardComponent({ navSidebar, rightSidebar }
               favorites={favoriteKeys}
               onToggleFavorite={handleToggleFavorite}
               getRowClassName={getRowClassName}
-              emptyText="No benchmark data"
+              emptyText={
+                activeTab === "agents"
+                  ? "No agent benchmark data yet"
+                  : activeTab === "models"
+                    ? "No model benchmark data yet"
+                    : "No benchmark data"
+              }
             />
           </>
         )}
