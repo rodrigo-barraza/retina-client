@@ -196,4 +196,4 @@ npm run format   # Format with Prettier
 
 ## ☀️ Part of [Sun](https://github.com/rodrigo-barraza)
 
-Retina is one frontend in the Sun ecosystem — a collection of composable backend services and frontends designed to be mixed and matched.
+Retina is one frontend in a collection of composable backend services and frontends by Rodrigo Barraza.
