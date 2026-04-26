@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "next dev -p $(node -e \"import('./config.js').then(c=>console.log(c.PORT))\")",
+    "dev": "next dev -p $(node -e \"import('./next.config.mjs').then(c=>console.log(c.default.env.RETINA_PORT||3333))\")",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

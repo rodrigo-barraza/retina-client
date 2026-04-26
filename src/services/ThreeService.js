@@ -27,7 +27,6 @@ const instances = new Map();
 
 let nextId = 0;
 let rafId = null;
-let lastTimestamp = 0;
 
 /**
  * @typedef {object} ThreeInstance
@@ -46,20 +45,19 @@ let lastTimestamp = 0;
 // ─── RAF Loop ──────────────────────────────────────────────────────
 
 function loop(timestamp) {
-  const dt = lastTimestamp ? (timestamp - lastTimestamp) / 1000 : 0;
-  lastTimestamp = timestamp;
-
   for (const inst of instances.values()) {
     if (inst.paused) continue;
+
+    inst.timer.update(timestamp);
 
     if (inst.tick) {
       inst.tick({
         scene: inst.scene,
         camera: inst.camera,
         renderer: inst.renderer,
-        clock: inst.clock,
-        dt,
-        elapsed: inst.clock.getElapsedTime(),
+        timer: inst.timer,
+        dt: inst.timer.getDelta(),
+        elapsed: inst.timer.getElapsed(),
         width: inst.width,
         height: inst.height,
       });
@@ -73,7 +71,6 @@ function loop(timestamp) {
 
 function ensureLoop() {
   if (rafId === null && instances.size > 0) {
-    lastTimestamp = 0;
     rafId = requestAnimationFrame(loop);
   }
 }
@@ -229,8 +226,9 @@ const ThreeService = {
     );
     camera.position.set(...cameraPosition);
 
-    // ── Clock ──
-    const clock = new THREE.Clock();
+    // ── Timer ──
+    const timer = new THREE.Timer();
+    if (typeof document !== "undefined") timer.connect(document);
 
     // ── Instance ──
     const inst = {
@@ -239,7 +237,7 @@ const ThreeService = {
       renderer,
       scene,
       camera,
-      clock,
+      timer,
       tick: null,
       resizeObserver: null,
       width: 0,
@@ -269,7 +267,7 @@ const ThreeService = {
    * @param {string}   id
    * @param {Function} fn — (state: TickState) => void
    *
-   * TickState: { scene, camera, renderer, clock, dt, elapsed, width, height }
+   * TickState: { scene, camera, renderer, timer, dt, elapsed, width, height }
    */
   setTick(id, fn) {
     const inst = instances.get(id);
@@ -308,7 +306,7 @@ const ThreeService = {
       scene: inst.scene,
       camera: inst.camera,
       renderer: inst.renderer,
-      clock: inst.clock,
+      timer: inst.timer,
     };
   },
 
