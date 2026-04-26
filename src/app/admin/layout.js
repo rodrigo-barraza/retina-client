@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import AdminShell from "../../components/AdminShell";
 
 export const metadata = {
@@ -7,5 +8,5 @@ export const metadata = {
 };
 
 export default function AdminLayout({ children }) {
-  return <AdminShell>{children}</AdminShell>;
+  return <AdminShell><Suspense>{children}</Suspense></AdminShell>;
 }

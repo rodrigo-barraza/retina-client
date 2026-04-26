@@ -133,6 +133,7 @@ if $DRY_RUN; then
 else
   BUILD_START=$SECONDS
   docker build \
+    --network=host \
     $NO_CACHE \
     $BUILD_ARGS \
     --label "git.sha=${GIT_SHA}" \
@@ -140,7 +141,7 @@ else
     --label "build.time=${BUILD_TIME}" \
     -t "$TAG_LATEST" \
     -t "$TAG_SHA" \
-    . 2>&1 | tail -5 | sed 's/^/  /'
+    . 2>&1 | tail -30 | sed 's/^/  /'
   ok "Built in $((SECONDS - BUILD_START))s"
 fi
 

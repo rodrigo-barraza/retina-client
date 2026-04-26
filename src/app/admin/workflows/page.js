@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import IrisService from "../../../services/IrisService";
 import WorkflowComponent from "../../../components/WorkflowComponent";
@@ -14,6 +14,14 @@ import { copyToClipboard, buildDateRangeParams } from "../../../utils/utilities"
 import styles from "./page.module.css";
 
 export default function AdminWorkflowsPage() {
+  return (
+    <Suspense>
+      <AdminWorkflowsPageInner />
+    </Suspense>
+  );
+}
+
+function AdminWorkflowsPageInner() {
   const { projectFilter, projectOptions, handleProjectChange } =
     useProjectFilter();
   const { setControls, setTitleBadge, dateRange } = useAdminHeader();

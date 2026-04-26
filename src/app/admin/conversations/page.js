@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, Suspense } from "react";
 import { buildDateRangeParams } from "../../../utils/utilities";
 import useSessionStats from "../../../hooks/useSessionStats";
 import { useSearchParams } from "next/navigation";
@@ -37,7 +37,15 @@ import styles from "./page.module.css";
 
 const POLL_INTERVAL = 5000; // 5s
 
-export default function ConversationsPage({ initialId = null, traceId = null }) {
+export default function ConversationsPage(props) {
+  return (
+    <Suspense>
+      <ConversationsPageInner {...props} />
+    </Suspense>
+  );
+}
+
+function ConversationsPageInner({ initialId = null, traceId = null }) {
   const { projectFilter, projectOptions, handleProjectChange } =
     useProjectFilter();
   const searchParams = useSearchParams();

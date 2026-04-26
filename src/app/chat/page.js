@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import AgentComponent from "../../components/AgentComponent";
 import PrismService from "../../services/PrismService";
@@ -21,6 +21,14 @@ const NONE_AGENT = {
 };
 
 export default function AgentsPage() {
+  return (
+    <Suspense>
+      <AgentsPageInner />
+    </Suspense>
+  );
+}
+
+function AgentsPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [agents, setAgents] = useState([]);
