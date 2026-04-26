@@ -33,7 +33,7 @@ import {
 } from "../utils/FunctionCallingUtilities.js";
 
 import useSessionStats from "../hooks/useSessionStats.js";
-import { mergeUsedToolsWithWorkers, toolCountsToUsedTools } from "../utils/utilities.js";
+import { mergeUsedToolsWithWorkers, toolCountsToUsedTools, generateUUID } from "../utils/utilities.js";
 import { PROJECT_AGENT, SETTINGS_DEFAULTS, SK_MODEL_MEMORY_AGENT, SK_MODEL_MEMORY_AGENT_PREFIX, SK_TOOL_MEMORY_AGENT, SK_TOOL_MEMORY_AGENT_PREFIX, MAX_TOOL_ITERATIONS } from "../constants.js";
 import chatStyles from "./ChatArea.module.css";
 import ChatInputButton from "./ChatInputButton.js";
@@ -119,9 +119,9 @@ export default function AgentComponent({
   const [toolActivity, setToolActivity] = useState([]);
   const [streamingOutputs, setStreamingOutputs] = useState(new Map());
   const [agentSessionId, setAgentSessionId] = useState(() =>
-    crypto.randomUUID(),
+    generateUUID(),
   );
-  const [traceId, setTraceId] = useState(() => crypto.randomUUID());
+  const [traceId, setTraceId] = useState(() => generateUUID());
   const [sessions, setSessions] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [config, setConfig] = useState(null);
@@ -1842,7 +1842,7 @@ export default function AgentComponent({
     setWorkerToolActivity({});
     setPendingImages([]);
     setPlanProposal(null);
-    setAgentSessionId(crypto.randomUUID());
+    setAgentSessionId(generateUUID());
     setTraceId(null);
     setActiveId(null);
     setTitle(isNoAgent ? "Direct Chat" : "Agent");
@@ -1904,7 +1904,7 @@ export default function AgentComponent({
       scrollBehaviorRef.current = "instant";
       isUserNearBottomRef.current = true;
       setMessages(displayMessages);
-      setAgentSessionId(full.id || crypto.randomUUID());
+      setAgentSessionId(full.id || generateUUID());
       setTraceId(full.traceId || null);
       setActiveId(full.id);
       setTitle(full.title || "Agent");

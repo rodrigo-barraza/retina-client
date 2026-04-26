@@ -30,7 +30,7 @@ import StopwatchBadgeComponent from "./StopwatchBadgeComponent";
 
 import StorageService from "../services/StorageService";
 import { SK_MODEL_MEMORY_BENCHMARKS } from "../constants";
-import { formatCost } from "../utils/utilities";
+import { formatCost, generateUUID } from "../utils/utilities";
 import styles from "./BenchmarkPageComponent.module.css";
 
 const MATCH_MODES = [
@@ -116,7 +116,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
     if (saved?.selectedKeys && Array.isArray(saved.selectedKeys)) {
       return saved.selectedKeys.map((key) => {
         const [provider, ...rest] = key.split(":");
-        return { instanceId: crypto.randomUUID(), provider, name: rest.join(":") };
+        return { instanceId: generateUUID(), provider, name: rest.join(":") };
       });
     }
     // New format: array of instance objects
@@ -756,7 +756,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
         if (result.agent) {
           // Agent entry — restore as agent instance
           const inst = {
-            instanceId: crypto.randomUUID(),
+            instanceId: generateUUID(),
             agentId: result.agent,
             name: result.label?.replace(/^🤖\s*/, "").replace(/\s*\(.*\)$/, "") || result.agent,
             description: "",
@@ -768,7 +768,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
         } else {
           // Regular model entry
           const inst = {
-            instanceId: crypto.randomUUID(),
+            instanceId: generateUUID(),
             provider: result.provider,
             name: result.model,
           };
@@ -793,7 +793,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
 
   const handleAddAgent = useCallback((agentDef) => {
     const instance = {
-      instanceId: crypto.randomUUID(),
+      instanceId: generateUUID(),
       agentId: agentDef.id,
       name: agentDef.name,
       description: agentDef.description,
@@ -843,7 +843,7 @@ export default function BenchmarkDetailPageComponent({ benchmarkId, onRunningCha
   // ── Add model instance to selection (always adds, never toggles) ────
   const handleModelSelect = useCallback((rawModel) => {
     const instance = {
-      instanceId: crypto.randomUUID(),
+      instanceId: generateUUID(),
       provider: rawModel.provider,
       name: rawModel.name,
     };

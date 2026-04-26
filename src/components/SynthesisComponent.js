@@ -34,6 +34,7 @@ import BadgeComponent from "./BadgeComponent.js";
 import JsonViewerComponent from "./JsonViewerComponent.js";
 import SynthesisHistoryPanel from "./SynthesisHistoryPanel.js";
 import { SETTINGS_DEFAULTS, SK_MODEL_MEMORY_SYNTHESIS } from "../constants.js";
+import { generateUUID } from "../utils/utilities.js";
 import styles from "./SynthesisComponent.module.css";
 import useModelMemory from "../hooks/useModelMemory.js";
 
@@ -239,7 +240,7 @@ export default function SynthesisComponent() {
 
   const sftData = useMemo(() => ({
     prompt: systemPrompt.trim(),
-    prompt_id: crypto.randomUUID().replace(/-/g, ""),
+    prompt_id: generateUUID().replace(/-/g, ""),
     messages: sftOutput,
     category,
   }), [sftOutput, category, systemPrompt]);
@@ -285,7 +286,7 @@ export default function SynthesisComponent() {
     abortedRef.current = false;
 
     // Create a new conversation for this synthesis run
-    const convId = crypto.randomUUID();
+    const convId = generateUUID();
     setConversationId(convId);
 
     // Start with seed messages as the conversation so far
@@ -497,7 +498,7 @@ export default function SynthesisComponent() {
         setLeftTab("output");
 
         // Save the synthesis run to the dedicated collection
-        const synthesisRunId = crypto.randomUUID();
+        const synthesisRunId = generateUUID();
         try {
           await PrismService.createSynthesisRun({
             id: synthesisRunId,

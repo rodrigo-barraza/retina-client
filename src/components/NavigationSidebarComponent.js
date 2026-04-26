@@ -35,6 +35,7 @@ import SpinningCatComponent from "./SpinningCatComponent";
 import TooltipComponent from "./TooltipComponent";
 import styles from "./NavigationSidebarComponent.module.css";
 import { LS_PANEL_NAV, LS_PANEL_LEFT, LS_PANEL_RIGHT } from "../constants";
+import { generateUUID } from "../utils/utilities";
 
 import RainbowCanvasComponent from "./RainbowCanvasComponent";
 import SoundService from "@/services/SoundService";
@@ -236,7 +237,7 @@ export default function NavigationSidebarComponent({
         const angle = Math.random() * Math.PI * 2;
         const speed = 30 + Math.random() * 40;
         next.push({
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           size: 45 + Math.floor(Math.random() * 22),
           initVx: Math.cos(angle) * speed,
           initVy: Math.sin(angle) * speed,

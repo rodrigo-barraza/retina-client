@@ -3,6 +3,7 @@
  * and calling PrismService for each model, passing outputs forward via edges.
  */
 import PrismService from "./PrismService";
+import { generateUUID } from "../utils/utilities";
 
 /**
  * Determine which Prism endpoint to use based on the model's modalities
@@ -65,7 +66,7 @@ async function executeModelNode(node, inputData, { onNodeContentUpdate, toolSche
   const outputs = {};
 
   // Auto-create a conversation for this model execution
-  const conversationId = crypto.randomUUID();
+  const conversationId = generateUUID();
   const nodeLabel = node.label || node.modelName || "Model Node";
   const conversationMeta = {
     title: `🔀 ${nodeLabel} · ${node.provider || "unknown"}/${node.modelName || "unknown"}`,
