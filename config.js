@@ -6,11 +6,11 @@
 // ============================================================
 
 import {
-  PORT as SECRETS_PORT,
+  RETINA_PORT as SECRETS_PORT,
   PRISM_URL as DEFAULT_PRISM_URL,
   PRISM_WS_URL as DEFAULT_PRISM_WS_URL,
   TOOLS_API_URL as DEFAULT_TOOLS_API_URL,
-  MINIO_URL as DEFAULT_MINIO_URL,
+  MINIO_PUBLIC_URL as DEFAULT_MINIO_URL,
 } from "./secrets.js";
 
 export const PORT = SECRETS_PORT || 3333;

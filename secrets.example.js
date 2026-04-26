@@ -6,7 +6,7 @@
 // ============================================================
 
 // Dev Server
-export const PORT = 3333;
+export const RETINA_PORT = 3333;
 
 // Prism API Gateway
 export const PRISM_URL = "http://localhost:7777";
@@ -16,4 +16,4 @@ export const PRISM_WS_URL = "ws://localhost:7777";
 export const TOOLS_API_URL = "http://localhost:5590";
 
 // MinIO file storage (direct URL to bucket)
-export const MINIO_URL = "";
+export const MINIO_PUBLIC_URL = "";
