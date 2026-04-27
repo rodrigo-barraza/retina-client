@@ -1,6 +1,6 @@
 services:
-  retina:
-    image: retina:latest
+  retina-client:
+    image: retina-client:latest
     container_name: retina
     restart: unless-stopped
     ports:
