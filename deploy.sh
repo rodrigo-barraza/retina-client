@@ -3,7 +3,7 @@
 # Retina — Build & Deploy to Synology NAS
 #
 # Thin wrapper — all logic lives in ../deploy/lib.sh
-# Hook: injects VAULT_URL/VAULT_TOKEN as build args for
+# Hook: injects VAULT_SERVICE_URL/VAULT_SERVICE_TOKEN as build args for
 #       Next.js secret resolution at build time.
 # Extra: --network=host for build, 30 tail lines
 #
@@ -26,13 +26,13 @@ PRE_BUILD() {
     set -a; source "${SCRIPT_DIR}/.env.deploy"; set +a
     info "Loaded .env.deploy"
   fi
-  if [ -n "${VAULT_URL:-}" ]; then
-    BUILD_ARGS="--build-arg VAULT_URL=${VAULT_URL}"
-    info "Vault URL: ${VAULT_URL}"
+  if [ -n "${VAULT_SERVICE_URL:-}" ]; then
+    BUILD_ARGS="--build-arg VAULT_SERVICE_URL=${VAULT_SERVICE_URL}"
+    info "Vault URL: ${VAULT_SERVICE_URL}"
   fi
-  if [ -n "${VAULT_TOKEN:-}" ]; then
-    BUILD_ARGS="${BUILD_ARGS} --build-arg VAULT_TOKEN=${VAULT_TOKEN}"
-    info "Vault token: ****${VAULT_TOKEN: -8}"
+  if [ -n "${VAULT_SERVICE_TOKEN:-}" ]; then
+    BUILD_ARGS="${BUILD_ARGS} --build-arg VAULT_SERVICE_TOKEN=${VAULT_SERVICE_TOKEN}"
+    info "Vault token: ****${VAULT_SERVICE_TOKEN: -8}"
   fi
 }
 

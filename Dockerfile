@@ -20,11 +20,11 @@ FROM base AS builder
 WORKDIR /app
 
 # Vault credentials — needed at build time for next.config.mjs
-# to resolve PRISM_URL, TOOLS_API_URL, etc.
-ARG VAULT_URL=http://192.168.86.2:5599
-ARG VAULT_TOKEN
-ENV VAULT_URL=$VAULT_URL
-ENV VAULT_TOKEN=$VAULT_TOKEN
+# to resolve PRISM_SERVICE_URL, TOOLS_SERVICE_URL, etc.
+ARG VAULT_SERVICE_URL=http://192.168.86.2:5599
+ARG VAULT_SERVICE_TOKEN
+ENV VAULT_SERVICE_URL=$VAULT_SERVICE_URL
+ENV VAULT_SERVICE_TOKEN=$VAULT_SERVICE_TOKEN
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
