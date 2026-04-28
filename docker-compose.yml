@@ -1,7 +1,7 @@
 services:
   retina-client:
     image: retina-client:latest
-    container_name: retina
+    container_name: retina-client
     restart: unless-stopped
     ports:
       - "3333:3333"

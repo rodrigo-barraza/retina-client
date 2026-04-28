@@ -16,7 +16,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 IMAGE_NAME="retina-client"
-DISPLAY_NAME="👁️ Retina"
+DISPLAY_NAME="👁️ Retina Client"
 BUILD_EXTRA_FLAGS="--network=host"
 BUILD_TAIL_LINES=30
 
