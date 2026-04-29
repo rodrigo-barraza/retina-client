@@ -5,7 +5,7 @@
 // and injects them into process.env for the app.
 // ============================================================
 
-import { createVaultClient } from "@rodrigo-barraza/utilities/src/vault.js";
+import { createVaultClient } from "@rodrigo-barraza/utilities/node";
 
 // ── Bootstrap secrets at build/dev time ────────────────────────
 const vault = createVaultClient({
