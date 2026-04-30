@@ -1,38 +1,11 @@
 .modal {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
-  width: 560px;
-  max-width: 90vw;
   max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  animation: slideUp 0.2s ease;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
-}
-
-.header h3 {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
 }
 
 .body {
-  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow-y: auto;
 }
 
 .field {
@@ -47,42 +20,6 @@
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.4px;
-}
-
-.input {
-  padding: 10px 12px;
-  background: var(--select-bg);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  border-radius: var(--border-radius-sm);
-  font-size: 14px;
-  transition: border-color 0.2s;
-}
-
-.input:focus {
-  border-color: var(--accent-color);
-  outline: none;
-  box-shadow: 0 0 0 2px var(--accent-glow);
-}
-
-.textarea {
-  padding: 12px;
-  background: var(--select-bg);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  border-radius: var(--border-radius-sm);
-  font-size: 14px;
-  resize: vertical;
-  min-height: 140px;
-  font-family: inherit;
-  line-height: 1.5;
-  transition: border-color 0.2s;
-}
-
-.textarea:focus {
-  border-color: var(--accent-color);
-  outline: none;
-  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .deleteBtn {

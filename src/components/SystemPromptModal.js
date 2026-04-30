@@ -2,9 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { Plus } from "lucide-react";
-import { SelectComponent, TextAreaComponent } from "@rodrigo-barraza/components";
-import ModalOverlayComponent from "./ModalOverlayComponent";
-import CloseButtonComponent from "./CloseButtonComponent";
+import { SelectComponent, TextAreaComponent, InputComponent, ModalComponent } from "@rodrigo-barraza/components";
 import styles from "./SystemPromptModal.module.css";
 import { LS_SYSTEM_INSTRUCTIONS } from "../constants";
 
@@ -143,54 +141,45 @@ export default function SystemPromptModal({ activePrompt, onApply, onClose }) {
   ];
 
   return (
-    <ModalOverlayComponent onClose={onClose} portal>
-      <div className={styles.modal}>
-        <div className={styles.header}>
-          <h3>System Instructions</h3>
-          <CloseButtonComponent onClick={onClose} />
+    <ModalComponent title="System Instructions" onClose={onClose} size="md" className={styles.modal}>
+      <div className={styles.body}>
+        <div className={styles.field}>
+          <label>Saved Instructions</label>
+          <SelectComponent
+            value={selectedId || ""}
+            options={dropdownOptions}
+            onChange={handleSelectInstruction}
+            placeholder="Select or create an instruction..."
+          />
         </div>
 
-        <div className={styles.body}>
-          <div className={styles.field}>
-            <label>Saved Instructions</label>
-            <SelectComponent
-              value={selectedId || ""}
-              options={dropdownOptions}
-              onChange={handleSelectInstruction}
-              placeholder="Select or create an instruction..."
-            />
-          </div>
-
-          <div className={styles.field}>
-            <label>Title</label>
-            <input
-              type="text"
-              className={styles.input}
-              placeholder="e.g. Code Review Assistant"
-              value={title}
-              onChange={handleTitleChange}
-            />
-          </div>
-
-          <div className={styles.field}>
-            <label>System Prompt</label>
-            <TextAreaComponent
-              className={styles.textarea}
-              minRows={10}
-              maxRows={20}
-              placeholder="You are a helpful AI assistant..."
-              value={body}
-              onChange={handleBodyChange}
-            />
-          </div>
-
-          {selectedId && (
-            <button className={styles.deleteBtn} onClick={handleDelete}>
-              Delete this instruction
-            </button>
-          )}
+        <div className={styles.field}>
+          <label>Title</label>
+          <InputComponent
+            placeholder="e.g. Code Review Assistant"
+            value={title}
+            onChange={handleTitleChange}
+          />
         </div>
+
+        <div className={styles.field}>
+          <label>System Prompt</label>
+          <TextAreaComponent
+            className={styles.textarea}
+            minRows={10}
+            maxRows={20}
+            placeholder="You are a helpful AI assistant..."
+            value={body}
+            onChange={handleBodyChange}
+          />
+        </div>
+
+        {selectedId && (
+          <button className={styles.deleteBtn} onClick={handleDelete}>
+            Delete this instruction
+          </button>
+        )}
       </div>
-    </ModalOverlayComponent>
+    </ModalComponent>
   );
 }

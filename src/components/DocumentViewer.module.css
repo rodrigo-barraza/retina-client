@@ -1,39 +1,5 @@
 .viewer {
-  display: flex;
-  flex-direction: column;
-  width: 90vw;
-  max-width: 900px;
   height: 85vh;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  flex-shrink: 0;
-}
-
-.headerTitle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.body {
-  flex: 1;
-  overflow: auto;
-  min-height: 0;
 }
 
 .pdfFrame {

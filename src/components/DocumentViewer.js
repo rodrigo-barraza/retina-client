@@ -1,9 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { FileText } from "lucide-react";
-import ModalOverlayComponent from "./ModalOverlayComponent";
-import CloseButtonComponent from "./CloseButtonComponent";
+import { ModalComponent } from "@rodrigo-barraza/components";
 import styles from "./DocumentViewer.module.css";
 
 function decodeDataUrl(dataUrl) {
@@ -28,27 +26,22 @@ export default function DocumentViewer({ dataUrl, onClose }) {
   );
 
   return (
-    <ModalOverlayComponent onClose={onClose} variant="dark">
-      <div className={styles.viewer} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.header}>
-          <div className={styles.headerTitle}>
-            <FileText size={18} />
-            <span>{isPdf ? "PDF Document" : "Text Document"}</span>
-          </div>
-          <CloseButtonComponent onClick={onClose} size={20} />
-        </div>
-        <div className={styles.body}>
-          {isPdf ? (
-            <iframe
-              src={dataUrl}
-              className={styles.pdfFrame}
-              title="PDF Viewer"
-            />
-          ) : (
-            <pre className={styles.textContent}>{content}</pre>
-          )}
-        </div>
-      </div>
-    </ModalOverlayComponent>
+    <ModalComponent
+      title={isPdf ? "PDF Document" : "Text Document"}
+      onClose={onClose}
+      variant="dark"
+      size="lg"
+      className={styles.viewer}
+    >
+      {isPdf ? (
+        <iframe
+          src={dataUrl}
+          className={styles.pdfFrame}
+          title="PDF Viewer"
+        />
+      ) : (
+        <pre className={styles.textContent}>{content}</pre>
+      )}
+    </ModalComponent>
   );
 }
