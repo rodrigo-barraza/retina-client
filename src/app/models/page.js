@@ -1,10 +1,8 @@
-"use client";
-
-export const dynamic = "force-dynamic";
-
 import NavigationSidebarComponent from "../../components/NavigationSidebarComponent";
 import ModelsPageComponent from "../../components/ModelsPageComponent";
 import styles from "./page.module.css";
+
+export const dynamic = "force-dynamic";
 
 export default function UserModelsPage() {
   return (
