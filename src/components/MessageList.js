@@ -23,8 +23,7 @@ import {
 import { resolveToolVisuals } from "./WorkflowNodeConstants";
 import MarkdownContent from "./MarkdownContent";
 import StreamingCursorComponent from "./StreamingCursorComponent";
-import IconButtonComponent from "./IconButtonComponent";
-import CopyButtonComponent from "./CopyButtonComponent";
+
 import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
 import { ToolResultView } from "./ToolResultRenderers";
 import { ToolBadgeRow } from "./ToolBadgeComponent";
@@ -34,7 +33,7 @@ import TokenCountBadgeComponent from "./TokenCountBadgeComponent";
 import CostBadgeComponent from "./CostBadgeComponent";
 import StopwatchBadgeComponent from "./StopwatchBadgeComponent";
 import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
-import { BadgeComponent } from "@rodrigo-barraza/components";
+import { BadgeComponent, CopyButtonComponent, IconButtonComponent } from "@rodrigo-barraza/components";
 import WordBadgeComponent from "./WordBadgeComponent";
 import WorkerNotificationComponent from "./WorkerNotificationComponent";
 import PlanCardComponent from "./PlanCardComponent.js";
@@ -42,8 +41,6 @@ import styles from "./MessageList.module.css";
 import PrismService from "../services/PrismService";
 import SoundService from "@/services/SoundService";
 import { getTotalInputTokens, renderToolName } from "../utils/utilities";
-
-
 
 /* -- Task notification detection (Claude Code pattern) -------
  * Worker results arrive as user-role messages containing
@@ -66,7 +63,6 @@ function parseTaskNotification(content) {
     durationMs: tag("duration_ms"),
   };
 }
-
 
 function getMimeCategory(ref) {
   if (!ref) return "file";
@@ -157,16 +153,12 @@ function ThinkingBlock({ thinking, isStreaming, children }) {
   );
 }
 
-
-
-
 function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   if (!toolCalls || toolCalls.length === 0) return null;
 
   const hasActiveCalls = toolCalls.some((tc) => tc.status === "calling");
   const doneCount = toolCalls.filter((tc) => tc.status === "done" || tc.status === "error").length;
-
 
   // Build header text with active tense awareness
   const headerText = (() => {
@@ -220,7 +212,6 @@ function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
                 </span>
                 <span className={styles.toolCallName}>{name}</span>
 
-
                 {/* Worker tool badges — show which tools a spawned agent used */}
                 {tc.name === "team_create" && (() => {
                   const parsed = tc.result ? (typeof tc.result === "string" ? (() => { try { return JSON.parse(tc.result); } catch { return null; } })() : tc.result) : null;
@@ -258,8 +249,6 @@ function ToolCallsBlock({ toolCalls, streamingOutputs, workerToolActivity }) {
                   if (totalToolUses > 0) return <ToolBadgeRow tools={{ "Tool Calling": totalToolUses }} />;
                   return null;
                 })()}
-
-
 
                 {/* Tool-specific result renderer (registry pattern) */}
                 <ToolResultView
@@ -1514,7 +1503,6 @@ export default function MessageList({
           </React.Fragment>
         );
       })}
-
 
     </div>
   );

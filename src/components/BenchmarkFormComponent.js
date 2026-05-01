@@ -1,9 +1,9 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import FormGroupComponent from "./FormGroupComponent";
-import { BadgeComponent, ButtonComponent, TextAreaComponent } from "@rodrigo-barraza/components";
-import IconButtonComponent from "./IconButtonComponent";
+
+import { BadgeComponent, ButtonComponent, FormGroupComponent, IconButtonComponent, TextAreaComponent } from "@rodrigo-barraza/components";
+
 import BenchmarkModeSelector from "./BenchmarkModeSelector";
 import AgentAssertionsComponent from "./AgentAssertionsComponent";
 import { benchmarkPresets } from "../utils/benchmarkPresets";

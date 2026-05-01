@@ -7,9 +7,9 @@ import PrismService from "../services/PrismService";
 import ModelsTableComponent from "./ModelsTableComponent";
 import ModelLoadConfigPanel from "./ModelLoadConfigPanel";
 import ModelDetailPanelComponent from "./ModelDetailPanelComponent";
-import PageHeaderComponent from "./PageHeaderComponent";
+
 import { ErrorMessage } from "./StateMessageComponent";
-import { useToast } from "@rodrigo-barraza/components";
+import { PageHeaderComponent, useToast } from "@rodrigo-barraza/components";
 import styles from "./ModelsPageComponent.module.css";
 
 /**

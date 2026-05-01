@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 import AgentCardComponent from "./AgentCardComponent";
 import ModelCardComponent from "./ModelCardComponent";
-import { BadgeComponent } from "@rodrigo-barraza/components";
+import { BadgeComponent, TabBarComponent } from "@rodrigo-barraza/components";
 import ChatPreviewComponent from "./ChatPreviewComponent";
-import TabBarComponent from "./TabBarComponent";
+
 import CostBadgeComponent from "./CostBadgeComponent";
 import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
 import BenchmarkBarComponent from "./BenchmarkBarComponent";

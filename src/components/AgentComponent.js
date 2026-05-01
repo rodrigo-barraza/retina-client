@@ -20,8 +20,7 @@ import ParametersPanelComponent from "./ParametersPanelComponent.js";
 import SessionRequestsListComponent from "./SessionRequestsListComponent.js";
 import MessageList, { prepareDisplayMessages } from "./MessageList.js";
 import ImagePreviewComponent from "./ImagePreviewComponent.js";
-import TabBarComponent from "./TabBarComponent.js";
-import EmptyStateComponent from "./EmptyStateComponent.js";
+
 import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent.js";
 import ApprovalCardComponent from "./ApprovalCardComponent.js";
 
@@ -37,13 +36,12 @@ import { mergeUsedToolsWithWorkers, toolCountsToUsedTools, generateUUID } from "
 import { PROJECT_AGENT, SETTINGS_DEFAULTS, SK_MODEL_MEMORY_AGENT, SK_MODEL_MEMORY_AGENT_PREFIX, SK_TOOL_MEMORY_AGENT, SK_TOOL_MEMORY_AGENT_PREFIX, MAX_TOOL_ITERATIONS } from "../constants.js";
 import chatStyles from "./ChatArea.module.css";
 import ChatInputButton from "./ChatInputButton.js";
-import { ButtonComponent } from "@rodrigo-barraza/components";
+import { ButtonComponent, EmptyStateComponent, TabBarComponent } from "@rodrigo-barraza/components";
 import useToolToggles from "../hooks/useToolToggles.js";
 import useModelMemory from "../hooks/useModelMemory.js";
 import AgentPickerComponent from "./AgentPickerComponent.js";
 import AgentBadgeComponent from "./AgentBadgeComponent.js";
 import WorkspaceSelectorComponent from "./WorkspaceSelectorComponent";
-
 
 // -- Per-agent empty state config ---------------------------------
 const AGENT_EMPTY_STATE = {
@@ -84,7 +82,6 @@ const NONE_EMPTY_STATE = {
   subtitle: "Raw model interaction — no agentic loop, no persona.",
   placeholder: "Send a message...",
 };
-
 
 export default function AgentComponent({ 
   agentId: propAgentId = "CODING", 
@@ -776,8 +773,6 @@ export default function AgentComponent({
     [customTools, builtInTools, disabledBuiltIns],
   );
 
-
-
   // -- Memoize filtered messages for MessageList to prevent ref churn --
   const filteredMessages = useMemo(
     () => messages.filter((m) => m.role === "user" || m.role === "assistant"),
@@ -825,8 +820,6 @@ export default function AgentComponent({
   const removeImage = useCallback((index) => {
     setPendingImages((prev) => prev.filter((_, i) => i !== index));
   }, []);
-
-
 
   const handleDragEnter = useCallback(
     (e) => {
@@ -904,8 +897,6 @@ export default function AgentComponent({
       // Capture which session this generation belongs to — if the user
       // switches sessions, streaming callbacks will skip UI updates.
       const genSessionId = agentSessionIdRef.current;
-
-
 
       await new Promise((resolve, reject) => {
         // -- Build payload: Direct Chat (/chat) vs Agent (/agent) --
@@ -2095,8 +2086,6 @@ export default function AgentComponent({
     [isGenerating, activeId, agentProject, isNoAgent, messages, title, toolActivity, workerToolActivity, streamingOutputs, pendingApprovals, planProposal, agenticProgress, settings, backendSessionStats, generatingSessionIds, applySessionData, recordPixelLoadTime],
   );
 
-
-
   const handleDeleteSession = useCallback(
     async (convId) => {
       try {
@@ -2549,7 +2538,6 @@ export default function AgentComponent({
             PrismService.sendApprovalResponse(agentSessionId, false).catch(console.error);
           }}
         />
-
 
         {/* Pending approval cards */}
         {pendingApprovals.filter((a) => a.status === "pending").map((approval) => (

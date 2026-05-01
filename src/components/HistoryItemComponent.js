@@ -7,7 +7,7 @@ import {
   Trash2,
   ExternalLink,
 } from "lucide-react";
-import IconButtonComponent from "./IconButtonComponent";
+
 import ModalityIconComponent from "./ModalityIconComponent";
 import { ModelToolsRow } from "./ToolBadgeComponent";
 import DateTimeBadgeComponent from "./DateTimeBadgeComponent";
@@ -15,6 +15,7 @@ import styles from "./HistoryItemComponent.module.css";
 import CostBadgeComponent from "./CostBadgeComponent";
 import ModelBadgeComponent from "./ModelBadgeComponent";
 import SoundService from "@/services/SoundService";
+import { IconButtonComponent } from "@rodrigo-barraza/components";
 
 /**
  * HistoryItemComponent — a single row within HistoryList or any list that

@@ -30,7 +30,7 @@ import {
   formatElapsedTime,
   buildDateRangeParams,
 } from "../../utils/utilities";
-import StatsCard from "../../components/StatsCard";
+import { SelectComponent, StatsCardComponent as StatsCard } from "@rodrigo-barraza/components";
 
 import TimelineChartComponent from "../../components/TimelineChartComponent";
 import DistributionChartComponent from "../../components/DistributionChartComponent";
@@ -41,7 +41,6 @@ import RequestsTableComponent from "../../components/RequestsTableComponent";
 import ConversationsTableComponent from "../../components/ConversationsTableComponent";
 import TracesTableComponent from "../../components/TracesTableComponent";
 
-import { SelectComponent } from "@rodrigo-barraza/components";
 import { ErrorMessage } from "../../components/StateMessageComponent";
 import { useAdminHeader } from "../../components/AdminHeaderContext";
 import useProjectFilter from "../../hooks/useProjectFilter";

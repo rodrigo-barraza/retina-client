@@ -13,8 +13,8 @@ import IrisService from "../services/IrisService";
 import PrismService from "../services/PrismService";
 import ChatPreviewComponent from "./ChatPreviewComponent";
 import SearchFilterComponent from "./SearchFilterComponent";
-import { PaginationComponent, SearchInputComponent } from "@rodrigo-barraza/components";
-import PageHeaderComponent from "./PageHeaderComponent";
+import { PageHeaderComponent, PaginationComponent, SearchInputComponent } from "@rodrigo-barraza/components";
+
 import FilterDropdownComponent from "./FilterDropdownComponent";
 import { LoadingMessage, EmptyMessage } from "./StateMessageComponent";
 import { FilterBarComponent } from "./FilterBarComponent";

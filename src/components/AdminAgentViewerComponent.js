@@ -20,8 +20,7 @@ import MCPServersPanel from "./MCPServersPanel.js";
 import CoordinatorPanel from "./CoordinatorPanel.js";
 import WorkersPanel from "./WorkersPanel.js";
 import MessageList, { prepareDisplayMessages } from "./MessageList.js";
-import TabBarComponent from "./TabBarComponent.js";
-import EmptyStateComponent from "./EmptyStateComponent.js";
+
 import ModelBadgeComponent from "./ModelBadgeComponent.js";
 import { useAdminHeader } from "./AdminHeaderContext.js";
 
@@ -30,6 +29,7 @@ import useSessionStats from "../hooks/useSessionStats.js";
 import { PROJECT_AGENT } from "../constants.js";
 import chatStyles from "./ChatArea.module.css";
 import styles from "./AdminAgentViewerComponent.module.css";
+import { EmptyStateComponent, TabBarComponent } from "@rodrigo-barraza/components";
 
 /**
  * AdminAgentViewerComponent — read-only admin viewer for agent sessions.

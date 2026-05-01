@@ -20,14 +20,12 @@ import NavigationSidebarComponent from "./NavigationSidebarComponent.js";
 import ThreePanelLayout from "./ThreePanelLayout.js";
 import SettingsPanel from "./SettingsPanel.js";
 import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent.js";
-import { BadgeComponent, ButtonComponent, SelectComponent, TextAreaComponent } from "@rodrigo-barraza/components";
-import TabBarComponent from "./TabBarComponent.js";
-import EmptyStateComponent from "./EmptyStateComponent.js";
+import { BadgeComponent, ButtonComponent, CollapsibleBlockComponent, CopyButtonComponent, EmptyStateComponent, IconButtonComponent, SelectComponent, TabBarComponent, TextAreaComponent } from "@rodrigo-barraza/components";
+
 import PromptSectionComponent from "./PromptSectionComponent.js";
-import CollapsibleBlockComponent from "./CollapsibleBlockComponent.js";
+
 import MessageList from "./MessageList.js";
-import IconButtonComponent from "./IconButtonComponent.js";
-import CopyButtonComponent from "./CopyButtonComponent.js";
+
 import JsonViewerComponent from "./JsonViewerComponent.js";
 import SynthesisHistoryPanel from "./SynthesisHistoryPanel.js";
 import { SETTINGS_DEFAULTS, SK_MODEL_MEMORY_SYNTHESIS } from "../constants.js";
@@ -219,8 +217,6 @@ export default function SynthesisComponent() {
   const handleSelectUserSimModel = useCallback((provider, model) => {
     setUserSimSettings((s) => ({ ...s, provider, model }));
   }, []);
-
-
 
   // -- Compute final messages array (SFT format) -----------------
   const sftOutput = useMemo(() => {
@@ -685,7 +681,6 @@ export default function SynthesisComponent() {
             hasAssistantImages={false}
             hideProviderModel={false}
           />
-
 
         </div>
       )}

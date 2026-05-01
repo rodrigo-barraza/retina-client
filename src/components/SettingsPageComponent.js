@@ -5,10 +5,10 @@ import { Brain, Network, Bot, RotateCcw, Loader2, Check, FolderOpen, Lock, X, Pl
 import PrismService from "../services/PrismService";
 import WorkspaceService from "../services/WorkspaceService";
 import { useWorkspace } from "./WorkspaceContext";
-import PageHeaderComponent from "./PageHeaderComponent";
+
 import ModelPickerPopoverComponent from "./ModelPickerPopoverComponent";
 import CustomAgentsPanel from "./CustomAgentsPanel";
-import { ButtonComponent, CardComponent } from "@rodrigo-barraza/components";
+import { ButtonComponent, CardComponent, PageHeaderComponent } from "@rodrigo-barraza/components";
 import styles from "./SettingsPageComponent.module.css";
 
 /**

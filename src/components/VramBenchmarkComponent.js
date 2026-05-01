@@ -27,14 +27,12 @@ import {
 } from "lucide-react";
 import Chart from "chart.js/auto";
 import PrismService from "../services/PrismService";
-import PageHeaderComponent from "./PageHeaderComponent";
-import StatsCard from "./StatsCard";
-import TabBarComponent from "./TabBarComponent";
+
 import {
   FilterBarComponent,
   FilterSelectComponent,
 } from "./FilterBarComponent";
-import { SelectComponent } from "@rodrigo-barraza/components";
+import { PageHeaderComponent, SelectComponent, StatsCardComponent as StatsCard, TabBarComponent } from "@rodrigo-barraza/components";
 import { LoadingMessage, ErrorMessage } from "./StateMessageComponent";
 import styles from "./VramBenchmarkComponent.module.css";
 
@@ -779,7 +777,6 @@ export default function VramBenchmarkComponent() {
     const fastest = models.reduce((best, m) =>
       m.tokensPerSecond > best.tokensPerSecond ? m : best,
     );
-
 
     // Median TTFT — more meaningful than average (resistant to outliers)
     const ttftModels = models.filter((m) => m.ttft?.ms > 0);
@@ -2275,8 +2272,6 @@ export default function VramBenchmarkComponent() {
         });
       }
     }
-
-
 
     chartInstances.current.ctxLeaderboard = new Chart(ctx, {
       type: "bar",

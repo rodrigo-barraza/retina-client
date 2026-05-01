@@ -7,8 +7,8 @@ import PrismService from "../services/PrismService";
 import ThreePanelLayout from "./ThreePanelLayout";
 import SummaryBarComponent from "./SummaryBarComponent";
 import ModelsTableComponent from "./ModelsTableComponent";
-import EmptyStateComponent from "./EmptyStateComponent";
-import { ButtonComponent } from "@rodrigo-barraza/components";
+
+import { ButtonComponent, EmptyStateComponent } from "@rodrigo-barraza/components";
 import { formatCost } from "../utils/utilities";
 import styles from "./BenchmarkDashboardComponent.module.css";
 

@@ -15,10 +15,11 @@ import PrismService from "../services/PrismService";
 import ModelsTableComponent from "./ModelsTableComponent";
 import ModalityIconComponent from "./ModalityIconComponent";
 import { ModelToolsRow } from "./ToolBadgeComponent";
-import CloseButtonComponent from "./CloseButtonComponent";
+
 import SoundService from "@/services/SoundService";
 import { LOCAL_PROVIDERS } from "../constants.js";
 import styles from "./ModelPickerPopoverComponent.module.css";
+import { CloseButtonComponent } from "@rodrigo-barraza/components";
 
 // -- Shared model-search store ------------------------------------------
 // Module-scoped so every ModelPickerPopoverComponent instance shares the
@@ -388,12 +389,10 @@ export default function ModelPickerPopoverComponent({
     };
   }, [open, positionPopover]);
 
-
   // -- Trigger display ---------------------------------------------------
   const currentModel = allModels.find(
     (m) => m.provider === settings?.provider && m.name === settings?.model,
   );
-
 
   // Build display label
   const displayLabel = (() => {

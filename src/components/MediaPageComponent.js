@@ -22,8 +22,8 @@ import SearchFilterComponent from "./SearchFilterComponent";
 import ProviderLogo, { resolveProviderLabel } from "./ProviderLogos";
 import ImagePreviewComponent from "./ImagePreviewComponent";
 import AudioPlayerRecorderComponent from "./AudioPlayerRecorderComponent";
-import { PaginationComponent, TableComponent, SearchInputComponent } from "@rodrigo-barraza/components";
-import PageHeaderComponent from "./PageHeaderComponent";
+import { PageHeaderComponent, PaginationComponent, SearchInputComponent, TableComponent } from "@rodrigo-barraza/components";
+
 import FilterDropdownComponent from "./FilterDropdownComponent";
 import { LoadingMessage, EmptyMessage } from "./StateMessageComponent";
 import {
@@ -51,7 +51,6 @@ const TYPE_FILTERS = [
   { key: "video", label: "Video", icon: Film, color: MODALITY_COLORS.video },
   { key: "pdf", label: "PDF", icon: FileText, color: MODALITY_COLORS.pdf },
 ];
-
 
 function resolveUrl(url) {
   if (!url || typeof url !== "string") return null;

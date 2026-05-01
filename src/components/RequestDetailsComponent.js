@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import CloseButtonComponent from "./CloseButtonComponent";
+
 import styles from "./RequestDetailsComponent.module.css";
+import { CloseButtonComponent } from "@rodrigo-barraza/components";
 
 /**
  * RequestDetailsComponent — a slide-in drawer for displaying request detail views.

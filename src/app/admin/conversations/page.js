@@ -23,8 +23,8 @@ import ParametersPanelComponent from "../../../components/ParametersPanelCompone
 import HistoryPanel from "../../../components/HistoryPanel";
 
 import ThreePanelLayout from "../../../components/ThreePanelLayout";
-import { SelectComponent } from "@rodrigo-barraza/components";
-import TabBarComponent from "../../../components/TabBarComponent";
+import { SelectComponent, TabBarComponent } from "@rodrigo-barraza/components";
+
 import ModelPickerPopoverComponent from "../../../components/ModelPickerPopoverComponent";
 import { ErrorMessage } from "../../../components/StateMessageComponent";
 import { useAdminHeader } from "../../../components/AdminHeaderContext";
